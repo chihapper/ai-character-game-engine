@@ -27,7 +27,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .adapters.base import STTAdapter, TTSAdapter
@@ -182,6 +182,57 @@ _DEFAULT_PREVIEW_TEXT = (
     "Hello there. Sit down and rest a while — you look like you've come a long way, "
     "and the road only gets colder from here."
 )
+
+
+@app.get("/api/voices")
+async def list_library_voices(
+    provider: str = "cartesia",
+    gender: str = "",
+    q: str = "",
+) -> JSONResponse:
+    """Browse a provider's voice library so the user can pick + preview a voice.
+    Cartesia-only for now (Inworld has no comparable browse — it uses design or a
+    named preset id)."""
+    if provider != "cartesia":
+        return JSONResponse(
+            {"voices": [], "error": "Library browsing is only available for Cartesia."}
+        )
+    if not get_settings().cartesia_api_key:
+        return JSONResponse({"error": "CARTESIA_API_KEY is not set."}, status_code=400)
+    try:
+        voices = await CartesiaTTS().list_voices(gender=gender or None, q=q or None)
+    except Exception as exc:
+        logger.exception("Listing Cartesia voices failed")
+        return JSONResponse({"error": f"Couldn't load voices: {exc}"}, status_code=502)
+    return JSONResponse({"voices": voices})
+
+
+@app.get("/api/voices/preview")
+async def preview_library_voice(voice_id: str = "", url: str = "") -> Response:
+    """Audition a library voice. If it has a stored preview file (`url`), proxy it
+    (its URL needs our API key, which the browser can't send). Otherwise synthesize
+    a short sample with the voice — most library voices lack a stored preview."""
+    if not get_settings().cartesia_api_key:
+        return JSONResponse({"error": "CARTESIA_API_KEY is not set."}, status_code=400)
+    tts = CartesiaTTS()
+    try:
+        if url:
+            audio, media_type = await tts.fetch_preview(url)
+        elif voice_id:
+            audio, media_type = await tts.synthesize_preview(voice_id)
+        else:
+            return JSONResponse({"error": "voice_id or url required."}, status_code=400)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        logger.exception("Voice preview failed")
+        return JSONResponse({"error": f"Preview failed: {exc}"}, status_code=502)
+    # Let the browser cache a given preview for the session.
+    return Response(
+        content=audio,
+        media_type=media_type,
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 @app.post("/api/voice/design")

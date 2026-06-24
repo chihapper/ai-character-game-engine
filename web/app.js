@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-train3-2";
+const APP_VERSION = "2026-06-24-cartesia-voices-3";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -775,11 +775,150 @@ async function saveProfile() {
 // ============================================================ voice design mode
 let designedVoiceId = null;
 
+// Voice sources differ by provider: Cartesia can't design from text, so it gets
+// a browsable library + clone; Inworld keeps design + clone + preset-id.
+const VOICE_MODES = {
+  cartesia: [
+    { value: "library", label: "Browse the Cartesia voice library" },
+    { value: "clone", label: "Clone a voice — record a sample" },
+  ],
+  inworld: [
+    { value: "design", label: "Design a voice — describe it in words" },
+    { value: "clone", label: "Clone a voice — record a sample" },
+    { value: "preset", label: "Preset voice id" },
+  ],
+};
+
+let libraryVoiceId = null; // selected Cartesia library voice
+let libLoaded = false; // whether the library list has been fetched this view
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+// Rebuild the voice-mode dropdown for the current provider, keeping the prior
+// selection if it's still valid (else falling back to the provider's first mode).
+function populateVoiceModes(preferred) {
+  const provider = $("c-provider").value;
+  const modes = VOICE_MODES[provider] || VOICE_MODES.inworld;
+  const sel = $("c-voice-mode");
+  const want = preferred || sel.value;
+  sel.innerHTML = "";
+  for (const m of modes) {
+    const o = document.createElement("option");
+    o.value = m.value;
+    o.textContent = m.label;
+    sel.appendChild(o);
+  }
+  sel.value = modes.some((m) => m.value === want) ? want : modes[0].value;
+  switchVoiceMode();
+}
+
 function switchVoiceMode() {
   const mode = $("c-voice-mode").value;
   $("mode-design").style.display = mode === "design" ? "block" : "none";
   $("mode-clone").style.display = mode === "clone" ? "block" : "none";
   $("mode-preset").style.display = mode === "preset" ? "block" : "none";
+  $("mode-library").style.display = mode === "library" ? "block" : "none";
+  if (mode === "library" && !libLoaded) loadLibraryVoices();
+}
+
+async function loadLibraryVoices() {
+  const list = $("lib-list");
+  list.innerHTML = '<div class="hint" style="padding:10px">Loading voices…</div>';
+  libLoaded = true;
+  try {
+    const params = new URLSearchParams({ provider: "cartesia" });
+    const g = $("lib-gender").value;
+    const q = $("lib-search").value.trim();
+    if (g) params.set("gender", g);
+    if (q) params.set("q", q);
+    const res = await fetch("/api/voices?" + params.toString());
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      list.innerHTML = `<div class="hint" style="padding:10px">⚠ ${escapeHtml(data.error || "Failed to load.")}</div>`;
+      return;
+    }
+    const voices = data.voices || [];
+    if (!voices.length) {
+      list.innerHTML = '<div class="hint" style="padding:10px">No voices match — widen the filter.</div>';
+      return;
+    }
+    list.innerHTML = "";
+    for (const v of voices) {
+      const row = document.createElement("div");
+      row.className = "lib-row";
+      row.dataset.id = v.id;
+      row.style.cssText =
+        "display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer";
+      const play = document.createElement("button");
+      play.type = "button";
+      play.className = "btn ghost";
+      play.textContent = "▶";
+      play.title = "Preview";
+      play.style.cssText = "flex:0 0 auto; padding:4px 11px; min-width:36px";
+      play.addEventListener("click", (e) => {
+        e.stopPropagation();
+        previewLibraryVoice(v, play);
+      });
+      const meta = document.createElement("div");
+      meta.style.cssText = "flex:1; min-width:0";
+      meta.innerHTML =
+        `<div style="color:var(--text); font-size:14px">${escapeHtml(v.name)}</div>` +
+        `<div class="hint" style="margin:2px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${escapeHtml(v.description)}</div>`;
+      const tag = document.createElement("span");
+      tag.className = "status";
+      tag.style.cssText = "margin:0; flex:0 0 auto; font-size:11px";
+      tag.textContent = (v.gender || "").replace("gender_neutral", "neutral");
+      row.append(play, meta, tag);
+      row.addEventListener("click", () => selectLibraryVoice(v));
+      list.appendChild(row);
+    }
+    highlightSelectedRow();
+  } catch (err) {
+    list.innerHTML = `<div class="hint" style="padding:10px">⚠ ${escapeHtml(err)}</div>`;
+  }
+}
+
+function selectLibraryVoice(v) {
+  libraryVoiceId = v.id;
+  $("lib-selected").innerHTML = `✓ Selected: <strong style="color:var(--accent-2)">${escapeHtml(v.name)}</strong>`;
+  highlightSelectedRow();
+}
+
+function highlightSelectedRow() {
+  document.querySelectorAll("#lib-list .lib-row").forEach((r) => {
+    r.style.background = r.dataset.id === libraryVoiceId ? "var(--panel-2)" : "";
+  });
+}
+
+let previewBtn = null; // the play button whose audio is currently active
+
+function resetPreviewBtn() {
+  if (previewBtn) previewBtn.textContent = "▶";
+  previewBtn = null;
+}
+
+function previewLibraryVoice(v, btn) {
+  const a = $("lib-preview");
+  // Clicking the active row again = toggle off.
+  if (previewBtn === btn) {
+    a.pause();
+    resetPreviewBtn();
+    return;
+  }
+  resetPreviewBtn(); // revert whatever was playing before
+  previewBtn = btn;
+  btn.textContent = "⏳"; // loading (synth previews take ~1s)
+  // Prefer the stored preview file (free); fall back to on-the-fly synthesis.
+  // Both go through our proxy — the raw preview URL is auth-gated.
+  const params = new URLSearchParams({ voice_id: v.id });
+  if (v.preview_url) params.set("url", v.preview_url);
+  a.src = "/api/voices/preview?" + params.toString();
+  a.play().catch(() => {}); // AbortError on rapid switching is harmless
 }
 
 async function generateDesignPreview() {
@@ -917,6 +1056,12 @@ async function createCharacter() {
       return;
     }
     form.append("sample", sampleBlob, "sample.webm");
+  } else if (mode === "library") {
+    if (!libraryVoiceId) {
+      $("c-status").textContent = "Pick a voice from the library first.";
+      return;
+    }
+    form.append("voice_id", libraryVoiceId);
   } else {
     const presetVoice = $("c-voice-id").value.trim();
     if (!presetVoice) {
@@ -966,12 +1111,20 @@ async function editCharacter(slug) {
   $("c-name").value = c.name;
   $("c-prompt").value = c.system_prompt;
   $("c-greeting").value = c.greeting;
-  $("c-provider").value = c.tts_provider || "inworld";
-  // Default to Preset mode showing the current voice id, so saving keeps the
-  // existing voice unless you switch to Design/Clone to replace it.
-  $("c-voice-mode").value = "preset";
-  $("c-voice-id").value = c.voice_id;
-  switchVoiceMode();
+  $("c-provider").value = c.tts_provider || "cartesia";
+  // Pre-load the current voice so saving keeps it unless you pick/record a new
+  // one. Cartesia → library mode (current id retained + highlighted); Inworld →
+  // preset mode showing the id.
+  libLoaded = false;
+  if ($("c-provider").value === "cartesia") {
+    libraryVoiceId = c.voice_id;
+    populateVoiceModes("library");
+    $("lib-selected").innerHTML =
+      `Current voice: <strong>${escapeHtml(c.voice_id)}</strong> — pick another below to change it.`;
+  } else {
+    $("c-voice-id").value = c.voice_id;
+    populateVoiceModes("preset");
+  }
   $("c-create").textContent = "Save changes";
   $("c-mode-label").textContent = `Editing "${c.name}"`;
   $("c-new").style.display = "inline-block";
@@ -983,7 +1136,11 @@ function newCharacterForm() {
   editingSlug = null;
   ["c-name", "c-prompt", "c-greeting", "c-voice-id"].forEach((id) => ($(id).value = ""));
   designedVoiceId = null;
+  libraryVoiceId = null;
+  $("lib-selected").textContent = "";
+  highlightSelectedRow(); // clear any leftover row highlight
   $("c-design-playback").style.display = "none";
+  populateVoiceModes(); // back to the current provider's default mode
   $("c-create").textContent = "Create character";
   $("c-mode-label").textContent = "Creating a new character";
   $("c-new").style.display = "none";
@@ -1002,6 +1159,21 @@ $("text-input").addEventListener("keydown", (e) => {
 $("c-record").addEventListener("click", toggleSampleRecord);
 $("c-create").addEventListener("click", createCharacter);
 $("c-voice-mode").addEventListener("change", switchVoiceMode);
+$("c-provider").addEventListener("change", () => {
+  libLoaded = false; // re-fetch the library on next entry to library mode
+  populateVoiceModes();
+});
+$("lib-load").addEventListener("click", loadLibraryVoices);
+$("lib-gender").addEventListener("change", loadLibraryVoices);
+$("lib-search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") loadLibraryVoices();
+});
+const _libPreview = $("lib-preview");
+_libPreview.addEventListener("playing", () => {
+  if (previewBtn) previewBtn.textContent = "⏸";
+});
+_libPreview.addEventListener("ended", resetPreviewBtn);
+_libPreview.addEventListener("error", resetPreviewBtn);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
 $("edit-char").addEventListener("click", () => editCharacter($("character").value));
 $("c-new").addEventListener("click", newCharacterForm);
@@ -1021,7 +1193,7 @@ if (buildEl) {
 }
 console.log("[AI Character Engine] app.js", APP_VERSION, "| server build", window.__BUILD__);
 
-switchVoiceMode();
+populateVoiceModes();
 loadCharacters();
 loadModels();
 loadProfiles();

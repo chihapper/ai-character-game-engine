@@ -150,19 +150,38 @@
 
         <label for="c-provider">Voice provider</label>
         <select id="c-provider">
-          <option value="inworld">Inworld (default)</option>
-          <option value="cartesia">Cartesia</option>
+          <option value="cartesia">Cartesia (default)</option>
+          <option value="inworld">Inworld</option>
         </select>
 
         <label for="c-voice-mode">Voice</label>
+        <!-- Options are rebuilt per-provider in app.js (populateVoiceModes):
+             Cartesia → library + clone; Inworld → design + clone + preset. -->
         <select id="c-voice-mode" style="width:100%">
-          <option value="design">Design a voice — describe it in words (Inworld)</option>
+          <option value="library">Browse the Cartesia voice library</option>
           <option value="clone">Clone a voice — record a sample</option>
-          <option value="preset">Preset voice id</option>
         </select>
 
+        <!-- ── LIBRARY mode (Cartesia) ── -->
+        <div id="mode-library" class="voice-mode" style="margin-top:12px">
+          <div class="row" style="gap:8px">
+            <select id="lib-gender" style="flex:0 0 auto">
+              <option value="">Any gender</option>
+              <option value="feminine">Feminine</option>
+              <option value="masculine">Masculine</option>
+              <option value="gender_neutral">Neutral</option>
+            </select>
+            <input type="text" id="lib-search" placeholder="Search name/description (e.g. narrator, friendly, deep)" style="flex:1" />
+            <button class="btn ghost" id="lib-load" type="button">Search</button>
+          </div>
+          <div id="lib-selected" class="status" style="margin:8px 0 0"></div>
+          <div id="lib-list" style="margin-top:10px; max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px"></div>
+          <audio id="lib-preview" style="display:none"></audio>
+          <div class="hint" style="margin-top:8px">500+ Cartesia voices. Filter or search, ▶ to preview, then click a row to select.</div>
+        </div>
+
         <!-- ── DESIGN mode ── -->
-        <div id="mode-design" class="voice-mode" style="margin-top:12px">
+        <div id="mode-design" class="voice-mode" style="display:none; margin-top:12px">
           <textarea id="c-design-desc" placeholder="Describe the voice…">A weathered woman in her fifties, low and gravelly with a faint rasp. Dry, deadpan, unhurried delivery. Tired but warm underneath. Perfect broadcast quality audio.</textarea>
           <div class="hint" style="margin-top:8px; line-height:1.6">
             <strong>Tips (Inworld):</strong> 30–250 characters, English. Cover

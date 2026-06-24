@@ -24,12 +24,18 @@ import websockets
 
 from ..config import AUDIO_SAMPLE_RATE, get_settings
 from .base import TTSAdapter
+from ._audio import pcm_to_wav
 
 logger = logging.getLogger(__name__)
 
 _API_VERSION = "2026-03-01"
 _WS_URL = f"wss://api.cartesia.ai/tts/websocket?cartesia_version={_API_VERSION}"
 _CLONE_URL = "https://api.cartesia.ai/voices/clone"
+_VOICES_URL = "https://api.cartesia.ai/voices"
+_FILES_HOST = "https://files.cartesia.ai/"  # where preview audio is served
+# Only ~a third of library voices ship a stored preview file; for the rest we
+# synthesize this short line on demand so every voice can be auditioned.
+_PREVIEW_TEXT = "Hi there — here's a quick sample of how I sound."
 
 
 class CartesiaTTS(TTSAdapter):
@@ -72,6 +78,80 @@ class CartesiaTTS(TTSAdapter):
                     break
                 elif msg_type == "error":
                     raise RuntimeError(f"Cartesia TTS error: {msg}")
+
+    async def list_voices(
+        self,
+        gender: str | None = None,
+        q: str | None = None,
+        language: str | None = "en",
+        limit: int = 30,
+    ) -> list[dict]:
+        """Browse the Cartesia voice library (public presets + any we own). Unlike
+        Inworld, Cartesia has no design-from-text — picking a library voice is how
+        you 'choose a voice'. Returns lightweight dicts the picker UI renders, each
+        with a `preview_url` (a playable audio file) so the user can audition it."""
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Cartesia-Version": _API_VERSION,
+        }
+        params: list[tuple[str, str]] = [
+            ("limit", str(max(1, min(limit, 100)))),
+            ("expand[]", "preview_file_url"),
+        ]
+        if language:
+            params.append(("language", language))
+        if gender:
+            params.append(("gender", gender))
+        if q:
+            params.append(("q", q))
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as client:
+            resp = await client.get(_VOICES_URL, headers=headers, params=params)
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"Cartesia list-voices error {resp.status_code}: {resp.text[:300]}"
+                )
+            items = resp.json().get("data") or []
+        return [
+            {
+                "id": v.get("id"),
+                "name": v.get("name"),
+                "description": v.get("description") or "",
+                "gender": v.get("gender"),
+                "language": v.get("language"),
+                "preview_url": v.get("preview_file_url"),
+                "is_owner": bool(v.get("is_owner")),
+            }
+            for v in items
+            if v.get("id")
+        ]
+
+    async def fetch_preview(self, url: str) -> tuple[bytes, str]:
+        """Fetch a library voice's preview audio. The `preview_file_url` from the
+        list endpoint is auth-gated (401 without the key), so the browser can't load
+        it directly — we proxy it here. Returns (audio_bytes, content_type). The host
+        check is a hard guard: we attach our API key, so we must never fetch an
+        arbitrary URL with it."""
+        if not url.startswith(_FILES_HOST):
+            raise ValueError("Preview URL must be a Cartesia files URL.")
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Cartesia-Version": _API_VERSION,
+        }
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=10.0)) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"Cartesia preview error {resp.status_code}: {resp.text[:200]}"
+                )
+            return resp.content, resp.headers.get("content-type", "audio/wav")
+
+    async def synthesize_preview(self, voice_id: str) -> tuple[bytes, str]:
+        """Render a short sample in `voice_id`, returned as a self-contained WAV.
+        Used to preview library voices that have no stored preview file."""
+        pcm = bytearray()
+        async for chunk in self.stream_speech(_PREVIEW_TEXT, voice_id):
+            pcm.extend(chunk)
+        return pcm_to_wav(bytes(pcm), AUDIO_SAMPLE_RATE), "audio/wav"
 
     async def clone_voice(self, sample_audio: bytes, display_name: str) -> str:
         headers = {
