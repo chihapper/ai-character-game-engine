@@ -27,6 +27,7 @@ from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .sentence_chunker import SentenceChunker
+from .text_cleanup import clean_for_speech
 
 logger = logging.getLogger(__name__)
 
@@ -111,9 +112,12 @@ class Pipeline:
                     break
                 if state["tts_failed"]:
                     continue  # keep draining so the producer can finish
+                spoken = clean_for_speech(sentence)
+                if not spoken:
+                    continue  # sentence was pure stage direction / markup
                 try:
                     async for chunk in self.tts.stream_speech(
-                        sentence, self.character.voice_id
+                        spoken, self.character.voice_id
                     ):
                         if not state["first_audio"]:
                             state["first_audio"] = True
@@ -173,8 +177,11 @@ class Pipeline:
             sentences.append(tail)
         try:
             for sentence in sentences:
+                spoken = clean_for_speech(sentence)
+                if not spoken:
+                    continue
                 async for chunk in self.tts.stream_speech(
-                    sentence, self.character.voice_id
+                    spoken, self.character.voice_id
                 ):
                     if not audio_started:
                         audio_started = True

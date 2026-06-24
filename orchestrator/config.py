@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     default_tts_provider: str = "inworld"
     inworld_model: str = "inworld-tts-2"
     cartesia_model: str = "sonic-3.5"
+    # Voice stability for Inworld: STABLE delivery + lower temperature keeps the
+    # timbre consistent across the separate per-sentence synthesis calls (default
+    # temperature drifts the voice between sentences).
+    inworld_delivery_mode: str = "STABLE"  # STABLE | BALANCED | CREATIVE
+    inworld_temperature: float = 0.6
 
     # --- STT (step 2) ---
     # faster-whisper model size. "base.en" balances speed/accuracy on CPU.

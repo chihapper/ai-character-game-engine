@@ -40,6 +40,8 @@ class InworldTTS(TTSAdapter):
             )
         self._model = model or settings.inworld_model
         self._auth_header = f"Basic {settings.inworld_api_key}"
+        self._delivery_mode = settings.inworld_delivery_mode
+        self._temperature = settings.inworld_temperature
 
     async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
         payload = {
@@ -50,6 +52,9 @@ class InworldTTS(TTSAdapter):
                 "audioEncoding": "LINEAR16",  # headerless 16-bit PCM
                 "sampleRateHertz": AUDIO_SAMPLE_RATE,
             },
+            # Keep the voice consistent across per-sentence calls.
+            "deliveryMode": self._delivery_mode,
+            "temperature": self._temperature,
         }
         headers = {
             "Authorization": self._auth_header,

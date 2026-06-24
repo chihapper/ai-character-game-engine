@@ -150,6 +150,12 @@
           <button class="btn ghost" id="c-record">● Record ~12s sample</button>
           <span class="status" id="c-record-status" style="margin:0">No sample recorded yet.</span>
         </div>
+        <!-- Live input level (shows the mic is actually capturing) -->
+        <div id="c-meter" style="display:none; height:10px; background:var(--panel-2); border-radius:5px; margin-top:10px; overflow:hidden;">
+          <div id="c-meter-fill" style="height:100%; width:0%; background:var(--accent-2); transition:width 0.05s linear;"></div>
+        </div>
+        <!-- Playback of the captured sample (verify before creating) -->
+        <audio id="c-playback" controls style="display:none; width:100%; margin-top:10px;"></audio>
         <div class="divider">— or —</div>
         <input type="text" id="c-voice-id" placeholder="Preset voice_id (e.g. Ashley for Inworld)" style="width:100%" />
 

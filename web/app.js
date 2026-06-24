@@ -304,6 +304,18 @@ let sampleRecorder = null;
 let sampleChunks = [];
 let sampleBlob = null;
 let sampleRecording = false;
+let meterCtx = null;
+let meterRAF = null;
+let meterTimer = null;
+let recordStartMs = 0;
+
+function stopMeter() {
+  if (meterRAF) { cancelAnimationFrame(meterRAF); meterRAF = null; }
+  if (meterTimer) { clearInterval(meterTimer); meterTimer = null; }
+  if (meterCtx) { meterCtx.close().catch(() => {}); meterCtx = null; }
+  $("c-meter").style.display = "none";
+  $("c-meter-fill").style.width = "0%";
+}
 
 async function toggleSampleRecord() {
   if (!sampleRecording) {
@@ -314,18 +326,51 @@ async function toggleSampleRecord() {
       $("c-record-status").textContent = "Microphone access denied.";
       return;
     }
+
+    // Live input-level meter so you can SEE the mic capturing.
+    meterCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = meterCtx.createMediaStreamSource(stream);
+    const analyser = meterCtx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    const buf = new Uint8Array(analyser.fftSize);
+    $("c-meter").style.display = "block";
+    const draw = () => {
+      analyser.getByteTimeDomainData(buf);
+      let peak = 0;
+      for (let i = 0; i < buf.length; i++) {
+        const v = Math.abs(buf[i] - 128);
+        if (v > peak) peak = v;
+      }
+      $("c-meter-fill").style.width = Math.min(100, Math.round((peak / 128) * 180)) + "%";
+      meterRAF = requestAnimationFrame(draw);
+    };
+    draw();
+
+    // Recorder
     sampleRecorder = new MediaRecorder(stream);
     sampleChunks = [];
     sampleRecorder.ondataavailable = (e) => e.data.size && sampleChunks.push(e.data);
     sampleRecorder.onstop = () => {
       sampleBlob = new Blob(sampleChunks, { type: sampleRecorder.mimeType });
-      $("c-record-status").textContent = `Sample recorded (${Math.round(sampleBlob.size / 1024)} KB).`;
-      sampleRecorder.stream.getTracks().forEach((t) => t.stop());
+      const secs = ((performance.now() - recordStartMs) / 1000).toFixed(1);
+      $("c-record-status").textContent =
+        `Sample recorded: ${secs}s, ${Math.round(sampleBlob.size / 1024)} KB. Play it back to check ↓`;
+      const pb = $("c-playback");
+      pb.src = URL.createObjectURL(sampleBlob);
+      pb.style.display = "block";
+      stream.getTracks().forEach((t) => t.stop());
+      stopMeter();
     };
     sampleRecorder.start();
     sampleRecording = true;
+    recordStartMs = performance.now();
     $("c-record").textContent = "■ Stop recording";
-    $("c-record-status").textContent = "Recording… speak naturally for ~12 seconds.";
+    $("c-playback").style.display = "none";
+    meterTimer = setInterval(() => {
+      const s = Math.floor((performance.now() - recordStartMs) / 1000);
+      $("c-record-status").textContent = `● Recording… ${s}s (aim for 10–15s)`;
+    }, 250);
   } else {
     sampleRecorder.stop();
     sampleRecording = false;

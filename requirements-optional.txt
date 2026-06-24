@@ -10,6 +10,9 @@
 
 # --- Speech-to-text (voice input). Bundles Silero VAD via vad_filter=True. ---
 faster-whisper==1.1.1
+# faster-whisper imports `requests` directly, but recent huggingface_hub no longer
+# pulls it in transitively — declare it explicitly so STT imports cleanly.
+requests>=2.31
 
 # --- Long-term vector memory (cross-session recall) ---
 chromadb==0.6.3
