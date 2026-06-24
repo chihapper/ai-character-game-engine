@@ -120,15 +120,30 @@ Then launch with the single command for your OS:
 The launch script creates a virtualenv, installs dependencies, and starts the server.
 Open **<http://127.0.0.1:8000>**.
 
-> First run downloads the local Whisper and embedding models (a few hundred MB) and is
-> slower to start. Subsequent runs are fast.
+### Core vs. optional dependencies
+
+The dependencies are split so the app always boots:
+
+- **`requirements.txt`** (core, pure-Python) — the full text → LLM → sentence-chunk →
+  TTS streaming loop and in-app character creation + voice cloning. Installs cleanly
+  everywhere.
+- **`requirements-optional.txt`** — **voice input** (Whisper STT) and **cross-session
+  memory** (ChromaDB). These pull heavier, partly-compiled packages; on Windows / newer
+  Python they may need C++ build tools (or a 3.11/3.12 interpreter that has prebuilt
+  wheels). The launch script installs them **best-effort** — if they fail to build, the
+  app still runs with text input + TTS, voice input reports a clear error, and long-term
+  memory is silently disabled.
+
+> If the optional extras are installed, the first run also downloads the local Whisper
+> and embedding models (a few hundred MB) and is slower to start. Subsequent runs are fast.
 
 ### Manual run (if you prefer)
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+source .venv/bin/activate                  # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt            # core: text + LLM + TTS
+pip install -r requirements-optional.txt   # optional: voice input + memory
 python -m orchestrator.main
 ```
 

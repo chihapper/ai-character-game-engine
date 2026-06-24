@@ -1,0 +1,16 @@
+# Optional extras — enable voice input and cross-session memory.
+# These pull heavier, partly-compiled dependencies (PyTorch, CTranslate2,
+# chroma-hnswlib). On Windows / newer Python you may need C++ build tools
+# (Visual Studio Build Tools) for chroma-hnswlib to compile, or a Python version
+# with prebuilt wheels available (3.11 / 3.12 are the safest).
+#
+# The app runs without these — voice input then reports a clear error and
+# long-term memory is silently disabled — so install them only when you want the
+# full experience.
+
+# --- Speech-to-text (voice input). Bundles Silero VAD via vad_filter=True. ---
+faster-whisper==1.1.1
+
+# --- Long-term vector memory (cross-session recall) ---
+chromadb==0.6.3
+sentence-transformers==3.3.1

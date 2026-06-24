@@ -19,5 +19,12 @@ fi
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# Optional extras (voice input + long-term memory). Best-effort: if they fail to
+# build, the app still runs text + TTS.
+echo "Installing optional extras (voice input + memory)..."
+pip install -r requirements-optional.txt || \
+  echo "Optional extras not installed — running with text + TTS only. See README."
+
 echo "Starting server on http://127.0.0.1:8000 ..."
 python -m orchestrator.main

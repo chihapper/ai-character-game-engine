@@ -14,8 +14,6 @@ import asyncio
 import io
 import logging
 
-from faster_whisper import WhisperModel
-
 from ..config import get_settings
 from .base import STTAdapter
 
@@ -28,10 +26,20 @@ class WhisperSTT(STTAdapter):
         self._model_size = model_size or settings.whisper_model
         self._device = settings.whisper_device
         self._compute_type = settings.whisper_compute_type
-        self._model: WhisperModel | None = None
+        self._model = None
 
-    def _load(self) -> WhisperModel:
+    def _load(self):
         if self._model is None:
+            # Imported lazily so the app boots even when the optional STT extra
+            # (faster-whisper) isn't installed; voice input then surfaces a clear
+            # error while text input keeps working.
+            try:
+                from faster_whisper import WhisperModel
+            except ImportError as exc:
+                raise RuntimeError(
+                    "Speech-to-text isn't installed. Run "
+                    "`pip install -r requirements-optional.txt` to enable voice input."
+                ) from exc
             logger.info(
                 "Loading faster-whisper model '%s' (device=%s)...",
                 self._model_size,
