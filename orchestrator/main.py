@@ -21,8 +21,9 @@ from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconn
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .adapters.base import TTSAdapter
+from .adapters.base import STTAdapter, TTSAdapter
 from .adapters.llm_anthropic import AnthropicLLM
+from .adapters.stt_assemblyai import AssemblyAISTT
 from .adapters.stt_whisper import WhisperSTT
 from .adapters.tts_cartesia import CartesiaTTS
 from .adapters.tts_inworld import InworldTTS
@@ -65,10 +66,6 @@ async def no_cache_frontend(request, call_next):
     return response
 
 
-# One shared (lazily-loaded) Whisper model for the whole process.
-_stt = WhisperSTT()
-
-
 # --------------------------------------------------------------------- factories
 
 
@@ -76,6 +73,21 @@ def make_tts(provider: str) -> TTSAdapter:
     if provider == "cartesia":
         return CartesiaTTS()
     return InworldTTS()
+
+
+# One shared STT instance, built lazily on first voice turn so a missing key (or
+# unloaded model) never blocks server boot and text-only use keeps working.
+_stt: STTAdapter | None = None
+
+
+def get_stt() -> STTAdapter:
+    global _stt
+    if _stt is None:
+        if get_settings().stt_provider == "assemblyai":
+            _stt = AssemblyAISTT()
+        else:
+            _stt = WhisperSTT()
+    return _stt
 
 
 # ------------------------------------------------------------------- REST: chars
@@ -298,7 +310,7 @@ async def voice_ws(websocket: WebSocket) -> None:
                 latency.start("vad_stop")  # browser already endpointed (click-to-talk)
                 audio = message["bytes"]
                 try:
-                    transcript = await _stt.transcribe(audio)
+                    transcript = await get_stt().transcribe(audio)
                 except Exception as exc:
                     logger.exception("STT failed")
                     await emit_json({"type": "error", "message": f"Transcription failed: {exc}"})

@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     inworld_api_key: str = ""
     cartesia_api_key: str = ""
+    assemblyai_api_key: str = ""
 
     # --- LLM ---
     # Default model when the UI doesn't specify one. Sonnet 4.6 for richer
@@ -62,7 +63,10 @@ class Settings(BaseSettings):
     inworld_delivery_mode: str = "STABLE"  # STABLE | BALANCED | CREATIVE
     inworld_temperature: float = 0.6
 
-    # --- STT (step 2) ---
+    # --- STT ---
+    # "assemblyai" (cloud, no local deps — recommended for distribution) or
+    # "whisper" (local faster-whisper).
+    stt_provider: str = "whisper"
     # faster-whisper model size. "base.en" balances speed/accuracy on CPU.
     whisper_model: str = "base.en"
     # CPU is the portable default and needs no CUDA DLLs. Set WHISPER_DEVICE=cuda
