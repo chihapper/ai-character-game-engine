@@ -80,6 +80,36 @@ async def get_models() -> JSONResponse:
     return JSONResponse({"models": AVAILABLE_MODELS, "default": get_settings().llm_model})
 
 
+_DEFAULT_PREVIEW_TEXT = (
+    "Hello there. Sit down and rest a while — you look like you've come a long way, "
+    "and the road only gets colder from here."
+)
+
+
+@app.post("/api/voice/design")
+async def design_voice(
+    description: str = Form(...),
+    preview_text: str = Form(""),
+) -> JSONResponse:
+    """Design a voice from a text description (Inworld). Returns a preview to listen
+    to; the preview voice id is published into a permanent voice at create time."""
+    desc = description.strip()
+    if not (30 <= len(desc) <= 250):
+        return JSONResponse(
+            {"error": "Voice description must be 30–250 characters."}, status_code=400
+        )
+    text = preview_text.strip() or _DEFAULT_PREVIEW_TEXT
+    try:
+        previews = await InworldTTS().design_voice(desc, text, num_samples=1)
+    except Exception as exc:
+        logger.exception("Voice design failed")
+        return JSONResponse({"error": f"Voice design failed: {exc}"}, status_code=502)
+    p = previews[0]
+    return JSONResponse(
+        {"voice_id": p["voice_id"], "audio_b64": p["audio_b64"], "mime": p["mime"]}
+    )
+
+
 @app.post("/api/characters")
 async def create_character(
     name: str = Form(...),
@@ -87,31 +117,33 @@ async def create_character(
     greeting: str = Form(""),
     tts_provider: str = Form(""),
     voice_id: str = Form(""),
+    design_voice_id: str = Form(""),
     sample: UploadFile | None = File(None),
 ) -> JSONResponse:
-    """Create a character. If a voice `sample` is uploaded, instant-clone it via the
-    chosen provider and use the returned voice id; otherwise use a provided preset
-    `voice_id`."""
+    """Create a character with one of three voice sources:
+      * `sample` uploaded -> instant-clone it (provider's clone API)
+      * `design_voice_id` set -> publish a previously-designed Inworld voice
+      * `voice_id` set -> use a preset/library voice as-is
+    """
     settings = get_settings()
     provider = tts_provider or settings.default_tts_provider
 
     resolved_voice_id = voice_id.strip()
     try:
-        if sample is not None:
-            sample_bytes = await sample.read()
-            if not sample_bytes:
-                return JSONResponse(
-                    {"error": "Uploaded voice sample is empty."}, status_code=400
-                )
-            tts = make_tts(provider)
-            resolved_voice_id = await tts.clone_voice(sample_bytes, name)
+        sample_bytes = await sample.read() if sample is not None else b""
+        if sample_bytes:
+            resolved_voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
+        elif design_voice_id.strip():
+            # Voice design is Inworld-only; publish the previewed voice to keep it.
+            resolved_voice_id = await InworldTTS().publish_voice(design_voice_id.strip(), name)
+            provider = "inworld"
     except Exception as exc:
-        logger.exception("Voice cloning failed")
-        return JSONResponse({"error": f"Voice cloning failed: {exc}"}, status_code=502)
+        logger.exception("Voice setup failed")
+        return JSONResponse({"error": f"Voice setup failed: {exc}"}, status_code=502)
 
     if not resolved_voice_id:
         return JSONResponse(
-            {"error": "Provide either a voice sample to clone or a preset voice_id."},
+            {"error": "Provide a recorded sample, a designed voice, or a preset voice_id."},
             status_code=400,
         )
 

@@ -1,0 +1,11 @@
+# Optional GPU acceleration for Whisper STT on NVIDIA cards.
+#
+# Install these IN ADDITION to requirements-optional.txt, then set in your .env:
+#   WHISPER_DEVICE=cuda
+#   WHISPER_COMPUTE_TYPE=int8     # int8 works on all CUDA cards; float16 needs Volta+ (not GTX 10xx)
+#
+# These wheels ship the CUDA 12 cuBLAS + cuDNN libraries that ctranslate2 (the
+# faster-whisper backend) needs. The app registers their DLL directories at
+# runtime on Windows automatically. Requires an NVIDIA GPU + recent driver.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12

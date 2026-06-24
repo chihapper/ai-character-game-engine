@@ -13,11 +13,29 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+import os
+import sys
+from pathlib import Path
 
 from ..config import get_settings
 from .base import STTAdapter
 
 logger = logging.getLogger(__name__)
+
+
+def _register_cuda_dll_dirs() -> None:
+    """On Windows, add the pip-installed CUDA DLLs (cublas/cudnn) to the search
+    path so ctranslate2 can load them for GPU inference. No-op elsewhere."""
+    if not hasattr(os, "add_dll_directory"):
+        return  # not Windows
+    nvidia = Path(sys.prefix) / "Lib" / "site-packages" / "nvidia"
+    if not nvidia.exists():
+        return  # CUDA wheels not installed; running on CPU
+    for bin_dir in nvidia.glob("*/bin"):
+        try:
+            os.add_dll_directory(str(bin_dir))
+        except OSError:
+            pass
 
 
 class WhisperSTT(STTAdapter):
@@ -30,6 +48,8 @@ class WhisperSTT(STTAdapter):
 
     def _load(self):
         if self._model is None:
+            if self._device == "cuda":
+                _register_cuda_dll_dirs()
             # Imported lazily so the app boots even when the optional STT extra
             # (faster-whisper) isn't installed; voice input then surfaces a clear
             # error while text input keeps working.

@@ -53,10 +53,22 @@ function ensureAudio() {
 }
 
 function resetPlaybackClock() {
-  // Start a touch in the future so brief network jitter can't starve the
-  // playhead and inject a gap (which also clicks).
-  nextStartTime = (audioCtx ? audioCtx.currentTime : 0) + PLAYBACK_PRIME;
   pcmCarry = new Uint8Array(0);
+  if (!audioCtx) {
+    nextStartTime = 0;
+    return;
+  }
+  const start = audioCtx.currentTime + 0.04;
+  // Prepend a short silent pad. After sitting idle between responses the
+  // AudioContext drops its first few output samples when it restarts; letting it
+  // eat this silence (instead of the first word) fixes the clipped-first-word.
+  const padSamples = Math.round(SAMPLE_RATE * 0.12);
+  const pad = audioCtx.createBuffer(1, padSamples, SAMPLE_RATE);
+  const src = audioCtx.createBufferSource();
+  src.buffer = pad;
+  src.connect(audioCtx.destination);
+  src.start(start);
+  nextStartTime = start + pad.duration;
 }
 
 function playPcmFrame(arrayBuffer) {
@@ -330,6 +342,47 @@ async function loadModels() {
   }
 }
 
+// ============================================================ voice design mode
+let designedVoiceId = null;
+
+function switchVoiceMode() {
+  const mode = $("c-voice-mode").value;
+  $("mode-design").style.display = mode === "design" ? "block" : "none";
+  $("mode-clone").style.display = mode === "clone" ? "block" : "none";
+  $("mode-preset").style.display = mode === "preset" ? "block" : "none";
+}
+
+async function generateDesignPreview() {
+  const desc = $("c-design-desc").value.trim();
+  if (desc.length < 30 || desc.length > 250) {
+    $("c-design-status").textContent = `Description must be 30–250 chars (now ${desc.length}).`;
+    return;
+  }
+  designedVoiceId = null;
+  $("c-design-status").textContent = "Designing voice…";
+  $("c-design-generate").disabled = true;
+  try {
+    const form = new FormData();
+    form.append("description", desc);
+    const res = await fetch("/api/voice/design", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) {
+      $("c-design-status").textContent = "⚠ " + (data.error || "Design failed.");
+      return;
+    }
+    designedVoiceId = data.voice_id;
+    const pb = $("c-design-playback");
+    pb.src = `data:${data.mime};base64,${data.audio_b64}`;
+    pb.style.display = "block";
+    pb.play().catch(() => {});
+    $("c-design-status").textContent = "Preview ready — listen, then Create (or tweak & regenerate).";
+  } catch (err) {
+    $("c-design-status").textContent = "⚠ " + err;
+  } finally {
+    $("c-design-generate").disabled = false;
+  }
+}
+
 // ============================================================ create character
 let sampleRecorder = null;
 let sampleChunks = [];
@@ -421,13 +474,26 @@ async function createCharacter() {
   form.append("system_prompt", prompt);
   form.append("greeting", $("c-greeting").value.trim());
   form.append("tts_provider", $("c-provider").value);
-  const presetVoice = $("c-voice-id").value.trim();
-  if (presetVoice) form.append("voice_id", presetVoice);
-  if (sampleBlob) form.append("sample", sampleBlob, "sample.webm");
-
-  if (!presetVoice && !sampleBlob) {
-    $("c-status").textContent = "Record a voice sample or enter a preset voice_id.";
-    return;
+  const mode = $("c-voice-mode").value;
+  if (mode === "design") {
+    if (!designedVoiceId) {
+      $("c-status").textContent = "Generate a voice preview first.";
+      return;
+    }
+    form.append("design_voice_id", designedVoiceId);
+  } else if (mode === "clone") {
+    if (!sampleBlob) {
+      $("c-status").textContent = "Record a voice sample first.";
+      return;
+    }
+    form.append("sample", sampleBlob, "sample.webm");
+  } else {
+    const presetVoice = $("c-voice-id").value.trim();
+    if (!presetVoice) {
+      $("c-status").textContent = "Enter a preset voice_id.";
+      return;
+    }
+    form.append("voice_id", presetVoice);
   }
 
   $("c-status").textContent = "Creating (cloning voice if needed)…";
@@ -459,6 +525,13 @@ $("text-input").addEventListener("keydown", (e) => {
 });
 $("c-record").addEventListener("click", toggleSampleRecord);
 $("c-create").addEventListener("click", createCharacter);
+$("c-voice-mode").addEventListener("change", switchVoiceMode);
+$("c-design-generate").addEventListener("click", generateDesignPreview);
+$("c-design-desc").addEventListener("input", () => {
+  designedVoiceId = null;
+  $("c-design-playback").style.display = "none";
+});
 
+switchVoiceMode();
 loadCharacters();
 loadModels();
