@@ -13,9 +13,12 @@
 // little-endian, mono, 24 kHz.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SAMPLE_RATE = 24000;
+const SAMPLE_RATE = 24000; // TTS playback
+const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-keepalive-3";
+const APP_VERSION = "2026-06-24-streaming-4";
+let isStreaming = false; // streaming STT available this session?
+let livePartialEl = null; // live (interim) transcript bubble
 
 // ---- DOM helpers ----
 const $ = (id) => document.getElementById(id);
@@ -217,11 +220,32 @@ function handleControl(msg) {
   switch (msg.type) {
     case "ready":
       currentCharacterName = msg.character.name;
-      if (msg.model) setStatus(`Connected to ${currentCharacterName} · ${msg.model}`);
+      isStreaming = !!msg.streaming;
+      setTalkState("idle");
+      if (msg.model) {
+        setStatus(
+          `Connected to ${currentCharacterName} · ${msg.model}` +
+            (isStreaming ? " · live STT" : ""),
+        );
+      }
+      break;
+    case "partial_transcript":
+      if (!livePartialEl) livePartialEl = addMessage("user", "");
+      livePartialEl.textContent = msg.text;
+      log.scrollTop = log.scrollHeight;
       break;
     case "transcript":
-      addMessage("user", msg.text);
+      if (livePartialEl) {
+        livePartialEl.textContent = msg.text;
+        livePartialEl = null;
+      } else {
+        addMessage("user", msg.text);
+      }
       liveAssistantEl = null;
+      break;
+    case "mic_ended":
+      stopStreamingMic();
+      setTalkState("processing");
       break;
     case "assistant_start":
       liveAssistantEl = addMessage("assistant", "");
@@ -235,6 +259,7 @@ function handleControl(msg) {
       if (liveAssistantEl) liveAssistantEl.textContent = msg.text;
       else addMessage("assistant", msg.text);
       liveAssistantEl = null;
+      if (isStreaming) setTalkState("idle"); // ready for the next turn
       break;
     case "audio_start":
       resetPlaybackClock();
@@ -262,18 +287,112 @@ function setStatus(text) {
 }
 
 // ============================================================ mic capture
-// Click-to-talk: click to start recording, click again to stop and send.
+// Streaming (AssemblyAI) when available; otherwise batch (record a clip).
+let isRecording = false;
 let mediaRecorder = null;
 let recordedChunks = [];
-let isRecording = false;
 
+// Streaming capture state
+let micStream = null;
+let captureCtx = null;
+let captureNode = null;
+let capActive = false;
+let capOutBuf = new Float32Array(0);
+
+function setTalkState(state) {
+  const btn = $("talk");
+  if (state === "listening") {
+    btn.classList.add("recording");
+    btn.textContent = "■ Listening… (click to cancel)";
+  } else if (state === "processing") {
+    btn.classList.remove("recording");
+    btn.textContent = "Thinking…";
+  } else {
+    btn.classList.remove("recording");
+    btn.textContent = isStreaming ? "🎙 Click to talk" : "🎙 Hold to talk (click to start/stop)";
+  }
+}
+
+async function toggleTalk() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  return isStreaming ? toggleStreamingMic() : toggleBatchRecord();
+}
+
+// --- Streaming: continuous 16 kHz PCM; the turn ends on AssemblyAI end-of-turn ---
+async function toggleStreamingMic() {
+  if (capActive) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "mic_stop" }));
+    stopStreamingMic();
+    setTalkState("idle");
+    setStatus("Cancelled.");
+    return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+  } catch (err) {
+    setStatus("Microphone access denied.");
+    return;
+  }
+  captureCtx = new (window.AudioContext || window.webkitAudioContext)();
+  await captureCtx.audioWorklet.addModule("/mic-capture.js?v=" + (window.__BUILD__ || APP_VERSION));
+  const src = captureCtx.createMediaStreamSource(micStream);
+  captureNode = new AudioWorkletNode(captureCtx, "mic-capture");
+  src.connect(captureNode);
+  // Keep the graph running without audibly playing the mic back.
+  const sink = captureCtx.createGain();
+  sink.gain.value = 0;
+  captureNode.connect(sink);
+  sink.connect(captureCtx.destination);
+  capOutBuf = new Float32Array(0);
+  capActive = true;
+  captureNode.port.onmessage = (e) => onMicChunk(e.data);
+  ws.send(JSON.stringify({ type: "mic_start" }));
+  setTalkState("listening");
+  setStatus("Listening… speak, then pause.");
+}
+
+function onMicChunk(frame) {
+  if (!capActive || !ws || ws.readyState !== WebSocket.OPEN) return;
+  const down =
+    captureCtx.sampleRate === STREAM_RATE
+      ? frame
+      : resampleLinear(frame, captureCtx.sampleRate, STREAM_RATE);
+  const merged = new Float32Array(capOutBuf.length + down.length);
+  merged.set(capOutBuf);
+  merged.set(down, capOutBuf.length);
+  capOutBuf = merged;
+  const CH = 1600; // 100 ms @ 16 kHz
+  while (capOutBuf.length >= CH) {
+    const chunk = capOutBuf.subarray(0, CH);
+    const i16 = new Int16Array(CH);
+    for (let i = 0; i < CH; i++) {
+      const v = Math.max(-1, Math.min(1, chunk[i]));
+      i16[i] = v < 0 ? v * 32768 : v * 32767;
+    }
+    ws.send(i16.buffer);
+    capOutBuf = capOutBuf.slice(CH);
+  }
+}
+
+function stopStreamingMic() {
+  capActive = false;
+  if (micStream) micStream.getTracks().forEach((t) => t.stop());
+  if (captureCtx) captureCtx.close().catch(() => {});
+  captureCtx = null;
+  captureNode = null;
+  micStream = null;
+  capOutBuf = new Float32Array(0);
+}
+
+// --- Batch: record a clip, send on stop (Whisper) ---
 async function getRecorder() {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   return new MediaRecorder(stream);
 }
 
-async function toggleTalk() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+async function toggleBatchRecord() {
   if (!isRecording) {
     try {
       mediaRecorder = await getRecorder();
@@ -287,7 +406,7 @@ async function toggleTalk() {
       const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
       const buf = await blob.arrayBuffer();
       if (ws && ws.readyState === WebSocket.OPEN && buf.byteLength) {
-        ws.send(buf); // binary frame = recorded utterance
+        ws.send(buf);
         setStatus("Thinking…");
       }
       mediaRecorder.stream.getTracks().forEach((t) => t.stop());
@@ -301,7 +420,7 @@ async function toggleTalk() {
     mediaRecorder.stop();
     isRecording = false;
     $("talk").classList.remove("recording");
-    $("talk").textContent = "🎙 Hold to talk (or click to start/stop)";
+    $("talk").textContent = "🎙 Hold to talk (click to start/stop)";
   }
 }
 

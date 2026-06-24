@@ -25,6 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from .adapters.base import STTAdapter, TTSAdapter
 from .adapters.llm_anthropic import AnthropicLLM
 from .adapters.stt_assemblyai import AssemblyAISTT
+from .adapters.stt_assemblyai_stream import AssemblyAIStream
 from .adapters.stt_whisper import WhisperSTT
 from .adapters.tts_cartesia import CartesiaTTS
 from .adapters.tts_inworld import InworldTTS
@@ -294,8 +295,60 @@ async def voice_ws(websocket: WebSocket) -> None:
         await websocket.close()
         return
 
-    await emit_json({"type": "ready", "character": character.public_dict(), "model": model})
+    # Streaming STT (AssemblyAI realtime) is used when configured; otherwise the
+    # browser falls back to recording a clip and we batch-transcribe it.
+    streaming_enabled = get_settings().stt_provider == "assemblyai"
+    await emit_json(
+        {
+            "type": "ready",
+            "character": character.public_dict(),
+            "model": model,
+            "streaming": streaming_enabled,
+        }
+    )
     await pipeline.speak_greeting(emit_json, emit_audio)
+
+    # One streaming turn at a time: {aai: open stream, reader: its task}.
+    stream_state: dict = {"aai": None, "reader": None, "cancel": False}
+
+    async def stream_turn(aai: AssemblyAIStream) -> None:
+        """Read the realtime transcript; on end-of-turn, run the pipeline."""
+        final_text: str | None = None
+        try:
+            async for kind, text in aai.events():
+                if kind == "partial":
+                    await emit_json({"type": "partial_transcript", "text": text})
+                elif kind == "final":
+                    final_text = text
+                    break
+        except Exception as exc:
+            logger.exception("Streaming reader failed")
+            await emit_json({"type": "error", "message": f"Transcription stream error: {exc}"})
+        finally:
+            await aai.close()
+            stream_state["aai"] = None
+        await emit_json({"type": "mic_ended"})  # tell the browser to stop capturing
+        if stream_state["cancel"]:
+            stream_state["cancel"] = False
+            return
+        if final_text and final_text.strip():
+            await emit_json({"type": "transcript", "text": final_text})
+            latency = LatencyTracker()
+            latency.start("vad_stop")
+            latency.mark("transcript_ready")  # streaming: ready at end-of-speech
+            await pipeline.run_turn(final_text, latency, emit_json, emit_audio)
+        else:
+            await emit_json({"type": "info", "message": "Didn't catch that — try again."})
+
+    async def start_stream() -> None:
+        reader = stream_state["reader"]
+        if reader is not None and not reader.done():
+            return  # a turn is still being processed
+        aai = AssemblyAIStream()
+        await aai.connect()
+        stream_state["aai"] = aai
+        stream_state["cancel"] = False
+        stream_state["reader"] = asyncio.create_task(stream_turn(aai))
 
     # --- turn loop ---
     try:
@@ -304,14 +357,20 @@ async def voice_ws(websocket: WebSocket) -> None:
             if message.get("type") == "websocket.disconnect":
                 break
 
-            latency = LatencyTracker()
-
-            # Voice turn: a complete recorded clip arrived as a binary frame.
+            # Binary frame: live PCM for an open stream, else a batch clip.
             if message.get("bytes") is not None:
-                latency.start("vad_stop")  # browser already endpointed (click-to-talk)
-                audio = message["bytes"]
+                aai = stream_state["aai"]
+                if aai is not None:
+                    await aai.send_audio(message["bytes"])
+                    continue
+                if streaming_enabled:
+                    # Streaming mode but no open stream — these are stray frames
+                    # arriving after a turn finalized; drop them (never batch).
+                    continue
+                latency = LatencyTracker()
+                latency.start("vad_stop")
                 try:
-                    transcript = await get_stt().transcribe(audio)
+                    transcript = await get_stt().transcribe(message["bytes"])
                 except Exception as exc:
                     logger.exception("STT failed")
                     await emit_json({"type": "error", "message": f"Transcription failed: {exc}"})
@@ -323,16 +382,29 @@ async def voice_ws(websocket: WebSocket) -> None:
                 await emit_json({"type": "transcript", "text": transcript})
                 await pipeline.run_turn(transcript, latency, emit_json, emit_audio)
 
-            # Text turn: a typed message (used by the text-first vertical slice).
             elif message.get("text") is not None:
                 try:
                     data = json.loads(message["text"])
                 except json.JSONDecodeError:
                     continue
-                if data.get("type") == "text":
+                mtype = data.get("type")
+                if mtype == "mic_start":
+                    try:
+                        await start_stream()
+                    except Exception as exc:
+                        logger.exception("Failed to start streaming STT")
+                        await emit_json({"type": "error", "message": f"Couldn't start mic: {exc}"})
+                        await emit_json({"type": "mic_ended"})
+                elif mtype == "mic_stop":
+                    aai = stream_state["aai"]
+                    if aai is not None:
+                        stream_state["cancel"] = True
+                        await aai.close()
+                elif mtype == "text":
                     user_text = (data.get("text") or "").strip()
                     if not user_text:
                         continue
+                    latency = LatencyTracker()
                     latency.start("vad_stop")
                     latency.mark("transcript_ready")  # no STT for typed input
                     await emit_json({"type": "transcript", "text": user_text})
@@ -342,6 +414,9 @@ async def voice_ws(websocket: WebSocket) -> None:
     except Exception:
         logger.exception("WebSocket loop error")
     finally:
+        aai = stream_state.get("aai")
+        if aai is not None:
+            await aai.close()
         logger.info("Session for '%s' closed", slug)
 
 
