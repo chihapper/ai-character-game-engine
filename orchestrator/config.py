@@ -68,11 +68,12 @@ class Settings(BaseSettings):
     # "whisper" (local faster-whisper).
     stt_provider: str = "whisper"
     # AssemblyAI streaming endpointing (ms). Defaults (100/1000) cut off slow or
-    # disfluent speakers; these wider values wait through mid-thought pauses and
-    # "umm"s. min = pause before a complete-looking sentence ends; max = hard cap
-    # on silence before any turn is force-ended. Raise max if you still get cut off.
-    assemblyai_min_turn_silence: int = 400
-    assemblyai_max_turn_silence: int = 2400
+    # disfluent speakers. min = dead-air after a complete sentence before the turn
+    # ends (the only value that adds per-turn latency — kept snappy, ~natural human
+    # turn-taking gap). max = how long it waits through a mid-thought pause / "umm"
+    # before force-ending (near-free: complete sentences never wait this long).
+    assemblyai_min_turn_silence: int = 300
+    assemblyai_max_turn_silence: int = 1800
     # faster-whisper model size. "base.en" balances speed/accuracy on CPU.
     whisper_model: str = "base.en"
     # CPU is the portable default and needs no CUDA DLLs. Set WHISPER_DEVICE=cuda
