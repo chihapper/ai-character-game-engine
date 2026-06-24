@@ -13,6 +13,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Repo root = parent of the `orchestrator/` package.
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CHARACTERS_DIR = Path(__file__).resolve().parent / "characters"
+PROFILES_DIR = Path(__file__).resolve().parent / "profiles"  # per-speaker cadence
 WEB_DIR = ROOT_DIR / "web"
 
 # The single audio format we stream to the browser, everywhere in the app.

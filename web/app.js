@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-streaming-4";
+const APP_VERSION = "2026-06-24-profiles-5";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -174,6 +174,7 @@ function setConnected(isConnected) {
   $("send").disabled = !isConnected;
   $("character").disabled = isConnected;
   $("model").disabled = isConnected;
+  $("profile").disabled = isConnected;
 }
 
 async function connect() {
@@ -191,8 +192,10 @@ async function connect() {
   }
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const model = $("model").value;
+  const profile = $("profile").value;
   ws = new WebSocket(
-    `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}&model=${encodeURIComponent(model)}`,
+    `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}` +
+      `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}`,
   );
   ws.binaryType = "arraybuffer";
 
@@ -469,6 +472,185 @@ async function loadModels() {
   }
 }
 
+// ============================================================ speaker profiles
+async function loadProfiles() {
+  const profs = await (await fetch("/api/profiles")).json();
+  // Conversation dropdown
+  const sel = $("profile");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Default cadence</option>';
+  for (const p of profs) {
+    const o = document.createElement("option");
+    o.value = p.slug;
+    o.textContent = "🎚 " + p.name;
+    sel.appendChild(o);
+  }
+  if (cur) sel.value = cur;
+  // Train-tab list
+  const list = $("train-list");
+  list.innerHTML = profs.length ? "" : '<div class="hint">No profiles yet — record one above.</div>';
+  for (const p of profs) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.justifyContent = "space-between";
+    row.style.marginTop = "6px";
+    const label = document.createElement("span");
+    label.textContent = `${p.name} — finishes after ${p.min_turn_silence}ms, waits up to ${p.max_turn_silence}ms`;
+    label.style.fontSize = "13px";
+    const del = document.createElement("button");
+    del.className = "btn ghost";
+    del.textContent = "Delete";
+    del.onclick = async () => {
+      await fetch("/api/profiles/" + p.slug, { method: "DELETE" });
+      loadProfiles();
+    };
+    row.appendChild(label);
+    row.appendChild(del);
+    list.appendChild(row);
+  }
+}
+
+// ============================================================ voice calibration
+let calWs = null;
+let calCtx = null;
+let calNode = null;
+let calStream = null;
+let calActive = false;
+let calBuf = new Float32Array(0);
+let calResult = null;
+
+async function toggleCalibration() {
+  if (calActive) {
+    if (calWs && calWs.readyState === WebSocket.OPEN) {
+      calWs.send(JSON.stringify({ type: "mic_stop" }));
+    }
+    stopCalibrationCapture();
+    $("train-record").textContent = "● Start recording";
+    $("train-status").textContent = "Analyzing your cadence…";
+    return;
+  }
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  calWs = new WebSocket(`${proto}://${location.host}/ws/calibrate`);
+  calWs.binaryType = "arraybuffer";
+  calResult = null;
+  $("train-result").style.display = "none";
+  calWs.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) return;
+    const d = JSON.parse(e.data);
+    if (d.type === "calibration_progress") {
+      $("train-status").textContent = `Listening… keep reading (${d.samples} samples)`;
+    } else if (d.type === "calibration_result") {
+      showCalibrationResult(d);
+    } else if (d.type === "error") {
+      $("train-status").textContent = "⚠ " + d.message;
+      stopCalibrationCapture();
+      $("train-record").textContent = "● Start recording";
+    }
+  };
+  calWs.onopen = async () => {
+    try {
+      calStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch (err) {
+      $("train-status").textContent = "Microphone access denied.";
+      return;
+    }
+    calCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await calCtx.audioWorklet.addModule("/mic-capture.js?v=" + (window.__BUILD__ || APP_VERSION));
+    const src = calCtx.createMediaStreamSource(calStream);
+    calNode = new AudioWorkletNode(calCtx, "mic-capture");
+    src.connect(calNode);
+    const sink = calCtx.createGain();
+    sink.gain.value = 0;
+    calNode.connect(sink);
+    sink.connect(calCtx.destination);
+    calBuf = new Float32Array(0);
+    calActive = true;
+    calNode.port.onmessage = (e) => onCalChunk(e.data);
+    calWs.send(JSON.stringify({ type: "mic_start" }));
+    $("train-record").textContent = "■ Stop & analyze";
+    $("train-status").textContent = "Recording… read the passage aloud, naturally.";
+  };
+}
+
+function onCalChunk(frame) {
+  if (!calActive || !calWs || calWs.readyState !== WebSocket.OPEN) return;
+  const down =
+    calCtx.sampleRate === STREAM_RATE
+      ? frame
+      : resampleLinear(frame, calCtx.sampleRate, STREAM_RATE);
+  const merged = new Float32Array(calBuf.length + down.length);
+  merged.set(calBuf);
+  merged.set(down, calBuf.length);
+  calBuf = merged;
+  const CH = 1600;
+  while (calBuf.length >= CH) {
+    const chunk = calBuf.subarray(0, CH);
+    const i16 = new Int16Array(CH);
+    for (let i = 0; i < CH; i++) {
+      const v = Math.max(-1, Math.min(1, chunk[i]));
+      i16[i] = v < 0 ? v * 32768 : v * 32767;
+    }
+    calWs.send(i16.buffer);
+    calBuf = calBuf.slice(CH);
+  }
+}
+
+function stopCalibrationCapture() {
+  calActive = false;
+  if (calStream) calStream.getTracks().forEach((t) => t.stop());
+  if (calCtx) calCtx.close().catch(() => {});
+  calCtx = null;
+  calNode = null;
+  calStream = null;
+  calBuf = new Float32Array(0);
+}
+
+function showCalibrationResult(d) {
+  calResult = d;
+  $("train-record").textContent = "● Start recording";
+  $("train-status").textContent = "Done — review and save below.";
+  $("train-result").style.display = "block";
+  $("train-result-info").innerHTML =
+    `<div class="bar"><span class="name">Finishes after</span><span class="val">${d.min_turn_silence} ms</span></div>` +
+    `<div class="bar"><span class="name">Waits up to</span><span class="val">${d.max_turn_silence} ms</span></div>` +
+    `<div class="bar"><span class="name">Samples / median gap</span><span class="val">${d.samples} / ${d.median_gap_ms} ms</span></div>`;
+  if (calWs) {
+    calWs.close();
+    calWs = null;
+  }
+}
+
+async function saveProfile() {
+  const name = $("train-name").value.trim();
+  if (!name || !calResult) {
+    $("train-save-status").textContent = "Record + name it first.";
+    return;
+  }
+  const res = await fetch("/api/profiles", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      name,
+      min_turn_silence: calResult.min_turn_silence,
+      max_turn_silence: calResult.max_turn_silence,
+      stats: {
+        samples: calResult.samples,
+        median_gap_ms: calResult.median_gap_ms,
+        p85_pause_ms: calResult.p85_pause_ms,
+      },
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    $("train-save-status").textContent = "⚠ " + (data.error || "Failed.");
+    return;
+  }
+  $("train-save-status").textContent = `✓ Saved "${data.name}". Pick it in Conversation.`;
+  await loadProfiles();
+}
+
 // ============================================================ voice design mode
 let designedVoiceId = null;
 
@@ -702,6 +884,8 @@ $("c-voice-mode").addEventListener("change", switchVoiceMode);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
 $("edit-char").addEventListener("click", () => editCharacter($("character").value));
 $("c-new").addEventListener("click", newCharacterForm);
+$("train-record").addEventListener("click", toggleCalibration);
+$("train-save").addEventListener("click", saveProfile);
 $("c-design-desc").addEventListener("input", () => {
   designedVoiceId = null;
   $("c-design-playback").style.display = "none";
@@ -717,3 +901,4 @@ console.log("[AI Character Engine] app.js", APP_VERSION, "| server build", windo
 switchVoiceMode();
 loadCharacters();
 loadModels();
+loadProfiles();

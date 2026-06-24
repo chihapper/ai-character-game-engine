@@ -18,7 +18,15 @@ import json
 import logging
 import time
 
-from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    File,
+    Form,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -29,6 +37,15 @@ from .adapters.stt_assemblyai_stream import AssemblyAIStream
 from .adapters.stt_whisper import WhisperSTT
 from .adapters.tts_cartesia import CartesiaTTS
 from .adapters.tts_inworld import InworldTTS
+from .cadence import analyze_cadence
+from .profile_store import (
+    Profile,
+    delete_profile,
+    list_profiles,
+    load_profile,
+    save_profile,
+)
+from .profile_store import slugify as profile_slugify
 from .character_store import (
     Character,
     list_characters,
@@ -123,6 +140,41 @@ async def get_character_full(slug: str) -> JSONResponse:
 async def get_models() -> JSONResponse:
     """Selectable LLMs for the UI dropdown, plus the default selection."""
     return JSONResponse({"models": AVAILABLE_MODELS, "default": get_settings().llm_model})
+
+
+@app.get("/api/profiles")
+async def get_profiles() -> JSONResponse:
+    """Saved speaker cadence profiles (for the conversation dropdown)."""
+    return JSONResponse([p.public_dict() for p in list_profiles()])
+
+
+@app.post("/api/profiles")
+async def create_profile(request: Request) -> JSONResponse:
+    """Save a calibration result (min/max turn silence + stats) under a name."""
+    data = await request.json()
+    name = (data.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"error": "A profile name is required."}, status_code=400)
+    try:
+        prof = Profile(
+            slug=profile_slugify(name),
+            name=name,
+            min_turn_silence=int(data["min_turn_silence"]),
+            max_turn_silence=int(data["max_turn_silence"]),
+            stats=data.get("stats", {}) or {},
+        )
+    except (KeyError, ValueError, TypeError):
+        return JSONResponse(
+            {"error": "min_turn_silence and max_turn_silence are required."},
+            status_code=400,
+        )
+    save_profile(prof)
+    return JSONResponse(prof.public_dict(), status_code=201)
+
+
+@app.delete("/api/profiles/{slug}")
+async def remove_profile(slug: str) -> JSONResponse:
+    return JSONResponse({"deleted": delete_profile(slug)})
 
 
 _DEFAULT_PREVIEW_TEXT = (
@@ -281,6 +333,16 @@ async def voice_ws(websocket: WebSocket) -> None:
     requested_model = websocket.query_params.get("model", "")
     model = requested_model if requested_model in ALLOWED_MODEL_IDS else get_settings().llm_model
 
+    # Optional speaker cadence profile -> per-session endpointing timings.
+    profile_min = profile_max = None
+    profile_slug = websocket.query_params.get("profile", "")
+    if profile_slug:
+        try:
+            prof = load_profile(profile_slug)
+            profile_min, profile_max = prof.min_turn_silence, prof.max_turn_silence
+        except Exception:
+            pass
+
     # --- set up the session for the chosen character ---
     try:
         character = load_character(slug)
@@ -344,7 +406,7 @@ async def voice_ws(websocket: WebSocket) -> None:
         reader = stream_state["reader"]
         if reader is not None and not reader.done():
             return  # a turn is still being processed
-        aai = AssemblyAIStream()
+        aai = AssemblyAIStream(min_silence=profile_min, max_silence=profile_max)
         await aai.connect()
         stream_state["aai"] = aai
         stream_state["cancel"] = False
@@ -418,6 +480,93 @@ async def voice_ws(websocket: WebSocket) -> None:
         if aai is not None:
             await aai.close()
         logger.info("Session for '%s' closed", slug)
+
+
+@app.websocket("/ws/calibrate")
+async def calibrate_ws(websocket: WebSocket) -> None:
+    """Stream ~30s of speech to AssemblyAI with a WIDE end-of-turn window (so it
+    doesn't chop the speaker up), collect inter-word gaps, and derive their cadence
+    on stop. The browser then names + saves the result as a profile."""
+    await websocket.accept()
+
+    async def emit_json(payload: dict) -> None:
+        await websocket.send_json(payload)
+
+    if get_settings().stt_provider != "assemblyai":
+        await emit_json(
+            {"type": "error", "message": "Calibration needs AssemblyAI streaming STT."}
+        )
+        await websocket.close()
+        return
+
+    state: dict = {"aai": None, "reader": None, "gaps": []}
+    await emit_json({"type": "ready"})
+
+    async def collect(aai: AssemblyAIStream) -> None:
+        try:
+            async for turn in aai.turns():
+                words = turn.get("words") or []
+                for i in range(1, len(words)):
+                    gap = (words[i].get("start") or 0) - (words[i - 1].get("end") or 0)
+                    if gap >= 0:
+                        state["gaps"].append(gap)
+                await emit_json(
+                    {"type": "calibration_progress", "samples": len(state["gaps"])}
+                )
+        except Exception:
+            logger.exception("Calibration collector failed")
+
+    async def start() -> None:
+        if state["reader"] is not None and not state["reader"].done():
+            return
+        aai = AssemblyAIStream(min_silence=1500, max_silence=4000)  # wide -> natural pauses
+        await aai.connect()
+        state["aai"] = aai
+        state["gaps"] = []
+        state["reader"] = asyncio.create_task(collect(aai))
+
+    try:
+        while True:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.disconnect":
+                break
+            if message.get("bytes") is not None:
+                aai = state["aai"]
+                if aai is not None:
+                    await aai.send_audio(message["bytes"])
+            elif message.get("text") is not None:
+                try:
+                    data = json.loads(message["text"])
+                except json.JSONDecodeError:
+                    continue
+                mtype = data.get("type")
+                if mtype == "mic_start":
+                    try:
+                        await start()
+                    except Exception as exc:
+                        logger.exception("Failed to start calibration")
+                        await emit_json({"type": "error", "message": f"Couldn't start: {exc}"})
+                elif mtype == "mic_stop":
+                    aai = state["aai"]
+                    if aai is not None:
+                        await aai.close()
+                        state["aai"] = None
+                    if state["reader"] is not None:
+                        try:
+                            await asyncio.wait_for(state["reader"], timeout=5)
+                        except Exception:
+                            pass
+                    await emit_json(
+                        {"type": "calibration_result", **analyze_cadence(state["gaps"])}
+                    )
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.exception("Calibration WS error")
+    finally:
+        aai = state.get("aai")
+        if aai is not None:
+            await aai.close()
 
 
 # ---------------------------------------------------------- static frontend (last)

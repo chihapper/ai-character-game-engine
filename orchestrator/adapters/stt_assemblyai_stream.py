@@ -50,13 +50,19 @@ async def _mint_token(api_key: str) -> str:
 
 
 class AssemblyAIStream:
-    def __init__(self) -> None:
+    def __init__(self, min_silence: int | None = None, max_silence: int | None = None) -> None:
         settings = get_settings()
         if not settings.assemblyai_api_key:
             raise RuntimeError("ASSEMBLYAI_API_KEY is not set. Add it to your .env file.")
         self._api_key = settings.assemblyai_api_key
-        self._min_silence = settings.assemblyai_min_turn_silence
-        self._max_silence = settings.assemblyai_max_turn_silence
+        # Per-session overrides (e.g. a speaker profile, or a wide calibration window)
+        # fall back to the global config defaults.
+        self._min_silence = (
+            min_silence if min_silence is not None else settings.assemblyai_min_turn_silence
+        )
+        self._max_silence = (
+            max_silence if max_silence is not None else settings.assemblyai_max_turn_silence
+        )
         self._ws = None  # active websocket connection, or None
 
     async def connect(self) -> None:
@@ -101,6 +107,21 @@ class AssemblyAIStream:
                 return
             elif mtype == "error" or msg.get("error"):
                 logger.warning("AssemblyAI streaming error: %s", str(msg)[:200])
+
+    async def turns(self) -> AsyncIterator[dict]:
+        """Yield full `Turn` message dicts (including `words` with timestamps).
+        Used by calibration to measure the speaker's natural pause cadence."""
+        if self._ws is None:
+            return
+        async for raw in self._ws:
+            try:
+                msg = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if msg.get("type") == "Turn":
+                yield msg
+            elif msg.get("type") in ("Termination", "SessionTerminated"):
+                return
 
     async def close(self) -> None:
         if self._ws is not None:

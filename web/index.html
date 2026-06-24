@@ -99,6 +99,7 @@
     <div class="tabs">
       <button class="tab active" data-view="conversation">Conversation</button>
       <button class="tab" data-view="create">Create Character</button>
+      <button class="tab" data-view="train">Train Voice</button>
     </div>
   </header>
 
@@ -108,6 +109,7 @@
       <div class="row">
         <select id="character"></select>
         <select id="model" title="Language model"></select>
+        <select id="profile" title="Voice cadence profile"></select>
         <button class="btn ghost" id="refresh">Refresh</button>
         <button class="btn ghost" id="edit-char">Edit</button>
         <button class="btn" id="connect">Connect</button>
@@ -198,6 +200,43 @@
           <button class="btn" id="c-create">Create character</button>
           <span class="status" id="c-status" style="margin:0"></span>
         </div>
+      </div>
+    </section>
+    <!-- ───────────────────────── Train Voice ───────────────────────── -->
+    <section class="view" id="view-train">
+      <div class="card">
+        <h2 style="margin:0 0 8px; font-size:16px">Train the engine to your voice</h2>
+        <p class="hint" style="margin-top:0">
+          Read the passage below aloud, naturally — pause where you'd naturally pause. The engine
+          measures your cadence and tunes when it decides you've finished talking, so it won't cut
+          you off (or feel laggy). Takes about 30 seconds. Save it as a profile to reuse.
+        </p>
+        <blockquote id="train-passage" style="border-left:3px solid var(--border); margin:14px 0; padding:8px 14px; color:var(--text); line-height:1.7">
+          The old road north hasn't been kind this winter. I left before dawn, when the frost still
+          held the ground, and walked until the light gave out. Somewhere past the second bridge I
+          lost the trail entirely — and, well, that's a story for another night. For now I just need
+          somewhere warm to sit, a drink that doesn't fight back, and maybe a moment to think about
+          where I'm headed next.
+        </blockquote>
+        <div class="row">
+          <button class="btn" id="train-record">● Start recording</button>
+          <span class="status" id="train-status" style="margin:0">Not recording.</span>
+        </div>
+
+        <div id="train-result" style="display:none; margin-top:14px">
+          <div class="latency">
+            <div class="headline" id="train-result-headline">Your cadence</div>
+            <div class="bars" id="train-result-info" style="font-family:inherit"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <input type="text" id="train-name" placeholder="Profile name (e.g. your name)" style="flex:1" />
+            <button class="btn" id="train-save">Save profile</button>
+            <span class="status" id="train-save-status" style="margin:0"></span>
+          </div>
+        </div>
+
+        <label style="margin-top:20px">Saved profiles</label>
+        <div id="train-list"></div>
       </div>
     </section>
   </main>
