@@ -65,8 +65,10 @@ class Settings(BaseSettings):
     # --- STT (step 2) ---
     # faster-whisper model size. "base.en" balances speed/accuracy on CPU.
     whisper_model: str = "base.en"
-    whisper_device: str = "auto"  # "auto" | "cpu" | "cuda"
-    whisper_compute_type: str = "default"
+    # CPU is the portable default and needs no CUDA DLLs. Set WHISPER_DEVICE=cuda
+    # only if you have a working CUDA 12 + cuBLAS install.
+    whisper_device: str = "cpu"  # "cpu" | "cuda"
+    whisper_compute_type: str = "int8"  # int8 is fast + accurate enough on CPU
 
     # --- Long-term memory (step 4) ---
     embedding_model: str = "all-MiniLM-L6-v2"

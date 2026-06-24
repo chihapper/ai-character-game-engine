@@ -60,7 +60,6 @@ class InworldTTS(TTSAdapter):
             "Authorization": self._auth_header,
             "Content-Type": "application/json",
         }
-        first_chunk = True
         # A generous read timeout: synthesis can take a moment for long sentences,
         # but connect should be quick.
         timeout = httpx.Timeout(30.0, connect=10.0)
@@ -83,10 +82,10 @@ class InworldTTS(TTSAdapter):
                     audio_b64 = (obj.get("result") or {}).get("audioContent")
                     if not audio_b64:
                         continue
-                    pcm = base64.b64decode(audio_b64)
-                    if first_chunk:
-                        pcm = strip_wav_header(pcm)
-                        first_chunk = False
+                    # Inworld wraps EVERY streamed chunk in its own WAV header, so
+                    # we strip the header off each one (not just the first) — an
+                    # un-stripped header plays as a click at every chunk boundary.
+                    pcm = strip_wav_header(base64.b64decode(audio_b64))
                     if pcm:
                         yield pcm
 
