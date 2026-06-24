@@ -156,6 +156,7 @@ function setConnected(isConnected) {
   $("text-input").disabled = !isConnected;
   $("send").disabled = !isConnected;
   $("character").disabled = isConnected;
+  $("model").disabled = isConnected;
 }
 
 function connect() {
@@ -166,7 +167,10 @@ function connect() {
   }
   ensureAudio(); // create the AudioContext from a user gesture so playback is allowed
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}`);
+  const model = $("model").value;
+  ws = new WebSocket(
+    `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}&model=${encodeURIComponent(model)}`,
+  );
   ws.binaryType = "arraybuffer";
 
   ws.onopen = () => {
@@ -193,6 +197,7 @@ function handleControl(msg) {
   switch (msg.type) {
     case "ready":
       currentCharacterName = msg.character.name;
+      if (msg.model) setStatus(`Connected to ${currentCharacterName} · ${msg.model}`);
       break;
     case "transcript":
       addMessage("user", msg.text);
@@ -306,6 +311,21 @@ async function loadCharacters() {
     const opt = document.createElement("option");
     opt.value = c.slug;
     opt.textContent = c.name;
+    select.appendChild(opt);
+  }
+}
+
+// ============================================================ model list
+async function loadModels() {
+  const res = await fetch("/api/models");
+  const data = await res.json();
+  const select = $("model");
+  select.innerHTML = "";
+  for (const m of data.models) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.label;
+    if (m.id === data.default) opt.selected = true;
     select.appendChild(opt);
   }
 }
@@ -441,3 +461,4 @@ $("c-record").addEventListener("click", toggleSampleRecord);
 $("c-create").addEventListener("click", createCharacter);
 
 loadCharacters();
+loadModels();

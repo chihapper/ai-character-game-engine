@@ -33,7 +33,12 @@ from .character_store import (
     save_character,
     slugify,
 )
-from .config import WEB_DIR, get_settings
+from .config import (
+    ALLOWED_MODEL_IDS,
+    AVAILABLE_MODELS,
+    WEB_DIR,
+    get_settings,
+)
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
@@ -67,6 +72,12 @@ def make_tts(provider: str) -> TTSAdapter:
 @app.get("/api/characters")
 async def get_characters() -> JSONResponse:
     return JSONResponse([c.public_dict() for c in list_characters()])
+
+
+@app.get("/api/models")
+async def get_models() -> JSONResponse:
+    """Selectable LLMs for the UI dropdown, plus the default selection."""
+    return JSONResponse({"models": AVAILABLE_MODELS, "default": get_settings().llm_model})
 
 
 @app.post("/api/characters")
@@ -140,10 +151,15 @@ async def voice_ws(websocket: WebSocket) -> None:
         async with send_lock:
             await websocket.send_bytes(chunk)
 
+    # Per-session model selection from the UI dropdown, validated against the
+    # allow-list so only known models reach the API.
+    requested_model = websocket.query_params.get("model", "")
+    model = requested_model if requested_model in ALLOWED_MODEL_IDS else get_settings().llm_model
+
     # --- set up the session for the chosen character ---
     try:
         character = load_character(slug)
-        llm = AnthropicLLM()
+        llm = AnthropicLLM(model=model)
         tts = make_tts(character.tts_provider)
         short_term = ShortTermMemory(max_turns=get_settings().short_term_turns)
         long_term = LongTermMemory(character.memory_namespace)
@@ -154,7 +170,7 @@ async def voice_ws(websocket: WebSocket) -> None:
         await websocket.close()
         return
 
-    await emit_json({"type": "ready", "character": character.public_dict()})
+    await emit_json({"type": "ready", "character": character.public_dict(), "model": model})
     await pipeline.speak_greeting(emit_json, emit_audio)
 
     # --- turn loop ---

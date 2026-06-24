@@ -22,6 +22,15 @@ AUDIO_SAMPLE_RATE = 24_000  # Hz
 AUDIO_CHANNELS = 1
 AUDIO_SAMPLE_WIDTH = 2  # bytes (16-bit signed little-endian PCM)
 
+# Selectable LLMs, surfaced in the UI dropdown and validated server-side. Single
+# source of truth for both the /api/models endpoint and the allow-list.
+AVAILABLE_MODELS = [
+    {"id": "claude-sonnet-4-6", "label": "Sonnet 4.6 — richer roleplay"},
+    {"id": "claude-haiku-4-5", "label": "Haiku 4.5 — fastest"},
+    {"id": "claude-opus-4-8", "label": "Opus 4.8 — most capable (slower)"},
+]
+ALLOWED_MODEL_IDS = {m["id"] for m in AVAILABLE_MODELS}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -36,9 +45,9 @@ class Settings(BaseSettings):
     cartesia_api_key: str = ""
 
     # --- LLM ---
-    # claude-haiku-4-5 is the snappy default for real-time dialogue.
-    # Swap to claude-sonnet-4-6 for richer personality at some latency cost.
-    llm_model: str = "claude-haiku-4-5"
+    # Default model when the UI doesn't specify one. Sonnet 4.6 for richer
+    # roleplay; the dropdown lets you switch to Haiku (faster) per session.
+    llm_model: str = "claude-sonnet-4-6"
     llm_max_tokens: int = 1024
 
     # --- TTS ---
