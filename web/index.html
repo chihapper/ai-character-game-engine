@@ -206,26 +206,33 @@
     <section class="view" id="view-train">
       <div class="card">
         <h2 style="margin:0 0 8px; font-size:16px">Train the engine to your voice</h2>
-        <p class="hint" style="margin-top:0">
-          Read the passage below aloud, naturally — pause where you'd naturally pause. The engine
-          measures your cadence and tunes when it decides you've finished talking, so it won't cut
-          you off (or feel laggy). Takes about 30 seconds. Save it as a profile to reuse.
-        </p>
-        <blockquote id="train-passage" style="border-left:3px solid var(--border); margin:14px 0; padding:8px 14px; color:var(--text); line-height:1.7">
-          The old road north hasn't been kind this winter. I left before dawn, when the frost still
-          held the ground, and walked until the light gave out. Somewhere past the second bridge I
-          lost the trail entirely — and, well, that's a story for another night. For now I just need
-          somewhere warm to sit, a drink that doesn't fight back, and maybe a moment to think about
-          where I'm headed next.
-        </blockquote>
-        <div class="row">
-          <button class="btn" id="train-record">● Start recording</button>
-          <span class="status" id="train-status" style="margin:0">Not recording.</span>
+
+        <!-- IDLE -->
+        <div id="train-idle">
+          <p class="hint" style="margin-top:0; line-height:1.7">
+            Two short parts, about a minute total. First you'll <strong>read a passage</strong> (a clean
+            baseline), then you'll <strong>answer a few questions out loud</strong> the way you naturally
+            would — pauses, "umm"s, false starts and all. That second part is the important one: it captures
+            how you <em>actually</em> talk, so the engine learns when you're really done versus just thinking.
+          </p>
+          <button class="btn" id="train-begin">Begin training</button>
         </div>
 
+        <!-- ACTIVE (reading, then questions) -->
+        <div id="train-active" style="display:none">
+          <div class="status" id="train-phase-label" style="color:var(--accent-2); margin-top:0"></div>
+          <blockquote id="train-prompt" style="border-left:3px solid var(--border); margin:12px 0; padding:10px 14px; color:var(--text); line-height:1.7; font-size:15px"></blockquote>
+          <div class="row">
+            <button class="btn" id="train-next">Next →</button>
+            <button class="btn ghost" id="train-cancel">Cancel</button>
+            <span class="status" id="train-status" style="margin:0"></span>
+          </div>
+        </div>
+
+        <!-- RESULT -->
         <div id="train-result" style="display:none; margin-top:14px">
           <div class="latency">
-            <div class="headline" id="train-result-headline">Your cadence</div>
+            <div class="headline">Your cadence</div>
             <div class="bars" id="train-result-info" style="font-family:inherit"></div>
           </div>
           <div class="row" style="margin-top:12px">

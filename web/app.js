@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-profiles-5";
+const APP_VERSION = "2026-06-24-train2-6";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -519,59 +519,128 @@ let calActive = false;
 let calBuf = new Float32Array(0);
 let calResult = null;
 
-async function toggleCalibration() {
-  if (calActive) {
-    if (calWs && calWs.readyState === WebSocket.OPEN) {
-      calWs.send(JSON.stringify({ type: "mic_stop" }));
-    }
-    stopCalibrationCapture();
-    $("train-record").textContent = "● Start recording";
-    $("train-status").textContent = "Analyzing your cadence…";
+const TRAIN_PASSAGE =
+  "The old road north hasn't been kind this winter. I left before dawn, when the frost " +
+  "still held the ground, and walked until the light gave out. Somewhere past the second " +
+  "bridge I lost the trail entirely — and, well, that's a story for another night. For now " +
+  "I just need somewhere warm to sit and a moment to think about where I'm headed next.";
+
+const TRAIN_QUESTIONS = [
+  "To start — what did you do earlier today, before this?",
+  "Tell me about something you're looking forward to this week.",
+  "Describe a place you really like. What's it like to be there?",
+  "If you had a free afternoon tomorrow, how would you spend it?",
+  "Last one — talk me through something you're trying to decide right now.",
+];
+
+// trainStep: -1 idle | 0 reading | 1..N answering question N
+let trainStep = -1;
+
+function startCalibrationSession() {
+  return new Promise((resolve, reject) => {
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    calWs = new WebSocket(`${proto}://${location.host}/ws/calibrate`);
+    calWs.binaryType = "arraybuffer";
+    calResult = null;
+    calWs.onerror = () => reject(new Error("calibration socket error"));
+    calWs.onmessage = (e) => {
+      if (e.data instanceof ArrayBuffer) return;
+      const d = JSON.parse(e.data);
+      if (d.type === "calibration_progress") {
+        $("train-status").textContent = `🎙 Recording… (${d.samples} pauses measured)`;
+      } else if (d.type === "calibration_result") {
+        showCalibrationResult(d);
+      } else if (d.type === "error") {
+        $("train-status").textContent = "⚠ " + d.message;
+        cancelTraining();
+      }
+    };
+    calWs.onopen = async () => {
+      try {
+        calStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+      } catch (err) {
+        reject(new Error("Microphone access denied."));
+        return;
+      }
+      calCtx = new (window.AudioContext || window.webkitAudioContext)();
+      await calCtx.audioWorklet.addModule("/mic-capture.js?v=" + (window.__BUILD__ || APP_VERSION));
+      const src = calCtx.createMediaStreamSource(calStream);
+      calNode = new AudioWorkletNode(calCtx, "mic-capture");
+      src.connect(calNode);
+      const sink = calCtx.createGain();
+      sink.gain.value = 0;
+      calNode.connect(sink);
+      sink.connect(calCtx.destination);
+      calBuf = new Float32Array(0);
+      calActive = true;
+      calNode.port.onmessage = (e) => onCalChunk(e.data);
+      calWs.send(JSON.stringify({ type: "mic_start" }));
+      resolve();
+    };
+  });
+}
+
+// --- guided two-phase wizard: read a passage, then answer questions ---
+async function beginTraining() {
+  $("train-status").textContent = "Starting…";
+  try {
+    await startCalibrationSession();
+  } catch (err) {
+    $("train-status").textContent = "⚠ " + err.message;
     return;
   }
-  const proto = location.protocol === "https:" ? "wss" : "ws";
-  calWs = new WebSocket(`${proto}://${location.host}/ws/calibrate`);
-  calWs.binaryType = "arraybuffer";
-  calResult = null;
+  trainStep = 0;
+  $("train-idle").style.display = "none";
   $("train-result").style.display = "none";
-  calWs.onmessage = (e) => {
-    if (e.data instanceof ArrayBuffer) return;
-    const d = JSON.parse(e.data);
-    if (d.type === "calibration_progress") {
-      $("train-status").textContent = `Listening… keep reading (${d.samples} samples)`;
-    } else if (d.type === "calibration_result") {
-      showCalibrationResult(d);
-    } else if (d.type === "error") {
-      $("train-status").textContent = "⚠ " + d.message;
-      stopCalibrationCapture();
-      $("train-record").textContent = "● Start recording";
-    }
-  };
-  calWs.onopen = async () => {
-    try {
-      calStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-    } catch (err) {
-      $("train-status").textContent = "Microphone access denied.";
-      return;
-    }
-    calCtx = new (window.AudioContext || window.webkitAudioContext)();
-    await calCtx.audioWorklet.addModule("/mic-capture.js?v=" + (window.__BUILD__ || APP_VERSION));
-    const src = calCtx.createMediaStreamSource(calStream);
-    calNode = new AudioWorkletNode(calCtx, "mic-capture");
-    src.connect(calNode);
-    const sink = calCtx.createGain();
-    sink.gain.value = 0;
-    calNode.connect(sink);
-    sink.connect(calCtx.destination);
-    calBuf = new Float32Array(0);
-    calActive = true;
-    calNode.port.onmessage = (e) => onCalChunk(e.data);
-    calWs.send(JSON.stringify({ type: "mic_start" }));
-    $("train-record").textContent = "■ Stop & analyze";
-    $("train-status").textContent = "Recording… read the passage aloud, naturally.";
-  };
+  $("train-active").style.display = "block";
+  renderTrainStep();
+}
+
+function renderTrainStep() {
+  if (trainStep === 0) {
+    $("train-phase-label").textContent = "Part 1 of 2 — read this aloud, naturally";
+    $("train-prompt").textContent = TRAIN_PASSAGE;
+    $("train-next").textContent = "Done reading — start questions →";
+  } else {
+    const n = trainStep;
+    $("train-phase-label").textContent =
+      `Part 2 of 2 — question ${n} of ${TRAIN_QUESTIONS.length} (answer out loud, take your time)`;
+    $("train-prompt").textContent = TRAIN_QUESTIONS[n - 1];
+    $("train-next").textContent =
+      n >= TRAIN_QUESTIONS.length ? "Finish & analyze" : "Next question →";
+  }
+}
+
+function trainNext() {
+  if (trainStep < 0) return;
+  trainStep += 1;
+  if (trainStep > TRAIN_QUESTIONS.length) finishTraining();
+  else renderTrainStep();
+}
+
+function finishTraining() {
+  trainStep = -1;
+  $("train-active").style.display = "none";
+  $("train-status").textContent = "Analyzing your cadence…";
+  if (calWs && calWs.readyState === WebSocket.OPEN) {
+    calWs.send(JSON.stringify({ type: "mic_stop" }));
+  }
+  stopCalibrationCapture(); // result arrives via onmessage
+}
+
+function cancelTraining() {
+  trainStep = -1;
+  if (calWs && calWs.readyState === WebSocket.OPEN) {
+    calWs.send(JSON.stringify({ type: "mic_stop" }));
+    calWs.close();
+  }
+  calWs = null;
+  stopCalibrationCapture();
+  $("train-active").style.display = "none";
+  $("train-idle").style.display = "block";
+  $("train-status").textContent = "Cancelled.";
 }
 
 function onCalChunk(frame) {
@@ -609,13 +678,12 @@ function stopCalibrationCapture() {
 
 function showCalibrationResult(d) {
   calResult = d;
-  $("train-record").textContent = "● Start recording";
-  $("train-status").textContent = "Done — review and save below.";
+  $("train-status").textContent = "Done — name it and save.";
   $("train-result").style.display = "block";
   $("train-result-info").innerHTML =
-    `<div class="bar"><span class="name">Finishes after</span><span class="val">${d.min_turn_silence} ms</span></div>` +
-    `<div class="bar"><span class="name">Waits up to</span><span class="val">${d.max_turn_silence} ms</span></div>` +
-    `<div class="bar"><span class="name">Samples / median gap</span><span class="val">${d.samples} / ${d.median_gap_ms} ms</span></div>`;
+    `<div class="bar"><span class="name">Replies after you pause</span><span class="val">${d.min_turn_silence} ms</span></div>` +
+    `<div class="bar"><span class="name">Waits through pauses up to</span><span class="val">${d.max_turn_silence} ms</span></div>` +
+    `<div class="bar"><span class="name">Pauses measured / median gap</span><span class="val">${d.samples} / ${d.median_gap_ms} ms</span></div>`;
   if (calWs) {
     calWs.close();
     calWs = null;
@@ -648,6 +716,8 @@ async function saveProfile() {
     return;
   }
   $("train-save-status").textContent = `✓ Saved "${data.name}". Pick it in Conversation.`;
+  $("train-result").style.display = "none";
+  $("train-idle").style.display = "block";
   await loadProfiles();
 }
 
@@ -884,7 +954,9 @@ $("c-voice-mode").addEventListener("change", switchVoiceMode);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
 $("edit-char").addEventListener("click", () => editCharacter($("character").value));
 $("c-new").addEventListener("click", newCharacterForm);
-$("train-record").addEventListener("click", toggleCalibration);
+$("train-begin").addEventListener("click", beginTraining);
+$("train-next").addEventListener("click", trainNext);
+$("train-cancel").addEventListener("click", cancelTraining);
 $("train-save").addEventListener("click", saveProfile);
 $("c-design-desc").addEventListener("input", () => {
   designedVoiceId = null;
