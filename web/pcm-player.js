@@ -33,8 +33,13 @@ class PCMPlayer extends AudioWorkletProcessor {
         this.cur = this.queue.shift() || null;
         this.pos = 0;
         if (!this.cur) {
-          // Underrun: output silence (no click, no gap artifact).
-          while (i < out.length) out[i++] = 0;
+          // Underrun. Output inaudible dither (~-80 dBFS) rather than pure
+          // digital silence: the OS audio endpoint (e.g. Windows WASAPI) powers
+          // down on true silence and then clips the first samples when real audio
+          // resumes. Constant low-level noise keeps the device awake — this is
+          // what makes the clipped-first-word intermittent (it only clips after
+          // the device has gone idle).
+          while (i < out.length) out[i++] = (Math.random() - 0.5) * 1e-4;
           break;
         }
       }

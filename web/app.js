@@ -15,7 +15,7 @@
 
 const SAMPLE_RATE = 24000;
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-worklet-2";
+const APP_VERSION = "2026-06-24-keepalive-3";
 
 // ---- DOM helpers ----
 const $ = (id) => document.getElementById(id);
