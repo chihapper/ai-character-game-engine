@@ -53,6 +53,18 @@ logger = logging.getLogger("orchestrator")
 
 app = FastAPI(title="Real-Time AI Character Engine")
 
+
+@app.middleware("http")
+async def no_cache_frontend(request, call_next):
+    """Serve the frontend with no-cache so edits always take effect on refresh —
+    no more 'did you hard-refresh?' confusion during development."""
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith((".js", ".html", ".css")):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
+
 # One shared (lazily-loaded) Whisper model for the whole process.
 _stt = WhisperSTT()
 
@@ -72,6 +84,25 @@ def make_tts(provider: str) -> TTSAdapter:
 @app.get("/api/characters")
 async def get_characters() -> JSONResponse:
     return JSONResponse([c.public_dict() for c in list_characters()])
+
+
+@app.get("/api/characters/{slug}/full")
+async def get_character_full(slug: str) -> JSONResponse:
+    """Full editable fields for one character (the list endpoint omits the prompt)."""
+    try:
+        c = load_character(slug)
+    except FileNotFoundError:
+        return JSONResponse({"error": "Character not found."}, status_code=404)
+    return JSONResponse(
+        {
+            "slug": c.slug,
+            "name": c.name,
+            "system_prompt": c.system_prompt,
+            "greeting": c.greeting,
+            "tts_provider": c.tts_provider,
+            "voice_id": c.voice_id,
+        }
+    )
 
 
 @app.get("/api/models")
@@ -160,6 +191,54 @@ async def create_character(
     save_character(character)
     logger.info("Created character '%s' (voice=%s, provider=%s)", slug, resolved_voice_id, provider)
     return JSONResponse(character.public_dict(), status_code=201)
+
+
+@app.post("/api/characters/{slug}")
+async def update_character(
+    slug: str,
+    name: str = Form(...),
+    system_prompt: str = Form(...),
+    greeting: str = Form(""),
+    tts_provider: str = Form(""),
+    voice_id: str = Form(""),
+    design_voice_id: str = Form(""),
+    sample: UploadFile | None = File(None),
+) -> JSONResponse:
+    """Update an existing character. The slug + memory namespace stay stable (so
+    past memories survive a rename). The voice is only changed if a new source is
+    given (recorded sample, designed voice, or a different preset id)."""
+    try:
+        existing = load_character(slug)
+    except FileNotFoundError:
+        return JSONResponse({"error": "Character not found."}, status_code=404)
+
+    provider = tts_provider or existing.tts_provider
+    resolved_voice_id = existing.voice_id  # keep current voice unless changed
+    try:
+        sample_bytes = await sample.read() if sample is not None else b""
+        if sample_bytes:
+            resolved_voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
+        elif design_voice_id.strip():
+            resolved_voice_id = await InworldTTS().publish_voice(design_voice_id.strip(), name)
+            provider = "inworld"
+        elif voice_id.strip():
+            resolved_voice_id = voice_id.strip()
+    except Exception as exc:
+        logger.exception("Voice update failed")
+        return JSONResponse({"error": f"Voice update failed: {exc}"}, status_code=502)
+
+    updated = Character(
+        slug=slug,
+        name=name,
+        system_prompt=system_prompt,
+        voice_id=resolved_voice_id,
+        tts_provider=provider,
+        greeting=greeting,
+        memory_namespace=existing.memory_namespace,
+    )
+    save_character(updated)
+    logger.info("Updated character '%s'", slug)
+    return JSONResponse(updated.public_dict())
 
 
 # ----------------------------------------------------------------------- WS loop

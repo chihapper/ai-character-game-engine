@@ -108,6 +108,7 @@
         <select id="character"></select>
         <select id="model" title="Language model"></select>
         <button class="btn ghost" id="refresh">Refresh</button>
+        <button class="btn ghost" id="edit-char">Edit</button>
         <button class="btn" id="connect">Connect</button>
         <button class="btn ghost" id="disconnect" disabled>Disconnect</button>
       </div>
@@ -131,6 +132,10 @@
     <!-- ───────────────────────── Create Character ───────────────────── -->
     <section class="view" id="view-create">
       <div class="card">
+        <div class="row" style="justify-content:space-between; margin-bottom:10px">
+          <span id="c-mode-label" class="status" style="margin:0; color:var(--accent-2)">Creating a new character</span>
+          <button class="btn ghost" id="c-new" style="display:none">+ New (cancel edit)</button>
+        </div>
         <label for="c-name">Name</label>
         <input type="text" id="c-name" placeholder="Aria" style="width:100%" />
 

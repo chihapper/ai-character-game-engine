@@ -14,7 +14,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SAMPLE_RATE = 24000;
-const PLAYBACK_PRIME = 0.12; // seconds of jitter cushion before playback starts
 
 // ---- DOM helpers ----
 const $ = (id) => document.getElementById(id);
@@ -31,48 +30,49 @@ document.querySelectorAll(".tab").forEach((tab) => {
 });
 
 // ============================================================ audio playback
-// A single AudioContext, with a running "next start time" so frames play
-// gaplessly back-to-back as they stream in.
+// A single, continuously-running AudioWorklet node plays streamed PCM. Because
+// the node never stops, there's no per-response context warm-up (no clipped first
+// word) and no per-buffer boundaries (no clicks). See web/pcm-player.js.
 let audioCtx = null;
-let nextStartTime = 0;
+let pcmNode = null;
 let pcmCarry = new Uint8Array(0); // holds a trailing odd byte across frames
 
-function ensureAudio() {
+async function ensureAudio() {
   if (!audioCtx) {
     const Ctor = window.AudioContext || window.webkitAudioContext;
     try {
-      // Match the stream's sample rate so each frame plays natively. A context
-      // running at a different rate (commonly 48 kHz) resamples every buffer
-      // independently, producing a click at each ~0.5 s buffer boundary.
       audioCtx = new Ctor({ sampleRate: SAMPLE_RATE });
     } catch (e) {
-      audioCtx = new Ctor(); // browser refused the explicit rate; fall back
+      audioCtx = new Ctor(); // browser refused the explicit rate; we resample
     }
+    await audioCtx.audioWorklet.addModule("/pcm-player.js");
+    pcmNode = new AudioWorkletNode(audioCtx, "pcm-player");
+    pcmNode.connect(audioCtx.destination);
   }
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  if (audioCtx.state === "suspended") await audioCtx.resume();
 }
 
 function resetPlaybackClock() {
   pcmCarry = new Uint8Array(0);
-  if (!audioCtx) {
-    nextStartTime = 0;
-    return;
+  if (pcmNode) pcmNode.port.postMessage({ type: "reset" });
+}
+
+function resampleLinear(input, fromRate, toRate) {
+  if (fromRate === toRate) return input;
+  const ratio = toRate / fromRate;
+  const out = new Float32Array(Math.round(input.length * ratio));
+  for (let i = 0; i < out.length; i++) {
+    const pos = i / ratio;
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(i0 + 1, input.length - 1);
+    const frac = pos - i0;
+    out[i] = input[i0] * (1 - frac) + input[i1] * frac;
   }
-  const start = audioCtx.currentTime + 0.04;
-  // Prepend a short silent pad. After sitting idle between responses the
-  // AudioContext drops its first few output samples when it restarts; letting it
-  // eat this silence (instead of the first word) fixes the clipped-first-word.
-  const padSamples = Math.round(SAMPLE_RATE * 0.12);
-  const pad = audioCtx.createBuffer(1, padSamples, SAMPLE_RATE);
-  const src = audioCtx.createBufferSource();
-  src.buffer = pad;
-  src.connect(audioCtx.destination);
-  src.start(start);
-  nextStartTime = start + pad.duration;
+  return out;
 }
 
 function playPcmFrame(arrayBuffer) {
-  ensureAudio();
+  if (!pcmNode) return;
   // Prepend any leftover odd byte from the previous frame.
   let bytes = new Uint8Array(arrayBuffer);
   if (pcmCarry.length) {
@@ -90,19 +90,12 @@ function playPcmFrame(arrayBuffer) {
   if (bytes.length === 0) return;
 
   const samples = new Int16Array(bytes.buffer, bytes.byteOffset, bytes.length / 2);
-  const f32 = new Float32Array(samples.length);
+  let f32 = new Float32Array(samples.length);
   for (let i = 0; i < samples.length; i++) f32[i] = samples[i] / 32768;
-
-  const buf = audioCtx.createBuffer(1, f32.length, SAMPLE_RATE);
-  buf.getChannelData(0).set(f32);
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  src.connect(audioCtx.destination);
-
-  const now = audioCtx.currentTime;
-  if (nextStartTime < now) nextStartTime = now + PLAYBACK_PRIME; // underran — re-cushion
-  src.start(nextStartTime);
-  nextStartTime += buf.duration;
+  if (audioCtx.sampleRate !== SAMPLE_RATE) {
+    f32 = resampleLinear(f32, SAMPLE_RATE, audioCtx.sampleRate);
+  }
+  pcmNode.port.postMessage(f32, [f32.buffer]); // transfer ownership
 }
 
 // ============================================================ conversation log
@@ -171,13 +164,19 @@ function setConnected(isConnected) {
   $("model").disabled = isConnected;
 }
 
-function connect() {
+async function connect() {
   const slug = $("character").value;
   if (!slug) {
     setStatus("Pick a character first.");
     return;
   }
-  ensureAudio(); // create the AudioContext from a user gesture so playback is allowed
+  // Create the AudioContext + worklet from this user gesture so playback is allowed.
+  try {
+    await ensureAudio();
+  } catch (e) {
+    setStatus("Audio init failed: " + e);
+    return;
+  }
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const model = $("model").value;
   ws = new WebSocket(
@@ -496,13 +495,17 @@ async function createCharacter() {
     form.append("voice_id", presetVoice);
   }
 
-  $("c-status").textContent = "Creating (cloning voice if needed)…";
+  const url = editingSlug ? `/api/characters/${editingSlug}` : "/api/characters";
+  $("c-status").textContent = editingSlug ? "Saving…" : "Creating (cloning/designing if needed)…";
   $("c-create").disabled = true;
   try {
-    const res = await fetch("/api/characters", { method: "POST", body: form });
+    const res = await fetch(url, { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) {
-      $("c-status").textContent = "⚠ " + (data.error || "Failed to create.");
+      $("c-status").textContent = "⚠ " + (data.error || "Failed.");
+    } else if (editingSlug) {
+      $("c-status").textContent = `✓ Saved "${data.name}". Reconnect in Conversation to hear changes.`;
+      await loadCharacters();
     } else {
       $("c-status").textContent = `✓ Created "${data.name}". Switch to Conversation and refresh.`;
       await loadCharacters();
@@ -512,6 +515,48 @@ async function createCharacter() {
   } finally {
     $("c-create").disabled = false;
   }
+}
+
+// ============================================================ edit / new
+let editingSlug = null;
+
+async function editCharacter(slug) {
+  if (!slug) {
+    setStatus("Pick a character to edit.");
+    return;
+  }
+  const res = await fetch(`/api/characters/${slug}/full`);
+  if (!res.ok) {
+    setStatus("Couldn't load that character to edit.");
+    return;
+  }
+  const c = await res.json();
+  editingSlug = slug;
+  $("c-name").value = c.name;
+  $("c-prompt").value = c.system_prompt;
+  $("c-greeting").value = c.greeting;
+  $("c-provider").value = c.tts_provider || "inworld";
+  // Default to Preset mode showing the current voice id, so saving keeps the
+  // existing voice unless you switch to Design/Clone to replace it.
+  $("c-voice-mode").value = "preset";
+  $("c-voice-id").value = c.voice_id;
+  switchVoiceMode();
+  $("c-create").textContent = "Save changes";
+  $("c-mode-label").textContent = `Editing "${c.name}"`;
+  $("c-new").style.display = "inline-block";
+  $("c-status").textContent = "";
+  document.querySelector('.tab[data-view="create"]').click();
+}
+
+function newCharacterForm() {
+  editingSlug = null;
+  ["c-name", "c-prompt", "c-greeting", "c-voice-id"].forEach((id) => ($(id).value = ""));
+  designedVoiceId = null;
+  $("c-design-playback").style.display = "none";
+  $("c-create").textContent = "Create character";
+  $("c-mode-label").textContent = "Creating a new character";
+  $("c-new").style.display = "none";
+  $("c-status").textContent = "";
 }
 
 // ============================================================ wire up events
@@ -527,6 +572,8 @@ $("c-record").addEventListener("click", toggleSampleRecord);
 $("c-create").addEventListener("click", createCharacter);
 $("c-voice-mode").addEventListener("change", switchVoiceMode);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
+$("edit-char").addEventListener("click", () => editCharacter($("character").value));
+$("c-new").addEventListener("click", newCharacterForm);
 $("c-design-desc").addEventListener("input", () => {
   designedVoiceId = null;
   $("c-design-playback").style.display = "none";
