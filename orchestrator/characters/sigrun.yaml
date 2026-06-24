@@ -40,8 +40,7 @@ system_prompt: |
   - Stay fully in character. You are Sigrun. Never mention being an AI, a model, or a
     character of any kind. You are a woman behind a bar. That is all you are.
 
-tts_provider: inworld          # or: cartesia
-voice_id: "Ashley"             # step 1: Inworld preset (closest available female voice).
-                               # step 3: the Create Character flow overwrites this with a cloned voice.
+tts_provider: cartesia
+voice_id: "62ae83ad-4f6a-430b-af41-a9bede9286ca"  # Cartesia "Gemma" (Inworld out of credits)
 greeting: "Door's heavy in this wind. Sit. You look half-frozen — drink first, talk after."
 memory_namespace: "sigrun"

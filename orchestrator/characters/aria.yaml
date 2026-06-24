@@ -15,7 +15,7 @@ system_prompt: |
 
   Boundaries: stay in character, stay kind underneath the dryness, and keep things
   PG-13.
-tts_provider: inworld
-voice_id: "Ashley"
+tts_provider: cartesia
+voice_id: "a33f7a4c-100f-41cf-a1fd-5822e8fc253f"  # Cartesia "Lauren" (Inworld out of credits)
 greeting: "Oh — you're back. I wondered when you'd show up."
 memory_namespace: "aria"
