@@ -14,6 +14,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SAMPLE_RATE = 24000;
+// Bump this whenever app.js changes so we can confirm the browser loaded it.
+const APP_VERSION = "2026-06-24-worklet-2";
 
 // ---- DOM helpers ----
 const $ = (id) => document.getElementById(id);
@@ -45,7 +47,9 @@ async function ensureAudio() {
     } catch (e) {
       audioCtx = new Ctor(); // browser refused the explicit rate; we resample
     }
-    await audioCtx.audioWorklet.addModule("/pcm-player.js");
+    await audioCtx.audioWorklet.addModule(
+      "/pcm-player.js?v=" + (window.__BUILD__ || APP_VERSION),
+    );
     pcmNode = new AudioWorkletNode(audioCtx, "pcm-player");
     pcmNode.connect(audioCtx.destination);
   }
@@ -54,7 +58,12 @@ async function ensureAudio() {
 
 function resetPlaybackClock() {
   pcmCarry = new Uint8Array(0);
-  if (pcmNode) pcmNode.port.postMessage({ type: "reset" });
+  if (!pcmNode) return;
+  pcmNode.port.postMessage({ type: "reset" });
+  // Prime the queue with a short silence so the first real samples are never at
+  // the very edge of playback startup (defends the first word regardless of cause).
+  const pad = new Float32Array(Math.round(SAMPLE_RATE * 0.08));
+  pcmNode.port.postMessage(pad, [pad.buffer]);
 }
 
 function resampleLinear(input, fromRate, toRate) {
@@ -578,6 +587,13 @@ $("c-design-desc").addEventListener("input", () => {
   designedVoiceId = null;
   $("c-design-playback").style.display = "none";
 });
+
+const buildEl = $("build");
+if (buildEl) {
+  buildEl.textContent =
+    "js " + APP_VERSION + (window.__BUILD__ ? " · srv " + window.__BUILD__ : "");
+}
+console.log("[AI Character Engine] app.js", APP_VERSION, "| server build", window.__BUILD__);
 
 switchVoiceMode();
 loadCharacters();

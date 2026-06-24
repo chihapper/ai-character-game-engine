@@ -16,9 +16,10 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 
 from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .adapters.base import STTAdapter, TTSAdapter
@@ -345,6 +346,21 @@ async def voice_ws(websocket: WebSocket) -> None:
 
 
 # ---------------------------------------------------------- static frontend (last)
+
+# A new build token every server start. Injected into the asset URLs so the
+# browser is forced to fetch fresh app.js / pcm-player.js after any restart —
+# stale-cache can never silently serve old frontend code again.
+_BUILD = str(int(time.time()))
+
+
+@app.get("/")
+async def index() -> HTMLResponse:
+    html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    html = html.replace('src="/app.js"', f'src="/app.js?v={_BUILD}"')
+    # expose the build to JS (for the worklet URL + the visible version stamp)
+    html = html.replace("<head>", f'<head>\n  <script>window.__BUILD__="{_BUILD}";</script>')
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
+
 
 # Mounted last so the API/WS routes above take precedence over the catch-all.
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
