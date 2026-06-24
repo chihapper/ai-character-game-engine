@@ -23,16 +23,54 @@ from typing import Awaitable, Callable
 
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
+from .config import AUDIO_SAMPLE_RATE
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
-from .sentence_chunker import SentenceChunker
+from .sentence_chunker import Segment, SentenceChunker
 from .text_cleanup import clean_for_speech
 
 logger = logging.getLogger(__name__)
 
 EmitJson = Callable[[dict], Awaitable[None]]
 EmitAudio = Callable[[bytes], Awaitable[None]]
+
+# A breath between spoken sentences. TTS renders each sentence with no leading or
+# trailing silence, so without this they butt straight up against each other and a
+# multi-sentence reply sounds rushed ("...doesn't heal.You want the ale or not.").
+# We inject a short run of silent PCM between sentences, sized by how the previous
+# one ended — a real beat after a statement, a touch more after a question or a
+# trailing-off, less after a comma. Tunable; these are conservative.
+_GAP_CLAUSE_MS = 130    # , ; : — mid-thought, barely a hitch
+_GAP_DEFAULT_MS = 260   # . or plain end — a normal sentence beat
+_GAP_EMPHATIC_MS = 330  # ? or ! — let it land
+_GAP_TRAILING_MS = 400  # … or — — biggest beat, the thought hangs
+# When the model emits a paragraph break (a blank line), it's marking a real beat
+# — a topic shift, a held silence. That deserves more air than any in-paragraph
+# sentence break, so a paragraph boundary floors the gap here regardless of how
+# the sentence ended.
+_GAP_PARAGRAPH_MS = 650
+
+
+def _gap_after(sentence: str, para_break: bool = False) -> int:
+    """How long a silence to leave after this sentence, by its ending and whether
+    a paragraph break followed it."""
+    t = sentence.rstrip().rstrip('"\'”’)')
+    if t.endswith(("…", "—")) or t.endswith("..."):
+        base = _GAP_TRAILING_MS
+    elif t.endswith(("?", "!")):
+        base = _GAP_EMPHATIC_MS
+    elif t.endswith((",", ";", ":")):
+        base = _GAP_CLAUSE_MS
+    else:
+        base = _GAP_DEFAULT_MS
+    return max(base, _GAP_PARAGRAPH_MS) if para_break else base
+
+
+def _silence_pcm(ms: int) -> bytes:
+    """`ms` of digital silence as signed-16 mono PCM at our playback rate."""
+    samples = int(AUDIO_SAMPLE_RATE * ms / 1000)
+    return b"\x00\x00" * samples
 
 # Prepended to every character's system prompt. Keeps performances in-character
 # and immersive — especially the failure mode where the model steps out of the
@@ -103,7 +141,7 @@ class Pipeline:
 
         await emit_json({"type": "assistant_start"})
 
-        sentence_q: asyncio.Queue[str | None] = asyncio.Queue()
+        sentence_q: asyncio.Queue[Segment | None] = asyncio.Queue()
         reply_parts: list[str] = []
         state = {"first_token": False, "first_audio": False, "tts_failed": False}
 
@@ -116,8 +154,8 @@ class Pipeline:
                         latency.mark("llm_first_token")
                     reply_parts.append(delta)
                     await emit_json({"type": "assistant_delta", "text": delta})
-                    for sentence in chunker.push(delta):
-                        await sentence_q.put(sentence)
+                    for seg in chunker.push(delta):
+                        await sentence_q.put(seg)
                 tail = chunker.flush()
                 if tail:
                     await sentence_q.put(tail)
@@ -128,16 +166,18 @@ class Pipeline:
 
         async def consume() -> None:
             audio_started = False
+            pending_gap_ms = 0  # breath owed to the previous sentence
             while True:
-                sentence = await sentence_q.get()
-                if sentence is None:
+                seg = await sentence_q.get()
+                if seg is None:
                     break
                 if state["tts_failed"]:
                     continue  # keep draining so the producer can finish
-                spoken = clean_for_speech(sentence)
+                spoken = clean_for_speech(seg.text)
                 if not spoken:
                     continue  # sentence was pure stage direction / markup
                 try:
+                    sentence_has_audio = False
                     async for chunk in self.tts.stream_speech(
                         spoken, self.character.voice_id
                     ):
@@ -149,7 +189,17 @@ class Pipeline:
                                 {"type": "latency", "marks": latency.summary()}
                             )
                             audio_started = True
+                        # Emit the previous sentence's breath right before this
+                        # sentence's first audio — never as a trailing tail, so it
+                        # can't add latency to the end of the turn.
+                        if not sentence_has_audio:
+                            sentence_has_audio = True
+                            if pending_gap_ms:
+                                await emit_audio(_silence_pcm(pending_gap_ms))
+                                pending_gap_ms = 0
                         await emit_audio(chunk)
+                    if sentence_has_audio:
+                        pending_gap_ms = _gap_after(seg.text, seg.para_break)
                 except Exception as exc:  # don't let TTS kill the text reply
                     state["tts_failed"] = True
                     logger.exception("TTS failed mid-turn")
@@ -193,22 +243,31 @@ class Pipeline:
         await emit_json({"type": "assistant_done", "text": text})
         audio_started = False
         chunker = SentenceChunker()
-        sentences = chunker.push(text)
+        segments = chunker.push(text)
         tail = chunker.flush()
         if tail:
-            sentences.append(tail)
+            segments.append(tail)
+        pending_gap_ms = 0
         try:
-            for sentence in sentences:
-                spoken = clean_for_speech(sentence)
+            for seg in segments:
+                spoken = clean_for_speech(seg.text)
                 if not spoken:
                     continue
+                sentence_has_audio = False
                 async for chunk in self.tts.stream_speech(
                     spoken, self.character.voice_id
                 ):
                     if not audio_started:
                         audio_started = True
                         await emit_json({"type": "audio_start"})
+                    if not sentence_has_audio:
+                        sentence_has_audio = True
+                        if pending_gap_ms:
+                            await emit_audio(_silence_pcm(pending_gap_ms))
+                            pending_gap_ms = 0
                     await emit_audio(chunk)
+                if sentence_has_audio:
+                    pending_gap_ms = _gap_after(seg.text, seg.para_break)
         except Exception as exc:
             logger.exception("Greeting TTS failed")
             await emit_json({"type": "error", "message": f"Greeting failed: {exc}"})

@@ -210,10 +210,12 @@
         <!-- IDLE -->
         <div id="train-idle">
           <p class="hint" style="margin-top:0; line-height:1.7">
-            Two short parts, about a minute total. First you'll <strong>read a passage</strong> (a clean
-            baseline), then you'll <strong>answer a few questions out loud</strong> the way you naturally
-            would — pauses, "umm"s, false starts and all. That second part is the important one: it captures
-            how you <em>actually</em> talk, so the engine learns when you're really done versus just thinking.
+            Three short parts, about a minute and a half. First you'll <strong>read a passage</strong> (a clean
+            baseline), then <strong>answer a few questions out loud</strong> the way you naturally would —
+            pauses, "umm"s, false starts and all. Last, you'll <strong>ask a few questions slowly</strong>,
+            like you're confused and thinking hard, dragging out the pauses. That slow, drawn-out part is the
+            one most people get cut off on in conversation, so it teaches the engine to wait you out instead
+            of jumping in mid-thought.
           </p>
           <button class="btn" id="train-begin">Begin training</button>
         </div>
@@ -222,6 +224,20 @@
         <div id="train-active" style="display:none">
           <div class="status" id="train-phase-label" style="color:var(--accent-2); margin-top:0"></div>
           <blockquote id="train-prompt" style="border-left:3px solid var(--border); margin:12px 0; padding:10px 14px; color:var(--text); line-height:1.7; font-size:15px"></blockquote>
+
+          <!-- "you've said enough" reassurance (questions only) -->
+          <div id="train-enough" style="display:none; margin:12px 0; padding:11px 14px; border:1px solid var(--accent-2); background:#56d36422; border-radius:8px; color:var(--accent-2); font-weight:700; font-size:14px;">
+            ✓ Got plenty here — move on whenever you're ready.
+          </div>
+
+          <!-- live input level so the speaker knows the mic is hearing them -->
+          <div class="row" style="align-items:center; gap:8px; margin:10px 0 2px">
+            <span class="status" id="train-mic-label" style="margin:0; white-space:nowrap">🎙 Input</span>
+            <div id="train-meter" style="flex:1; height:10px; background:var(--panel-2); border-radius:5px; overflow:hidden;">
+              <div id="train-meter-fill" style="height:100%; width:0%; background:var(--accent-2); transition:width 0.06s linear;"></div>
+            </div>
+          </div>
+
           <div class="row">
             <button class="btn" id="train-next">Next →</button>
             <button class="btn ghost" id="train-cancel">Cancel</button>

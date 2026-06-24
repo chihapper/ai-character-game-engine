@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-train2-6";
+const APP_VERSION = "2026-06-24-train3-2";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -519,22 +519,47 @@ let calActive = false;
 let calBuf = new Float32Array(0);
 let calResult = null;
 
+// The wizard walks three kinds of speech so the profile sees the speaker's full
+// pause range, not just their fluent baseline:
+//   Part 1 — reading: smooth, well-formed cadence (the floor).
+//   Part 2 — answering: spontaneous thinking-out-loud pauses.
+//   Part 3 — drawled questions: the slow, dumbfounded "waaait… so… how do I…"
+//            pattern. These long mid-question pauses are what gets people cut off
+//            in a game, and nothing else here elicits them — so we direct the
+//            speaker to really stretch them out. See orchestrator/cadence.py.
 const TRAIN_PASSAGE =
   "The old road north hasn't been kind this winter. I left before dawn, when the frost " +
   "still held the ground, and walked until the light gave out. Somewhere past the second " +
   "bridge I lost the trail entirely — and, well, that's a story for another night. For now " +
   "I just need somewhere warm to sit and a moment to think about where I'm headed next.";
 
-const TRAIN_QUESTIONS = [
-  "To start — what did you do earlier today, before this?",
-  "Tell me about something you're looking forward to this week.",
-  "Describe a place you really like. What's it like to be there?",
-  "If you had a free afternoon tomorrow, how would you spend it?",
-  "Last one — talk me through something you're trying to decide right now.",
+const TRAIN_STEPS = [
+  { kind: "read", label: "Part 1 of 3 — read this aloud, naturally", prompt: TRAIN_PASSAGE },
+
+  { kind: "answer", label: "Part 2 of 3 — answer out loud, take your time (1 of 4)",
+    prompt: "To start — what did you do earlier today, before this?" },
+  { kind: "answer", label: "Part 2 of 3 — answer out loud (2 of 4)",
+    prompt: "Tell me about something you're looking forward to this week." },
+  { kind: "answer", label: "Part 2 of 3 — answer out loud (3 of 4)",
+    prompt: "Describe a place you really like. What's it like to be there?" },
+  { kind: "answer", label: "Part 2 of 3 — answer out loud (4 of 4)",
+    prompt: "Talk me through something you're trying to decide right now." },
+
+  { kind: "drawl", label: "Part 3 of 3 — now ask these S-L-O-W-L-Y, like you're confused and thinking hard. Drag out every “…” (1 of 3)",
+    prompt: "Waaait… so… how do I… actually get to the north pass from here?" },
+  { kind: "drawl", label: "Part 3 of 3 — slow and unsure, really stretch the pauses (2 of 3)",
+    prompt: "Hold on, let me think… what was… what did you say the price was again?" },
+  { kind: "drawl", label: "Part 3 of 3 — slow and unsure, take long pauses between words (3 of 3)",
+    prompt: "Umm… okay… so if I go left… no, wait… which way did you mean?" },
 ];
 
-// trainStep: -1 idle | 0 reading | 1..N answering question N
+// trainStep: -1 idle | 0..N-1 index into TRAIN_STEPS
 let trainStep = -1;
+// Per-step voiced-time accounting for the "you've said enough" hint (questions
+// only). Reset on every step; measured from the live mic level in onCalChunk.
+let stepVoicedMs = 0;
+let trainEnoughShown = false;
+const ENOUGH_VOICED_MS = 5000; // ~5s of actual speech is plenty per question
 
 function startCalibrationSession() {
   return new Promise((resolve, reject) => {
@@ -599,24 +624,22 @@ async function beginTraining() {
 }
 
 function renderTrainStep() {
-  if (trainStep === 0) {
-    $("train-phase-label").textContent = "Part 1 of 2 — read this aloud, naturally";
-    $("train-prompt").textContent = TRAIN_PASSAGE;
-    $("train-next").textContent = "Done reading — start questions →";
-  } else {
-    const n = trainStep;
-    $("train-phase-label").textContent =
-      `Part 2 of 2 — question ${n} of ${TRAIN_QUESTIONS.length} (answer out loud, take your time)`;
-    $("train-prompt").textContent = TRAIN_QUESTIONS[n - 1];
-    $("train-next").textContent =
-      n >= TRAIN_QUESTIONS.length ? "Finish & analyze" : "Next question →";
-  }
+  const step = TRAIN_STEPS[trainStep];
+  if (!step) return;
+  $("train-phase-label").textContent = step.label;
+  $("train-prompt").textContent = step.prompt;
+  $("train-next").textContent =
+    trainStep >= TRAIN_STEPS.length - 1 ? "Finish & analyze" : "Next →";
+  // Fresh "enough recorded" accounting for this step.
+  stepVoicedMs = 0;
+  trainEnoughShown = false;
+  $("train-enough").style.display = "none";
 }
 
 function trainNext() {
   if (trainStep < 0) return;
   trainStep += 1;
-  if (trainStep > TRAIN_QUESTIONS.length) finishTraining();
+  if (trainStep >= TRAIN_STEPS.length) finishTraining();
   else renderTrainStep();
 }
 
@@ -645,6 +668,32 @@ function cancelTraining() {
 
 function onCalChunk(frame) {
   if (!calActive || !calWs || calWs.readyState !== WebSocket.OPEN) return;
+
+  // Live input meter + voice-activity timing, straight off the raw mic frame.
+  let peak = 0;
+  let sumSq = 0;
+  for (let i = 0; i < frame.length; i++) {
+    const s = frame[i];
+    const a = s < 0 ? -s : s;
+    if (a > peak) peak = a;
+    sumSq += s * s;
+  }
+  const rms = Math.sqrt(sumSq / Math.max(1, frame.length));
+  const fill = $("train-meter-fill");
+  if (fill) fill.style.width = Math.min(100, Math.round(peak * 140)) + "%";
+
+  // Count actual speech time on question steps so we can tell ramblers they're
+  // done. VAD threshold sits above room noise but below normal speaking level.
+  const step = TRAIN_STEPS[trainStep];
+  if (step && step.kind === "answer" && !trainEnoughShown) {
+    const frameMs = (frame.length / calCtx.sampleRate) * 1000;
+    if (rms > 0.02) stepVoicedMs += frameMs;
+    if (stepVoicedMs >= ENOUGH_VOICED_MS) {
+      trainEnoughShown = true;
+      $("train-enough").style.display = "block";
+    }
+  }
+
   const down =
     calCtx.sampleRate === STREAM_RATE
       ? frame
@@ -674,6 +723,8 @@ function stopCalibrationCapture() {
   calNode = null;
   calStream = null;
   calBuf = new Float32Array(0);
+  const fill = $("train-meter-fill");
+  if (fill) fill.style.width = "0%";
 }
 
 function showCalibrationResult(d) {
@@ -706,7 +757,7 @@ async function saveProfile() {
       stats: {
         samples: calResult.samples,
         median_gap_ms: calResult.median_gap_ms,
-        p85_pause_ms: calResult.p85_pause_ms,
+        p90_pause_ms: calResult.p90_pause_ms,
       },
     }),
   });

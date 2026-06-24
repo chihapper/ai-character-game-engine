@@ -5,23 +5,38 @@ token-by-token, we accumulate them and hand back *complete sentences* the moment
 each one is ready — so TTS can start synthesizing sentence 1 while the LLM is still
 generating sentence 2.
 
-Usage:
+Usage (push/flush return `Segment(text, para_break)`):
     chunker = SentenceChunker()
     async for delta in llm_stream:
-        for sentence in chunker.push(delta):
-            await tts.speak(sentence)
+        for seg in chunker.push(delta):
+            await tts.speak(seg.text)
     tail = chunker.flush()
     if tail:
-        await tts.speak(tail)
+        await tts.speak(tail.text)
 """
 from __future__ import annotations
 
 import re
+from typing import NamedTuple
 
-# Sentence-ending punctuation followed by whitespace. We deliberately keep this
-# simple and fast; perfect linguistic segmentation is not the goal — low latency
-# to the *first* speakable chunk is.
-_BOUNDARY = re.compile(r"[.!?]+\s+")
+
+class Segment(NamedTuple):
+    """A completed sentence plus whether a paragraph (blank-line) break followed
+    it in the source text. The pipeline uses `para_break` to leave a longer beat
+    of silence at paragraph boundaries than between sentences within a paragraph."""
+
+    text: str
+    para_break: bool
+
+
+# Sentence-ending punctuation followed by whitespace. We capture the trailing
+# whitespace so we can tell a within-paragraph break (a space) from a paragraph
+# break (a blank line). Kept simple and fast; perfect linguistic segmentation is
+# not the goal — low latency to the *first* speakable chunk is.
+_BOUNDARY = re.compile(r"[.!?]+(\s+)")
+
+# A blank line in the separator = a paragraph break (handles "\n\n", "\n \n").
+_PARA_BREAK = re.compile(r"\n\s*\n")
 
 # Tokens that end in a period but usually do not end a sentence. Guards against
 # cutting "Mr. Smith" or "e.g. this" into fragments mid-stream.
@@ -38,12 +53,12 @@ class SentenceChunker:
     def __init__(self) -> None:
         self._buf = ""
 
-    def push(self, delta: str) -> list[str]:
+    def push(self, delta: str) -> list[Segment]:
         """Add a text delta; return any newly-completed sentences (in order)."""
         if not delta:
             return []
         self._buf += delta
-        out: list[str] = []
+        out: list[Segment] = []
         search_start = 0
 
         while True:
@@ -61,7 +76,8 @@ class SentenceChunker:
                 search_start = end
                 continue
 
-            out.append(candidate)
+            para_break = bool(_PARA_BREAK.search(match.group(1)))
+            out.append(Segment(candidate, para_break))
             self._buf = self._buf[end:]
             search_start = 0
 
@@ -76,8 +92,9 @@ class SentenceChunker:
         last = words[-1].lower().strip(".")
         return last in _ABBREVIATIONS
 
-    def flush(self) -> str | None:
-        """Return whatever text remains (the final, unterminated sentence)."""
+    def flush(self) -> Segment | None:
+        """Return whatever text remains (the final, unterminated sentence). It ends
+        the reply, so there's no following break — para_break is always False."""
         tail = self._buf.strip()
         self._buf = ""
-        return tail or None
+        return Segment(tail, False) if tail else None

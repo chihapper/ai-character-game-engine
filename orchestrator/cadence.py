@@ -27,23 +27,28 @@ def _percentile(values: list[float], p: float) -> float:
     return s[f] + (s[c] - s[f]) * (k - f)
 
 
-# Safety rails so a noisy calibration can never produce absurd values.
+# Safety rails so a noisy calibration can never produce absurd values. The max
+# ceiling is generous so slow/drawled "umm... so... how do I..." questions aren't
+# cut off — that lag only applies to trailing/unfinished speech, not finished
+# sentences (those end via min), so patience here is mostly free.
 _MIN_FLOOR, _MIN_CEIL = 200, 500
-_MAX_FLOOR, _MAX_CEIL = 1200, 3000
+_MAX_FLOOR, _MAX_CEIL = 1200, 3800
 _PAUSE_THRESHOLD = 250  # ms; gaps above this count as deliberate pauses
 
 
 def analyze_cadence(word_gaps_ms: list[float]) -> dict:
     """`word_gaps_ms`: inter-word silence gaps (ms) seen during calibration.
     Returns suggested min/max turn silence (ms) plus the stats they came from."""
-    gaps = [g for g in word_gaps_ms if 0 <= g <= 5000]
+    gaps = [g for g in word_gaps_ms if 0 <= g <= 6000]
     deliberate = [g for g in gaps if g >= _PAUSE_THRESHOLD]
 
     p50 = _percentile(gaps, 50)
-    # Default to a middle-of-the-road pause if the speaker barely paused at all.
-    p85_pause = _percentile(deliberate, 85) if deliberate else 600.0
+    # Key max off a HIGH percentile of deliberate pauses so the long drawled pauses
+    # (which are a minority of all pauses) actually drive the patience setting —
+    # otherwise they sit above the percentile and the speaker gets cut off.
+    p90_pause = _percentile(deliberate, 90) if deliberate else 700.0
 
-    max_silence = int(min(_MAX_CEIL, max(_MAX_FLOOR, p85_pause + 400)))
+    max_silence = int(min(_MAX_CEIL, max(_MAX_FLOOR, p90_pause + 500)))
     min_silence = int(min(_MIN_CEIL, max(_MIN_FLOOR, 150 + p50)))
 
     return {
@@ -51,5 +56,5 @@ def analyze_cadence(word_gaps_ms: list[float]) -> dict:
         "max_turn_silence": max_silence,
         "samples": len(gaps),
         "median_gap_ms": round(p50),
-        "p85_pause_ms": round(p85_pause),
+        "p90_pause_ms": round(p90_pause),
     }
