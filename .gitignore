@@ -15,6 +15,9 @@ chroma_db/
 *.wav
 *.webm
 
+# Per-speaker voice/cadence profiles (local user data)
+orchestrator/profiles/
+
 # OS / editor
 .DS_Store
 Thumbs.db
