@@ -73,9 +73,10 @@ class InworldTTS(TTSAdapter):
             "Authorization": self._auth_header,
             "Content-Type": "application/json",
         }
-        # A generous read timeout: synthesis can take a moment for long sentences,
-        # but connect should be quick.
-        timeout = httpx.Timeout(30.0, connect=10.0)
+        # Short read timeout so a hung/slow Inworld fails fast and the pipeline can
+        # fall back, instead of leaving the character silent for 30s. Healthy
+        # Inworld returns the first chunk in ~1s, so 5s is plenty of headroom.
+        timeout = httpx.Timeout(5.0, connect=8.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream(
                 "POST", f"{_BASE_URL}{_STREAM_PATH}", json=payload, headers=headers

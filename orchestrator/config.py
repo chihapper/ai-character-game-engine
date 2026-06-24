@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     # temperature drifts the voice between sentences).
     inworld_delivery_mode: str = "STABLE"  # STABLE | BALANCED | CREATIVE
     inworld_temperature: float = 0.6
+    # If the primary TTS provider fails/hangs during a conversation, fall back to
+    # Cartesia (when its key is set) using this preset voice, so an outage on one
+    # provider can't silence the whole app. Sticky for the rest of the session.
+    cartesia_fallback_voice: str = "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4"
 
     # --- STT ---
     # "assemblyai" (cloud, no local deps — recommended for distribution) or

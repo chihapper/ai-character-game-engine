@@ -36,6 +36,7 @@ from .adapters.stt_assemblyai import AssemblyAISTT
 from .adapters.stt_assemblyai_stream import AssemblyAIStream
 from .adapters.stt_whisper import WhisperSTT
 from .adapters.tts_cartesia import CartesiaTTS
+from .adapters.tts_fallback import FallbackTTS
 from .adapters.tts_inworld import InworldTTS
 from .cadence import analyze_cadence
 from .profile_store import (
@@ -348,6 +349,14 @@ async def voice_ws(websocket: WebSocket) -> None:
         character = load_character(slug)
         llm = AnthropicLLM(model=model)
         tts = make_tts(character.tts_provider)
+        # Resilience: if the primary TTS (e.g. Inworld) hangs, fall back to Cartesia
+        # so a provider outage can't silence the character.
+        _settings = get_settings()
+        if character.tts_provider != "cartesia" and _settings.cartesia_api_key:
+            try:
+                tts = FallbackTTS(tts, CartesiaTTS(), _settings.cartesia_fallback_voice)
+            except Exception:
+                logger.exception("Could not set up TTS fallback")
         short_term = ShortTermMemory(max_turns=get_settings().short_term_turns)
         long_term = LongTermMemory(character.memory_namespace)
         pipeline = Pipeline(character, llm, tts, short_term, long_term)
