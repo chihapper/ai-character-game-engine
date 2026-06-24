@@ -50,11 +50,16 @@ class AssemblyAISTT(STTAdapter):
                 )
             upload_url = up.json()["upload_url"]
 
-            # 2. Submit for transcription.
+            # 2. Submit for transcription. speech_models is an ordered fallback
+            # list (required on pre-recorded; tries the first available model).
             sub = await client.post(
                 f"{_BASE}/v2/transcript",
                 headers={**self._headers, "Content-Type": "application/json"},
-                json={"audio_url": upload_url, "language_code": "en_us"},
+                json={
+                    "audio_url": upload_url,
+                    "language_code": "en_us",
+                    "speech_models": ["universal-3-pro", "universal-2"],
+                },
             )
             if sub.status_code != 200:
                 raise RuntimeError(

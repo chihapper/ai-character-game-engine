@@ -28,10 +28,14 @@ from ..config import get_settings
 logger = logging.getLogger(__name__)
 
 STREAM_SAMPLE_RATE = 16_000  # AssemblyAI streaming input rate
+# u3-rt-pro = Universal-3 Pro Realtime (the wire value; "Universal-3.5 Pro" is the
+# marketing name). `encoding` defaults to pcm_s16le and `format_turns` is a no-op
+# on this model (formatting is built into end-of-turn), so we omit both.
+_STREAM_MODEL = "u3-rt-pro"
 _TOKEN_URL = "https://streaming.assemblyai.com/v3/token?expires_in_seconds=120"
 _WS_BASE = (
     "wss://streaming.assemblyai.com/v3/ws"
-    f"?sample_rate={STREAM_SAMPLE_RATE}&encoding=pcm_s16le&format_turns=true"
+    f"?sample_rate={STREAM_SAMPLE_RATE}&speech_model={_STREAM_MODEL}"
 )
 
 
