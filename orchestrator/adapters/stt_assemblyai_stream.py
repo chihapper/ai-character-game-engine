@@ -55,11 +55,23 @@ class AssemblyAIStream:
         if not settings.assemblyai_api_key:
             raise RuntimeError("ASSEMBLYAI_API_KEY is not set. Add it to your .env file.")
         self._api_key = settings.assemblyai_api_key
+        self._min_silence = settings.assemblyai_min_turn_silence
+        self._max_silence = settings.assemblyai_max_turn_silence
         self._ws = None  # active websocket connection, or None
 
     async def connect(self) -> None:
         token = await _mint_token(self._api_key)
         self._ws = await websockets.connect(f"{_WS_BASE}&token={token}", max_size=None)
+        # Make end-of-turn detection patient enough for slow/disfluent speech.
+        await self._ws.send(
+            json.dumps(
+                {
+                    "type": "UpdateConfiguration",
+                    "min_turn_silence": self._min_silence,
+                    "max_turn_silence": self._max_silence,
+                }
+            )
+        )
 
     async def send_audio(self, pcm: bytes) -> None:
         if self._ws is not None:
