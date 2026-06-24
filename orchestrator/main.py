@@ -1,0 +1,222 @@
+"""FastAPI app: serves the frontend, the character REST API, and the voice WebSocket.
+
+Routes
+------
+GET  /                      -> Conversation + Create Character UI (static)
+GET  /api/characters        -> list characters
+POST /api/characters        -> create a character (+ optional voice cloning)
+WS   /ws?character=<slug>    -> the real-time voice loop for one session
+
+The WebSocket carries two kinds of frames:
+  * text frames  = JSON control messages (both directions)
+  * binary frames = raw PCM audio (server->browser) / recorded clip (browser->server)
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+
+from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from .adapters.base import TTSAdapter
+from .adapters.llm_anthropic import AnthropicLLM
+from .adapters.stt_whisper import WhisperSTT
+from .adapters.tts_cartesia import CartesiaTTS
+from .adapters.tts_inworld import InworldTTS
+from .character_store import (
+    Character,
+    list_characters,
+    load_character,
+    save_character,
+    slugify,
+)
+from .config import WEB_DIR, get_settings
+from .latency import LatencyTracker
+from .memory.long_term import LongTermMemory
+from .memory.short_term import ShortTermMemory
+from .pipeline import Pipeline
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-7s %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("orchestrator")
+
+app = FastAPI(title="Real-Time AI Character Engine")
+
+# One shared (lazily-loaded) Whisper model for the whole process.
+_stt = WhisperSTT()
+
+
+# --------------------------------------------------------------------- factories
+
+
+def make_tts(provider: str) -> TTSAdapter:
+    if provider == "cartesia":
+        return CartesiaTTS()
+    return InworldTTS()
+
+
+# ------------------------------------------------------------------- REST: chars
+
+
+@app.get("/api/characters")
+async def get_characters() -> JSONResponse:
+    return JSONResponse([c.public_dict() for c in list_characters()])
+
+
+@app.post("/api/characters")
+async def create_character(
+    name: str = Form(...),
+    system_prompt: str = Form(...),
+    greeting: str = Form(""),
+    tts_provider: str = Form(""),
+    voice_id: str = Form(""),
+    sample: UploadFile | None = File(None),
+) -> JSONResponse:
+    """Create a character. If a voice `sample` is uploaded, instant-clone it via the
+    chosen provider and use the returned voice id; otherwise use a provided preset
+    `voice_id`."""
+    settings = get_settings()
+    provider = tts_provider or settings.default_tts_provider
+
+    resolved_voice_id = voice_id.strip()
+    try:
+        if sample is not None:
+            sample_bytes = await sample.read()
+            if not sample_bytes:
+                return JSONResponse(
+                    {"error": "Uploaded voice sample is empty."}, status_code=400
+                )
+            tts = make_tts(provider)
+            resolved_voice_id = await tts.clone_voice(sample_bytes, name)
+    except Exception as exc:
+        logger.exception("Voice cloning failed")
+        return JSONResponse({"error": f"Voice cloning failed: {exc}"}, status_code=502)
+
+    if not resolved_voice_id:
+        return JSONResponse(
+            {"error": "Provide either a voice sample to clone or a preset voice_id."},
+            status_code=400,
+        )
+
+    slug = slugify(name)
+    character = Character(
+        slug=slug,
+        name=name,
+        system_prompt=system_prompt,
+        voice_id=resolved_voice_id,
+        tts_provider=provider,
+        greeting=greeting,
+        memory_namespace=slug,
+    )
+    save_character(character)
+    logger.info("Created character '%s' (voice=%s, provider=%s)", slug, resolved_voice_id, provider)
+    return JSONResponse(character.public_dict(), status_code=201)
+
+
+# ----------------------------------------------------------------------- WS loop
+
+
+@app.websocket("/ws")
+async def voice_ws(websocket: WebSocket) -> None:
+    await websocket.accept()
+    slug = websocket.query_params.get("character", "")
+
+    # The pipeline's producer (JSON deltas) and consumer (audio frames) run
+    # concurrently and both send on this socket; a lock keeps frames from
+    # interleaving, which would corrupt the WebSocket stream.
+    send_lock = asyncio.Lock()
+
+    async def emit_json(payload: dict) -> None:
+        async with send_lock:
+            await websocket.send_json(payload)
+
+    async def emit_audio(chunk: bytes) -> None:
+        async with send_lock:
+            await websocket.send_bytes(chunk)
+
+    # --- set up the session for the chosen character ---
+    try:
+        character = load_character(slug)
+        llm = AnthropicLLM()
+        tts = make_tts(character.tts_provider)
+        short_term = ShortTermMemory(max_turns=get_settings().short_term_turns)
+        long_term = LongTermMemory(character.memory_namespace)
+        pipeline = Pipeline(character, llm, tts, short_term, long_term)
+    except Exception as exc:
+        logger.exception("Failed to start session")
+        await emit_json({"type": "error", "message": f"Could not start session: {exc}"})
+        await websocket.close()
+        return
+
+    await emit_json({"type": "ready", "character": character.public_dict()})
+    await pipeline.speak_greeting(emit_json, emit_audio)
+
+    # --- turn loop ---
+    try:
+        while True:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.disconnect":
+                break
+
+            latency = LatencyTracker()
+
+            # Voice turn: a complete recorded clip arrived as a binary frame.
+            if message.get("bytes") is not None:
+                latency.start("vad_stop")  # browser already endpointed (click-to-talk)
+                audio = message["bytes"]
+                try:
+                    transcript = await _stt.transcribe(audio)
+                except Exception as exc:
+                    logger.exception("STT failed")
+                    await emit_json({"type": "error", "message": f"Transcription failed: {exc}"})
+                    continue
+                latency.mark("transcript_ready")
+                if not transcript:
+                    await emit_json({"type": "info", "message": "Didn't catch that — try again."})
+                    continue
+                await emit_json({"type": "transcript", "text": transcript})
+                await pipeline.run_turn(transcript, latency, emit_json, emit_audio)
+
+            # Text turn: a typed message (used by the text-first vertical slice).
+            elif message.get("text") is not None:
+                try:
+                    data = json.loads(message["text"])
+                except json.JSONDecodeError:
+                    continue
+                if data.get("type") == "text":
+                    user_text = (data.get("text") or "").strip()
+                    if not user_text:
+                        continue
+                    latency.start("vad_stop")
+                    latency.mark("transcript_ready")  # no STT for typed input
+                    await emit_json({"type": "transcript", "text": user_text})
+                    await pipeline.run_turn(user_text, latency, emit_json, emit_audio)
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.exception("WebSocket loop error")
+    finally:
+        logger.info("Session for '%s' closed", slug)
+
+
+# ---------------------------------------------------------- static frontend (last)
+
+# Mounted last so the API/WS routes above take precedence over the catch-all.
+app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
+
+
+def main() -> None:
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(app, host=settings.host, port=settings.port)
+
+
+if __name__ == "__main__":
+    main()

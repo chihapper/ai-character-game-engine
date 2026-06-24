@@ -1,0 +1,25 @@
+# --- Core web / orchestration ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+websockets==14.1
+python-multipart==0.0.20
+httpx==0.28.1
+python-dotenv==1.0.1
+pydantic-settings==2.7.1
+PyYAML==6.0.2
+numpy==2.2.1
+
+# --- LLM ---
+anthropic==0.69.0
+
+# --- STT (local, step 2) ---
+# faster-whisper bundles Silero VAD; we use it via transcribe(vad_filter=True),
+# so no separate silero-vad package is needed.
+faster-whisper==1.1.1
+
+# --- Long-term memory (local, step 4) ---
+chromadb==0.6.3
+sentence-transformers==3.3.1
+
+# --- TTS: Cartesia official SDK (optional; raw-websocket fallback also implemented) ---
+cartesia==1.4.0

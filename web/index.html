@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Real-Time AI Character Engine</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #161b22;
+      --panel-2: #1c232d;
+      --border: #2a323d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #6ea8fe;
+      --accent-2: #56d364;
+      --danger: #f85149;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+    header .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    header .dot.live { background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); }
+    .tabs { margin-left: auto; display: flex; gap: 8px; }
+    .tab {
+      background: transparent; color: var(--muted); border: 1px solid transparent;
+      padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 13px;
+    }
+    .tab.active { color: var(--text); background: var(--panel-2); border-color: var(--border); }
+    main { max-width: 860px; margin: 0 auto; padding: 24px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    select, input[type=text], textarea {
+      background: var(--panel); color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: inherit;
+    }
+    select { min-width: 180px; }
+    textarea { width: 100%; min-height: 130px; resize: vertical; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    button.btn {
+      background: var(--accent); color: #08101f; border: none; border-radius: 8px;
+      padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    button.btn.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+    button.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.talk {
+      width: 100%; padding: 16px; font-size: 15px; border-radius: 10px; margin-top: 14px;
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--border); cursor: pointer;
+    }
+    button.talk.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+    .status { color: var(--muted); font-size: 13px; margin: 12px 0; min-height: 18px; }
+
+    #log { margin: 18px 0; display: flex; flex-direction: column; gap: 10px; }
+    .msg { padding: 10px 14px; border-radius: var(--radius); max-width: 85%; white-space: pre-wrap; }
+    .msg.user { align-self: flex-end; background: #1f6feb33; border: 1px solid #1f6feb55; }
+    .msg.assistant { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
+    .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+
+    .latency {
+      background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+    }
+    .latency .headline { font-size: 13px; color: var(--accent-2); margin-bottom: 8px; font-family: inherit; }
+    .latency .bars { display: flex; flex-direction: column; gap: 5px; }
+    .latency .bar { display: grid; grid-template-columns: 150px 1fr 70px; align-items: center; gap: 10px; }
+    .latency .bar .name { color: var(--muted); }
+    .latency .bar .track { height: 7px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+    .latency .bar .fill { height: 100%; background: var(--accent); }
+    .latency .bar .val { text-align: right; }
+
+    .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 18px 0; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="conn-dot"></span>
+    <h1>Real-Time AI Character Engine</h1>
+    <div class="tabs">
+      <button class="tab active" data-view="conversation">Conversation</button>
+      <button class="tab" data-view="create">Create Character</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ───────────────────────── Conversation ───────────────────────── -->
+    <section class="view active" id="view-conversation">
+      <div class="row">
+        <select id="character"></select>
+        <button class="btn ghost" id="refresh">Refresh</button>
+        <button class="btn" id="connect">Connect</button>
+        <button class="btn ghost" id="disconnect" disabled>Disconnect</button>
+      </div>
+      <div class="status" id="conv-status">Pick a character and connect.</div>
+
+      <div id="log"></div>
+
+      <div class="latency" id="latency" style="display:none">
+        <div class="headline" id="lat-headline"></div>
+        <div class="bars" id="lat-bars"></div>
+      </div>
+
+      <button class="talk" id="talk" disabled>🎙 Hold to talk (or click to start/stop)</button>
+      <div class="row" style="margin-top:12px">
+        <input type="text" id="text-input" placeholder="…or type a message" style="flex:1" disabled />
+        <button class="btn" id="send" disabled>Send</button>
+      </div>
+      <div class="hint">Tip: the latency panel shows the streaming-overlap budget — first audio should start ~1s after you stop talking.</div>
+    </section>
+
+    <!-- ───────────────────────── Create Character ───────────────────── -->
+    <section class="view" id="view-create">
+      <div class="card">
+        <label for="c-name">Name</label>
+        <input type="text" id="c-name" placeholder="Aria" style="width:100%" />
+
+        <label for="c-prompt">Personality (system prompt)</label>
+        <textarea id="c-prompt" placeholder="You are Aria, a sharp-witted archivist who speaks in clipped, dry sentences…"></textarea>
+
+        <label for="c-greeting">Greeting</label>
+        <input type="text" id="c-greeting" placeholder="Oh — you're back. I wondered when you'd show up." style="width:100%" />
+
+        <label for="c-provider">Voice provider</label>
+        <select id="c-provider">
+          <option value="inworld">Inworld (default)</option>
+          <option value="cartesia">Cartesia</option>
+        </select>
+
+        <label>Voice</label>
+        <div class="row">
+          <button class="btn ghost" id="c-record">● Record ~12s sample</button>
+          <span class="status" id="c-record-status" style="margin:0">No sample recorded yet.</span>
+        </div>
+        <div class="divider">— or —</div>
+        <input type="text" id="c-voice-id" placeholder="Preset voice_id (e.g. Ashley for Inworld)" style="width:100%" />
+
+        <div class="row" style="margin-top:18px">
+          <button class="btn" id="c-create">Create character</button>
+          <span class="status" id="c-status" style="margin:0"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

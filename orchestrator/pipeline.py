@@ -1,0 +1,189 @@
+"""The streaming pipeline: LLM -> sentence chunker -> TTS, with real overlap.
+
+This is where the one hard requirement lives. We run two concurrent tasks:
+
+    producer:  consume the LLM token stream, accumulate sentences, push each
+               completed sentence onto a queue the moment it is ready.
+    consumer:  pull sentences off the queue and stream their synthesized audio
+               to the browser, in order.
+
+Because they run concurrently, the user hears sentence 1 while the LLM is still
+generating sentence 2 and the TTS for it hasn't started. We never wait for the full
+reply before starting TTS, and never wait for full audio render before playback.
+
+The pipeline is transport-agnostic: it emits via two async callbacks
+(`emit_json` for control messages, `emit_audio` for raw PCM frames) supplied by
+the caller (the WebSocket handler in main.py).
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Awaitable, Callable
+
+from .adapters.base import LLMAdapter, TTSAdapter
+from .character_store import Character
+from .latency import LatencyTracker
+from .memory.long_term import LongTermMemory
+from .memory.short_term import ShortTermMemory
+from .sentence_chunker import SentenceChunker
+
+logger = logging.getLogger(__name__)
+
+EmitJson = Callable[[dict], Awaitable[None]]
+EmitAudio = Callable[[bytes], Awaitable[None]]
+
+
+class Pipeline:
+    def __init__(
+        self,
+        character: Character,
+        llm: LLMAdapter,
+        tts: TTSAdapter,
+        short_term: ShortTermMemory,
+        long_term: LongTermMemory,
+    ) -> None:
+        self.character = character
+        self.llm = llm
+        self.tts = tts
+        self.short_term = short_term
+        self.long_term = long_term
+
+    # ------------------------------------------------------------------ prompt
+
+    def _build_system(self, memories: list[str]) -> str:
+        system = self.character.system_prompt
+        if memories:
+            recalled = "\n".join(f"- {m}" for m in memories)
+            system += (
+                "\n\n# Memories from past conversations with this user\n"
+                "Draw on these naturally if relevant; do not recite them verbatim.\n"
+                f"{recalled}"
+            )
+        return system
+
+    # -------------------------------------------------------------------- turn
+
+    async def run_turn(
+        self,
+        user_text: str,
+        latency: LatencyTracker,
+        emit_json: EmitJson,
+        emit_audio: EmitAudio,
+    ) -> None:
+        """Handle one user turn end-to-end: retrieve -> generate -> speak -> remember."""
+        memories = await self.long_term.retrieve(user_text)
+        system = self._build_system(memories)
+        messages = self.short_term.messages() + [
+            {"role": "user", "content": user_text}
+        ]
+
+        await emit_json({"type": "assistant_start"})
+
+        sentence_q: asyncio.Queue[str | None] = asyncio.Queue()
+        reply_parts: list[str] = []
+        state = {"first_token": False, "first_audio": False, "tts_failed": False}
+
+        async def produce() -> None:
+            chunker = SentenceChunker()
+            try:
+                async for delta in self.llm.stream_reply(messages, system):
+                    if not state["first_token"]:
+                        state["first_token"] = True
+                        latency.mark("llm_first_token")
+                    reply_parts.append(delta)
+                    await emit_json({"type": "assistant_delta", "text": delta})
+                    for sentence in chunker.push(delta):
+                        await sentence_q.put(sentence)
+                tail = chunker.flush()
+                if tail:
+                    await sentence_q.put(tail)
+            finally:
+                # Always signal end-of-stream so the consumer can drain and exit,
+                # even if the LLM stream errored partway through.
+                await sentence_q.put(None)  # sentinel: no more sentences
+
+        async def consume() -> None:
+            audio_started = False
+            while True:
+                sentence = await sentence_q.get()
+                if sentence is None:
+                    break
+                if state["tts_failed"]:
+                    continue  # keep draining so the producer can finish
+                try:
+                    async for chunk in self.tts.stream_speech(
+                        sentence, self.character.voice_id
+                    ):
+                        if not state["first_audio"]:
+                            state["first_audio"] = True
+                            latency.mark("first_audio")
+                            await emit_json({"type": "audio_start"})
+                            await emit_json(
+                                {"type": "latency", "marks": latency.summary()}
+                            )
+                            audio_started = True
+                        await emit_audio(chunk)
+                except Exception as exc:  # don't let TTS kill the text reply
+                    state["tts_failed"] = True
+                    logger.exception("TTS failed mid-turn")
+                    await emit_json(
+                        {"type": "error", "message": f"Text-to-speech failed: {exc}"}
+                    )
+            if audio_started:
+                await emit_json({"type": "audio_end"})
+
+        # Run producer and consumer concurrently for real overlap. We await the
+        # producer first (it owns the sentinel), then the consumer, so a producer
+        # error can't orphan the consumer waiting on the queue.
+        producer = asyncio.create_task(produce())
+        consumer = asyncio.create_task(consume())
+        try:
+            await producer
+        except Exception as exc:
+            logger.exception("LLM generation failed")
+            await emit_json({"type": "error", "message": f"Generation failed: {exc}"})
+        await consumer
+
+        full_reply = "".join(reply_parts).strip()
+        latency.mark("turn_complete")
+        latency.log(self.character.slug)
+        await emit_json({"type": "assistant_done", "text": full_reply})
+        await emit_json({"type": "latency", "marks": latency.summary()})
+
+        # Persist this exchange into both memory tiers.
+        if full_reply:
+            self.short_term.add_user(user_text)
+            self.short_term.add_assistant(full_reply)
+            await self.long_term.add_exchange(user_text, full_reply)
+
+    # ---------------------------------------------------------------- greeting
+
+    async def speak_greeting(self, emit_json: EmitJson, emit_audio: EmitAudio) -> None:
+        """Speak the character's pre-authored greeting when a session opens."""
+        text = (self.character.greeting or "").strip()
+        if not text:
+            return
+        await emit_json({"type": "assistant_done", "text": text})
+        audio_started = False
+        chunker = SentenceChunker()
+        sentences = chunker.push(text)
+        tail = chunker.flush()
+        if tail:
+            sentences.append(tail)
+        try:
+            for sentence in sentences:
+                async for chunk in self.tts.stream_speech(
+                    sentence, self.character.voice_id
+                ):
+                    if not audio_started:
+                        audio_started = True
+                        await emit_json({"type": "audio_start"})
+                    await emit_audio(chunk)
+        except Exception as exc:
+            logger.exception("Greeting TTS failed")
+            await emit_json({"type": "error", "message": f"Greeting failed: {exc}"})
+        if audio_started:
+            await emit_json({"type": "audio_end"})
+        # Record the greeting as the assistant's opening line for context.
+        self.short_term.add_assistant(text)
