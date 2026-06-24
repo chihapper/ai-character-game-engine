@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SAMPLE_RATE = 24000;
+const PLAYBACK_PRIME = 0.12; // seconds of jitter cushion before playback starts
 
 // ---- DOM helpers ----
 const $ = (id) => document.getElementById(id);
@@ -38,13 +39,23 @@ let pcmCarry = new Uint8Array(0); // holds a trailing odd byte across frames
 
 function ensureAudio() {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    try {
+      // Match the stream's sample rate so each frame plays natively. A context
+      // running at a different rate (commonly 48 kHz) resamples every buffer
+      // independently, producing a click at each ~0.5 s buffer boundary.
+      audioCtx = new Ctor({ sampleRate: SAMPLE_RATE });
+    } catch (e) {
+      audioCtx = new Ctor(); // browser refused the explicit rate; fall back
+    }
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
 }
 
 function resetPlaybackClock() {
-  nextStartTime = audioCtx ? audioCtx.currentTime : 0;
+  // Start a touch in the future so brief network jitter can't starve the
+  // playhead and inject a gap (which also clicks).
+  nextStartTime = (audioCtx ? audioCtx.currentTime : 0) + PLAYBACK_PRIME;
   pcmCarry = new Uint8Array(0);
 }
 
@@ -77,7 +88,7 @@ function playPcmFrame(arrayBuffer) {
   src.connect(audioCtx.destination);
 
   const now = audioCtx.currentTime;
-  if (nextStartTime < now) nextStartTime = now;
+  if (nextStartTime < now) nextStartTime = now + PLAYBACK_PRIME; // underran — re-cushion
   src.start(nextStartTime);
   nextStartTime += buf.duration;
 }

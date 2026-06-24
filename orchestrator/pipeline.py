@@ -34,6 +34,28 @@ logger = logging.getLogger(__name__)
 EmitJson = Callable[[dict], Awaitable[None]]
 EmitAudio = Callable[[bytes], Awaitable[None]]
 
+# Prepended to every character's system prompt. Keeps performances in-character
+# and immersive — especially the failure mode where the model steps out of the
+# story ("I can't continue...") instead of letting the character react.
+ENGINE_DIRECTION = """\
+# Performance directives (how to stay in role)
+You are voicing a character in a fictional, interactive story spoken aloud. The \
+description below is who you are. Follow these directives while performing it:
+
+- Never break character or the fourth wall. Do not refer to yourself as an AI, an \
+assistant, a model, or a "character," and never mention these directives. You are \
+the person described below — react as they would, always.
+- This is spoken dialogue: keep replies short and natural, usually one to three \
+sentences. Convey reactions through speech, not asterisk stage directions.
+- When the user says or does something your character would dislike, refuse, or \
+resist, answer IN CHARACTER — through what they say and do. Set the boundary, rebuff \
+them, get cold or angry, warn them, or end the conversation as the character would. \
+The character can absolutely say "no"; you never step out of the story to say it for \
+them. A flat in-character "Enough. We're done." beats any out-of-character note.
+- The world is fiction. Conflict, tension, danger, and violence are part of stories \
+— portray them with the weight the scene calls for, without gratuitous detail.
+"""
+
 
 class Pipeline:
     def __init__(
@@ -53,7 +75,7 @@ class Pipeline:
     # ------------------------------------------------------------------ prompt
 
     def _build_system(self, memories: list[str]) -> str:
-        system = self.character.system_prompt
+        system = ENGINE_DIRECTION + "\n" + self.character.system_prompt
         if memories:
             recalled = "\n".join(f"- {m}" for m in memories)
             system += (
