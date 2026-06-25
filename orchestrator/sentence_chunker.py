@@ -29,11 +29,12 @@ class Segment(NamedTuple):
     para_break: bool
 
 
-# Sentence-ending punctuation followed by whitespace. We capture the trailing
-# whitespace so we can tell a within-paragraph break (a space) from a paragraph
-# break (a blank line). Kept simple and fast; perfect linguistic segmentation is
-# not the goal — low latency to the *first* speakable chunk is.
-_BOUNDARY = re.compile(r"[.!?]+(\s+)")
+# Sentence-ending punctuation followed by whitespace, captured in two groups:
+# (1) the punctuation run, (2) the trailing whitespace — so we can tell a within-
+# paragraph break (a space) from a paragraph break (a blank line), AND tell a real
+# sentence end from a mid-thought ellipsis. Kept simple and fast; perfect linguistic
+# segmentation is not the goal — low latency to the *first* speakable chunk is.
+_BOUNDARY = re.compile(r"([.!?]+)(\s+)")
 
 # A blank line in the separator = a paragraph break (handles "\n\n", "\n \n").
 _PARA_BREAK = re.compile(r"\n\s*\n")
@@ -67,22 +68,33 @@ class SentenceChunker:
                 break
 
             end = match.end()
+            punct, sep = match.group(1), match.group(2)
             text_before_punct = self._buf[: match.start()]
             candidate = self._buf[:end].strip()
+            para_break = bool(_PARA_BREAK.search(sep))
 
-            # Skip false boundaries (abbreviations), tiny fragments, and boundaries
-            # that fall *inside* an open `*stage direction*` (odd asterisk count so
-            # far). Splitting an action across sentences would strand a lone `*` on
+            # A mid-paragraph ellipsis ("...") is a trailing-off PAUSE, not a sentence
+            # end. Cutting there strands the continuation as its own utterance, which a
+            # per-utterance TTS (Inworld) renders with reset prosody — so the tail
+            # ("...honey.") lands flat and robotic. Let it ride; the TTS voices the
+            # pause itself. A paragraph break right after the ellipsis is still a real
+            # boundary. (A unicode "…" isn't matched by _BOUNDARY at all, so it never
+            # splits — same intent.)
+            is_ellipsis = len(punct) >= 2 and set(punct) == {"."}
+
+            # Skip false boundaries (abbreviations), tiny fragments, boundaries inside an
+            # open `*stage direction*` (odd asterisk count so far), and mid-thought
+            # ellipses. Splitting an action across sentences would strand a lone `*` on
             # each half, defeating clean_for_speech and letting the action be spoken.
             if (
                 self._is_false_boundary(text_before_punct)
                 or len(candidate) < _MIN_CHARS
                 or candidate.count("*") % 2 == 1
+                or (is_ellipsis and not para_break)
             ):
                 search_start = end
                 continue
 
-            para_break = bool(_PARA_BREAK.search(match.group(1)))
             out.append(Segment(candidate, para_break))
             self._buf = self._buf[end:]
             search_start = 0
