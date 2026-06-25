@@ -98,10 +98,24 @@ def parse_pause(text: str) -> tuple[int, str]:
     pause_ms = 0
     kept: list[str] = []
     for clause in _clauses(m.group(1)):
-        if clause.lower() in PAUSE_TAG_MS:
-            pause_ms = max(pause_ms, PAUSE_TAG_MS[clause.lower()])  # a pure pause cue — consume it
-        else:
-            kept.append(clause)
+        low = clause.lower()
+        if low in PAUSE_TAG_MS:
+            pause_ms = max(pause_ms, PAUSE_TAG_MS[low])  # a pure pause cue — consume it
+            continue
+        words = low.split()
+        if words and words[-1] in ("pause", "beat"):
+            # A compound cue ("[Playful pause]", "[long awkward pause]", "[dramatic beat]"):
+            # consume the beat for real silence AND keep the manner word as the tone, so the
+            # line isn't left flat. Without this the whole tag is dropped — no pause, no tone.
+            ms = PAUSE_TAG_MS["beat"] if words[-1] == "beat" else PAUSE_TAG_MS["pause"]
+            if "long" in words or "longer" in words:
+                ms = PAUSE_TAG_MS["long pause"]
+            pause_ms = max(pause_ms, ms)
+            manner = [w for w in words if w not in ("pause", "beat", "long", "longer")]
+            if manner:
+                kept.append(" ".join(manner))
+            continue
+        kept.append(clause)
     for hint, ms in PAUSE_HINT_MS.items():  # pause-implying words add a beat, stay in place
         if any(hint in c.lower() for c in kept):
             pause_ms = max(pause_ms, ms)
@@ -206,22 +220,35 @@ _TONE_WORDS = frozenset(
     matter-of-fact knowing conspiratorial secretive sly coy guarded measured weary""".split()
 )
 
+# Per-provider vocabularies. ElevenLabs v3 READS unrecognized tags aloud, so it gets the
+# strict set above. Inworld TTS-2 does free natural-language steering (no preset list), so
+# it can perform descriptive manner words EL would just speak — those live ONLY in the
+# Inworld set. Keeping them apart is the point: adding an Inworld word can never loosen EL.
+# Each profile carries its own set (VoiceProfile.tone_words); edit one without touching the
+# other. (Sounds/actions/pauses stay shared — they behave the same everywhere.)
+_INWORLD_EXTRA = frozenset(
+    "softer trailing sing song intrigue intrigued breezy airy husky smoky feigned "
+    "dramatic awkward".split()
+)
+_EL_TONE_WORDS = _TONE_WORDS
+_INWORLD_TONE_WORDS = _TONE_WORDS | _INWORLD_EXTRA
+
 # Small fillers allowed between tone words (so "playful but firm" / "low and menacing"
 # pass, and "drawn out" reduces to just "drawn"). Kept minimal on purpose: prose-y
 # prepositions like "beneath"/"into" signal an atmospheric phrase, not a tag, so they
 # are NOT fillers — they count as words and trip the recognizer.
-_TONE_CONNECTORS = frozenset("and or but with a an the of it out".split())
+_TONE_CONNECTORS = frozenset("and or but with a an the of it out off".split())
 _MAX_TONE_WORDS = 4  # beyond this it's an atmospheric phrase a voice tends to read aloud
 
 
-def _recognized_tone(direction: str) -> bool:
+def _recognized_tone(direction: str, vocab: frozenset = _TONE_WORDS) -> bool:
     """True if we're confident a voice will PERFORM this direction rather than speak it:
-    it's short, and every content word is a known delivery/emotion word."""
+    it's short, and every content word is in that provider's delivery `vocab`."""
     words = re.findall(r"[a-z]+", direction.lower())
     if not words or len(words) > _MAX_TONE_WORDS:
         return False  # an overlong phrase reads as prose; the voice voices it
     content = [w for w in words if w not in _TONE_CONNECTORS]
-    return bool(content) and all(w in _TONE_WORDS for w in content)
+    return bool(content) and all(w in vocab for w in content)
 
 
 # --- Per-provider voice profiles ------------------------------------------------
@@ -247,6 +274,7 @@ class VoiceProfile:
     name: str = ""
     sound_idx: int = 0  # column into _NONVERBAL_ROOTS for this provider
     splits_mid_line: bool = False  # pipeline splits a line at mid-line tone shifts
+    tone_words: frozenset = frozenset()  # delivery words THIS voice reliably performs
 
     def render_direction(self, tone: str, leading: bool) -> str | None:
         """Render a tone/delivery direction (e.g. "cold, clipped") for this provider,
@@ -262,12 +290,13 @@ class ElevenLabsProfile(VoiceProfile):
     name = "elevenlabs"
     sound_idx = 2
     splits_mid_line = False  # v3 shifts tone inline; no need to split
+    tone_words = _EL_TONE_WORDS  # strict: v3 voices anything it doesn't recognize
 
     def render_direction(self, tone: str, leading: bool) -> str | None:
         # v3 acts on inline tags anywhere, BUT it reads unrecognized brackets out loud,
         # so a direction we're not confident it performs is dropped, not voiced.
         d = _strip_articles(tone.strip()).lower()
-        return f"[{d}]" if d and _recognized_tone(d) else None
+        return f"[{d}]" if d and _recognized_tone(d, self.tone_words) else None
 
     def directive(self) -> str:
         return (
@@ -291,6 +320,7 @@ class InworldProfile(VoiceProfile):
     name = "inworld"
     sound_idx = 1
     splits_mid_line = True  # can't shift tone within one utterance -> split + beat
+    tone_words = _INWORLD_TONE_WORDS  # broader: free-form steering, performs descriptors
 
     def render_direction(self, tone: str, leading: bool) -> str | None:
         # Inworld reads a LEADING bracket as natural-language steering; a mid-line
@@ -306,7 +336,7 @@ class InworldProfile(VoiceProfile):
         # "[Shusing]") it would just read aloud, so drop it.
         if d.split()[0].lower() in _STEER_VERBS:
             return f"[{d}]"
-        if _recognized_tone(d):
+        if _recognized_tone(d, self.tone_words):
             return _inworld_steer(d)
         return None
 
@@ -363,6 +393,28 @@ def profile_for(provider: str) -> VoiceProfile:
 def splits_mid_line(provider: str) -> bool:
     """Whether the pipeline splits a line at mid-line tone shifts for this provider."""
     return profile_for(provider).splits_mid_line
+
+
+def renders_tone(text: str, provider: str) -> bool:
+    """True if the LEADING bracket of `text` yields real steering for this provider (vs
+    being dropped). The pipeline uses this so a tone the model invents that this voice
+    CAN'T perform doesn't poison tone-carry — instead the engine keeps carrying the last
+    tone that actually performs, rather than snapping the following lines to flat."""
+    m = _LEAD_BRACKET_RE.match(text)
+    if not m:
+        return False
+    prof = profile_for(provider)
+    for clause in _clauses(m.group(1)):
+        low = clause.lower()
+        if low in PAUSE_TAG_MS:
+            continue
+        if any(root in low for root in _NONVERBAL_ROOTS):
+            continue  # a sound, not a tone
+        if set(low.split()) & _ACTION_WORDS:
+            continue  # a physical action, not a tone
+        if prof.render_direction(clause, True):
+            return True
+    return False
 
 
 def render_tags(text: str, provider: str) -> str:
