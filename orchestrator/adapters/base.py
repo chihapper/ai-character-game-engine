@@ -43,18 +43,10 @@ class TTSAdapter(ABC):
     """
 
     @abstractmethod
-    def stream_speech(
-        self,
-        text: str,
-        voice_id: str,
-        *,
-        emotion: str | None = None,
-        speed: float | None = None,
-        volume: float | None = None,
-    ) -> AsyncIterator[bytes]:
-        """Yield PCM audio chunks for `text` spoken in voice `voice_id`. Optional
-        per-utterance expressivity (`emotion`, `speed`, `volume`) is rendered however
-        the provider supports it; adapters ignore controls they can't honor."""
+    def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+        """Yield PCM audio chunks for `text` spoken in voice `voice_id`. The text may
+        carry inline performance tags ([whispering], [laughs], ...); each adapter
+        renders or drops them per its provider (see expressivity.render_tags)."""
         raise NotImplementedError
 
     @abstractmethod

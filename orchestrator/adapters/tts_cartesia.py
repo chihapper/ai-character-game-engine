@@ -23,7 +23,7 @@ import httpx
 import websockets
 
 from ..config import AUDIO_SAMPLE_RATE, get_settings
-from ..expressivity import clamp, has_speakable, render_tags
+from ..expressivity import has_speakable, render_tags
 from .base import TTSAdapter
 from ._audio import pcm_to_wav
 
@@ -49,16 +49,9 @@ class CartesiaTTS(TTSAdapter):
         self._model = model or settings.cartesia_model
         self._api_key = settings.cartesia_api_key
 
-    async def stream_speech(
-        self,
-        text: str,
-        voice_id: str,
-        *,
-        emotion: str | None = None,
-        speed: float | None = None,
-        volume: float | None = None,
-    ) -> AsyncIterator[bytes]:
-        # sonic-3.5 renders [laughter]; drop other tags it can't voice.
+    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+        # sonic-3.5 renders [laughter]; drop other tags it can't voice. (Cartesia is
+        # deprecated here — no emotion control since the shared vocab was removed.)
         text = render_tags(text, "cartesia")
         if not has_speakable(text):
             return  # nothing left to say (e.g. an unsupported-only non-verbal line)
@@ -76,17 +69,6 @@ class CartesiaTTS(TTSAdapter):
             "continue": False,
             "max_buffer_delay_ms": 0,  # minimize latency
         }
-        # Per-utterance expressivity (Beta on sonic-3/3.5). emotion only "takes"
-        # when it matches the words, which it does — the LLM picked it for this line.
-        gen: dict = {}
-        if emotion:
-            gen["emotion"] = emotion
-        if speed is not None:
-            gen["speed"] = clamp(speed, 0.6, 1.5)
-        if volume is not None:
-            gen["volume"] = clamp(volume, 0.5, 2.0)
-        if gen:
-            request["generation_config"] = gen
         async with websockets.connect(
             _WS_URL, additional_headers={"X-API-Key": self._api_key}
         ) as ws:

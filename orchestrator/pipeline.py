@@ -24,7 +24,7 @@ from typing import Awaitable, Callable
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE
-from .expressivity import controls_for, parse_emotion, parse_pause, performance_directive
+from .expressivity import parse_pause, performance_directive
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
@@ -167,22 +167,16 @@ class Pipeline:
                 seg = await sentence_q.get()
                 if seg is None:
                     break
-                emotion, rest = parse_emotion(seg.text)  # leading [emotion] tag
-                pause_ms, rest = parse_pause(rest)  # dramatic lead-in silence, if cued
+                pause_ms, rest = parse_pause(seg.text)  # dramatic lead-in silence, if cued
                 spoken = clean_for_speech(rest)
                 if not spoken:
                     continue  # sentence was pure stage direction / markup / punctuation
                 if pause_ms:
                     pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
-                _, speed, volume = controls_for(emotion)
                 try:
                     sentence_has_audio = False
                     async for chunk in self.tts.stream_speech(
-                        spoken,
-                        self.character.voice_id,
-                        emotion=emotion,
-                        speed=speed,
-                        volume=volume,
+                        spoken, self.character.voice_id
                     ):
                         if not state["first_audio"]:
                             state["first_audio"] = True
@@ -258,21 +252,15 @@ class Pipeline:
         pending_gap_ms = 0
         try:
             for seg in segments:
-                emotion, rest = parse_emotion(seg.text)
-                pause_ms, rest = parse_pause(rest)
+                pause_ms, rest = parse_pause(seg.text)
                 spoken = clean_for_speech(rest)
                 if not spoken:
                     continue
                 if pause_ms:
                     pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
-                _, speed, volume = controls_for(emotion)
                 sentence_has_audio = False
                 async for chunk in self.tts.stream_speech(
-                    spoken,
-                    self.character.voice_id,
-                    emotion=emotion,
-                    speed=speed,
-                    volume=volume,
+                    spoken, self.character.voice_id
                 ):
                     if not audio_started:
                         audio_started = True

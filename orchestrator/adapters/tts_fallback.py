@@ -26,20 +26,11 @@ class FallbackTTS(TTSAdapter):
         self._fallback_voice = fallback_voice
         self._primary_failed = False
 
-    async def stream_speech(
-        self,
-        text: str,
-        voice_id: str,
-        *,
-        emotion: str | None = None,
-        speed: float | None = None,
-        volume: float | None = None,
-    ) -> AsyncIterator[bytes]:
-        controls = {"emotion": emotion, "speed": speed, "volume": volume}
+    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
         if not self._primary_failed:
             produced = False
             try:
-                async for chunk in self._primary.stream_speech(text, voice_id, **controls):
+                async for chunk in self._primary.stream_speech(text, voice_id):
                     produced = True
                     yield chunk
                 return
@@ -54,9 +45,7 @@ class FallbackTTS(TTSAdapter):
                     "of this session: %s",
                     exc,
                 )
-        async for chunk in self._fallback.stream_speech(
-            text, self._fallback_voice, **controls
-        ):
+        async for chunk in self._fallback.stream_speech(text, self._fallback_voice):
             yield chunk
 
     async def clone_voice(self, sample_audio: bytes, display_name: str) -> str:
