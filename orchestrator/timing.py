@@ -41,5 +41,10 @@ PAUSE_HINT_MS = {
     "trails off": 500,
 }
 
+# A tiny beat inserted where we split one sentence at a mid-line tone change (for
+# providers like Inworld that can't shift tone within a single utterance). The pause
+# "acts" as the moment of the shift, e.g. [calm] ... -> (beat) -> [yell] ...
+TONE_SHIFT_GAP_MS = 200
+
 # Ceiling on any single inter-line silence, even when cues stack, so it never drags.
 GAP_MAX_MS = 2200

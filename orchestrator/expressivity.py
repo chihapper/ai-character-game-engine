@@ -40,7 +40,6 @@ _NONVERBAL_ROOTS: dict[str, tuple[str | None, str | None, str | None]] = {
     "cry":     (None, None, "[crying]"),
     "sob":     (None, None, "[crying]"),
 }
-_PROVIDER_IDX = {"cartesia": 0, "inworld": 1, "elevenlabs": 2}
 
 # Physical-action verbs that mark a bracket as a STAGE DIRECTION (something the
 # character does, not how they sound), so we drop it. Ambiguous vocal verbs like
@@ -66,22 +65,95 @@ _STEER_VERBS = frozenset(
 _BRACKET_RE = re.compile(r"\[([^\]\n]+)\]")
 _LEAD_BRACKET_RE = re.compile(r"^\s*\[([^\]\n]+)\]\s*")
 
+# A single bracket can pack several cues the model joins with commas, periods, or
+# semicolons — e.g. "[A sharp, mirthless laugh]" or "[Pause. Lowers voice]". We split
+# into clauses and route each on its own, so a timing cue welded to a delivery note
+# can't leak into speech as one unparsed blob.
+_CLAUSE_SEP_RE = re.compile(r"[,.;]")
+_ARTICLES = frozenset("a an the".split())
+
+
+def _clauses(inner: str) -> list[str]:
+    """The cues inside a bracket, split on , . ; and stripped of blanks."""
+    return [c.strip() for c in _CLAUSE_SEP_RE.split(inner) if c.strip()]
+
+
+def _strip_articles(direction: str) -> str:
+    """Drop a leading article so "a sharp" -> "sharp" (the voice can't perform "a")."""
+    words = direction.split()
+    while words and words[0].lower() in _ARTICLES:
+        words = words[1:]
+    return " ".join(words)
+
 
 def parse_pause(text: str) -> tuple[int, str]:
     """Extra silence (ms) to hold BEFORE this line, for dramatic pacing, read from a
-    leading bracket. Returns (extra_ms, rest). A pure pause tag is consumed; a
-    pause-implying word inside a richer note adds a beat but is left in place."""
+    leading bracket. Returns (extra_ms, rest). A pause cue is consumed for silence — even
+    when welded to a delivery note in a compound bracket ("[Pause. Lowers voice]"), where
+    only the pause clause is removed and the rest is left for the renderer. A pause-implying
+    word inside a richer note ("[final, quiet]") adds a beat but is left in place."""
     m = _LEAD_BRACKET_RE.match(text)
     if not m:
         return 0, text
-    inner = m.group(1).strip().lower()
-    if inner in PAUSE_TAG_MS:
-        return PAUSE_TAG_MS[inner], text[m.end():]
-    extra = 0
-    for hint, ms in PAUSE_HINT_MS.items():
-        if hint in inner:
-            extra = max(extra, ms)
-    return extra, text
+    pause_ms = 0
+    kept: list[str] = []
+    for clause in _clauses(m.group(1)):
+        if clause.lower() in PAUSE_TAG_MS:
+            pause_ms = max(pause_ms, PAUSE_TAG_MS[clause.lower()])  # a pure pause cue — consume it
+        else:
+            kept.append(clause)
+    for hint, ms in PAUSE_HINT_MS.items():  # pause-implying words add a beat, stay in place
+        if any(hint in c.lower() for c in kept):
+            pause_ms = max(pause_ms, ms)
+    rest = text[m.end():]
+    if kept:  # rebuild the bracket from the non-pause clauses so the renderer still sees them
+        rest = f"[{', '.join(kept)}] {rest}"  # the space the lead-bracket regex ate back
+    return pause_ms, rest
+
+
+def _tone_of(inner: str) -> str | None:
+    """The tone/delivery direction inside a bracket (e.g. "whispering", "flat,
+    unimpressed"), or None if it's only a sound, a physical action, or a pure pause."""
+    directions: list[str] = []
+    for part in _clauses(inner):
+        low = part.lower()
+        if low in PAUSE_TAG_MS:
+            continue
+        if any(root in low for root in _NONVERBAL_ROOTS):
+            continue  # a sound, not a tone
+        if set(low.split()) & _ACTION_WORDS:
+            continue  # a physical action, not a tone
+        directions.append(low)
+    return ", ".join(directions) if directions else None
+
+
+def leading_tone(text: str) -> str | None:
+    """The tone a line LEADS with, or None if it opens with a sound/action/no bracket.
+    The pipeline carries this onto following untagged lines so the delivery doesn't snap
+    back to neutral after a pause or "..."."""
+    m = _LEAD_BRACKET_RE.match(text)
+    return _tone_of(m.group(1)) if m else None
+
+
+def split_inline_tones(text: str) -> list[str]:
+    """Split a line at MID-line tone tags into sub-lines, each led by its tone — so a
+    provider that can't shift tone within one utterance (Inworld) can synthesize each
+    part as its own call, with a tiny beat between standing in for the change. E.g.
+    "[calm] Look — [yell] get out!" -> ["[calm] Look —", "[yell] get out!"]. Sounds,
+    actions, and pure pause tags are never split points."""
+    cuts: list[int] = []
+    seg_start = 0
+    for m in _BRACKET_RE.finditer(text):
+        if _tone_of(m.group(1)) is None:
+            continue
+        # only a split point if real words precede this tag in the current sub-line
+        if any(c.isalnum() for c in text[seg_start : m.start()]):
+            cuts.append(m.start())
+            seg_start = m.start()
+    if not cuts:
+        return [text]
+    bounds = [0, *cuts, len(text)]
+    return [u for u in (text[a:b].strip() for a, b in zip(bounds, bounds[1:])) if u]
 
 
 def _inworld_steer(direction: str) -> str:
@@ -93,46 +165,235 @@ def _inworld_steer(direction: str) -> str:
     return f"[{d}]" if head in _STEER_VERBS else f"[sound {d}]"
 
 
+# Delivery/emotion words the instruction-following voices reliably PERFORM rather than
+# read out loud. This is the safety net: a bracket the model invents (a made-up or
+# misspelled cue like "[Shusing]", a sound-effect like "[explosion]", or an overly
+# long atmospheric phrase) is DROPPED instead of spoken. We never rewrite the model's
+# wording — a recognized tag passes through verbatim; only the risky ones are dropped.
+# Generous on purpose, and the per-provider directives steer the model to stay inside
+# it so drops stay rare. (Non-verbal SOUNDS are handled separately by _NONVERBAL_ROOTS.)
+_TONE_WORDS = frozenset(
+    """angry angrily mad furious furiously irate livid seething
+    sad sadly sorrowful mournful mournfully grief grieving heartbroken melancholy wistful
+    happy happily glad joyful joyfully gleeful giddy elated cheerful cheerfully merry sunny
+    excited excitedly eager eagerly thrilled enthusiastic animated breathless breathlessly
+    nervous nervously anxious anxiously uneasy jittery tense edgy worried fretful
+    calm calmly serene serenely composed measured even steady level unhurried relaxed
+    cold coldly cool icy frosty aloof distant detached clinical flat flatly hollow blank
+    warm warmly tender tenderly gentle gently soft softly soothing kind kindly affectionate
+    playful playfully teasing teasingly cheeky impish mischievous flirty flirtatious sultry
+    wry wryly dry deadpan sardonic ironic sarcastic sarcastically mocking mockingly snide
+    grave gravely solemn somber somberly serious sober earnest earnestly sincere heavy
+    defeated defeatedly weary wearily tired exhausted resigned hopeless dejected despondent
+    hopeful hopefully wistfully longing yearning pleading desperate desperately frantic frantic
+    proud proudly smug smugly arrogant haughty condescending dismissive disdainful contemptuous
+    ashamed guilty sheepish embarrassed bashful timid shy meek hesitant hesitantly uncertain
+    confident confidently assured bold brazen commanding firm firmly stern sternly hard harsh
+    afraid scared fearful frightened terrified petrified panicked alarmed wary suspicious guarded
+    surprised shocked stunned startled astonished incredulous disbelieving bewildered confused
+    disgusted revolted appalled horrified bitter bitterly resentful jealous envious spiteful
+    menacing menacingly threatening dangerous ominous ominously sinister dark brooding grim
+    low high deep faint weak quiet quietly hushed soft loud loudly booming thunderous strong
+    whisper whispers whispering whispered murmur murmurs murmuring mutter mutters muttering
+    shout shouts shouting yell yells yelling growl growls growling snarl snarls snarling hiss
+    trembling shaky shaking quavering quaking unsteady cracking faltering halting stammering
+    drawl drawls drawling drawn clipped crisp sharp sharply bright brightly lilting singsong
+    rushed hurried breathy raspy gravelly throaty velvety smooth honeyed silky purring seductive
+    slow slowly deliberate deliberately careful pointed emphatic intense intensely urgent urgently
+    amused amusedly delighted curious thoughtful pensive reflective dreamy faraway absent
+    relieved relief content peaceful gentle reverent awed reverent wondering breath taken
+    venomous icy seething withering scathing cutting accusing pleading coaxing reassuring
+    matter-of-fact knowing conspiratorial secretive sly coy guarded measured weary""".split()
+)
+
+# Small fillers allowed between tone words (so "playful but firm" / "low and menacing"
+# pass, and "drawn out" reduces to just "drawn"). Kept minimal on purpose: prose-y
+# prepositions like "beneath"/"into" signal an atmospheric phrase, not a tag, so they
+# are NOT fillers — they count as words and trip the recognizer.
+_TONE_CONNECTORS = frozenset("and or but with a an the of it out".split())
+_MAX_TONE_WORDS = 4  # beyond this it's an atmospheric phrase a voice tends to read aloud
+
+
+def _recognized_tone(direction: str) -> bool:
+    """True if we're confident a voice will PERFORM this direction rather than speak it:
+    it's short, and every content word is a known delivery/emotion word."""
+    words = re.findall(r"[a-z]+", direction.lower())
+    if not words or len(words) > _MAX_TONE_WORDS:
+        return False  # an overlong phrase reads as prose; the voice voices it
+    content = [w for w in words if w not in _TONE_CONNECTORS]
+    return bool(content) and all(w in _TONE_WORDS for w in content)
+
+
+# --- Per-provider voice profiles ------------------------------------------------
+# All provider-specific behavior lives in ONE profile per provider: its non-verbal
+# token column, how it renders a tone direction, its LLM directive, and whether the
+# pipeline splits a line at mid-line tone shifts. Shared concepts (sounds, actions,
+# pauses, tone-carry) live OUTSIDE the profiles. To change one provider, edit only
+# its profile — the others cannot be touched by accident.
+
+_HEADER = "# Performance tags (spoken aloud; the bracketed directions are never read out)\n"
+# Tone-continuity nudge — shared by the expressive providers (the rule is the same;
+# only its rendering differs per provider, via render_direction).
+_CARRY = (
+    "Your tone CARRIES to the following lines until you change it, so don't snap back "
+    "to a flat/neutral tone after a pause or '...'. When you shift it, EASE it — step "
+    "through it (e.g. tender -> wistful -> cold), don't jump in a single beat.\n"
+)
+
+
+class VoiceProfile:
+    """How one TTS provider consumes performance tags. One subclass per provider."""
+
+    name: str = ""
+    sound_idx: int = 0  # column into _NONVERBAL_ROOTS for this provider
+    splits_mid_line: bool = False  # pipeline splits a line at mid-line tone shifts
+
+    def render_direction(self, tone: str, leading: bool) -> str | None:
+        """Render a tone/delivery direction (e.g. "cold, clipped") for this provider,
+        or None to drop it. `leading` = the direction opened the line."""
+        return None
+
+    def directive(self) -> str:
+        """The how-to-perform instructions handed to the LLM for this provider."""
+        raise NotImplementedError
+
+
+class ElevenLabsProfile(VoiceProfile):
+    name = "elevenlabs"
+    sound_idx = 2
+    splits_mid_line = False  # v3 shifts tone inline; no need to split
+
+    def render_direction(self, tone: str, leading: bool) -> str | None:
+        # v3 acts on inline tags anywhere, BUT it reads unrecognized brackets out loud,
+        # so a direction we're not confident it performs is dropped, not voiced.
+        d = _strip_articles(tone.strip()).lower()
+        return f"[{d}]" if d and _recognized_tone(d) else None
+
+    def directive(self) -> str:
+        return (
+            _HEADER
+            + "Direct your delivery with bracketed tags, placed exactly where they apply. "
+            "Keep each tag to ONE or TWO real delivery words — this voice PERFORMS known "
+            "emotion/delivery words but READS OUT LOUD anything it doesn't recognize, so "
+            "never invent long atmospheric phrases or sound-effects:\n"
+            + "- Lead most lines with a TONE/EMOTION: [sarcastic], [cold], [tender], [wry], "
+            "[grave], [giddy], [defeated], [nervous], [smug], [bitter], [playful but firm].\n"
+            + "- Add DELIVERY where it sharpens things: [whispering], [shouting], [breathless], "
+            "[trembling], [clipped], [low and menacing], [drawn out].\n"
+            + "- Drop in SOUNDS where natural: [laughs], [giggles], [sighs], [scoffs], [gasps], [exhales].\n"
+            + "- TIMING: put [pause] or [long pause] on its own line — the engine holds a beat.\n"
+            + _CARRY
+            + "Match every tag to the words; never stay flat. No physical actions — you are only a voice."
+        )
+
+
+class InworldProfile(VoiceProfile):
+    name = "inworld"
+    sound_idx = 1
+    splits_mid_line = True  # can't shift tone within one utterance -> split + beat
+
+    def render_direction(self, tone: str, leading: bool) -> str | None:
+        # Inworld reads a LEADING bracket as natural-language steering; a mid-line
+        # direction can't be honored, so drop it (the pipeline splits true shifts).
+        if not leading:
+            return None
+        d = _strip_articles(tone.strip()).lower()
+        if not d:
+            return None
+        # An imperative instruction ("lowers his voice", "speak low and slow") is what
+        # Inworld steers on best — trust it as-is. A bare adjective ("cold") becomes a
+        # "[sound cold]" instruction. Anything else (a prose fragment / made-up cue like
+        # "[Shusing]") it would just read aloud, so drop it.
+        if d.split()[0].lower() in _STEER_VERBS:
+            return f"[{d}]"
+        if _recognized_tone(d):
+            return _inworld_steer(d)
+        return None
+
+    def directive(self) -> str:
+        return (
+            _HEADER
+            + "Open most lines with a DELIVERY DIRECTION in brackets that says HOW to speak. "
+            "START it with a verb (speak/say/whisper/lower/growl/snap/drawl) or a feeling "
+            "word (cold, hushed, frantic, tender) — then the voice performs it:\n"
+            + '- e.g. "[speak low and unhurried]", "[lower your voice, careful now]", '
+            '"[whisper, conspiratorial]", "[cold]", "[bright and teasing]".\n'
+            + "- One direction per line, up front. For a SUDDEN shift, drop a new tag right "
+            'where it turns: "[calm] For the last time... [yell] GET OUT!" — the engine adds a '
+            "tiny beat to carry it.\n"
+            + "- Keep cues clean: don't weld a pause onto a delivery note. Natural sounds go "
+            "inline where they fit: [laughs], [sighs], [breathes], [coughs], [clears throat]. "
+            "Put a stressed word in CAPITALS.\n"
+            + "- TIMING: [pause] or [long pause] on its OWN line holds a beat of silence.\n"
+            + _CARRY
+            + "Match every direction to the words; never stay flat. No physical actions — you "
+            "are only a voice."
+        )
+
+
+class CartesiaProfile(VoiceProfile):
+    name = "cartesia"
+    sound_idx = 0
+    splits_mid_line = False
+
+    def render_direction(self, tone: str, leading: bool) -> str | None:
+        return None  # categorical model — no free-form direction
+
+    def directive(self) -> str:
+        return (
+            _HEADER
+            + "Lead most lines with a simple one-word emotion ([angry], [sad], [excited]); "
+            "you may use [laughs] where it fits. This voice can't whisper or perform other "
+            "vocal directions, so keep tags simple."
+        )
+
+
+_PROFILES: dict[str, VoiceProfile] = {
+    "elevenlabs": ElevenLabsProfile(),
+    "inworld": InworldProfile(),
+    "cartesia": CartesiaProfile(),
+}
+
+
+def profile_for(provider: str) -> VoiceProfile:
+    """The voice profile for a provider (defaults to Cartesia's flat behavior)."""
+    return _PROFILES.get(provider, _PROFILES["cartesia"])
+
+
+def splits_mid_line(provider: str) -> bool:
+    """Whether the pipeline splits a line at mid-line tone shifts for this provider."""
+    return profile_for(provider).splits_mid_line
+
+
 def render_tags(text: str, provider: str) -> str:
     """Convert the model's bracket tags to what a provider can act on. Each bracket is
-    split on commas and handled part by part:
-    - non-verbal sounds (laugh, sigh, giggle, ...) -> the provider's token (or dropped)
-    - physical stage directions ([glares at you]) -> dropped everywhere
-    - delivery/emotion directions -> kept inline for ElevenLabs v3, and — when they
-      LEAD the line — turned into steering for Inworld; dropped for Cartesia."""
-    idx = _PROVIDER_IDX.get(provider, 0)
+    split into clauses (on , . ;) and routed cue by cue: a pure pause is dropped (its
+    silence is handled in the pipeline), a non-verbal sound maps to the provider's token,
+    a physical action is dropped, and a delivery direction is handed to the provider's
+    profile — which renders it or drops it when the voice would read it aloud instead."""
+    prof = profile_for(provider)
 
     def repl(m: re.Match) -> str:
         leading = text[: m.start()].strip() == ""
-        sounds: list[str] = []
-        directions: list[str] = []
-        for raw in m.group(1).split(","):
-            part = raw.strip()
-            if not part:
-                continue
-            low = part.lower()
+        out: list[str] = []
+        for clause in _clauses(m.group(1)):
+            low = clause.lower()
+            if low in PAUSE_TAG_MS:
+                continue  # pure pause cue — silence is injected by the pipeline, never voiced
             matched_sound = False
             for root, tokens in _NONVERBAL_ROOTS.items():
                 if root in low:
                     matched_sound = True
-                    if tokens[idx]:
-                        sounds.append(tokens[idx])
+                    if tokens[prof.sound_idx]:
+                        out.append(tokens[prof.sound_idx])
                     break
             if matched_sound:
                 continue
             if set(low.split()) & _ACTION_WORDS:
                 continue  # physical stage direction — never spoken or voiced
-            directions.append(low)
-
-        out: list[str] = []
-        if directions:
-            tone = ", ".join(directions)  # recombine a multi-word tone into one tag
-            if provider == "elevenlabs":
-                out.append(f"[{tone}]")  # v3 acts on inline tags anywhere
-            elif provider == "inworld" and leading:
-                out.append(_inworld_steer(tone))  # leading bracket = steering
-            # cartesia: drop (categorical model, no free-form direction)
-        out.extend(sounds)  # tone first, then the sound (e.g. "[sarcastic] [laughs]")
+            rendered = prof.render_direction(clause, leading)
+            if rendered:
+                out.append(rendered)
         return " ".join(out)
 
     return _BRACKET_RE.sub(repl, text).strip()
@@ -148,26 +409,6 @@ def clamp(value: float, lo: float, hi: float) -> float:
 
 
 def performance_directive(provider: str) -> str:
-    """How-to-perform instructions for the LLM, tailored to the character's voice. The
-    expressive providers get free rein; Cartesia (categorical) gets a simple set."""
-    header = "# Performance tags (spoken aloud; the bracketed tags are never read out)\n"
-    if provider == "cartesia":
-        return (
-            header
-            + "Lead most lines with a simple one-word emotion ([angry], [sad], [excited]); "
-            "you may use [laughs] where it fits. This voice can't whisper or perform other "
-            "vocal directions, so keep tags simple."
-        )
-    return (
-        header
-        + "Direct your own delivery with bracketed tags, placed exactly where they apply:\n"
-        + "- Lead most lines with a TONE/EMOTION — any word that fits the moment: "
-        "[sarcastic], [cold], [tender], [playful but firm], [wry], [grave], [giddy], [defeated].\n"
-        + "- Add DELIVERY where it sharpens things: [whispering], [shouting], [breathless], "
-        "[low and menacing], [trembling], [drawn out], [clipped].\n"
-        + "- Drop in SOUNDS where natural: [laughs], [giggles], [sighs], [scoffs], [gasps], [exhales].\n"
-        + "- TIMING: put [pause] or [long pause] on its own line before a weighty or final "
-        "line — the engine holds a real beat of silence there.\n"
-        + "Let the tone shift line to line; match every tag to the words; never stay flat. "
-        "Do NOT narrate physical actions (no [sits back], [glares]) — you are only a voice."
-    )
+    """How-to-perform instructions for the LLM, tailored to the character's voice.
+    Each provider's text lives on its own profile (see VoiceProfile subclasses)."""
+    return profile_for(provider).directive()

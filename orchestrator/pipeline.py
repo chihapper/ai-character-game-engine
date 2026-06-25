@@ -24,13 +24,19 @@ from typing import Awaitable, Callable
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE
-from .expressivity import parse_pause, performance_directive
+from .expressivity import (
+    leading_tone,
+    parse_pause,
+    performance_directive,
+    split_inline_tones,
+    splits_mid_line,
+)
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .sentence_chunker import Segment, SentenceChunker
 from .text_cleanup import clean_for_speech
-from .timing import GAP_MAX_MS, SENTENCE_GAP_MS
+from .timing import GAP_MAX_MS, SENTENCE_GAP_MS, TONE_SHIFT_GAP_MS
 
 logger = logging.getLogger(__name__)
 
@@ -163,51 +169,69 @@ class Pipeline:
         async def consume() -> None:
             audio_started = False
             pending_gap_ms = 0  # breath owed to the previous sentence
+            last_tone: str | None = None  # carried across lines within this reply
+            # Some providers can't shift tone within one utterance (Inworld), so we split
+            # a line at any mid-line tone tag and synthesize each part separately (a tiny
+            # beat "acts" the change). Providers that shift tone inline (ElevenLabs) don't.
+            # The per-provider flag lives on its voice profile in expressivity.py.
+            split_tones = splits_mid_line(self.character.tts_provider)
             while True:
                 seg = await sentence_q.get()
                 if seg is None:
                     break
-                pause_ms, rest = parse_pause(seg.text)  # dramatic lead-in silence, if cued
-                spoken = clean_for_speech(rest)
-                if not spoken:
-                    continue  # sentence was pure stage direction / markup / punctuation
-                if pause_ms:
-                    pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
-                try:
-                    sentence_has_audio = False
-                    async for chunk in self.tts.stream_speech(
-                        spoken, self.character.voice_id
-                    ):
-                        if not state["first_audio"]:
-                            state["first_audio"] = True
-                            latency.mark("first_audio")
-                            await emit_json({"type": "audio_start"})
+                units = split_inline_tones(seg.text) if split_tones else [seg.text]
+                for unit_i, unit in enumerate(units):
+                    pause_ms, rest = parse_pause(unit)  # dramatic lead-in silence, if cued
+                    # Carry the active tone to an untagged line so delivery doesn't snap
+                    # back to neutral after a pause or "..."; a new lead tone replaces it.
+                    tone = leading_tone(rest)
+                    if tone:
+                        last_tone = tone
+                    elif last_tone:
+                        rest = f"[{last_tone}] {rest}"
+                    spoken = clean_for_speech(rest)
+                    if not spoken:
+                        continue  # pure stage direction / markup / punctuation
+                    if unit_i > 0:  # a mid-sentence tone shift — a brief beat acts it
+                        pending_gap_ms = min(pending_gap_ms + TONE_SHIFT_GAP_MS, GAP_MAX_MS)
+                    if pause_ms:
+                        pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
+                    try:
+                        sentence_has_audio = False
+                        async for chunk in self.tts.stream_speech(
+                            spoken, self.character.voice_id
+                        ):
+                            if not state["first_audio"]:
+                                state["first_audio"] = True
+                                latency.mark("first_audio")
+                                await emit_json({"type": "audio_start"})
+                                await emit_json(
+                                    {"type": "latency", "marks": latency.summary()}
+                                )
+                                audio_started = True
+                            # Emit the owed breath right before this unit's first audio
+                            # — never as a trailing tail, so it adds no end-of-turn lag.
+                            if not sentence_has_audio:
+                                sentence_has_audio = True
+                                if pending_gap_ms:
+                                    await emit_audio(_silence_pcm(pending_gap_ms))
+                                    pending_gap_ms = 0
+                            await emit_audio(chunk)
+                        if sentence_has_audio:
+                            # Paragraph break only follows the LAST unit of a sentence.
+                            para = seg.para_break if unit_i == len(units) - 1 else False
+                            pending_gap_ms = _gap_after(unit, para)
+                    except Exception as exc:
+                        # One unit failing must not silence the rest of the reply: skip
+                        # it and keep going. Surface the error only once per turn so a
+                        # genuinely-down provider doesn't spam the user.
+                        logger.exception("TTS failed on a sentence; skipping it")
+                        if not state["tts_failed"]:
+                            state["tts_failed"] = True  # "error already surfaced" flag
                             await emit_json(
-                                {"type": "latency", "marks": latency.summary()}
+                                {"type": "error", "message": f"Text-to-speech failed: {exc}"}
                             )
-                            audio_started = True
-                        # Emit the previous sentence's breath right before this
-                        # sentence's first audio — never as a trailing tail, so it
-                        # can't add latency to the end of the turn.
-                        if not sentence_has_audio:
-                            sentence_has_audio = True
-                            if pending_gap_ms:
-                                await emit_audio(_silence_pcm(pending_gap_ms))
-                                pending_gap_ms = 0
-                        await emit_audio(chunk)
-                    if sentence_has_audio:
-                        pending_gap_ms = _gap_after(seg.text, seg.para_break)
-                except Exception as exc:
-                    # One sentence failing must not silence the rest of the reply:
-                    # skip this sentence and keep going. Surface the error only once
-                    # per turn so a genuinely-down provider doesn't spam the user.
-                    logger.exception("TTS failed on a sentence; skipping it")
-                    if not state["tts_failed"]:
-                        state["tts_failed"] = True  # "error already surfaced" flag
-                        await emit_json(
-                            {"type": "error", "message": f"Text-to-speech failed: {exc}"}
-                        )
-                    continue
+                        continue
             if audio_started:
                 await emit_json({"type": "audio_end"})
 
@@ -250,9 +274,15 @@ class Pipeline:
         if tail:
             segments.append(tail)
         pending_gap_ms = 0
+        last_tone: str | None = None
         try:
             for seg in segments:
                 pause_ms, rest = parse_pause(seg.text)
+                tone = leading_tone(rest)
+                if tone:
+                    last_tone = tone
+                elif last_tone:
+                    rest = f"[{last_tone}] {rest}"
                 spoken = clean_for_speech(rest)
                 if not spoken:
                     continue
