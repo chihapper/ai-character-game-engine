@@ -23,3 +23,7 @@ orchestrator/profiles/
 Thumbs.db
 .idea/
 .vscode/
+
+# Realtime API feasibility spike (throwaway)
+spike_out/
+realtime_spike.py
