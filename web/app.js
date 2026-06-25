@@ -129,6 +129,14 @@ function addMessage(who, text) {
   return body;
 }
 
+// Render assistant text with the model's [performance tags] shown as dim, italic stage
+// directions — they're delivery notes the voice performs, not words it speaks aloud (the
+// audio path strips/transforms them; see expressivity.render_tags). The optional trailing
+// "]" in the pattern keeps a half-streamed "[clip..." from flashing as dialogue mid-token.
+function renderPerfText(raw) {
+  return escapeHtml(raw).replace(/\[[^\]]*\]?/g, (m) => `<span class="perf-tag">${m}</span>`);
+}
+
 // ============================================================ latency panel
 function renderLatency(marks) {
   const panel = $("latency");
@@ -252,15 +260,17 @@ function handleControl(msg) {
       break;
     case "assistant_start":
       liveAssistantEl = addMessage("assistant", "");
+      liveAssistantEl._raw = "";
       break;
     case "assistant_delta":
-      if (!liveAssistantEl) liveAssistantEl = addMessage("assistant", "");
-      liveAssistantEl.textContent += msg.text;
+      if (!liveAssistantEl) { liveAssistantEl = addMessage("assistant", ""); liveAssistantEl._raw = ""; }
+      liveAssistantEl._raw += msg.text;
+      liveAssistantEl.innerHTML = renderPerfText(liveAssistantEl._raw);
       log.scrollTop = log.scrollHeight;
       break;
     case "assistant_done":
-      if (liveAssistantEl) liveAssistantEl.textContent = msg.text;
-      else addMessage("assistant", msg.text);
+      if (liveAssistantEl) liveAssistantEl.innerHTML = renderPerfText(msg.text);
+      else { const b = addMessage("assistant", ""); b.innerHTML = renderPerfText(msg.text); }
       liveAssistantEl = null;
       if (isStreaming) setTalkState("idle"); // ready for the next turn
       break;

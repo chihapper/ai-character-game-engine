@@ -73,6 +73,9 @@
     .msg.user { align-self: flex-end; background: #1f6feb33; border: 1px solid #1f6feb55; }
     .msg.assistant { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
     .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    /* The model's [performance tags] — delivery notes the voice performs, not words it
+       speaks. Dimmed + italic so they read as stage directions, distinct from dialogue. */
+    .msg.assistant .perf-tag { color: var(--muted); font-style: italic; opacity: 0.85; }
 
     .latency {
       background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
