@@ -70,9 +70,15 @@ class SentenceChunker:
             text_before_punct = self._buf[: match.start()]
             candidate = self._buf[:end].strip()
 
-            # Skip false boundaries (abbreviations) and tiny fragments: leave them
-            # in the buffer and keep scanning past this boundary for a real one.
-            if self._is_false_boundary(text_before_punct) or len(candidate) < _MIN_CHARS:
+            # Skip false boundaries (abbreviations), tiny fragments, and boundaries
+            # that fall *inside* an open `*stage direction*` (odd asterisk count so
+            # far). Splitting an action across sentences would strand a lone `*` on
+            # each half, defeating clean_for_speech and letting the action be spoken.
+            if (
+                self._is_false_boundary(text_before_punct)
+                or len(candidate) < _MIN_CHARS
+                or candidate.count("*") % 2 == 1
+            ):
                 search_start = end
                 continue
 

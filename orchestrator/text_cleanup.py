@@ -34,4 +34,9 @@ def clean_for_speech(text: str) -> str:
     t = _EMOJI.sub("", t)
     t = _MD_CHARS.sub("", t)
     t = _WS.sub(" ", t).strip()
+    # If nothing speakable survived (e.g. just "." left after a stripped *action*),
+    # return empty so the caller skips it — TTS rejects punctuation-only input
+    # ("No valid transcripts passed.") and that error would abort the whole reply.
+    if not any(ch.isalnum() for ch in t):
+        return ""
     return t
