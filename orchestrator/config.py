@@ -61,11 +61,12 @@ class Settings(BaseSettings):
     default_tts_provider: str = "elevenlabs"
     inworld_model: str = "inworld-tts-2"
     cartesia_model: str = "sonic-3.5"
-    # Voice stability for Inworld: STABLE delivery + lower temperature keeps the
-    # timbre consistent across the separate per-sentence synthesis calls (default
-    # temperature drifts the voice between sentences).
-    inworld_delivery_mode: str = "STABLE"  # STABLE | BALANCED | CREATIVE
-    inworld_temperature: float = 0.6
+    # Inworld voice consistency vs. emotional range across the separate per-sentence/
+    # per-batch requests. STABLE = most consistent timbre; CREATIVE = widest range but the
+    # voice drifts more between requests; BALANCED sits in between. Flip via
+    # INWORLD_DELIVERY_MODE in .env — no code change, just restart.
+    inworld_delivery_mode: str = "BALANCED"  # STABLE | BALANCED | CREATIVE
+    inworld_temperature: float = 0.6  # ignored on inworld-tts-2 (kept for tts-1.5)
     # ElevenLabs — the expressive option. eleven_v3 is the only model that reads
     # inline audio tags ([whispers]/[laughs]/[angry]); it is alpha and NOT
     # low-latency. Low stability + non-zero style = the most emotional delivery.

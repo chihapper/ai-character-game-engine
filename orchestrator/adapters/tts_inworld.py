@@ -72,9 +72,10 @@ class InworldTTS(TTSAdapter):
                 "audioEncoding": "LINEAR16",  # headerless 16-bit PCM
                 "sampleRateHertz": AUDIO_SAMPLE_RATE,
             },
-            # CREATIVE gives inworld-tts-2 its widest emotional range. (temperature
-            # is ignored on tts-2, so we don't send it.)
-            "deliveryMode": "CREATIVE",
+            # Variability vs consistency across requests. STABLE = most consistent timbre,
+            # CREATIVE = widest emotional range (but the voice drifts more between separate
+            # requests). Tunable via INWORLD_DELIVERY_MODE. (temperature is ignored on tts-2.)
+            "deliveryMode": self._delivery_mode,
         }
         headers = {
             "Authorization": self._auth_header,

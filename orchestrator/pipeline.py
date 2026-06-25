@@ -21,6 +21,7 @@ import asyncio
 import logging
 from typing import Awaitable, Callable
 
+from .adapters._audio import fade_pcm
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE
@@ -28,6 +29,7 @@ from .expressivity import (
     leading_tone,
     parse_pause,
     performance_directive,
+    renders_tone,
     split_inline_tones,
     splits_mid_line,
 )
@@ -70,6 +72,43 @@ def _silence_pcm(ms: int) -> bytes:
     """`ms` of digital silence as signed-16 mono PCM at our playback rate."""
     samples = int(AUDIO_SAMPLE_RATE * ms / 1000)
     return b"\x00\x00" * samples
+
+# Cap on how much same-tone text we fold into one Inworld request when batching for
+# prosody (see consume). Bounds a single request's size so it streams promptly and a
+# stall can't strand too much audio. ~2-3 sentences.
+INWORLD_BATCH_MAX_CHARS = 300
+
+# Each synthesized request is faded to/from zero over this many ms at its edges, so the
+# silence stitched between requests can't click (a per-utterance TTS cuts each request off
+# abruptly; the hard step onto silence pops, audibly, once per boundary). Inaudible as a fade.
+_EDGE_FADE_MS = 8
+
+
+async def _faded(chunks):
+    """Wrap a request's PCM stream so its first and last _EDGE_FADE_MS fade to zero — the
+    audio then starts and ends silent and can't click where it meets the inter-request
+    silence. Holds back a tiny tail (~the fade length) to fade the true end; adds no real
+    latency. Yields the same total audio, edges ramped, always sample-aligned (provider
+    chunks can split a 16-bit sample, so a stray byte is carried forward, never emitted)."""
+    fade_bytes = int(AUDIO_SAMPLE_RATE * _EDGE_FADE_MS / 1000) * 2  # even
+    buf = b""
+    faded_in = False
+    async for chunk in chunks:
+        buf += chunk
+        if not faded_in and len(buf) >= fade_bytes:  # ramp the head once we have enough
+            buf = fade_pcm(buf[:fade_bytes], AUDIO_SAMPLE_RATE, fade_in=True, ms=_EDGE_FADE_MS) + buf[fade_bytes:]
+            faded_in = True
+        # Emit everything except a held-back tail (>= fade_bytes, for the closing fade),
+        # keeping the emitted run even-aligned and carrying any odd trailing byte forward.
+        keep = fade_bytes + (len(buf) & 1)
+        if len(buf) > keep:
+            cut = len(buf) - keep
+            yield buf[:cut]
+            buf = buf[cut:]
+    if buf:
+        if not faded_in:  # whole request was shorter than the fade window
+            buf = fade_pcm(buf, AUDIO_SAMPLE_RATE, fade_in=True, ms=_EDGE_FADE_MS)
+        yield fade_pcm(buf, AUDIO_SAMPLE_RATE, fade_out=True, ms=_EDGE_FADE_MS)
 
 # Prepended to every character's system prompt. Keeps performances in-character
 # and immersive — especially the failure mode where the model steps out of the
@@ -168,14 +207,77 @@ class Pipeline:
 
         async def consume() -> None:
             audio_started = False
-            pending_gap_ms = 0  # breath owed to the previous sentence
+            pending_gap_ms = 0  # silence owed before the NEXT batch's first audio
             last_tone: str | None = None  # carried across lines within this reply
             # Some providers can't shift tone within one utterance (Inworld), so we split
             # a line at any mid-line tone tag and synthesize each part separately (a tiny
             # beat "acts" the change). Providers that shift tone inline (ElevenLabs) don't.
             # The per-provider flag lives on its voice profile in expressivity.py.
             split_tones = splits_mid_line(self.character.tts_provider)
+            # Inworld is per-utterance: it resets prosody on every request, so sentences
+            # synthesized alone don't flow into each other. We BATCH a run of consecutive
+            # SAME-TONE sentences into one request so intonation carries across them — but
+            # only ones ALREADY queued (the empty() check below), so batching never waits.
+            # This includes the FIRST request: the opening sentence flows into the batch
+            # when more is ready, instead of standing out as a lone, differently-paced
+            # utterance — while the empty() check still ships it promptly when it's alone.
+            do_batch = self.character.tts_provider == "inworld"
+
+            buf_text = ""           # accumulated spoken text of the pending batch
+            buf_tone: str | None = None
+            buf_unit = ""           # the batch's last unit (for its trailing gap)
+            buf_para = False        # paragraph break trailing that last unit
+
+            async def flush() -> None:
+                """Synthesize and stream the pending batch, then clear it. Each request's
+                edges are faded to zero (via _faded) so the silence stitched between requests
+                can't click — a per-utterance TTS cuts each request off abruptly, and that
+                hard edge against silence pops, once per boundary, on good speakers."""
+                nonlocal buf_text, buf_tone, pending_gap_ms, audio_started
+                if not buf_text:
+                    return
+                try:
+                    has_audio = False
+                    async for chunk in _faded(
+                        self.tts.stream_speech(buf_text, self.character.voice_id)
+                    ):
+                        if not state["first_audio"]:
+                            state["first_audio"] = True
+                            latency.mark("first_audio")
+                            await emit_json({"type": "audio_start"})
+                            await emit_json({"type": "latency", "marks": latency.summary()})
+                            audio_started = True
+                        if not has_audio:
+                            has_audio = True
+                            # Owed breath right before this batch's first audio — never a
+                            # trailing tail, so it adds no end-of-turn lag.
+                            if pending_gap_ms:
+                                await emit_audio(_silence_pcm(pending_gap_ms))
+                                pending_gap_ms = 0
+                        await emit_audio(chunk)
+                    if has_audio:
+                        pending_gap_ms = _gap_after(buf_unit, buf_para)
+                except Exception as exc:
+                    # One batch failing must not silence the rest of the reply: skip it and
+                    # keep going. Surface the error only once per turn so a genuinely-down
+                    # provider doesn't spam the user.
+                    logger.exception("TTS failed on a sentence; skipping it")
+                    if not state["tts_failed"]:
+                        state["tts_failed"] = True  # "error already surfaced" flag
+                        await emit_json(
+                            {"type": "error", "message": f"Text-to-speech failed: {exc}"}
+                        )
+                finally:
+                    buf_text = ""
+                    buf_tone = None
+
             while True:
+                # If a batch is pending and nothing else is queued yet, ship it now rather
+                # than make the user wait — so we only ever batch sentences already in hand
+                # (zero added latency; the opener batches only when sentence 2 is already
+                # ready, else it ships alone to keep first audio prompt).
+                if buf_text and sentence_q.empty():
+                    await flush()
                 seg = await sentence_q.get()
                 if seg is None:
                     break
@@ -183,55 +285,50 @@ class Pipeline:
                 for unit_i, unit in enumerate(units):
                     pause_ms, rest = parse_pause(unit)  # dramatic lead-in silence, if cued
                     # Carry the active tone to an untagged line so delivery doesn't snap
-                    # back to neutral after a pause or "..."; a new lead tone replaces it.
+                    # back to neutral after a pause or "..."; a new lead tone replaces it —
+                    # but only if THIS voice can actually perform it, so a tone the model
+                    # invents that we'd drop doesn't blank the carry and flatten what follows.
                     tone = leading_tone(rest)
-                    if tone:
+                    if tone and renders_tone(rest, self.character.tts_provider):
                         last_tone = tone
                     elif last_tone:
                         rest = f"[{last_tone}] {rest}"
                     spoken = clean_for_speech(rest)
                     if not spoken:
                         continue  # pure stage direction / markup / punctuation
-                    if unit_i > 0:  # a mid-sentence tone shift — a brief beat acts it
+                    para = seg.para_break if unit_i == len(units) - 1 else False
+                    tone_change = unit_i > 0  # a mid-line tone shift within this segment
+
+                    # Can this sentence ride the pending batch? Same tone only, no forced
+                    # break between, under the size cap — and never the first utterance.
+                    can_join = (
+                        do_batch
+                        and buf_text != ""
+                        and not tone_change
+                        and pause_ms == 0
+                        and last_tone == buf_tone
+                        and not buf_para
+                        and len(buf_text) + 1 + len(spoken) <= INWORLD_BATCH_MAX_CHARS
+                    )
+                    if can_join:
+                        buf_text = f"{buf_text} {spoken}"
+                        buf_unit, buf_para = unit, para
+                        continue
+
+                    # Can't join: ship the pending batch, then open a new one with this unit.
+                    await flush()
+                    if tone_change:  # a mid-sentence tone shift — a brief beat acts it
                         pending_gap_ms = min(pending_gap_ms + TONE_SHIFT_GAP_MS, GAP_MAX_MS)
                     if pause_ms:
                         pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
-                    try:
-                        sentence_has_audio = False
-                        async for chunk in self.tts.stream_speech(
-                            spoken, self.character.voice_id
-                        ):
-                            if not state["first_audio"]:
-                                state["first_audio"] = True
-                                latency.mark("first_audio")
-                                await emit_json({"type": "audio_start"})
-                                await emit_json(
-                                    {"type": "latency", "marks": latency.summary()}
-                                )
-                                audio_started = True
-                            # Emit the owed breath right before this unit's first audio
-                            # — never as a trailing tail, so it adds no end-of-turn lag.
-                            if not sentence_has_audio:
-                                sentence_has_audio = True
-                                if pending_gap_ms:
-                                    await emit_audio(_silence_pcm(pending_gap_ms))
-                                    pending_gap_ms = 0
-                            await emit_audio(chunk)
-                        if sentence_has_audio:
-                            # Paragraph break only follows the LAST unit of a sentence.
-                            para = seg.para_break if unit_i == len(units) - 1 else False
-                            pending_gap_ms = _gap_after(unit, para)
-                    except Exception as exc:
-                        # One unit failing must not silence the rest of the reply: skip
-                        # it and keep going. Surface the error only once per turn so a
-                        # genuinely-down provider doesn't spam the user.
-                        logger.exception("TTS failed on a sentence; skipping it")
-                        if not state["tts_failed"]:
-                            state["tts_failed"] = True  # "error already surfaced" flag
-                            await emit_json(
-                                {"type": "error", "message": f"Text-to-speech failed: {exc}"}
-                            )
-                        continue
+                    buf_text, buf_tone, buf_unit, buf_para = spoken, last_tone, unit, para
+                    # Non-batching providers synth every unit now. Inworld holds the unit so
+                    # the next same-tone sentence can join it; the while-loop's empty() check
+                    # ships it the moment nothing else is queued (so first audio stays prompt
+                    # when the opener is alone, but flows into the batch when more is ready).
+                    if not do_batch:
+                        await flush()
+            await flush()  # drain the final batch
             if audio_started:
                 await emit_json({"type": "audio_end"})
 
@@ -279,7 +376,7 @@ class Pipeline:
             for seg in segments:
                 pause_ms, rest = parse_pause(seg.text)
                 tone = leading_tone(rest)
-                if tone:
+                if tone and renders_tone(rest, self.character.tts_provider):
                     last_tone = tone
                 elif last_tone:
                     rest = f"[{last_tone}] {rest}"
@@ -289,8 +386,8 @@ class Pipeline:
                 if pause_ms:
                     pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
                 sentence_has_audio = False
-                async for chunk in self.tts.stream_speech(
-                    spoken, self.character.voice_id
+                async for chunk in _faded(
+                    self.tts.stream_speech(spoken, self.character.voice_id)
                 ):
                     if not audio_started:
                         audio_started = True
