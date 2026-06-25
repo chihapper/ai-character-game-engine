@@ -24,11 +24,13 @@ from typing import Awaitable, Callable
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE
+from .expressivity import controls_for, parse_emotion, parse_pause, performance_directive
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .sentence_chunker import Segment, SentenceChunker
 from .text_cleanup import clean_for_speech
+from .timing import GAP_MAX_MS, SENTENCE_GAP_MS
 
 logger = logging.getLogger(__name__)
 
@@ -39,32 +41,23 @@ EmitAudio = Callable[[bytes], Awaitable[None]]
 # trailing silence, so without this they butt straight up against each other and a
 # multi-sentence reply sounds rushed ("...doesn't heal.You want the ale or not.").
 # We inject a short run of silent PCM between sentences, sized by how the previous
-# one ended — a real beat after a statement, a touch more after a question or a
-# trailing-off, less after a comma. Tunable; these are conservative.
-_GAP_CLAUSE_MS = 130    # , ; : — mid-thought, barely a hitch
-_GAP_DEFAULT_MS = 260   # . or plain end — a normal sentence beat
-_GAP_EMPHATIC_MS = 330  # ? or ! — let it land
-_GAP_TRAILING_MS = 400  # … or — — biggest beat, the thought hangs
-# When the model emits a paragraph break (a blank line), it's marking a real beat
-# — a topic shift, a held silence. That deserves more air than any in-paragraph
-# sentence break, so a paragraph boundary floors the gap here regardless of how
-# the sentence ended.
-_GAP_PARAGRAPH_MS = 650
+# one ended. All durations live in timing.SENTENCE_GAP_MS — tune them there.
 
 
 def _gap_after(sentence: str, para_break: bool = False) -> int:
-    """How long a silence to leave after this sentence, by its ending and whether
-    a paragraph break followed it."""
+    """How long a silence to leave after this sentence, by its ending and whether a
+    paragraph break (a blank line in the reply) followed it. A paragraph break is a
+    real beat, so it floors the gap regardless of how the sentence ended."""
     t = sentence.rstrip().rstrip('"\'”’)')
     if t.endswith(("…", "—")) or t.endswith("..."):
-        base = _GAP_TRAILING_MS
+        base = SENTENCE_GAP_MS["trailing"]
     elif t.endswith(("?", "!")):
-        base = _GAP_EMPHATIC_MS
+        base = SENTENCE_GAP_MS["emphatic"]
     elif t.endswith((",", ";", ":")):
-        base = _GAP_CLAUSE_MS
+        base = SENTENCE_GAP_MS["clause"]
     else:
-        base = _GAP_DEFAULT_MS
-    return max(base, _GAP_PARAGRAPH_MS) if para_break else base
+        base = SENTENCE_GAP_MS["default"]
+    return max(base, SENTENCE_GAP_MS["paragraph"]) if para_break else base
 
 
 def _silence_pcm(ms: int) -> bytes:
@@ -114,6 +107,9 @@ class Pipeline:
 
     def _build_system(self, memories: list[str]) -> str:
         system = ENGINE_DIRECTION + "\n" + self.character.build_prompt()
+        # Tailor the delivery instructions to THIS character's voice provider, so the
+        # model only emits tags that voice can render (whisper for ElevenLabs, etc.).
+        system += "\n\n" + performance_directive(self.character.tts_provider)
         if memories:
             recalled = "\n".join(f"- {m}" for m in memories)
             system += (
@@ -171,13 +167,22 @@ class Pipeline:
                 seg = await sentence_q.get()
                 if seg is None:
                     break
-                spoken = clean_for_speech(seg.text)
+                emotion, rest = parse_emotion(seg.text)  # leading [emotion] tag
+                pause_ms, rest = parse_pause(rest)  # dramatic lead-in silence, if cued
+                spoken = clean_for_speech(rest)
                 if not spoken:
                     continue  # sentence was pure stage direction / markup / punctuation
+                if pause_ms:
+                    pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
+                _, speed, volume = controls_for(emotion)
                 try:
                     sentence_has_audio = False
                     async for chunk in self.tts.stream_speech(
-                        spoken, self.character.voice_id
+                        spoken,
+                        self.character.voice_id,
+                        emotion=emotion,
+                        speed=speed,
+                        volume=volume,
                     ):
                         if not state["first_audio"]:
                             state["first_audio"] = True
@@ -253,12 +258,21 @@ class Pipeline:
         pending_gap_ms = 0
         try:
             for seg in segments:
-                spoken = clean_for_speech(seg.text)
+                emotion, rest = parse_emotion(seg.text)
+                pause_ms, rest = parse_pause(rest)
+                spoken = clean_for_speech(rest)
                 if not spoken:
                     continue
+                if pause_ms:
+                    pending_gap_ms = min(pending_gap_ms + pause_ms, GAP_MAX_MS)
+                _, speed, volume = controls_for(emotion)
                 sentence_has_audio = False
                 async for chunk in self.tts.stream_speech(
-                    spoken, self.character.voice_id
+                    spoken,
+                    self.character.voice_id,
+                    emotion=emotion,
+                    speed=speed,
+                    volume=volume,
                 ):
                     if not audio_started:
                         audio_started = True

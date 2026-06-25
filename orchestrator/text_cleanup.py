@@ -4,16 +4,19 @@ LLMs sometimes emit things a *spoken* character shouldn't say out loud — aster
 stage directions (`*pours a drink*`), markdown, emoji. Those get vocalized by TTS
 and break the illusion. We strip them from the text sent to TTS while leaving the
 on-screen transcript untouched (so you still see exactly what the model produced).
+
+Bracketed `[tags]` are deliberately LEFT IN place here — they're performance tags
+(emotion / non-verbals / delivery) that each TTS adapter renders or drops for its
+own provider (see expressivity.render_tags).
 """
 from __future__ import annotations
 
 import re
 
-# *stage direction* or **bold** — remove the whole span, content included (for
-# actions we don't want spoken; the occasional bolded word is acceptable collateral).
-_ASTERISK_SPAN = re.compile(r"\*{1,3}[^*\n]+\*{1,3}")
-# [bracketed stage direction]
-_BRACKET_SPAN = re.compile(r"\[[^\]\n]*\]")
+# *emphasis* / **bold** — the model uses asterisks to stress a word, so KEEP the
+# inner text (just drop the asterisks) instead of deleting it. Physical actions are
+# conveyed via [bracketed] tags, which the adapters handle separately.
+_ASTERISK_SPAN = re.compile(r"\*{1,3}([^*\n]+)\*{1,3}")
 # Inline markdown punctuation that shouldn't be read aloud.
 _MD_CHARS = re.compile(r"[`_#>~]")
 # Emoji / pictographs / symbol & arrow blocks.
@@ -28,9 +31,8 @@ def clean_for_speech(text: str) -> str:
     """Return `text` with stage directions, markdown, and emoji removed."""
     if not text:
         return ""
-    t = _ASTERISK_SPAN.sub(" ", text)
-    t = _BRACKET_SPAN.sub(" ", t)
-    t = t.replace("*", "")  # stray, unmatched asterisks
+    t = _ASTERISK_SPAN.sub(r"\1", text)  # keep the emphasized word, drop the *'s
+    t = t.replace("*", "")  # stray, unmatched asterisks (brackets are kept for tags)
     t = _EMOJI.sub("", t)
     t = _MD_CHARS.sub("", t)
     t = _WS.sub(" ", t).strip()

@@ -20,6 +20,7 @@ from typing import AsyncIterator
 import httpx
 
 from ..config import AUDIO_SAMPLE_RATE, get_settings
+from ..expressivity import clamp, has_speakable, render_tags, steering_for
 from .base import TTSAdapter
 from ._audio import strip_wav_header
 
@@ -56,18 +57,37 @@ class InworldTTS(TTSAdapter):
         self._delivery_mode = settings.inworld_delivery_mode
         self._temperature = settings.inworld_temperature
 
-    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+    async def stream_speech(
+        self,
+        text: str,
+        voice_id: str,
+        *,
+        emotion: str | None = None,
+        speed: float | None = None,
+        volume: float | None = None,
+    ) -> AsyncIterator[bytes]:
+        # inworld-tts-2 renders the six non-verbal tags; normalize ours to theirs.
+        text = render_tags(text, "inworld")
+        if not has_speakable(text):
+            return
+        # Emotion is natural-language steering, in English, at the START of the text.
+        steer = steering_for(emotion)
+        if steer:
+            text = f"[{steer}] {text}"
+        audio_config: dict = {
+            "audioEncoding": "LINEAR16",  # headerless 16-bit PCM
+            "sampleRateHertz": AUDIO_SAMPLE_RATE,
+        }
+        if speed is not None:
+            audio_config["speakingRate"] = clamp(speed, 0.5, 1.5)
         payload = {
             "text": text,
             "voiceId": voice_id,
             "modelId": self._model,
-            "audioConfig": {
-                "audioEncoding": "LINEAR16",  # headerless 16-bit PCM
-                "sampleRateHertz": AUDIO_SAMPLE_RATE,
-            },
-            # Keep the voice consistent across per-sentence calls.
-            "deliveryMode": self._delivery_mode,
-            "temperature": self._temperature,
+            "audioConfig": audio_config,
+            # CREATIVE gives inworld-tts-2 its widest emotional range. (temperature
+            # is ignored on tts-2, so we don't send it.)
+            "deliveryMode": "CREATIVE",
         }
         headers = {
             "Authorization": self._auth_header,
