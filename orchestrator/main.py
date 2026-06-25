@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import time
+from dataclasses import replace
 
 from fastapi import (
     FastAPI,
@@ -506,6 +507,30 @@ async def remove_character(slug: str) -> JSONResponse:
         return JSONResponse({"error": "Character not found."}, status_code=404)
     logger.info("Deleted character '%s'", slug)
     return JSONResponse({"deleted": True, "slug": slug})
+
+
+@app.post("/api/characters/{slug}/duplicate")
+async def duplicate_character(slug: str) -> JSONResponse:
+    """Duplicate a character: an independent copy with its own slug and memory namespace,
+    reusing the original's voice and every field as-is (no re-clone / re-design). Handy
+    for A/B-ing the same character across TTS providers or forking a variant to edit."""
+    try:
+        original = load_character(slug)
+    except FileNotFoundError:
+        return JSONResponse({"error": "Character not found."}, status_code=404)
+    taken = {c.slug for c in list_characters()}
+    base = original.name
+    name = f"{base} (copy)"
+    new_slug = slugify(name)
+    n = 2
+    while new_slug in taken:  # keep bumping until the slug is free
+        name = f"{base} (copy {n})"
+        new_slug = slugify(name)
+        n += 1
+    copy = replace(original, slug=new_slug, name=name, memory_namespace=new_slug)
+    save_character(copy)
+    logger.info("Duplicated character '%s' -> '%s'", slug, new_slug)
+    return JSONResponse(copy.public_dict(), status_code=201)
 
 
 # ----------------------------------------------------------------------- WS loop

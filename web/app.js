@@ -480,14 +480,35 @@ function renderCharRoster(chars) {
     edit.textContent = "Edit";
     edit.style.flex = "0 0 auto";
     edit.addEventListener("click", () => editCharacter(c.slug));
+    const dup = document.createElement("button");
+    dup.type = "button";
+    dup.className = "btn ghost";
+    dup.textContent = "Duplicate";
+    dup.style.flex = "0 0 auto";
+    dup.addEventListener("click", () => duplicateCharacter(c.slug, c.name));
     const del = document.createElement("button");
     del.type = "button";
     del.className = "btn ghost";
     del.textContent = "Delete";
     del.style.flex = "0 0 auto";
     del.addEventListener("click", () => deleteCharacter(c.slug, c.name));
-    row.append(label, edit, del);
+    row.append(label, edit, dup, del);
     list.appendChild(row);
+  }
+}
+
+async function duplicateCharacter(slug, name) {
+  try {
+    const res = await fetch(`/api/characters/${slug}/duplicate`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      $("c-status").textContent = "⚠ " + (data.error || "Duplicate failed.");
+      return;
+    }
+    $("c-status").textContent = `Duplicated "${name}" → "${data.name}". Edit it to rename or change its voice.`;
+    await loadCharacters();
+  } catch (err) {
+    $("c-status").textContent = "⚠ " + err;
   }
 }
 
