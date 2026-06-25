@@ -176,9 +176,9 @@
         <div class="sec-h">Voice</div>
         <label for="c-provider">Voice provider</label>
         <select id="c-provider">
-          <option value="cartesia">Cartesia (default)</option>
-          <option value="elevenlabs">ElevenLabs (most expressive)</option>
-          <option value="inworld">Inworld</option>
+          <option value="elevenlabs">ElevenLabs (default — most expressive)</option>
+          <option value="inworld">Inworld (cheaper at scale)</option>
+          <option value="cartesia">Cartesia (fast, flat)</option>
         </select>
 
         <label for="c-voice-mode">Voice</label>
@@ -204,14 +204,18 @@
           <div id="lib-selected" class="status" style="margin:8px 0 0"></div>
           <div id="lib-list" style="margin-top:10px; max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px"></div>
           <audio id="lib-preview" style="display:none"></audio>
-          <div class="hint" style="margin-top:8px">500+ Cartesia voices. Filter or search, ▶ to preview, then click a row to select.</div>
+          <div class="hint" style="margin-top:8px">Filter or search, ▶ to preview, then click a row to select.</div>
         </div>
 
         <!-- ── DESIGN mode ── -->
         <div id="mode-design" class="voice-mode" style="display:none; margin-top:12px">
+          <div class="row" style="gap:8px; margin-bottom:8px; align-items:center">
+            <button class="btn ghost" id="c-describe" type="button">✨ Describe from character (AI)</button>
+            <span class="hint" id="c-describe-status" style="margin:0">Writes an Inworld voice description that fits the character above.</span>
+          </div>
           <textarea id="c-design-desc" placeholder="Describe the voice…">A weathered woman in her fifties, low and gravelly with a faint rasp. Dry, deadpan, unhurried delivery. Tired but warm underneath. Perfect broadcast quality audio.</textarea>
           <div class="hint" style="margin-top:8px; line-height:1.6">
-            <strong>Tips (Inworld):</strong> 30–250 characters, English. Cover
+            <strong>Tips:</strong> English. Cover
             <em>age range, gender, accent (name the city/region), pitch, pace, tone,</em> and
             <em>texture</em> (raspy, breathy…). Be specific — "mid-50s", "Boston accent", not
             "young" or "fun voice". Put texture words in the middle, never at the end. Soften with

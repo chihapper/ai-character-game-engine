@@ -54,9 +54,11 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 1024
 
     # --- TTS ---
-    # "inworld" (default, leads on naturalness) or "cartesia".
-    # This is the *fallback* provider; a character's YAML can override per-character.
-    default_tts_provider: str = "inworld"
+    # Default provider for new characters. "elevenlabs" leads on expressivity (the
+    # bake-off winner); "inworld" is ~4-8x cheaper for scale; "cartesia" is fast but
+    # flat. A character's YAML overrides this per-character (the engine is provider-
+    # agnostic by design — that per-character field is the cost lever at scale).
+    default_tts_provider: str = "elevenlabs"
     inworld_model: str = "inworld-tts-2"
     cartesia_model: str = "sonic-3.5"
     # Voice stability for Inworld: STABLE delivery + lower temperature keeps the
@@ -70,6 +72,7 @@ class Settings(BaseSettings):
     elevenlabs_model: str = "eleven_v3"
     elevenlabs_stability: float = 0.4  # 0-1; lower = broader emotional range
     elevenlabs_style: float = 0.6  # 0-1; higher = more expressive (adds latency)
+    elevenlabs_ttv_model: str = "eleven_multilingual_ttv_v2"  # text-to-voice (design)
     # If the primary TTS provider fails/hangs during a conversation, fall back to
     # Cartesia (when its key is set) using this preset voice, so an outage on one
     # provider can't silence the whole app. Sticky for the rest of the session.

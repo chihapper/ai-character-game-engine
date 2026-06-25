@@ -48,7 +48,7 @@ from .profile_store import (
     save_profile,
 )
 from .profile_store import slugify as profile_slugify
-from .character_draft import draft_card_from_concept
+from .character_draft import draft_card_from_concept, draft_voice_description
 from .character_store import (
     Character,
     delete_character,
@@ -211,14 +211,24 @@ async def list_library_voices(
     gender: str = "",
     q: str = "",
 ) -> JSONResponse:
-    """Browse a provider's voice library so the user can pick + preview a voice.
-    Cartesia-only for now (Inworld has no comparable browse — it uses design or a
+    """Browse a provider's voices so the user can pick + preview one. Cartesia and
+    ElevenLabs are browsable; Inworld has no comparable browse (it uses design or a
     named preset id)."""
+    settings = get_settings()
+    if provider == "elevenlabs":
+        if not settings.elevenlabs_api_key:
+            return JSONResponse({"error": "ELEVENLABS_API_KEY is not set."}, status_code=400)
+        try:
+            voices = await ElevenLabsTTS().list_voices(gender=gender or None, q=q or None)
+        except Exception as exc:
+            logger.exception("Listing ElevenLabs voices failed")
+            return JSONResponse({"error": f"Couldn't load voices: {exc}"}, status_code=502)
+        return JSONResponse({"voices": voices})
     if provider != "cartesia":
         return JSONResponse(
-            {"voices": [], "error": "Library browsing is only available for Cartesia."}
+            {"voices": [], "error": "Library browsing isn't available for this provider."}
         )
-    if not get_settings().cartesia_api_key:
+    if not settings.cartesia_api_key:
         return JSONResponse({"error": "CARTESIA_API_KEY is not set."}, status_code=400)
     try:
         voices = await CartesiaTTS().list_voices(gender=gender or None, q=q or None)
@@ -256,21 +266,46 @@ async def preview_library_voice(voice_id: str = "", url: str = "") -> Response:
     )
 
 
+@app.post("/api/voice/describe")
+async def describe_voice(request: Request) -> JSONResponse:
+    """AI-write an Inworld voice description from the character card, so the designed
+    voice fits the character drafted with AI."""
+    body = await request.json()
+    card = body.get("card") if isinstance(body.get("card"), dict) else body
+    requested = (body.get("model") or "").strip()
+    model = requested if requested in ALLOWED_MODEL_IDS else None
+    provider = (body.get("provider") or "inworld").strip()
+    try:
+        description = await draft_voice_description(card or {}, model=model, provider=provider)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        logger.exception("Voice-description draft failed")
+        return JSONResponse({"error": f"Couldn't write a description: {exc}"}, status_code=502)
+    return JSONResponse({"description": description})
+
+
 @app.post("/api/voice/design")
 async def design_voice(
     description: str = Form(...),
     preview_text: str = Form(""),
+    provider: str = Form("inworld"),
 ) -> JSONResponse:
-    """Design a voice from a text description (Inworld). Returns a preview to listen
-    to; the preview voice id is published into a permanent voice at create time."""
+    """Design a voice from a text description (Inworld or ElevenLabs). Returns a
+    preview to listen to; the preview id becomes a permanent voice at create time."""
     desc = description.strip()
-    if not (30 <= len(desc) <= 250):
-        return JSONResponse(
-            {"error": "Voice description must be 30–250 characters."}, status_code=400
-        )
     text = preview_text.strip() or _DEFAULT_PREVIEW_TEXT
     try:
-        previews = await InworldTTS().design_voice(desc, text, num_samples=1)
+        if provider == "elevenlabs":
+            if not desc:
+                return JSONResponse({"error": "Describe the voice first."}, status_code=400)
+            previews = await ElevenLabsTTS().design_voice(desc, text)
+        else:
+            if not (30 <= len(desc) <= 250):
+                return JSONResponse(
+                    {"error": "Voice description must be 30–250 characters."}, status_code=400
+                )
+            previews = await InworldTTS().design_voice(desc, text, num_samples=1)
     except Exception as exc:
         logger.exception("Voice design failed")
         return JSONResponse({"error": f"Voice design failed: {exc}"}, status_code=502)
@@ -354,9 +389,13 @@ async def _resolve_voice(card: dict, sample: UploadFile | None, provider: str, n
     if sample_bytes:
         voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
     elif design_voice_id:
-        # Voice design is Inworld-only; publish the previewed voice to keep it.
-        voice_id = await InworldTTS().publish_voice(design_voice_id, name)
-        provider = "inworld"
+        # Promote the previewed designed voice into a permanent one, per provider.
+        if provider == "elevenlabs":
+            description = (card.get("design_description") or "").strip()
+            voice_id = await ElevenLabsTTS().create_designed_voice(design_voice_id, name, description)
+        else:
+            voice_id = await InworldTTS().publish_voice(design_voice_id, name)
+            provider = "inworld"
     return voice_id, provider
 
 

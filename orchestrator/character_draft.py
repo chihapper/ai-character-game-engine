@@ -117,3 +117,78 @@ async def draft_card_from_concept(concept: str, model: str | None = None) -> dic
     async for delta in llm.stream_reply([{"role": "user", "content": user}], system=_SYSTEM):
         parts.append(delta)
     return _normalize(_parse_json("".join(parts).strip()))
+
+
+# Inworld wants ONE concise line, <=250 chars, ending with its quality cue.
+_VOICE_DESC_SYSTEM_INWORLD = """You are a voice-casting director writing a prompt for \
+Inworld's TTS voice design, which generates a voice from a text description. Given a \
+character, write ONE vivid voice description Inworld can use to design a fitting voice.
+
+Hard rules:
+- English. Keep the whole description UNDER 240 characters (aim ~150-200). Be concise.
+- Cover, in this spirit: age range, gender, accent (name a region only if it truly \
+fits), pitch, pace, tone, and ONE texture word (raspy, breathy, smooth, warm, \
+gravelly, bright...). Put the texture word in the MIDDLE, never at the very end.
+- Be concrete ("early 20s", "low and unhurried"), never vague ("a nice voice").
+- Infer gender from the pronouns. Match the character's temperament and speech style.
+- End with exactly: Perfect broadcast quality audio.
+Return ONLY the description text — no quotes, no labels, no preamble."""
+
+# ElevenLabs wants a richer, structured description (no char cap). Follows the
+# format from ElevenLabs' Voice Design prompting guide.
+_VOICE_DESC_SYSTEM_EL = """You are a voice-casting director writing a prompt for \
+ElevenLabs Voice Design (text-to-voice). Given a character, write a vivid, granular \
+voice description that yields a fitting voice. More descriptive prompts give better \
+voices, so be specific.
+
+Use this structure, each on its own line:
+Line 1: "Native English. <gender>, <age range>. Studio quality."
+Line 2: "Persona: <2-5 words>. Emotion: <2-3 adjectives>."
+Line 3: One or two sentences on timbre, pitch, pace, and delivery, matched to the character.
+
+Rules:
+- Name a real regional accent ONLY if it truly fits (e.g. "thick Louisiana drawl"); \
+never "foreign"/"exotic".
+- Use vocal-quality words (deep, gravelly, smooth, breathy, bright, warm), NOT \
+audio-effect words (reverb, echo, phone).
+- Infer gender from the pronouns; match the character's temperament and speech style.
+- Be concrete, never vague.
+Return ONLY the description text — no preamble, no quotes, no markdown."""
+
+_VOICE_DESC_FIELDS = ("name", "concept", "age", "role", "pronouns", "temperament")
+
+
+async def draft_voice_description(
+    card: dict, model: str | None = None, provider: str = "inworld"
+) -> str:
+    """Write a voice description from a character card, shaped for the target provider:
+    a concise <=250-char line for Inworld, or a richer structured description for
+    ElevenLabs. Raises ValueError if the card is empty."""
+    bits = [f"{k}: {card[k].strip()}" for k in _VOICE_DESC_FIELDS if (card.get(k) or "").strip()]
+    style = card.get("speech_style") or []
+    if style:
+        bits.append("speech style: " + "; ".join(str(s) for s in style))
+    if not bits:
+        raise ValueError("Fill in the character (name, concept, age...) first.")
+
+    elevenlabs = provider == "elevenlabs"
+    system = _VOICE_DESC_SYSTEM_EL if elevenlabs else _VOICE_DESC_SYSTEM_INWORLD
+    user = "Character:\n" + "\n".join(bits) + "\n\nWrite the voice description."
+    llm = AnthropicLLM(model=model, max_tokens=400)
+    parts: list[str] = []
+    async for delta in llm.stream_reply([{"role": "user", "content": user}], system=system):
+        parts.append(delta)
+    raw = "".join(parts).strip().strip('"')
+
+    if elevenlabs:
+        # Keep the multi-line structure; ElevenLabs has no character cap.
+        desc = "\n".join(line.rstrip() for line in raw.splitlines() if line.strip())
+        cap = 800
+    else:
+        desc = " ".join(raw.split())  # collapse to one line
+        cap = 250
+    if len(desc) > cap:  # trim back to a clean sentence end
+        clipped = desc[:cap]
+        cut = max(clipped.rfind("."), clipped.rfind("!"), clipped.rfind("?"))
+        desc = clipped[: cut + 1] if cut > 30 else clipped.rsplit(" ", 1)[0]
+    return desc

@@ -32,7 +32,7 @@ class Character:
 
     # Voice
     voice_id: str = ""
-    tts_provider: str = "cartesia"
+    tts_provider: str = "elevenlabs"
     greeting: str = ""
 
     # Identity

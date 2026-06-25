@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-elevenlabs-2-providermodes";
+const APP_VERSION = "2026-06-25-el-default";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -844,14 +844,17 @@ const VOICE_MODES = {
     { value: "clone", label: "Clone a voice — record a sample" },
     { value: "preset", label: "Preset voice id" },
   ],
-  // Cloning on ElevenLabs needs a paid plan, so it's not offered here (free tier).
   elevenlabs: [
+    { value: "library", label: "Browse ElevenLabs voices" },
+    { value: "design", label: "Design a voice — describe it in words" },
+    { value: "clone", label: "Clone a voice — record a sample" },
     { value: "preset", label: "Paste an ElevenLabs voice id" },
   ],
 };
 
-let libraryVoiceId = null; // selected Cartesia library voice
+let libraryVoiceId = null; // selected library voice (Cartesia or ElevenLabs)
 let libLoaded = false; // whether the library list has been fetched this view
+let libProvider = "cartesia"; // which provider the loaded list belongs to
 
 function escapeHtml(s) {
   return String(s == null ? "" : s).replace(
@@ -891,8 +894,9 @@ async function loadLibraryVoices() {
   const list = $("lib-list");
   list.innerHTML = '<div class="hint" style="padding:10px">Loading voices…</div>';
   libLoaded = true;
+  libProvider = $("c-provider").value;
   try {
-    const params = new URLSearchParams({ provider: "cartesia" });
+    const params = new URLSearchParams({ provider: libProvider });
     const g = $("lib-gender").value;
     const q = $("lib-search").value.trim();
     if (g) params.set("gender", g);
@@ -973,19 +977,64 @@ function previewLibraryVoice(v, btn) {
   }
   resetPreviewBtn(); // revert whatever was playing before
   previewBtn = btn;
-  btn.textContent = "⏳"; // loading (synth previews take ~1s)
-  // Prefer the stored preview file (free); fall back to on-the-fly synthesis.
-  // Both go through our proxy — the raw preview URL is auth-gated.
-  const params = new URLSearchParams({ voice_id: v.id });
-  if (v.preview_url) params.set("url", v.preview_url);
-  a.src = "/api/voices/preview?" + params.toString();
+  btn.textContent = "⏳"; // loading
+  if (libProvider === "elevenlabs") {
+    // ElevenLabs preview URLs are public — play them directly.
+    if (!v.preview_url) {
+      resetPreviewBtn();
+      return;
+    }
+    a.src = v.preview_url;
+  } else {
+    // Cartesia: the raw preview URL is auth-gated, so go through our proxy (which
+    // also synthesizes a sample when a voice has no stored preview).
+    const params = new URLSearchParams({ voice_id: v.id });
+    if (v.preview_url) params.set("url", v.preview_url);
+    a.src = "/api/voices/preview?" + params.toString();
+  }
   a.play().catch(() => {}); // AbortError on rapid switching is harmless
 }
 
+async function describeVoiceFromCharacter() {
+  const card = buildCardFromForm();
+  if (!card.name && !card.concept && !card.temperament) {
+    $("c-describe-status").textContent = "Fill in (or AI-draft) the character first.";
+    return;
+  }
+  $("c-describe-status").textContent = "Writing a voice description…";
+  $("c-describe").disabled = true;
+  try {
+    const res = await fetch("/api/voice/describe", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ card, model: $("c-ai-model").value, provider: $("c-provider").value }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      $("c-describe-status").textContent = "⚠ " + (data.error || "Failed.");
+      return;
+    }
+    $("c-design-desc").value = data.description;
+    designedVoiceId = null; // any prior preview no longer matches the new description
+    $("c-design-playback").style.display = "none";
+    $("c-describe-status").textContent = `✓ ${data.description.length} chars — tweak it, then Generate preview.`;
+  } catch (err) {
+    $("c-describe-status").textContent = "⚠ " + err;
+  } finally {
+    $("c-describe").disabled = false;
+  }
+}
+
 async function generateDesignPreview() {
+  const provider = $("c-provider").value;
   const desc = $("c-design-desc").value.trim();
-  if (desc.length < 30 || desc.length > 250) {
+  // Inworld caps the description at 30–250 chars; ElevenLabs is freer.
+  if (provider === "inworld" && (desc.length < 30 || desc.length > 250)) {
     $("c-design-status").textContent = `Description must be 30–250 chars (now ${desc.length}).`;
+    return;
+  }
+  if (desc.length < 15) {
+    $("c-design-status").textContent = "Describe the voice in a bit more detail first.";
     return;
   }
   designedVoiceId = null;
@@ -994,6 +1043,7 @@ async function generateDesignPreview() {
   try {
     const form = new FormData();
     form.append("description", desc);
+    form.append("provider", provider);
     const res = await fetch("/api/voice/design", { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok) {
@@ -1267,6 +1317,7 @@ async function createCharacter() {
       return;
     }
     card.design_voice_id = designedVoiceId;
+    card.design_description = $("c-design-desc").value.trim(); // ElevenLabs create needs it
   } else if (mode === "clone") {
     if (!sampleBlob) {
       $("c-status").textContent = "Record a voice sample first.";
@@ -1408,6 +1459,7 @@ _libPreview.addEventListener("playing", () => {
 _libPreview.addEventListener("ended", resetPreviewBtn);
 _libPreview.addEventListener("error", resetPreviewBtn);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
+$("c-describe").addEventListener("click", describeVoiceFromCharacter);
 $("add-secret").addEventListener("click", () => addSecretRow());
 $("add-rel").addEventListener("click", () => addRelRow());
 $("c-preview").addEventListener("click", previewPrompt);
