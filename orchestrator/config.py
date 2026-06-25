@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     inworld_api_key: str = ""
     cartesia_api_key: str = ""
+    elevenlabs_api_key: str = ""
     assemblyai_api_key: str = ""
 
     # --- LLM ---
@@ -63,6 +64,12 @@ class Settings(BaseSettings):
     # temperature drifts the voice between sentences).
     inworld_delivery_mode: str = "STABLE"  # STABLE | BALANCED | CREATIVE
     inworld_temperature: float = 0.6
+    # ElevenLabs — the expressive option. eleven_v3 is the only model that reads
+    # inline audio tags ([whispers]/[laughs]/[angry]); it is alpha and NOT
+    # low-latency. Low stability + non-zero style = the most emotional delivery.
+    elevenlabs_model: str = "eleven_v3"
+    elevenlabs_stability: float = 0.4  # 0-1; lower = broader emotional range
+    elevenlabs_style: float = 0.6  # 0-1; higher = more expressive (adds latency)
     # If the primary TTS provider fails/hangs during a conversation, fall back to
     # Cartesia (when its key is set) using this preset voice, so an outage on one
     # provider can't silence the whole app. Sticky for the rest of the session.

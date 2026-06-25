@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-builder-5-draftmodel";
+const APP_VERSION = "2026-06-24-elevenlabs-2-providermodes";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -844,6 +844,10 @@ const VOICE_MODES = {
     { value: "clone", label: "Clone a voice — record a sample" },
     { value: "preset", label: "Preset voice id" },
   ],
+  // Cloning on ElevenLabs needs a paid plan, so it's not offered here (free tier).
+  elevenlabs: [
+    { value: "preset", label: "Paste an ElevenLabs voice id" },
+  ],
 };
 
 let libraryVoiceId = null; // selected Cartesia library voice
@@ -1384,6 +1388,12 @@ $("c-create").addEventListener("click", createCharacter);
 $("c-voice-mode").addEventListener("change", switchVoiceMode);
 $("c-provider").addEventListener("change", () => {
   libLoaded = false; // re-fetch the library on next entry to library mode
+  // Voice ids aren't portable across providers — clear the current pick so you
+  // can't accidentally save a Cartesia voice on an ElevenLabs character.
+  libraryVoiceId = null;
+  $("c-voice-id").value = "";
+  $("lib-selected").textContent = "";
+  highlightSelectedRow();
   populateVoiceModes();
 });
 $("lib-load").addEventListener("click", loadLibraryVoices);

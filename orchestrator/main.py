@@ -36,6 +36,7 @@ from .adapters.stt_assemblyai import AssemblyAISTT
 from .adapters.stt_assemblyai_stream import AssemblyAIStream
 from .adapters.stt_whisper import WhisperSTT
 from .adapters.tts_cartesia import CartesiaTTS
+from .adapters.tts_elevenlabs import ElevenLabsTTS
 from .adapters.tts_fallback import FallbackTTS
 from .adapters.tts_inworld import InworldTTS
 from .cadence import analyze_cadence
@@ -94,6 +95,8 @@ async def no_cache_frontend(request, call_next):
 def make_tts(provider: str) -> TTSAdapter:
     if provider == "cartesia":
         return CartesiaTTS()
+    if provider == "elevenlabs":
+        return ElevenLabsTTS()
     return InworldTTS()
 
 
