@@ -113,7 +113,7 @@ class Pipeline:
     # ------------------------------------------------------------------ prompt
 
     def _build_system(self, memories: list[str]) -> str:
-        system = ENGINE_DIRECTION + "\n" + self.character.system_prompt
+        system = ENGINE_DIRECTION + "\n" + self.character.build_prompt()
         if memories:
             recalled = "\n".join(f"- {m}" for m in memories)
             system += (
@@ -171,11 +171,9 @@ class Pipeline:
                 seg = await sentence_q.get()
                 if seg is None:
                     break
-                if state["tts_failed"]:
-                    continue  # keep draining so the producer can finish
                 spoken = clean_for_speech(seg.text)
                 if not spoken:
-                    continue  # sentence was pure stage direction / markup
+                    continue  # sentence was pure stage direction / markup / punctuation
                 try:
                     sentence_has_audio = False
                     async for chunk in self.tts.stream_speech(
@@ -200,12 +198,17 @@ class Pipeline:
                         await emit_audio(chunk)
                     if sentence_has_audio:
                         pending_gap_ms = _gap_after(seg.text, seg.para_break)
-                except Exception as exc:  # don't let TTS kill the text reply
-                    state["tts_failed"] = True
-                    logger.exception("TTS failed mid-turn")
-                    await emit_json(
-                        {"type": "error", "message": f"Text-to-speech failed: {exc}"}
-                    )
+                except Exception as exc:
+                    # One sentence failing must not silence the rest of the reply:
+                    # skip this sentence and keep going. Surface the error only once
+                    # per turn so a genuinely-down provider doesn't spam the user.
+                    logger.exception("TTS failed on a sentence; skipping it")
+                    if not state["tts_failed"]:
+                        state["tts_failed"] = True  # "error already surfaced" flag
+                        await emit_json(
+                            {"type": "error", "message": f"Text-to-speech failed: {exc}"}
+                        )
+                    continue
             if audio_started:
                 await emit_json({"type": "audio_end"})
 

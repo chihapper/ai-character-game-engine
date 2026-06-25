@@ -21,14 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 class AnthropicLLM(LLMAdapter):
-    def __init__(self, model: str | None = None) -> None:
+    def __init__(self, model: str | None = None, max_tokens: int | None = None) -> None:
         settings = get_settings()
         if not settings.anthropic_api_key:
             raise RuntimeError(
                 "ANTHROPIC_API_KEY is not set. Add it to your .env file."
             )
         self._model = model or settings.llm_model
-        self._max_tokens = settings.llm_max_tokens
+        # Realtime replies stay short; one-shot authoring (drafting a character)
+        # needs more room, so callers can raise the cap.
+        self._max_tokens = max_tokens or settings.llm_max_tokens
         # AsyncAnthropic resolves the key from ANTHROPIC_API_KEY automatically, but
         # we pass it explicitly so a non-default key in .env is always honored.
         self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)

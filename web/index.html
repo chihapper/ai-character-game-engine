@@ -89,6 +89,9 @@
     .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
     .divider { text-align: center; color: var(--muted); font-size: 12px; margin: 18px 0; }
     .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    .sec-h { margin: 24px 0 2px; padding-top: 14px; border-top: 1px solid var(--border);
+      color: var(--accent-2); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .rep-row { display: flex; gap: 8px; margin-bottom: 8px; }
   </style>
 </head>
 <body>
@@ -139,15 +142,38 @@
           <span id="c-mode-label" class="status" style="margin:0; color:var(--accent-2)">Creating a new character</span>
           <button class="btn ghost" id="c-new" style="display:none">+ New (cancel edit)</button>
         </div>
+
+        <div class="sec-h" style="margin-top:0; padding-top:0; border-top:none">Your characters</div>
+        <div id="char-roster"></div>
+
+        <div class="sec-h">Draft with AI</div>
+        <div class="row" style="gap:8px">
+          <input type="text" id="c-ai-concept" placeholder="Describe a character in a line — e.g. a paranoid harbormaster who smuggles relics" style="flex:1" />
+          <select id="c-ai-model" title="Model used to draft the character" style="flex:0 0 auto"></select>
+          <button class="btn ghost" id="c-ai-draft" type="button">Draft fields</button>
+        </div>
+        <div class="hint" id="c-ai-status" style="margin-top:6px">Fills every field below from your concept — review and edit anything after. (Voice is still yours to pick.)</div>
+
+        <div class="sec-h">Identity</div>
         <label for="c-name">Name</label>
-        <input type="text" id="c-name" placeholder="Aria" style="width:100%" />
+        <input type="text" id="c-name" placeholder="Sigrun" style="width:100%" />
 
-        <label for="c-prompt">Personality (system prompt)</label>
-        <textarea id="c-prompt" placeholder="You are Aria, a sharp-witted archivist who speaks in clipped, dry sentences…"></textarea>
+        <label for="c-concept">Concept — one line</label>
+        <input type="text" id="c-concept" placeholder="A weathered former sellsword who now keeps a lonely roadside inn." style="width:100%" />
 
-        <label for="c-greeting">Greeting</label>
-        <input type="text" id="c-greeting" placeholder="Oh — you're back. I wondered when you'd show up." style="width:100%" />
+        <div class="row" style="gap:8px; align-items:flex-end">
+          <div style="flex:1"><label for="c-age">Age</label>
+            <input type="text" id="c-age" placeholder="mid-50s" style="width:100%" /></div>
+          <div style="flex:2"><label for="c-role">Role</label>
+            <input type="text" id="c-role" placeholder="Innkeeper of the Greywater Rest" style="width:100%" /></div>
+          <div style="flex:1"><label for="c-pronouns">Pronouns</label>
+            <input type="text" id="c-pronouns" placeholder="she/her" style="width:100%" /></div>
+        </div>
 
+        <label for="c-greeting">Greeting — their opening line</label>
+        <input type="text" id="c-greeting" placeholder="Door's heavy in this wind. Sit — you look half-frozen." style="width:100%" />
+
+        <div class="sec-h">Voice</div>
         <label for="c-provider">Voice provider</label>
         <select id="c-provider">
           <option value="cartesia">Cartesia (default)</option>
@@ -214,6 +240,57 @@
         <div id="mode-preset" class="voice-mode" style="display:none; margin-top:12px">
           <input type="text" id="c-voice-id" placeholder="Preset voice_id (e.g. Ashley for Inworld)" style="width:100%" />
         </div>
+
+        <!-- ───────── Manner ───────── -->
+        <div class="sec-h">Manner</div>
+        <label for="c-temperament">Temperament</label>
+        <textarea id="c-temperament" placeholder="Guarded; warms slowly; a soft spot under the gravel she'd rather not admit to."></textarea>
+        <label for="c-speech">Speech style — one trait per line</label>
+        <textarea id="c-speech" placeholder="Terse. Short sentences.&#10;Dry, deadpan humor.&#10;No flowery language, no exclamation marks."></textarea>
+
+        <!-- ───────── Story & knowledge ───────── -->
+        <div class="sec-h">Story &amp; knowledge</div>
+        <label for="c-backstory">Backstory</label>
+        <textarea id="c-backstory" placeholder="Thirty years a sellsword before a bad winter and a worse contract bought her the inn…"></textarea>
+        <label for="c-knows">Knows about — one per line</label>
+        <textarea id="c-knows" placeholder="the roads, weather, mercenary work, brewing&#10;every regular at the Greywater and their rumors"></textarea>
+        <label for="c-doesnt">Doesn't know / outside their world — one per line</label>
+        <textarea id="c-doesnt" placeholder="anything beyond the local region&#10;modern or out-of-world references"></textarea>
+
+        <!-- ───────── Goals & secrets ───────── -->
+        <div class="sec-h">Goals &amp; secrets</div>
+        <label for="c-goals">Goals — what they want in a scene, one per line</label>
+        <textarea id="c-goals" placeholder="Size up the traveler — decide if they're trouble or company."></textarea>
+        <label>Secrets — held back, revealed only on conditions</label>
+        <div id="secrets-list"></div>
+        <button class="btn ghost" id="add-secret" type="button">+ Add secret</button>
+        <label for="c-boundaries" style="margin-top:14px">Hard boundaries — topics they refuse, one per line</label>
+        <textarea id="c-boundaries" placeholder="Gravenmoor or the final contract — she goes cold and changes the subject."></textarea>
+
+        <!-- ───────── Relationships & disposition ───────── -->
+        <div class="sec-h">Relationships &amp; disposition</div>
+        <label>Relationships — how they regard people</label>
+        <div id="rel-list"></div>
+        <button class="btn ghost" id="add-rel" type="button">+ Add relationship</button>
+        <label for="c-disposition" style="margin-top:14px">Starting disposition toward the player</label>
+        <input type="text" id="c-disposition" placeholder="Guarded but not unkind." style="width:100%" />
+
+        <!-- ───────── Voice & tone samples ───────── -->
+        <div class="sec-h">Tone samples</div>
+        <label for="c-samples">Sample lines — a few signature lines, one per line</label>
+        <textarea id="c-samples" placeholder="You look half-frozen. Drink first, talk after.&#10;Enough. We're done."></textarea>
+
+        <!-- ───────── Advanced ───────── -->
+        <div class="sec-h">Advanced</div>
+        <label for="c-raw">Raw system-prompt override (optional)</label>
+        <textarea id="c-raw" placeholder="Leave blank to use the character compiled from the fields above. Fill this to bypass them entirely (legacy / power use)."></textarea>
+        <div class="hint" style="margin-top:6px">If set, this replaces the compiled prompt built from the fields above.</div>
+
+        <div class="row" style="margin-top:18px; gap:8px; align-items:center">
+          <button class="btn ghost" id="c-preview" type="button">Preview compiled prompt</button>
+          <span class="hint" style="margin:0">See exactly what the engine builds from these fields.</span>
+        </div>
+        <pre id="prompt-preview" style="display:none; margin-top:10px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:12px 14px; color:var(--text); white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:12px; line-height:1.6; max-height:340px; overflow:auto"></pre>
 
         <div class="row" style="margin-top:18px">
           <button class="btn" id="c-create">Create character</button>

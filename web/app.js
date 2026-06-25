@@ -16,7 +16,7 @@
 const SAMPLE_RATE = 24000; // TTS playback
 const STREAM_RATE = 16000; // mic -> AssemblyAI streaming
 // Bump this whenever app.js changes so we can confirm the browser loaded it.
-const APP_VERSION = "2026-06-24-cartesia-voices-3";
+const APP_VERSION = "2026-06-24-builder-5-draftmodel";
 let isStreaming = false; // streaming STT available this session?
 let livePartialEl = null; // live (interim) transcript bubble
 
@@ -447,13 +447,66 @@ async function loadCharacters() {
     opt.textContent = "No characters — create one →";
     opt.value = "";
     select.appendChild(opt);
+  } else {
+    for (const c of chars) {
+      const opt = document.createElement("option");
+      opt.value = c.slug;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    }
+  }
+  renderCharRoster(chars);
+}
+
+// Manage existing characters (edit / delete) on the Create tab.
+function renderCharRoster(chars) {
+  const list = $("char-roster");
+  if (!list) return;
+  list.innerHTML = chars.length
+    ? ""
+    : '<div class="hint">No characters yet — fill the form below to create one.</div>';
+  for (const c of chars) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.cssText = "justify-content:space-between; align-items:center; margin-top:6px; gap:8px";
+    const label = document.createElement("div");
+    label.style.cssText = "flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap";
+    label.innerHTML =
+      `<span style="color:var(--text); font-size:14px">${escapeHtml(c.name)}</span>` +
+      (c.concept ? ` <span class="hint">— ${escapeHtml(c.concept)}</span>` : "");
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "btn ghost";
+    edit.textContent = "Edit";
+    edit.style.flex = "0 0 auto";
+    edit.addEventListener("click", () => editCharacter(c.slug));
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "btn ghost";
+    del.textContent = "Delete";
+    del.style.flex = "0 0 auto";
+    del.addEventListener("click", () => deleteCharacter(c.slug, c.name));
+    row.append(label, edit, del);
+    list.appendChild(row);
+  }
+}
+
+async function deleteCharacter(slug, name) {
+  if (!confirm(`Delete "${name}"? This removes the character. Past conversation memories are kept.`)) {
     return;
   }
-  for (const c of chars) {
-    const opt = document.createElement("option");
-    opt.value = c.slug;
-    opt.textContent = c.name;
-    select.appendChild(opt);
+  try {
+    const res = await fetch("/api/characters/" + slug, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      $("c-status").textContent = "⚠ " + (data.error || "Delete failed.");
+      return;
+    }
+    if (editingSlug === slug) newCharacterForm(); // were editing it — reset the form
+    $("c-status").textContent = `Deleted "${name}".`;
+    await loadCharacters();
+  } catch (err) {
+    $("c-status").textContent = "⚠ " + err;
   }
 }
 
@@ -461,14 +514,18 @@ async function loadCharacters() {
 async function loadModels() {
   const res = await fetch("/api/models");
   const data = await res.json();
-  const select = $("model");
-  select.innerHTML = "";
-  for (const m of data.models) {
-    const opt = document.createElement("option");
-    opt.value = m.id;
-    opt.textContent = m.label;
-    if (m.id === data.default) opt.selected = true;
-    select.appendChild(opt);
+  // Conversation model picker + the AI-draft model picker share the same list.
+  for (const selId of ["model", "c-ai-model"]) {
+    const select = $(selId);
+    if (!select) continue;
+    select.innerHTML = "";
+    for (const m of data.models) {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.label;
+      if (m.id === data.default) opt.selected = true;
+      select.appendChild(opt);
+    }
   }
 }
 
@@ -1031,48 +1088,208 @@ async function toggleSampleRecord() {
   }
 }
 
-async function createCharacter() {
-  const name = $("c-name").value.trim();
-  const prompt = $("c-prompt").value.trim();
-  if (!name || !prompt) {
-    $("c-status").textContent = "Name and personality are required.";
+// --- repeaters for the two-field list sections (secrets, relationships) ---
+function makeRepeaterRow(listId, fields) {
+  const row = document.createElement("div");
+  row.className = "rep-row";
+  for (const f of fields) {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = f.cls;
+    inp.placeholder = f.placeholder;
+    inp.style.flex = f.flex;
+    inp.value = f.value || "";
+    row.appendChild(inp);
+  }
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "btn ghost";
+  del.textContent = "✕";
+  del.style.flex = "0 0 auto";
+  del.addEventListener("click", () => row.remove());
+  row.appendChild(del);
+  $(listId).appendChild(row);
+}
+
+function addSecretRow(text = "", reveal = "") {
+  makeRepeaterRow("secrets-list", [
+    { cls: "sec-text", placeholder: "The secret they hold back", flex: "2", value: text },
+    { cls: "sec-reveal", placeholder: "Reveal only when… (optional)", flex: "2", value: reveal },
+  ]);
+}
+
+function addRelRow(who = "", how = "") {
+  makeRepeaterRow("rel-list", [
+    { cls: "rel-who", placeholder: "Who (e.g. the player, Bram)", flex: "1", value: who },
+    { cls: "rel-how", placeholder: "How they regard them", flex: "2", value: how },
+  ]);
+}
+
+function linesToList(id) {
+  return $(id).value.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
+function gatherSecrets() {
+  return [...document.querySelectorAll("#secrets-list .rep-row")]
+    .map((r) => ({
+      text: r.querySelector(".sec-text").value.trim(),
+      reveal_when: r.querySelector(".sec-reveal").value.trim(),
+    }))
+    .filter((s) => s.text);
+}
+
+function gatherRelationships() {
+  return [...document.querySelectorAll("#rel-list .rep-row")]
+    .map((r) => ({
+      who: r.querySelector(".rel-who").value.trim(),
+      how: r.querySelector(".rel-how").value.trim(),
+    }))
+    .filter((r) => r.who && r.how);
+}
+
+// Collect every authored field into the structured card (no voice resolution).
+function buildCardFromForm() {
+  return {
+    name: $("c-name").value.trim(),
+    concept: $("c-concept").value.trim(),
+    age: $("c-age").value.trim(),
+    role: $("c-role").value.trim(),
+    pronouns: $("c-pronouns").value.trim(),
+    greeting: $("c-greeting").value.trim(),
+    tts_provider: $("c-provider").value,
+    temperament: $("c-temperament").value.trim(),
+    speech_style: linesToList("c-speech"),
+    backstory: $("c-backstory").value.trim(),
+    knows: linesToList("c-knows"),
+    doesnt_know: linesToList("c-doesnt"),
+    goals: linesToList("c-goals"),
+    secrets: gatherSecrets(),
+    boundaries: linesToList("c-boundaries"),
+    relationships: gatherRelationships(),
+    disposition: $("c-disposition").value.trim(),
+    sample_lines: linesToList("c-samples"),
+    system_prompt: $("c-raw").value.trim(),
+  };
+}
+
+// Populate the whole form from a card (used by both Edit and AI-draft).
+function fillFormFromCard(c) {
+  $("c-name").value = c.name || "";
+  $("c-concept").value = c.concept || "";
+  $("c-age").value = c.age || "";
+  $("c-role").value = c.role || "";
+  $("c-pronouns").value = c.pronouns || "";
+  $("c-greeting").value = c.greeting || "";
+  $("c-temperament").value = c.temperament || "";
+  $("c-speech").value = (c.speech_style || []).join("\n");
+  $("c-backstory").value = c.backstory || "";
+  $("c-knows").value = (c.knows || []).join("\n");
+  $("c-doesnt").value = (c.doesnt_know || []).join("\n");
+  $("c-goals").value = (c.goals || []).join("\n");
+  $("c-boundaries").value = (c.boundaries || []).join("\n");
+  $("c-disposition").value = c.disposition || "";
+  $("c-samples").value = (c.sample_lines || []).join("\n");
+  $("c-raw").value = c.system_prompt || "";
+  $("secrets-list").innerHTML = "";
+  (c.secrets || []).forEach((s) => addSecretRow(s.text, s.reveal_when));
+  $("rel-list").innerHTML = "";
+  Object.entries(c.relationships || {}).forEach(([who, how]) => addRelRow(who, how));
+}
+
+async function draftCharacter() {
+  const concept = $("c-ai-concept").value.trim();
+  if (!concept) {
+    $("c-ai-status").textContent = "Type a one-line concept first.";
     return;
   }
-  const form = new FormData();
-  form.append("name", name);
-  form.append("system_prompt", prompt);
-  form.append("greeting", $("c-greeting").value.trim());
-  form.append("tts_provider", $("c-provider").value);
+  $("c-ai-status").textContent = "Drafting a full character… this can take 20–30s.";
+  $("c-ai-draft").disabled = true;
+  try {
+    const res = await fetch("/api/characters/draft", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ concept, model: $("c-ai-model").value }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      $("c-ai-status").textContent = "⚠ " + (data.error || "Draft failed.");
+      return;
+    }
+    fillFormFromCard(data.card);
+    $("c-ai-status").textContent = "✓ Drafted — review every field, then Preview or Create. Pick a voice above.";
+  } catch (err) {
+    $("c-ai-status").textContent = "⚠ " + err;
+  } finally {
+    $("c-ai-draft").disabled = false;
+  }
+}
+
+async function previewPrompt() {
+  const pre = $("prompt-preview");
+  pre.style.display = "block";
+  pre.textContent = "Compiling…";
+  try {
+    const form = new FormData();
+    form.append("card", JSON.stringify(buildCardFromForm()));
+    const res = await fetch("/api/characters/preview-prompt", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) {
+      pre.textContent = "⚠ " + (data.error || "Failed.");
+      return;
+    }
+    pre.textContent =
+      data.prompt && data.prompt.trim()
+        ? data.prompt
+        : "(empty — fill in some fields above, or add a raw override)";
+  } catch (err) {
+    pre.textContent = "⚠ " + err;
+  }
+}
+
+async function createCharacter() {
+  const name = $("c-name").value.trim();
+  if (!name) {
+    $("c-status").textContent = "Name is required.";
+    return;
+  }
+  const card = buildCardFromForm();
+
+  // Resolve the voice source (clone uploads a file; the rest ride in the card).
+  let sampleFile = null;
   const mode = $("c-voice-mode").value;
   if (mode === "design") {
     if (!designedVoiceId) {
       $("c-status").textContent = "Generate a voice preview first.";
       return;
     }
-    form.append("design_voice_id", designedVoiceId);
+    card.design_voice_id = designedVoiceId;
   } else if (mode === "clone") {
     if (!sampleBlob) {
       $("c-status").textContent = "Record a voice sample first.";
       return;
     }
-    form.append("sample", sampleBlob, "sample.webm");
+    sampleFile = sampleBlob;
   } else if (mode === "library") {
     if (!libraryVoiceId) {
       $("c-status").textContent = "Pick a voice from the library first.";
       return;
     }
-    form.append("voice_id", libraryVoiceId);
+    card.voice_id = libraryVoiceId;
   } else {
     const presetVoice = $("c-voice-id").value.trim();
     if (!presetVoice) {
       $("c-status").textContent = "Enter a preset voice_id.";
       return;
     }
-    form.append("voice_id", presetVoice);
+    card.voice_id = presetVoice;
   }
 
+  const form = new FormData();
+  form.append("card", JSON.stringify(card));
+  if (sampleFile) form.append("sample", sampleFile, "sample.webm");
+
   const url = editingSlug ? `/api/characters/${editingSlug}` : "/api/characters";
-  $("c-status").textContent = editingSlug ? "Saving…" : "Creating (cloning/designing if needed)…";
+  $("c-status").textContent = editingSlug ? "Saving…" : "Creating (cloning if needed)…";
   $("c-create").disabled = true;
   try {
     const res = await fetch(url, { method: "POST", body: form });
@@ -1108,9 +1325,7 @@ async function editCharacter(slug) {
   }
   const c = await res.json();
   editingSlug = slug;
-  $("c-name").value = c.name;
-  $("c-prompt").value = c.system_prompt;
-  $("c-greeting").value = c.greeting;
+  fillFormFromCard(c);
   $("c-provider").value = c.tts_provider || "cartesia";
   // Pre-load the current voice so saving keeps it unless you pick/record a new
   // one. Cartesia → library mode (current id retained + highlighted); Inworld →
@@ -1134,7 +1349,15 @@ async function editCharacter(slug) {
 
 function newCharacterForm() {
   editingSlug = null;
-  ["c-name", "c-prompt", "c-greeting", "c-voice-id"].forEach((id) => ($(id).value = ""));
+  [
+    "c-name", "c-concept", "c-age", "c-role", "c-pronouns", "c-greeting",
+    "c-temperament", "c-speech", "c-backstory", "c-knows", "c-doesnt",
+    "c-goals", "c-boundaries", "c-disposition", "c-samples", "c-raw",
+    "c-voice-id", "c-ai-concept",
+  ].forEach((id) => $(id) && ($(id).value = ""));
+  $("prompt-preview").style.display = "none";
+  $("secrets-list").innerHTML = "";
+  $("rel-list").innerHTML = "";
   designedVoiceId = null;
   libraryVoiceId = null;
   $("lib-selected").textContent = "";
@@ -1175,6 +1398,13 @@ _libPreview.addEventListener("playing", () => {
 _libPreview.addEventListener("ended", resetPreviewBtn);
 _libPreview.addEventListener("error", resetPreviewBtn);
 $("c-design-generate").addEventListener("click", generateDesignPreview);
+$("add-secret").addEventListener("click", () => addSecretRow());
+$("add-rel").addEventListener("click", () => addRelRow());
+$("c-preview").addEventListener("click", previewPrompt);
+$("c-ai-draft").addEventListener("click", draftCharacter);
+$("c-ai-concept").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") draftCharacter();
+});
 $("edit-char").addEventListener("click", () => editCharacter($("character").value));
 $("c-new").addEventListener("click", newCharacterForm);
 $("train-begin").addEventListener("click", beginTraining);

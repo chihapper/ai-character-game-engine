@@ -47,8 +47,10 @@ from .profile_store import (
     save_profile,
 )
 from .profile_store import slugify as profile_slugify
+from .character_draft import draft_card_from_concept
 from .character_store import (
     Character,
+    delete_character,
     list_characters,
     load_character,
     save_character,
@@ -120,7 +122,7 @@ async def get_characters() -> JSONResponse:
 
 @app.get("/api/characters/{slug}/full")
 async def get_character_full(slug: str) -> JSONResponse:
-    """Full editable fields for one character (the list endpoint omits the prompt)."""
+    """All editable fields for one character (the list endpoint omits the detail)."""
     try:
         c = load_character(slug)
     except FileNotFoundError:
@@ -129,10 +131,26 @@ async def get_character_full(slug: str) -> JSONResponse:
         {
             "slug": c.slug,
             "name": c.name,
-            "system_prompt": c.system_prompt,
             "greeting": c.greeting,
             "tts_provider": c.tts_provider,
             "voice_id": c.voice_id,
+            "concept": c.concept,
+            "age": c.age,
+            "role": c.role,
+            "pronouns": c.pronouns,
+            "temperament": c.temperament,
+            "speech_style": c.speech_style,
+            "backstory": c.backstory,
+            "knows": c.knows,
+            "doesnt_know": c.doesnt_know,
+            "goals": c.goals,
+            "secrets": c.secrets,
+            "boundaries": c.boundaries,
+            "relationships": c.relationships,
+            "disposition": c.disposition,
+            "sample_lines": c.sample_lines,
+            "game_data": c.game_data,
+            "system_prompt": c.system_prompt,
         }
     )
 
@@ -259,104 +277,193 @@ async def design_voice(
     )
 
 
+def _as_list(value) -> list[str]:
+    """Accept a list or a newline-separated string; return trimmed non-empty items."""
+    if isinstance(value, list):
+        return [str(x).strip() for x in value if str(x).strip()]
+    if isinstance(value, str):
+        return [line.strip() for line in value.splitlines() if line.strip()]
+    return []
+
+
+def _as_secrets(value) -> list[dict]:
+    out: list[dict] = []
+    for s in value or []:
+        if isinstance(s, dict):
+            text = (s.get("text") or "").strip()
+            if text:
+                out.append({"text": text, "reveal_when": (s.get("reveal_when") or "").strip()})
+    return out
+
+
+def _as_relationships(value) -> dict:
+    """Accept either {who: how} or a list of {who, how} rows (what the form sends)."""
+    if isinstance(value, dict):
+        return {
+            str(k).strip(): str(v).strip()
+            for k, v in value.items()
+            if str(k).strip() and str(v).strip()
+        }
+    out: dict = {}
+    for r in value or []:
+        if isinstance(r, dict):
+            who, how = (r.get("who") or "").strip(), (r.get("how") or "").strip()
+            if who and how:
+                out[who] = how
+    return out
+
+
+def _character_from_card(slug: str, card: dict, voice_id: str, provider: str, namespace: str) -> Character:
+    """Build a Character from the structured card the builder UI sends."""
+    return Character(
+        slug=slug,
+        name=(card.get("name") or "").strip(),
+        voice_id=voice_id,
+        tts_provider=provider,
+        greeting=(card.get("greeting") or "").strip(),
+        concept=(card.get("concept") or "").strip(),
+        age=(card.get("age") or "").strip(),
+        role=(card.get("role") or "").strip(),
+        pronouns=(card.get("pronouns") or "").strip(),
+        temperament=(card.get("temperament") or "").strip(),
+        speech_style=_as_list(card.get("speech_style")),
+        backstory=(card.get("backstory") or "").strip(),
+        knows=_as_list(card.get("knows")),
+        doesnt_know=_as_list(card.get("doesnt_know")),
+        goals=_as_list(card.get("goals")),
+        secrets=_as_secrets(card.get("secrets")),
+        boundaries=_as_list(card.get("boundaries")),
+        relationships=_as_relationships(card.get("relationships")),
+        disposition=(card.get("disposition") or "").strip(),
+        sample_lines=_as_list(card.get("sample_lines")),
+        game_data=card.get("game_data") if isinstance(card.get("game_data"), dict) else {},
+        system_prompt=(card.get("system_prompt") or "").strip(),
+        memory_namespace=namespace,
+    )
+
+
+async def _resolve_voice(card: dict, sample: UploadFile | None, provider: str, name: str, current: str = ""):
+    """Resolve the voice id + provider from the card's chosen source. Returns
+    (voice_id, provider). Raises on a provider error."""
+    voice_id = (card.get("voice_id") or "").strip() or current
+    design_voice_id = (card.get("design_voice_id") or "").strip()
+    sample_bytes = await sample.read() if sample is not None else b""
+    if sample_bytes:
+        voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
+    elif design_voice_id:
+        # Voice design is Inworld-only; publish the previewed voice to keep it.
+        voice_id = await InworldTTS().publish_voice(design_voice_id, name)
+        provider = "inworld"
+    return voice_id, provider
+
+
 @app.post("/api/characters")
 async def create_character(
-    name: str = Form(...),
-    system_prompt: str = Form(...),
-    greeting: str = Form(""),
-    tts_provider: str = Form(""),
-    voice_id: str = Form(""),
-    design_voice_id: str = Form(""),
+    card: str = Form(...),
     sample: UploadFile | None = File(None),
 ) -> JSONResponse:
-    """Create a character with one of three voice sources:
-      * `sample` uploaded -> instant-clone it (provider's clone API)
-      * `design_voice_id` set -> publish a previously-designed Inworld voice
-      * `voice_id` set -> use a preset/library voice as-is
-    """
-    settings = get_settings()
-    provider = tts_provider or settings.default_tts_provider
-
-    resolved_voice_id = voice_id.strip()
+    """Create a character from the structured builder card (JSON). Voice comes from
+    one of: an uploaded `sample` (instant-clone), a designed Inworld voice, or a
+    picked library/preset `voice_id`."""
     try:
-        sample_bytes = await sample.read() if sample is not None else b""
-        if sample_bytes:
-            resolved_voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
-        elif design_voice_id.strip():
-            # Voice design is Inworld-only; publish the previewed voice to keep it.
-            resolved_voice_id = await InworldTTS().publish_voice(design_voice_id.strip(), name)
-            provider = "inworld"
+        data = json.loads(card)
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "Malformed character data."}, status_code=400)
+    name = (data.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"error": "Name is required."}, status_code=400)
+
+    provider = (data.get("tts_provider") or "").strip() or get_settings().default_tts_provider
+    try:
+        voice_id, provider = await _resolve_voice(data, sample, provider, name)
     except Exception as exc:
         logger.exception("Voice setup failed")
         return JSONResponse({"error": f"Voice setup failed: {exc}"}, status_code=502)
-
-    if not resolved_voice_id:
+    if not voice_id:
         return JSONResponse(
-            {"error": "Provide a recorded sample, a designed voice, or a preset voice_id."},
+            {"error": "Pick a voice: record a sample, design one, or choose from the library."},
             status_code=400,
         )
 
     slug = slugify(name)
-    character = Character(
-        slug=slug,
-        name=name,
-        system_prompt=system_prompt,
-        voice_id=resolved_voice_id,
-        tts_provider=provider,
-        greeting=greeting,
-        memory_namespace=slug,
-    )
+    character = _character_from_card(slug, data, voice_id, provider, slug)
     save_character(character)
-    logger.info("Created character '%s' (voice=%s, provider=%s)", slug, resolved_voice_id, provider)
+    logger.info("Created character '%s' (voice=%s, provider=%s)", slug, voice_id, provider)
     return JSONResponse(character.public_dict(), status_code=201)
+
+
+@app.post("/api/characters/draft")
+async def draft_character(request: Request) -> JSONResponse:
+    """AI-assist: draft a full character card from a one-line concept. The user then
+    reviews/edits every field. Registered before /{slug} so the path isn't captured."""
+    body = await request.json()
+    concept = (body.get("concept") or "").strip()
+    if not concept:
+        return JSONResponse({"error": "Describe the character in a line first."}, status_code=400)
+    requested = (body.get("model") or "").strip()
+    model = requested if requested in ALLOWED_MODEL_IDS else None  # fall back to default
+    try:
+        card = await draft_card_from_concept(concept, model=model)
+    except Exception as exc:
+        logger.exception("Character draft failed")
+        return JSONResponse({"error": f"Draft failed: {exc}"}, status_code=502)
+    return JSONResponse({"card": card})
+
+
+@app.post("/api/characters/preview-prompt")
+async def preview_prompt(card: str = Form(...)) -> JSONResponse:
+    """Compile the in-progress builder card into the character's system prompt,
+    without saving — so the author can see exactly what the engine builds from the
+    fields (game-data extensions included if any game has registered a renderer).
+    Defined before /{slug} so the static path isn't captured as a slug."""
+    try:
+        data = json.loads(card)
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "Malformed character data."}, status_code=400)
+    provider = (data.get("tts_provider") or "").strip() or get_settings().default_tts_provider
+    character = _character_from_card("preview", data, (data.get("voice_id") or "").strip(), provider, "preview")
+    return JSONResponse({"prompt": character.build_prompt()})
 
 
 @app.post("/api/characters/{slug}")
 async def update_character(
     slug: str,
-    name: str = Form(...),
-    system_prompt: str = Form(...),
-    greeting: str = Form(""),
-    tts_provider: str = Form(""),
-    voice_id: str = Form(""),
-    design_voice_id: str = Form(""),
+    card: str = Form(...),
     sample: UploadFile | None = File(None),
 ) -> JSONResponse:
-    """Update an existing character. The slug + memory namespace stay stable (so
-    past memories survive a rename). The voice is only changed if a new source is
-    given (recorded sample, designed voice, or a different preset id)."""
+    """Update an existing character. The slug + memory namespace stay stable (so past
+    memories survive a rename). The voice changes only if a new source is given."""
     try:
         existing = load_character(slug)
     except FileNotFoundError:
         return JSONResponse({"error": "Character not found."}, status_code=404)
-
-    provider = tts_provider or existing.tts_provider
-    resolved_voice_id = existing.voice_id  # keep current voice unless changed
     try:
-        sample_bytes = await sample.read() if sample is not None else b""
-        if sample_bytes:
-            resolved_voice_id = await make_tts(provider).clone_voice(sample_bytes, name)
-        elif design_voice_id.strip():
-            resolved_voice_id = await InworldTTS().publish_voice(design_voice_id.strip(), name)
-            provider = "inworld"
-        elif voice_id.strip():
-            resolved_voice_id = voice_id.strip()
+        data = json.loads(card)
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "Malformed character data."}, status_code=400)
+    name = (data.get("name") or "").strip() or existing.name
+
+    provider = (data.get("tts_provider") or "").strip() or existing.tts_provider
+    try:
+        voice_id, provider = await _resolve_voice(data, sample, provider, name, current=existing.voice_id)
     except Exception as exc:
         logger.exception("Voice update failed")
         return JSONResponse({"error": f"Voice update failed: {exc}"}, status_code=502)
 
-    updated = Character(
-        slug=slug,
-        name=name,
-        system_prompt=system_prompt,
-        voice_id=resolved_voice_id,
-        tts_provider=provider,
-        greeting=greeting,
-        memory_namespace=existing.memory_namespace,
-    )
+    updated = _character_from_card(slug, data, voice_id, provider, existing.memory_namespace)
     save_character(updated)
     logger.info("Updated character '%s'", slug)
     return JSONResponse(updated.public_dict())
+
+
+@app.delete("/api/characters/{slug}")
+async def remove_character(slug: str) -> JSONResponse:
+    """Delete a character. Past conversation memories (keyed by namespace) survive."""
+    deleted = delete_character(slug)
+    if not deleted:
+        return JSONResponse({"error": "Character not found."}, status_code=404)
+    logger.info("Deleted character '%s'", slug)
+    return JSONResponse({"deleted": True, "slug": slug})
 
 
 # ----------------------------------------------------------------------- WS loop
