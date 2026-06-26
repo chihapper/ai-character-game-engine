@@ -1,4 +1,20 @@
-# Real-Time AI Character Engine
+# 🎲 AI Character Game Engine
+
+> **This repo is the game-engine direction** — a "game director" that drives Inworld's
+> **full-loop realtime voice agent** (Claude LLM + Realtime TTS-2, with cross-turn voice
+> continuity) and owns the **game logic**: character state, memory, tools/mechanics, and
+> the world/time seam.
+>
+> It was seeded with the full history of the provider-agnostic **voice engine**, which
+> lives on as its own portfolio project:
+> - Original repo: [real-time-ai-character-engine](https://github.com/chihapper/real-time-ai-character-engine)
+> - Ancestry snapshot: tag **`voice-engine-v1`** (tagged in both repos)
+>
+> **Direction & open design:** see issues **[A](https://github.com/chihapper/ai-character-game-engine/issues/1)** (memory/retrieval) and **[B](https://github.com/chihapper/ai-character-game-engine/issues/2)** (generalize the engine for the game-director). _The README below is the inherited voice-engine README and will be rewritten as the game engine takes shape._
+
+---
+
+# Real-Time AI Character Engine <sub>(inherited voice-engine README, below)</sub>
 
 A cloud-first, provider-agnostic engine for **real-time spoken conversation** with an
 AI character. You speak; a character with a distinct personality and a **cloned
