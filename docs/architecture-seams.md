@@ -325,8 +325,9 @@ migration unchanged.**
 
 - **Pure similarity** → ✅ fixed: recency + importance now weighted (opponent processing).
 - **Fixed `k=4`, no threshold** → ✅ fixed: a budget + a relevance floor (drop weak matches).
-- **Query = last message only** → ⬜ still open: the `Situation`/goals condition the prompt
-  but not yet the *retrieval query* (build-order §6 Track E step 4 — the next RR step).
+- **Query = last message only** → ✅ fixed: the **arena query** (`context.build_arena_query`)
+  searches against the trigger + recent conversation + the live `Situation` + goals, so
+  recall resolves referents ("her" → mom) and thin queries. Toggle: `ARENA_QUERY`.
 
 ### 4.3 Store & embeddings — drop the heavy ANN index (DONE)
 
@@ -390,11 +391,16 @@ Two roughly independent tracks.
    - **+ Relevance realization** (`memory/relevance.py`): recall is an opponent-processing
      balance of similarity/recency/importance/diversity, not top-k. See
      [[relevance-realization-design]] / the RR write-ups.
-4. ⬜ Richer retrieval **query** = the arena: fold the live `Situation` (+ goals) into the
-   retrieval query, not just `player_input`. (Today the situation conditions the prompt
-   but not yet what memory is searched against — the clear next RR step.)
-5. ⬜ Parse/weight game-time `when` for true temporal recency (now recency is by insertion
-   order); full-loop per-turn `Situation` injection (§5.6).
+4. ✅ **DONE (2026-06-26)** — Richer retrieval **query** = the arena
+   (`context.build_arena_query`): the trigger + recent conversation + the live `Situation`
+   + goals are embedded for recall, so referents ("her" → mom) and thin queries resolve.
+   Toggle `ARENA_QUERY`.
+   - **+ Character-aware salience** (`salience.py`): role/competence-baseline — a competent
+     character reliably recalls domain facts even when routine (a bartender a drink order).
+5. ⬜ **Temporal memory decay** ([issue #5](https://github.com/chihapper/ai-character-game-engine/issues/5)):
+   recency by *in-game time* (numeric `when`), modulated by salience + reinforcement, so a
+   one-off fades over years while a pivotal memory persists. Needs a game-supplied clock.
+6. ⬜ Full-loop per-turn `Situation`/recall injection (§5.6).
 
 Track E lands against whichever runtime is live, because it shapes the instructions and
 memory the agent runs on — not the audio path.
