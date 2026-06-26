@@ -92,9 +92,10 @@ def _safe_name(namespace: str) -> str:
 
 
 class LongTermMemory:
-    def __init__(self, namespace: str) -> None:
+    def __init__(self, namespace: str, *, readonly: bool = False) -> None:
         settings = get_settings()
         self._namespace = namespace
+        self.readonly = readonly  # if True, writes are no-ops (recall still works)
         self._budget = settings.long_term_top_k
         self._weights = RelevanceWeights(
             similarity=settings.rr_weight_similarity,
@@ -146,6 +147,8 @@ class LongTermMemory:
         return records
 
     def _add_sync(self, text: str, importance: float, kind: str, when: str) -> None:
+        if self.readonly:
+            return
         records = self._all()
         embed, _, _ = _get_embedder()
         embedding = embed(text)

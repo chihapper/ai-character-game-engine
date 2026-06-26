@@ -384,13 +384,15 @@ class Pipeline:
         if full_reply:
             self.short_term.add_user(user_text)
             self.short_term.add_assistant(full_reply)
-            when = request.situation.game_time if request.situation else ""
-            # Score character-aware salience + persist in the BACKGROUND, so the LLM
-            # rating never delays the next turn (the exchange is already in short-term
-            # for immediate context).
-            task = asyncio.create_task(self._store_exchange(user_text, full_reply, when))
-            self._writes.add(task)
-            task.add_done_callback(self._writes.discard)
+            # Read-only memory (e.g. an A/B test character): keep short-term context but
+            # don't score salience or write long-term, so the seeded store stays pristine.
+            if not self.long_term.readonly:
+                when = request.situation.game_time if request.situation else ""
+                # Score salience + persist in the BACKGROUND, so the LLM rating never
+                # delays the next turn (the exchange is already in short-term).
+                task = asyncio.create_task(self._store_exchange(user_text, full_reply, when))
+                self._writes.add(task)
+                task.add_done_callback(self._writes.discard)
 
     async def _store_exchange(self, user_text: str, reply: str, when: str) -> None:
         importance = await score_salience(self.character, user_text, reply)

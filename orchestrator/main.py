@@ -627,7 +627,10 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
     session = InworldSession(
         instructions=instructions, voice_id=character.voice_id, tools=_REALTIME_TOOLS
     )
-    long_term = LongTermMemory(character.memory_namespace)
+    _engine_cfg = (character.game_data or {}).get("engine", {})
+    long_term = LongTermMemory(
+        character.memory_namespace, readonly=_engine_cfg.get("memory_readonly", False)
+    )
     await session.connect()
     await emit_json(
         {
@@ -787,7 +790,10 @@ async def voice_ws(websocket: WebSocket) -> None:
             except Exception:
                 logger.exception("Could not set up TTS fallback")
         short_term = ShortTermMemory(max_turns=get_settings().short_term_turns)
-        long_term = LongTermMemory(character.memory_namespace)
+        _engine_cfg = (character.game_data or {}).get("engine", {})
+        long_term = LongTermMemory(
+            character.memory_namespace, readonly=_engine_cfg.get("memory_readonly", False)
+        )
         pipeline = Pipeline(character, llm, tts, short_term, long_term)
     except Exception as exc:
         logger.exception("Failed to start session")
