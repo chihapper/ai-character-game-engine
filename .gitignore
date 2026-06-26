@@ -24,6 +24,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Realtime API feasibility spike (throwaway)
+# Realtime API feasibility spikes (throwaway)
 spike_out/
-realtime_spike.py
+realtime_*.py
