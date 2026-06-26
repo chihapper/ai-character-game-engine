@@ -174,10 +174,14 @@ class Pipeline:
         user_text = request.input_text()
         query = request.query()
         if query and get_settings().memory_debug:
-            # Dev: surface what relevance realization selected (and why) to the browser.
+            # Dev: surface what relevance realization selected (long-term) AND the
+            # short-term buffer (recent verbatim turns, also injected) to the browser.
             data = await self.long_term.retrieve_scored(query)
             memories = data["selected"]
-            await emit_json({"type": "memories", "query": query, **data})
+            await emit_json({
+                "type": "memories", "query": query,
+                "short_term": self.short_term.messages(), **data,
+            })
         else:
             memories = await self.long_term.retrieve(query) if query else []
         system = self._build_system(memories, request.situation)

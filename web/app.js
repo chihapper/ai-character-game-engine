@@ -195,6 +195,7 @@ async function connect() {
   // first turn of the new one (long-term memory itself persists on disk regardless).
   document.getElementById("mem-debug")?.remove();
   memDebugExpanded.clear();
+  memDebugLast = null;
   // Create the AudioContext + worklet from this user gesture so playback is allowed.
   try {
     await ensureAudio();
@@ -320,89 +321,177 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
-// Which rows the user expanded (keyed by position), kept across re-renders.
-const memDebugExpanded = new Set();
+// Relevance-realization debug panel: two tabs (long-term scoring / short-term buffer),
+// expandable rows, query-term bolding, and a minimize-to-pill toggle. Server emits a
+// "memories" frame each turn with the scored long-term candidates + the short-term buffer.
+const memDebugExpanded = new Set(); // expanded rows, keyed by tab+index
+let memDebugTab = "long"; // "long" | "short"
+let memDebugMin = false; // minimized to a pill?
+let memDebugLast = null; // last payload, so UI toggles can re-render
+
+const MEM_STOP = new Set(
+  ("the a an and or but if then so to of in on at for with my your his her our their me you " +
+    "he she it we they them him do does did is are was were be been have has had that this what " +
+    "when how why who not no yes ok okay just like about").split(" "),
+);
+function memQueryTerms(q) {
+  return ((q || "").toLowerCase().match(/[a-z0-9']{3,}/g) || []).filter((t) => !MEM_STOP.has(t));
+}
+function memBold(escaped, terms) {
+  if (!terms.length) return escaped;
+  const pat = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return escaped.replace(new RegExp("\\b(" + pat + ")\\b", "gi"), "<b style='color:#fff'>$1</b>");
+}
 
 function renderMemoryDebug(msg) {
+  if (msg) memDebugLast = msg;
+  msg = memDebugLast;
+  if (!msg) return;
+
   let panel = document.getElementById("mem-debug");
   if (!panel) {
     panel = document.createElement("div");
     panel.id = "mem-debug";
-    panel.style.cssText =
-      "position:fixed;right:12px;bottom:12px;width:460px;max-height:75vh;overflow:auto;" +
-      "z-index:9999;background:rgba(18,18,22,.97);color:#ddd;font:11px/1.5 ui-monospace,monospace;" +
-      "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45);" +
-      "resize:both;min-width:280px;min-height:120px";
     document.body.appendChild(panel);
   }
   panel.replaceChildren();
-  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(0);
+  panel.onclick = null;
+
   const el = (tag, css, txt) => {
     const n = document.createElement(tag);
     if (css) n.style.cssText = css;
     if (txt != null) n.textContent = txt;
     return n;
   };
+  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(0);
+  const terms = memQueryTerms(msg.query);
 
-  const header = el("div", "color:#fff;font-weight:bold;margin-bottom:5px");
-  header.innerHTML =
-    `🧠 relevance realization` +
-    `<span style="float:right;color:#888;font-weight:normal">${escapeHtml(msg.embedder)}</span>`;
-  panel.appendChild(header);
-  panel.appendChild(el("div", "color:#9aa;margin-bottom:3px;word-break:break-word", "query: " + (msg.query || "")));
-  panel.appendChild(
-    el("div", "color:#777;margin-bottom:6px",
-      `★ injected (budget ${(msg.selected || []).length}) · click a row for full detail`)
-  );
-
-  (msg.scored || []).forEach((m, i) => {
-    const key = "row" + i;
+  // expandable row shared by both tabs
+  const addRow = (key, headText, headColor, fullText) => {
     const expanded = memDebugExpanded.has(key);
-    const color = m.selected ? "#9be29b" : "#8a8a92";
-    const tag = m.selected ? `★${m.rank}` : "·";
-    const flag = m.kind === "world_event" ? " ⚑" : "";
-
     const row = el("div", "border-top:1px solid #2a2a30;padding:4px 0");
-    const head = el("div", `color:${color};cursor:pointer`);
-    head.textContent =
-      `${expanded ? "▾" : "▸"} ${tag}  base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}`;
+    const head = el("div", `color:${headColor};cursor:pointer`);
+    head.textContent = `${expanded ? "▾" : "▸"} ${headText}`;
     row.appendChild(head);
-
-    if (!expanded) {
-      const oneLine = (m.text || "").replace(/\s+/g, " ");
-      row.appendChild(
-        el("div", "color:#bbb;margin-left:15px;cursor:pointer",
-          oneLine.length > 88 ? oneLine.slice(0, 88) + "…" : oneLine)
-      );
-    } else {
-      const d = el("div", "margin-left:15px;margin-top:3px");
-      const body = el("div",
-        "color:#e2e2e8;background:#23232a;padding:6px;border-radius:4px;margin:2px 0;white-space:pre-wrap;word-break:break-word");
-      body.textContent = m.text || "";
-      d.appendChild(body);
-      d.appendChild(el("div", "color:#9aa",
-        `kind: ${m.kind || ""}` + (m.when ? `   ·   when: ${m.when}` : "")));
-      const simRaw = m.similarity_raw != null ? ` (raw ${m.similarity_raw.toFixed(3)})` : "";
-      d.appendChild(el("div", "color:#9aa",
-        `base ${m.base.toFixed(3)}  =  sim ${m.similarity.toFixed(3)}${simRaw} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`));
-      d.appendChild(el("div", "color:#9aa",
-        m.selected ? `injected · selection rank ${m.rank}` : "not injected (below budget, after diversity)"));
-      d.addEventListener("click", (e) => e.stopPropagation()); // let text be selected
-      row.appendChild(d);
-    }
-
     const toggle = () => {
       if (memDebugExpanded.has(key)) memDebugExpanded.delete(key);
       else memDebugExpanded.add(key);
-      renderMemoryDebug(msg);
+      renderMemoryDebug();
     };
     head.addEventListener("click", toggle);
-    if (!expanded) row.lastChild.addEventListener("click", toggle);
+    if (!expanded) {
+      const oneLine = (fullText || "").replace(/\s+/g, " ");
+      const shown = oneLine.length > 220 ? oneLine.slice(0, 220) + "…" : oneLine;
+      const pv = el("div", "color:#bbb;margin-left:15px;cursor:pointer;word-break:break-word");
+      pv.innerHTML = memBold(escapeHtml(shown), terms);
+      pv.addEventListener("click", toggle);
+      row.appendChild(pv);
+    } else {
+      const body = el(
+        "div",
+        "margin-left:15px;color:#e2e2e8;background:#23232a;padding:6px;border-radius:4px;" +
+          "margin:2px 0;white-space:pre-wrap;word-break:break-word",
+      );
+      body.innerHTML = memBold(escapeHtml(fullText || ""), terms);
+      body.addEventListener("click", (e) => e.stopPropagation());
+      row.appendChild(body);
+    }
     panel.appendChild(row);
-  });
+    return row;
+  };
 
-  if (!(msg.scored || []).length) {
-    panel.appendChild(el("div", "color:#888", "(no memories stored yet)"));
+  // --- minimized: a small pill that restores on click ---
+  if (memDebugMin) {
+    panel.style.cssText =
+      "position:fixed;right:12px;bottom:12px;z-index:9999;cursor:pointer;" +
+      "background:rgba(18,18,22,.97);color:#9be29b;font:13px ui-monospace,monospace;" +
+      "border:1px solid #444;border-radius:20px;padding:6px 12px;box-shadow:0 4px 18px rgba(0,0,0,.45)";
+    panel.textContent = "🧠 RR";
+    panel.title = "Show relevance panel";
+    panel.onclick = () => {
+      memDebugMin = false;
+      renderMemoryDebug();
+    };
+    return;
+  }
+
+  panel.style.cssText =
+    "position:fixed;right:12px;bottom:12px;width:480px;max-height:78vh;overflow:auto;" +
+    "z-index:9999;background:rgba(18,18,22,.97);color:#ddd;font:11px/1.5 ui-monospace,monospace;" +
+    "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45);" +
+    "resize:both;min-width:300px;min-height:120px";
+
+  // --- header: title · embedder · minimize ---
+  const header = el("div", "display:flex;align-items:center;gap:8px;margin-bottom:5px");
+  header.appendChild(el("div", "color:#fff;font-weight:bold;flex:1", "🧠 relevance realization"));
+  header.appendChild(el("div", "color:#888", msg.embedder || ""));
+  const minBtn = el("div", "color:#aaa;cursor:pointer;font-weight:bold;padding:0 5px", "—");
+  minBtn.title = "Minimize";
+  minBtn.onclick = () => {
+    memDebugMin = true;
+    renderMemoryDebug();
+  };
+  header.appendChild(minBtn);
+  panel.appendChild(header);
+
+  panel.appendChild(
+    el("div", "color:#9aa;margin-bottom:5px;word-break:break-word", "query: " + (msg.query || "")),
+  );
+
+  // --- tabs ---
+  const longN = (msg.scored || []).length;
+  const shortN = (msg.short_term || []).length;
+  const tabs = el("div", "display:flex;gap:5px;margin-bottom:6px");
+  const mkTab = (id, label) => {
+    const active = memDebugTab === id;
+    const t = el(
+      "div",
+      "cursor:pointer;padding:3px 10px;border-radius:5px;" +
+        (active ? "background:#2f6b3a;color:#fff" : "background:#26262c;color:#aaa"),
+      label,
+    );
+    t.onclick = () => {
+      memDebugTab = id;
+      renderMemoryDebug();
+    };
+    return t;
+  };
+  tabs.appendChild(mkTab("long", `Long-term (${longN})`));
+  tabs.appendChild(mkTab("short", `Short-term (${shortN})`));
+  panel.appendChild(tabs);
+
+  if (memDebugTab === "long") {
+    panel.appendChild(
+      el("div", "color:#777;margin-bottom:4px",
+        `★ injected into the prompt (budget ${(msg.selected || []).length}) · click a row for detail`),
+    );
+    (msg.scored || []).forEach((m, i) => {
+      const tag = m.selected ? `★${m.rank}` : "·";
+      const flag = m.kind === "world_event" ? " ⚑" : "";
+      const headText =
+        `${tag}  base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}`;
+      const row = addRow("L" + i, headText, m.selected ? "#9be29b" : "#8a8a92", m.text || "");
+      if (memDebugExpanded.has("L" + i)) {
+        const simRaw = m.similarity_raw != null ? ` (raw ${m.similarity_raw.toFixed(3)})` : "";
+        const meta = el("div", "margin-left:15px;color:#9aa");
+        meta.textContent =
+          `kind ${m.kind || ""}${m.when ? " · when " + m.when : ""}  ·  ` +
+          `base ${m.base.toFixed(3)} = sim ${m.similarity.toFixed(3)}${simRaw} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`;
+        row.appendChild(meta);
+      }
+    });
+    if (!longN) panel.appendChild(el("div", "color:#888", "(no long-term memories stored yet)"));
+  } else {
+    panel.appendChild(
+      el("div", "color:#777;margin-bottom:4px",
+        "recent turns kept verbatim and injected every turn (not scored)"),
+    );
+    (msg.short_term || []).forEach((m, i) => {
+      const who = m.role === "user" ? "Player" : "Character";
+      const color = m.role === "user" ? "#7db4e6" : "#e6b07d";
+      addRow("S" + i, who, color, m.content || "");
+    });
+    if (!shortN) panel.appendChild(el("div", "color:#888", "(short-term buffer empty)"));
   }
 }
 
