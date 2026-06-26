@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import random
 import time
 from dataclasses import replace
 
@@ -64,10 +65,12 @@ from .config import (
     WEB_DIR,
     get_settings,
 )
+from .expressivity import performance_directive
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
-from .pipeline import Pipeline
+from .pipeline import ENGINE_DIRECTION, Pipeline
+from .realtime.inworld_session import InworldSession
 
 logging.basicConfig(
     level=logging.INFO,
@@ -533,6 +536,160 @@ async def duplicate_character(slug: str) -> JSONResponse:
     return JSONResponse(copy.public_dict(), status_code=201)
 
 
+# ------------------------------------------------------- full-loop runtime (Track V)
+
+# Demo tool so the wired full loop exercises mechanics end-to-end. Real game tools
+# arrive via the game/engine seam (Track E, issue #2); this placeholder rolls dice
+# locally so we can see tool calls drive in-character continuations today.
+_REALTIME_TOOLS = [
+    {
+        "type": "function",
+        "name": "roll_dice",
+        "description": "Roll dice for a check when the scene calls for chance.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "sides": {"type": "integer", "description": "die size, e.g. 20 for a d20"},
+                "reason": {"type": "string", "description": "what the roll is for"},
+            },
+            "required": ["sides", "reason"],
+        },
+    }
+]
+
+
+def _run_realtime_tool(call: dict) -> dict:
+    """Execute a tool call from the session. Placeholder until the game-tool seam exists."""
+    if call.get("name") == "roll_dice":
+        try:
+            args = json.loads(call.get("args") or "{}")
+        except json.JSONDecodeError:
+            args = {}
+        sides = max(2, int(args.get("sides") or 20))
+        return {"result": random.randint(1, sides), "sides": sides}
+    return {"error": f"unknown tool {call.get('name')}"}
+
+
+async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
+    """Voice the authored greeting via Inworld TTS-2 in the character's own voice (the
+    same voice the session uses), so the open matches the pipeline path."""
+    text = (character.greeting or "").strip()
+    if not text:
+        return
+    await emit_json({"type": "assistant_done", "text": text})
+    started = False
+    try:
+        async for chunk in InworldTTS().stream_speech(text, character.voice_id):
+            if not started:
+                started = True
+                await emit_json({"type": "audio_start"})
+            await emit_audio(chunk)
+    except Exception as exc:
+        logger.exception("Full-loop greeting failed")
+        await emit_json({"type": "error", "message": f"Greeting failed: {exc}"})
+    if started:
+        await emit_json({"type": "audio_end"})
+
+
+async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) -> None:
+    """Drive one Inworld full-loop session for a browser connection, mapping its events
+    onto the same browser protocol the pipeline path uses (so the frontend is unchanged).
+
+    Memory is write-only for now: each completed exchange is persisted to long-term
+    memory; per-turn retrieval-injection is deferred to Track E (the coupled STT->LLM
+    loop can't inject memories between transcription and generation)."""
+    settings = get_settings()
+    # tts-2 honors [bracket] steering tags, so steer with the inworld performance
+    # directive regardless of how the character was authored.
+    instructions = (
+        ENGINE_DIRECTION
+        + "\n"
+        + character.build_prompt()
+        + "\n\n"
+        + performance_directive("inworld")
+    )
+    session = InworldSession(
+        instructions=instructions, voice_id=character.voice_id, tools=_REALTIME_TOOLS
+    )
+    long_term = LongTermMemory(character.memory_namespace)
+    await session.connect()
+    await emit_json(
+        {
+            "type": "ready",
+            "character": character.public_dict(),
+            "model": settings.realtime_llm_model,
+            "streaming": True,
+        }
+    )
+    await _speak_greeting_fullloop(character, emit_json, emit_audio)
+
+    # Current turn's user text + accumulated reply; flushed to memory at the next turn.
+    turn = {"user": None, "reply": [], "audio_open": False}
+
+    async def flush_memory() -> None:
+        reply = "".join(turn["reply"]).strip()
+        if turn["user"] and reply:
+            await long_term.add_exchange(turn["user"], reply)
+        turn["user"], turn["reply"] = None, []
+
+    async def pump() -> None:
+        """Forward normalized session events to the browser; run tool calls."""
+        async for kind, data in session.events():
+            if kind == "audio":
+                if not turn["audio_open"]:
+                    turn["audio_open"] = True
+                    await emit_json({"type": "audio_start"})
+                await emit_audio(data)
+            elif kind == "partial_transcript":
+                await emit_json({"type": "partial_transcript", "text": data})
+            elif kind == "transcript":
+                turn["user"] = data
+                await emit_json({"type": "transcript", "text": data})
+            elif kind == "assistant_delta":
+                await emit_json({"type": "assistant_delta", "text": data})
+            elif kind == "assistant_done":
+                if data:
+                    turn["reply"].append(data)
+                if turn["audio_open"]:
+                    await emit_json({"type": "audio_end"})
+                    turn["audio_open"] = False
+                await emit_json({"type": "assistant_done", "text": data})
+            elif kind == "tool_call":
+                await session.send_tool_result(data["call_id"], _run_realtime_tool(data))
+            elif kind == "error":
+                await emit_json({"type": "error", "message": data})
+
+    pump_task = asyncio.create_task(pump())
+    try:
+        while True:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.disconnect":
+                break
+            if message.get("bytes") is not None:
+                await session.send_audio(message["bytes"])  # browser 16 kHz mic frame
+            elif message.get("text") is not None:
+                try:
+                    data = json.loads(message["text"])
+                except json.JSONDecodeError:
+                    continue
+                mtype = data.get("type")
+                if mtype == "mic_start":
+                    await flush_memory()  # close out the previous turn before a new one
+                elif mtype == "mic_stop":
+                    await session.commit_audio_turn()
+                elif mtype == "text":
+                    txt = (data.get("text") or "").strip()
+                    if txt:
+                        await flush_memory()
+                        turn["user"] = txt
+                        await emit_json({"type": "transcript", "text": txt})
+                        await session.send_text_turn(txt)
+    finally:
+        await flush_memory()
+        pump_task.cancel()
+        await session.close()
+
+
 # ----------------------------------------------------------------------- WS loop
 
 
@@ -568,6 +725,26 @@ async def voice_ws(websocket: WebSocket) -> None:
             profile_min, profile_max = prof.min_turn_silence, prof.max_turn_silence
         except Exception:
             pass
+
+    # Full-loop runtime (Track V): drive one Inworld Realtime session instead of the
+    # modular pipeline. Selected by VOICE_RUNTIME; the pipeline path below is unchanged.
+    if get_settings().voice_runtime == "inworld_fullloop":
+        try:
+            character = load_character(slug)
+        except Exception as exc:
+            logger.exception("Failed to start full-loop session")
+            await emit_json({"type": "error", "message": f"Could not start session: {exc}"})
+            await websocket.close()
+            return
+        try:
+            await run_full_loop(websocket, emit_json, emit_audio, character)
+        except WebSocketDisconnect:
+            pass
+        except Exception:
+            logger.exception("Full-loop session error")
+        finally:
+            logger.info("Full-loop session for '%s' closed", slug)
+        return
 
     # --- set up the session for the chosen character ---
     try:
