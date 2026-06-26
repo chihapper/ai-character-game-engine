@@ -69,6 +69,50 @@ Set in `.env` and restart:
 E.g. raise `RR_WEIGHT_IMPORTANCE` so world events dominate; raise `RR_WEIGHT_DIVERSITY`
 to suppress near-duplicates; lower `RR_RELEVANCE_FLOOR` to admit weaker matches.
 
+## Worked examples
+
+All use the default weights (`sim 1.0, rec 0.35, imp 0.5`), so `base = sim + 0.35·rec +
+0.5·imp` (sim/rec/imp as 0–1). Imagine the player asks **"do you remember my brother?"**
+and these candidates are scored:
+
+| memory | sim | rec | imp | base | outcome |
+| --- | --- | --- | --- | --- | --- |
+| "…my brother disappeared in the mines" (old) | .81 | .35 | .50 | **1.18** | ❌ not injected |
+| "Hey" (generic, very recent) | .77 | .97 | .50 | **1.36** | ✅ injected |
+| `remember()`: "player saved Bri from the fire" | .74 | .90 | **.95** | **1.53** | ✅ injected |
+| duplicate of the above | .74 | .88 | .95 | 1.51 | ⚠️ dropped by diversity |
+| "what's a good drink?" (unrelated, old) | .58 | .20 | .50 | 0.90 | ❌ below interest |
+
+What each row teaches:
+- **Row 1 vs 2 — the recency trap.** A content-free "Hey" *outscores* the brother memory
+  purely on recency (`.97` vs `.35`), because `sim` barely separates them (`.77` vs `.81`).
+  This is exactly [issue #3](https://github.com/chihapper/ai-character-game-engine/issues/3):
+  when similarity doesn't discriminate, recency wins and buries old-but-important memories.
+- **Row 3 — importance rescues relevance.** The fire event isn't the most *similar*, but
+  its high `imp` (.95, from `remember()`) lifts `base` above everything — a flagged event
+  stays salient. (Imagine, instead, *character-aware* importance doing this automatically
+  for the brother memory — the unbuilt salience fix.)
+- **Row 4 — diversity.** Identical to row 3; after row 3 is picked, the duplicate's score
+  is docked ~`0.4 × (its similarity to row 3)`, so it's passed over — no double-injection.
+- **Row 5 — relevance floor.** Low on every axis; falls below the eligibility floor and is
+  dropped rather than padding the budget.
+
+Net intuition: **`sim` finds what's on-topic, `rec` favors what's fresh, `imp` protects
+what matters — and they fight.** Tune the weights to change who wins that fight.
+
+## Known limitation & queued work
+
+- **[issue #3](https://github.com/chihapper/ai-character-game-engine/issues/3) (current focus):**
+  important memories get buried by recency because (a) the embedder's similarities cluster
+  too tightly and (b) `importance` is flat / not character-aware. Fixes: higher-spread
+  similarity + character-aware salience at write time.
+- **Queued next (after #3):**
+  - **Write-time dedup** — skip storing identical facts and collapse near-duplicates (you
+    can fire `remember()` twice today and both copies get injected).
+  - **Arena query** — fold the live `Situation` + the character's goals into the *retrieval
+    query*, so recall is searched against the whole scene, not just the last line
+    (issue #2 / [`architecture-seams.md`](architecture-seams.md) §6 Track E step 4).
+
 > This is a deliberate *approximation* of relevance realization (Vervaeke et al.) for an
 > authored-goal NPC — the LLM remains the real relevance realizer over its context; this
 > scorer shapes what enters that context.
