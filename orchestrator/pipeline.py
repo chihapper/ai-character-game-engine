@@ -26,6 +26,7 @@ from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE, get_settings
 from .context import ENGINE_DIRECTION, RespondRequest, Situation, build_instructions
+from .salience import score_salience
 from .expressivity import (
     leading_tone,
     parse_pause,
@@ -128,6 +129,7 @@ class Pipeline:
         self.tts = tts
         self.short_term = short_term
         self.long_term = long_term
+        self._writes: set = set()  # in-flight background memory-write tasks (GC guard)
 
     # ------------------------------------------------------------------ prompt
 
@@ -359,7 +361,16 @@ class Pipeline:
             self.short_term.add_user(user_text)
             self.short_term.add_assistant(full_reply)
             when = request.situation.game_time if request.situation else ""
-            await self.long_term.add_exchange(user_text, full_reply, when=when)
+            # Score character-aware salience + persist in the BACKGROUND, so the LLM
+            # rating never delays the next turn (the exchange is already in short-term
+            # for immediate context).
+            task = asyncio.create_task(self._store_exchange(user_text, full_reply, when))
+            self._writes.add(task)
+            task.add_done_callback(self._writes.discard)
+
+    async def _store_exchange(self, user_text: str, reply: str, when: str) -> None:
+        importance = await score_salience(self.character, user_text, reply)
+        await self.long_term.add_exchange(user_text, reply, importance=importance, when=when)
 
     # ---------------------------------------------------------------- greeting
 

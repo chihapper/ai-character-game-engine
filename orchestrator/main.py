@@ -71,6 +71,7 @@ from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .pipeline import Pipeline
 from .realtime.inworld_session import InworldSession
+from .salience import score_salience
 
 logging.basicConfig(
     level=logging.INFO,
@@ -640,11 +641,20 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
 
     # Current turn's user text + accumulated reply; flushed to memory at the next turn.
     turn = {"user": None, "reply": [], "audio_open": False}
+    writes: set = set()  # in-flight background memory-write tasks (GC guard)
+
+    async def _store(user_text: str, reply: str) -> None:
+        importance = await score_salience(character, user_text, reply)
+        await long_term.add_exchange(user_text, reply, importance=importance)
 
     async def flush_memory() -> None:
         reply = "".join(turn["reply"]).strip()
         if turn["user"] and reply:
-            await long_term.add_exchange(turn["user"], reply)
+            # Background: salience scoring must not delay the next turn (flush runs on the
+            # next mic_start/text).
+            t = asyncio.create_task(_store(turn["user"], reply))
+            writes.add(t)
+            t.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
 
     async def pump() -> None:

@@ -139,6 +139,12 @@ class Settings(BaseSettings):
     # default), "minmax" (aggressive), or "none". Computed within each turn's candidates.
     rr_similarity_spread: str = "zscore"
     rr_spread_gain: float = 1.5  # zscore logistic steepness (higher = wider spread)
+    # Character-aware salience: at write time, an LLM rates how memorable an exchange is
+    # TO THIS character (their goals/temperament), setting its memory `importance` — so
+    # the brother's death is salient for a caring Bri but ~nil for a cold Corvin. Runs in
+    # the background (off the critical path). Set false to store at a flat 0.5.
+    salience_scoring: bool = True
+    salience_model: str = "claude-sonnet-4-6"  # nuanced judgement; drop to haiku for cost
 
     # --- Server ---
     host: str = "127.0.0.1"
