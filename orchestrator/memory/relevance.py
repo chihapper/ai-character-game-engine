@@ -101,7 +101,12 @@ def realize_relevance(
         sim = (cosine(query_embedding, c.embedding) + 1.0) / 2.0
         rec = _recency(c.index, now_index, w.recency_half_life)
         base = w.similarity * sim + w.recency * rec + w.importance * c.importance
-        parts[id(c)] = {"similarity": sim, "recency": rec, "importance": c.importance, "base": base}
+        # Cast to native floats so the debug breakdown is always JSON-serializable
+        # (embeddings may be numpy float32).
+        parts[id(c)] = {
+            "similarity": float(sim), "recency": float(rec),
+            "importance": float(c.importance), "base": float(base),
+        }
         scored.append((c, base))
 
     max_base = w.similarity + w.recency + w.importance  # for normalizing the floor

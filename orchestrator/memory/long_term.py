@@ -56,7 +56,9 @@ def _make_embedder():
         logger.info(
             "Long-term memory embedder: fastembed '%s' (dim=%d)", settings.fastembed_model, dim
         )
-        return (lambda t: list(next(iter(model.embed([t])))), dim, "fastembed")
+        # Cast to native floats — fastembed yields numpy float32, which isn't JSON
+        # serializable (the debug emit) and is best kept out of the rest of the engine.
+        return (lambda t: [float(x) for x in next(iter(model.embed([t])))], dim, "fastembed")
     except Exception:
         pass
     # Next: sentence-transformers, if installed.
