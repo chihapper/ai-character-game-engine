@@ -284,9 +284,31 @@ supplies** — the engine stores it opaquely; the game defines the calendar. Sto
 
 ---
 
-## 4. Memory & retrieval (TARGET — issue #1)
+## 4. Memory & retrieval (issue #1)
 
-### 4.1 How retrieval works today (DONE)
+> **Framing — relevance realization (RR).** An NPC in a game world faces a "large world":
+> limitless possible memories/facts. Semantic top-k is a single fixed relevance function —
+> exactly the "small world" where "everything and nothing is relevant at the same time"
+> (Vervaeke et al.). So recall is now an **opponent-processing** balance —
+> similarity (focus) · recency (salience) · importance (goal/arena bearing) · diversity
+> (explore) — relative to the live query under a budget. Honestly an *approximation* (true
+> RR is non-computational); the LLM is the real relevance realizer, and this shapes what
+> enters its context. Implemented in [`memory/relevance.py`](../orchestrator/memory/relevance.py);
+> see [`relevance-realization-design`] in memory and the RR write-ups.
+
+### 4.1 How retrieval works ~~today~~ now (DONE — reworked 2026-06-26)
+
+[`LongTermMemory`](../orchestrator/memory/long_term.py): each completed exchange — and any
+durable world event pushed via `remember` — is stored per character (one JSONL file per
+`memory_namespace`) with `importance`/`kind`/`when`. Embeddings are derived at load
+(sentence-transformers when installed, else a dependency-free **lexical fallback** so
+recall never silently disables). On each request, [`realize_relevance`](../orchestrator/memory/relevance.py)
+selects memories by the opponent-processing balance above (brute-force over the small
+per-character set — no native ANN index). *Was:* ChromaDB + fixed cosine top-k.
+[`ShortTermMemory`](../orchestrator/memory/short_term.py) is still a separate verbatim
+rolling buffer.
+
+### 4.0 (historical) How retrieval worked before
 
 [`LongTermMemory`](../orchestrator/memory/long_term.py): each completed exchange is
 embedded (local `all-MiniLM-L6-v2`, 384-dim) and stored in a per-character ChromaDB
@@ -296,16 +318,14 @@ way and the *k* nearest by cosine distance are injected. Semantic, not keyword.
 buffer of recent turns. **Memory is engine-owned and survives the voice-runtime
 migration unchanged.**
 
-### 4.2 Known limits (to fix)
+### 4.2 The old limits — and where they stand
 
-- **Pure similarity.** No recency or importance weighting — storing `when` (§3.4) is the
-  prerequisite for recency.
-- **Fixed `k=4`, no threshold.** Returns the 4 nearest even when all are weak; should
-  support a relevance floor and a query-dependent `k`.
-- **Query = last message only.** Should accept the game's richer `retrieval_query`
-  (location + situation + input).
+- **Pure similarity** → ✅ fixed: recency + importance now weighted (opponent processing).
+- **Fixed `k=4`, no threshold** → ✅ fixed: a budget + a relevance floor (drop weak matches).
+- **Query = last message only** → ⬜ still open: the `Situation`/goals condition the prompt
+  but not yet the *retrieval query* (build-order §6 Track E step 4 — the next RR step).
 
-### 4.3 Store & embeddings — drop the heavy ANN index (TARGET)
+### 4.3 Store & embeddings — drop the heavy ANN index (DONE)
 
 The build pain was ChromaDB's native ANN index (hnswlib) on Windows. The realization:
 **per-character memory is small** (hundreds–low-thousands of exchanges), so a heavy
@@ -333,8 +353,9 @@ the new `remember`) — a one-module job.
 | Voice cloning/design | engine → vendor | TTS-adapter clone/design methods | DONE (survives) |
 | Character depth | game → engine | `register_game_extension` + `game_data` | DONE |
 | Respond trigger + context-in | game → engine | `RespondRequest` / `Situation` | DONE (full-loop per-turn = §5.6) |
-| Durable world events | game → engine | `memory.remember(ns, fact, when, kind)` | TARGET |
-| Memory store/embeddings | engine internal | behind `LongTermMemory` | TARGET |
+| Durable world events | game → engine | `memory.remember(ns, fact, when, kind, importance)` | DONE (WS `remember`) |
+| Memory store/embeddings | engine internal | behind `LongTermMemory` | DONE (JSONL + lexical/ST) |
+| Relevance scoring | engine internal | `memory/relevance.py` opponent-processing | DONE |
 
 Design rule for every new seam: **the engine exposes a registration point and a neutral
 data channel; the game supplies meaning at runtime.** No game concept (quests, factions,
@@ -357,9 +378,19 @@ Two roughly independent tracks.
 1. ✅ **DONE (2026-06-26)** — Generalize the entry point: `RespondRequest` + `Situation`
    (`context.py`); `run_turn` is a wrapper over `respond`; the "Current situation" section
    is injected per turn (modular path; full-loop per-turn injection = §5.6).
-2. Memory store swap (fastembed + LanceDB/sqlite-vec); relevance threshold; query-dependent `k`.
-3. Memory-write API + `when` tag; recency weighting once timestamps exist.
-4. Richer retrieval query (location + situation + input).
+2. ✅ **DONE (2026-06-26)** — Store swap: dropped ChromaDB for a per-character JSONL store
+   with a lexical fallback (always-on), brute-force scoring; relevance floor + budget.
+3. ✅ **DONE (2026-06-26)** — Memory-write API `remember(fact, when, kind, importance)` +
+   recency weighting (by insertion order; game-time `when` stored opaquely). Exposed over
+   the WS in both runtimes.
+   - **+ Relevance realization** (`memory/relevance.py`): recall is an opponent-processing
+     balance of similarity/recency/importance/diversity, not top-k. See
+     [[relevance-realization-design]] / the RR write-ups.
+4. ⬜ Richer retrieval **query** = the arena: fold the live `Situation` (+ goals) into the
+   retrieval query, not just `player_input`. (Today the situation conditions the prompt
+   but not yet what memory is searched against — the clear next RR step.)
+5. ⬜ Parse/weight game-time `when` for true temporal recency (now recency is by insertion
+   order); full-loop per-turn `Situation` injection (§5.6).
 
 Track E lands against whichever runtime is live, because it shapes the instructions and
 memory the agent runs on — not the audio path.
