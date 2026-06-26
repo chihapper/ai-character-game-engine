@@ -326,17 +326,18 @@ AssemblyAI endpointing — moot if Inworld owns turn-taking. Likely retire with 
 
 ## 10. Phased delivery (de-risk audio first)
 
-- **Phase 0 — audio-on spike.** Extend the existing spike: `output_modalities=["audio"]`,
-  push a mic clip in, dump output audio + resolve every §5 item. **Gate:** all of §5
-  answered. *No production code until this passes.*
-- **Phase 1 — voice loop, happy path.** `InworldSession` + a `/ws` variant behind a
-  feature flag (`VOICE_RUNTIME=inworld_fullloop`), text + mic in, audio out on the frozen
-  protocol. Modular path stays default.
-- **Phase 2 — tools + memory.** Tool round-trip end-to-end (§5.4); retrieve/remember
-  wired (§6); per-turn context injection (§5.6).
+- **Phase 0 — audio-on spike. ✅ DONE.** All §5 items resolved (§5R/5D/5E); gate GREEN.
+- **Phase 1 — voice loop, happy path. ✅ DONE (2026-06-26).** `InworldSession`
+  (`orchestrator/realtime/inworld_session.py`) wired into `/ws` behind
+  `VOICE_RUNTIME=inworld_fullloop`; text + mic in, audio out on the frozen protocol;
+  modular path stays default. Verified end-to-end against a running server (ready +
+  greeting + a typed turn → in-character reply text + audio).
+- **Phase 2 — tools + memory. ◑ PARTIAL.** Tool round-trip works (placeholder
+  `roll_dice`; real game tools = Track E). Memory is **write-only** (per-turn
+  retrieval-injection / §5.6 deferred to Track E, per decision 2026-06-26).
 - **Phase 3 — cutover.** Flip the flag default; delete the retired modules (§8).
-- **Phase 4 — polish.** Latency readout under the loop, barge-in, error/reconnect
-  handling, docs (fold the proven facts back into `architecture-seams.md`).
+- **Phase 4 — polish.** Latency (the open ~2.8 s item), barge-in (server-VAD),
+  error/reconnect handling, latency readout, docs.
 
 ## 11. Risk & rollback
 
