@@ -172,6 +172,71 @@ SAPI-synthesized 16 kHz clip (the real browser mic format), resampled to 24 kHz.
 stage-direction leakage. Next step is **Inworld Realtime API docs** for the voice/model
 and tool-continuation schemas (fetch, don't guess), then a targeted re-spike.
 
+## 5D. Doc research — diagnoses & fixes (2026-06-25)
+
+Scoured the Inworld docs + the `inworld-ai/inworld-api-examples` repo (telnyx/twilio
+realtime integrations are the most complete reference). Resolutions:
+
+**Blocker #2 — voice/model fallback → DIAGNOSED.** The Realtime session sets voice+model
+at `audio.output.{voice, model}` (confirmed by the telnyx integration: preset
+`voice: "Sarah"`, `model: "inworld-tts-2"`). Our id `…__design-voice-…` is an
+**unpublished design PREVIEW** (DRAFT) — `voices:design` returns disposable previews that
+must be **published** (`POST /voices/v1/voices/{id}:publish`) before any synth/session can
+resolve them; an unpublished id is silently ignored → server reverts `audio.output` to
+defaults (we got `Olivia` / `inworld-tts-1.5-mini`). **Fix:** publish the design voice,
+use the returned **library** id as `audio.output.voice` with `model: "inworld-tts-2"`.
+Our create-character flow already calls `publish_voice`, so UI-made characters carry a
+usable id; this *test* character stored a raw preview id. Also: the examples include
+`session.type: "realtime"` — our spike omitted it; add it.
+
+**Blocker #1 — empty tool continuation → LIKELY CAUSE FOUND (wrong item type).** Our spike
+returned the result as OpenAI's `function_call_output`. Inworld's docs/examples reference
+**`function_call_result`** via `conversation.item.create`. The docs are *internally
+inconsistent* (one usage page shows `function_call_output` with `call_id` + JSON-string
+`output`; the API reference + WebSocket page show `function_call_result` with a `content`
+array). An unrecognized item type would be dropped → `response.create` has no result to
+continue from → empty. **Resolve empirically in the re-spike: try both shapes.** Also echo
+the `call_id` from the `response.function_call_arguments.done` event, and the continuation
+`response.create` may take `{response:{output_modalities:["audio","text"]}}`.
+
+**Blocker #4 — stage directions voiced → SOLUTION = prompt for TTS-2 tags (and it needs
+#2 fixed first).** TTS-2 supports **bracket steering tags that are consumed, not spoken** —
+descriptive (`[say excitedly]`, `[quietly with a warm tone]`) and non-verbal
+(`[laugh] [sigh] [breathe] [cough]`) — but **only on `inworld-tts-2`**; on 1.5 they're read
+aloud. There is **no out-of-band per-utterance instruction field** (only inline `[...]`,
+coarse `delivery_mode` STABLE/BALANCED/EXPRESSIVE, and the voice's `design_prompt`). And
+`*asterisks*` mean **emphasis** (spoken), so the LLM's asterisk actions get voiced. Since
+the coupled loop has no post-filter, the fix is **prompt-side**: instruct the model to emit
+only clean spoken sentences (no markdown / asterisks / parentheticals) and route delivery
+into leading `[...]` tags. This maps cleanly onto our existing `expressivity.py` tag
+system — we already emit bracket tags. **Crucial dependency:** the leakage we saw was
+partly because the session fell back to **tts-1.5-mini** (blocker #2), where tags aren't
+honored. Fixing #2 so **tts-2 actually loads** is a prerequisite for #4.
+
+**Also resolved:** input transcription enables via `audio.input.transcription.model`
+(examples use `assemblyai/universal-streaming-multilingual`); LLM routing is
+`session.model = "provider/name"` (default `google-ai-studio/gemini-2.5-flash`; our
+`anthropic/claude-sonnet-4-6` is valid).
+
+### Phase-0b re-spike (the next run)
+1. **Voice:** publish Bri's design voice (or use a preset like `Ashley`) → confirm
+   `audio.output.voice` sticks and `model` stays `inworld-tts-2` (no fallback).
+2. Add `session.type: "realtime"`; enable `audio.input.transcription.model`.
+3. **Tools:** test `function_call_result` (content array) vs `function_call_output`
+   (call_id + JSON string) → find which gives a non-empty **spoken** continuation.
+4. **Clean speech:** add TTS-2 bracket-tag prompting (ban asterisks/parentheticals) →
+   confirm the spoken transcript is clean and tags are consumed.
+5. **Latency:** re-measure first-audio on tts-2 with a short reply.
+
+Sources: [Realtime WS API ref](https://docs.inworld.ai/api-reference/realtimeAPI/realtime/realtime-websocket),
+[managing conversations](https://docs.inworld.ai/realtime/usage/managing-conversations),
+[realtime models](https://docs.inworld.ai/realtime/usage/using-realtime-models),
+[publish voice](https://docs.inworld.ai/api-reference/voiceAPI/voiceservice/publish-voice),
+[voice design](https://docs.inworld.ai/tts/voice-design),
+[prompting TTS-2](https://docs.inworld.ai/tts/best-practices/prompting-for-tts-2),
+[steering](https://docs.inworld.ai/tts/capabilities/steering),
+[examples repo](https://github.com/inworld-ai/inworld-api-examples).
+
 ## 6. Memory integration (engine stays in charge)
 
 Per logical turn, around the session:
