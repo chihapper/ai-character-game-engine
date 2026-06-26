@@ -65,11 +65,11 @@ from .config import (
     WEB_DIR,
     get_settings,
 )
-from .expressivity import performance_directive
+from .context import RespondRequest, Situation, build_instructions
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
-from .pipeline import ENGINE_DIRECTION, Pipeline
+from .pipeline import Pipeline
 from .realtime.inworld_session import InworldSession
 
 logging.basicConfig(
@@ -600,14 +600,10 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
     loop can't inject memories between transcription and generation)."""
     settings = get_settings()
     # tts-2 honors [bracket] steering tags, so steer with the inworld performance
-    # directive regardless of how the character was authored.
-    instructions = (
-        ENGINE_DIRECTION
-        + "\n"
-        + character.build_prompt()
-        + "\n\n"
-        + performance_directive("inworld")
-    )
+    # directive regardless of how the character was authored. Same shared assembly the
+    # pipeline uses (context.build_instructions). Per-turn Situation injection in the
+    # full loop is the §5.6 deferred item (the coupled STT->LLM can't inject mid-turn).
+    instructions = build_instructions(character, performance_provider="inworld")
     session = InworldSession(
         instructions=instructions, voice_id=character.voice_id, tools=_REALTIME_TOOLS
     )
@@ -881,7 +877,13 @@ async def voice_ws(websocket: WebSocket) -> None:
                     latency.start("vad_stop")
                     latency.mark("transcript_ready")  # no STT for typed input
                     await emit_json({"type": "transcript", "text": user_text})
-                    await pipeline.run_turn(user_text, latency, emit_json, emit_audio)
+                    # Track E: a game may attach transient context (location/time/who's
+                    # present/recent events) to the turn; the engine injects it per request.
+                    request = RespondRequest(
+                        player_input=user_text,
+                        situation=Situation.from_dict(data.get("situation")),
+                    )
+                    await pipeline.respond(request, latency, emit_json, emit_audio)
     except WebSocketDisconnect:
         pass
     except Exception:

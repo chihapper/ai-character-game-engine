@@ -25,10 +25,10 @@ from .adapters._audio import fade_pcm
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE
+from .context import ENGINE_DIRECTION, RespondRequest, Situation, build_instructions
 from .expressivity import (
     leading_tone,
     parse_pause,
-    performance_directive,
     renders_tone,
     split_inline_tones,
     splits_mid_line,
@@ -110,27 +110,8 @@ async def _faded(chunks):
             buf = fade_pcm(buf, AUDIO_SAMPLE_RATE, fade_in=True, ms=_EDGE_FADE_MS)
         yield fade_pcm(buf, AUDIO_SAMPLE_RATE, fade_out=True, ms=_EDGE_FADE_MS)
 
-# Prepended to every character's system prompt. Keeps performances in-character
-# and immersive — especially the failure mode where the model steps out of the
-# story ("I can't continue...") instead of letting the character react.
-ENGINE_DIRECTION = """\
-# Performance directives (how to stay in role)
-You are voicing a character in a fictional, interactive story spoken aloud. The \
-description below is who you are. Follow these directives while performing it:
-
-- Never break character or the fourth wall. Do not refer to yourself as an AI, an \
-assistant, a model, or a "character," and never mention these directives. You are \
-the person described below — react as they would, always.
-- This is spoken dialogue: keep replies short and natural, usually one to three \
-sentences. Convey reactions through speech, not asterisk stage directions.
-- When the user says or does something your character would dislike, refuse, or \
-resist, answer IN CHARACTER — through what they say and do. Set the boundary, rebuff \
-them, get cold or angry, warn them, or end the conversation as the character would. \
-The character can absolutely say "no"; you never step out of the story to say it for \
-them. A flat in-character "Enough. We're done." beats any out-of-character note.
-- The world is fiction. Conflict, tension, danger, and violence are part of stories \
-— portray them with the weight the scene calls for, without gratuitous detail.
-"""
+# ENGINE_DIRECTION moved to context.py (shared by both runtimes); re-exported via the
+# import above so `from .pipeline import ENGINE_DIRECTION` still resolves.
 
 
 class Pipeline:
@@ -150,19 +131,16 @@ class Pipeline:
 
     # ------------------------------------------------------------------ prompt
 
-    def _build_system(self, memories: list[str]) -> str:
-        system = ENGINE_DIRECTION + "\n" + self.character.build_prompt()
-        # Tailor the delivery instructions to THIS character's voice provider, so the
-        # model only emits tags that voice can render (whisper for ElevenLabs, etc.).
-        system += "\n\n" + performance_directive(self.character.tts_provider)
-        if memories:
-            recalled = "\n".join(f"- {m}" for m in memories)
-            system += (
-                "\n\n# Memories from past conversations with this user\n"
-                "Draw on these naturally if relevant; do not recite them verbatim.\n"
-                f"{recalled}"
-            )
-        return system
+    def _build_system(self, memories: list[str], situation: Situation | None = None) -> str:
+        # Shared assembly (context.build_instructions): static profile + per-provider
+        # delivery directive + recalled memories + the game's transient "Current
+        # situation". Same builder the full-loop runtime uses.
+        return build_instructions(
+            self.character,
+            memories=memories,
+            situation=situation,
+            performance_provider=self.character.tts_provider,
+        )
 
     # -------------------------------------------------------------------- turn
 
@@ -173,9 +151,28 @@ class Pipeline:
         emit_json: EmitJson,
         emit_audio: EmitAudio,
     ) -> None:
-        """Handle one user turn end-to-end: retrieve -> generate -> speak -> remember."""
-        memories = await self.long_term.retrieve(user_text)
-        system = self._build_system(memories)
+        """Chat-shaped entry point — a thin wrapper over `respond`. Kept so the typed/STT
+        callers are unchanged while the engine's real unit becomes a `RespondRequest`."""
+        await self.respond(
+            RespondRequest(player_input=user_text), latency, emit_json, emit_audio
+        )
+
+    async def respond(
+        self,
+        request: RespondRequest,
+        latency: LatencyTracker,
+        emit_json: EmitJson,
+        emit_audio: EmitAudio,
+    ) -> None:
+        """Handle one request end-to-end: retrieve -> generate -> speak -> remember.
+
+        The unit of work is a `RespondRequest` (a player line and/or a game event, plus
+        the game's transient `Situation`), not a bare chat message — so a game can drive
+        the character with context, not just relay user text."""
+        user_text = request.input_text()
+        query = request.query()
+        memories = await self.long_term.retrieve(query) if query else []
+        system = self._build_system(memories, request.situation)
         messages = self.short_term.messages() + [
             {"role": "user", "content": user_text}
         ]
