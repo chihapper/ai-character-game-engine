@@ -182,7 +182,11 @@ class Pipeline:
         # The retrieval "arena query": the trigger enriched with recent conversation +
         # the live Situation + goals (Track E), so recall resolves referents and thin
         # queries — not just the last line. Toggle via ARENA_QUERY.
-        if settings.arena_query:
+        # Per-character override (game_data.engine.arena_query) for easy A/B testing,
+        # falling back to the global ARENA_QUERY setting.
+        engine_cfg = (self.character.game_data or {}).get("engine", {})
+        use_arena = engine_cfg.get("arena_query", settings.arena_query)
+        if use_arena:
             query = build_arena_query(
                 request, self.character, self.short_term.messages(),
                 max_recent_turns=settings.arena_query_recent_turns,
