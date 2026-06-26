@@ -149,6 +149,11 @@ class Settings(BaseSettings):
     # the background (off the critical path). Set false to store at a flat 0.5.
     salience_scoring: bool = True
     salience_model: str = "claude-sonnet-4-6"  # nuanced judgement; drop to haiku for cost
+    # Arena query (Track E / issue #2): build the long-term retrieval query from the player
+    # input + recent conversation + Situation + goals (not just the last line), so recall
+    # resolves referents ("her" -> mom) and thin queries. False = search the last line only.
+    arena_query: bool = True
+    arena_query_recent_turns: int = 2
 
     # --- Server ---
     host: str = "127.0.0.1"

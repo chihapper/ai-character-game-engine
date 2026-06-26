@@ -100,6 +100,50 @@ class RespondRequest:
         return (self.retrieval_query or self.player_input or self.event or "").strip()
 
 
+def build_arena_query(
+    request: RespondRequest,
+    character: Character,
+    recent_messages: list[dict] | None = None,
+    *,
+    max_recent_turns: int = 2,
+    include_goals: bool = True,
+) -> str:
+    """Compose the long-term retrieval query — the *arena* the agent is in, not just the
+    last line. Relevance realization: what's relevant is relative to the situation + the
+    agent's goals, and referents ("her", "it", "my drink") live in the surrounding context.
+    So we fold the trigger together with recent conversation, the live `Situation`, and the
+    character's goals, then embed *that*. An explicit `request.retrieval_query` overrides it.
+
+    Kept compact (recent turns truncated, few goals) so the embedding stays focused rather
+    than diluting into a blob."""
+    if request.retrieval_query:
+        return request.retrieval_query.strip()
+
+    parts: list[str] = []
+    trigger = (request.player_input or request.event or "").strip()
+    if trigger:
+        parts.append(trigger)
+
+    # Recent conversation (oldest→newest of the last few turns) — resolves referents.
+    for m in (recent_messages or [])[-max_recent_turns * 2:]:
+        content = (m.get("content") or "").strip()
+        if content:
+            parts.append(content[:200])
+
+    # The live arena (what's true right now).
+    sit = request.situation
+    if sit is not None:
+        for bit in (sit.location, sit.game_time, ", ".join(sit.present), *sit.recent_events):
+            if bit:
+                parts.append(bit)
+
+    # The agent's standing concerns — relevance is relative to what THEY want.
+    if include_goals and character.goals:
+        parts.extend(character.goals[:3])
+
+    return "  ".join(parts).strip() or trigger
+
+
 def render_situation(situation: Situation | None) -> str:
     """Render the game's transient context into a 'Current situation' prompt section, or
     "" if there's nothing to say."""

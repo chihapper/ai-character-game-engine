@@ -25,7 +25,13 @@ from .adapters._audio import fade_pcm
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
 from .config import AUDIO_SAMPLE_RATE, get_settings
-from .context import ENGINE_DIRECTION, RespondRequest, Situation, build_instructions
+from .context import (
+    ENGINE_DIRECTION,
+    RespondRequest,
+    Situation,
+    build_arena_query,
+    build_instructions,
+)
 from .salience import score_salience
 from .expressivity import (
     leading_tone,
@@ -172,8 +178,18 @@ class Pipeline:
         the game's transient `Situation`), not a bare chat message — so a game can drive
         the character with context, not just relay user text."""
         user_text = request.input_text()
-        query = request.query()
-        if query and get_settings().memory_debug:
+        settings = get_settings()
+        # The retrieval "arena query": the trigger enriched with recent conversation +
+        # the live Situation + goals (Track E), so recall resolves referents and thin
+        # queries — not just the last line. Toggle via ARENA_QUERY.
+        if settings.arena_query:
+            query = build_arena_query(
+                request, self.character, self.short_term.messages(),
+                max_recent_turns=settings.arena_query_recent_turns,
+            )
+        else:
+            query = request.query()
+        if query and settings.memory_debug:
             # Dev: surface what relevance realization selected (long-term) AND the
             # short-term buffer (recent verbatim turns, also injected) to the browser.
             data = await self.long_term.retrieve_scored(query)
