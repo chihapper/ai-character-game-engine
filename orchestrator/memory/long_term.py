@@ -87,6 +87,16 @@ def _get_embedder():
     return _embedder
 
 
+def warm_embedder() -> str:
+    """Build + exercise the process embedder once, eagerly. The fastembed model loads
+    lazily on first embed (~0.5s), which otherwise lands on the player's first turn; call
+    this at startup so turn 1 pays the warm price (~ms) like every other turn. Returns the
+    embedder name."""
+    embed, _, name = _get_embedder()
+    embed("warm")
+    return name
+
+
 def _safe_name(namespace: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]+", "-", namespace).strip("-") or "default"
 

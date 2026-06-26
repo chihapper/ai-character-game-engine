@@ -83,6 +83,18 @@ logger = logging.getLogger("orchestrator")
 app = FastAPI(title="Real-Time AI Character Engine")
 
 
+@app.on_event("startup")
+async def _warm_memory_embedder() -> None:
+    """Pre-warm the long-term-memory embedder so turn 1 doesn't eat the ~0.5s cold load."""
+    from .memory.long_term import warm_embedder
+
+    try:
+        name = await asyncio.to_thread(warm_embedder)
+        logger.info("Embedder pre-warmed at startup: %s", name)
+    except Exception as exc:  # never block startup on a warm failure
+        logger.warning("Embedder pre-warm skipped: %s", exc)
+
+
 @app.middleware("http")
 async def no_cache_frontend(request, call_next):
     """Serve the frontend with no-cache so edits always take effect on refresh —
@@ -660,6 +672,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
 
     async def retrieve_and_respond(user_text: str, situation) -> None:
         """The §5.6 step: retrieve against the arena query, inject via session.update, respond."""
+        _t0 = time.monotonic()
         flush_turn()  # close out the prior turn (-> short-term + background write)
         turn["user"], turn["situation"] = user_text, situation
         if settings.arena_query:
@@ -679,11 +692,14 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
                                  "short_term": short_term.messages(), **data})
             else:
                 memories = await long_term.retrieve(query)
+        _t_ret = time.monotonic()
         await session.update_instructions(
             build_instructions(character, memories=memories, situation=situation,
                                performance_provider="inworld")
         )
         await session.respond()
+        logger.info("RR-latency: build+retrieve=%.0fms (mem=%d) before respond",
+                    (_t_ret - _t0) * 1000, len(memories))
 
     async def pump() -> None:
         """Forward session events to the browser; on a voice transcript, retrieve+respond."""
