@@ -300,13 +300,16 @@ supplies** — the engine stores it opaquely; the game defines the calendar. Sto
 
 [`LongTermMemory`](../orchestrator/memory/long_term.py): each completed exchange — and any
 durable world event pushed via `remember` — is stored per character (one JSONL file per
-`memory_namespace`) with `importance`/`kind`/`when`. Embeddings are derived at load
-(sentence-transformers when installed, else a dependency-free **lexical fallback** so
+`memory_namespace`) with `importance`/`kind`/`when`. The `importance` is a **character-aware
+salience** scored at write time by [`salience.py`](../orchestrator/salience.py) (an LLM rates
+how memorable the moment is *to this character* — pivotal for a caring Bri, ~nil for a cold
+Corvin), so old-but-pivotal memories survive recency decay. Embeddings are derived at load
+(**fastembed** ONNX → sentence-transformers → a dependency-free **lexical fallback**, so
 recall never silently disables). On each request, [`realize_relevance`](../orchestrator/memory/relevance.py)
-selects memories by the opponent-processing balance above (brute-force over the small
-per-character set — no native ANN index). *Was:* ChromaDB + fixed cosine top-k.
-[`ShortTermMemory`](../orchestrator/memory/short_term.py) is still a separate verbatim
-rolling buffer.
+selects by the opponent-processing balance above (with z-score similarity spreading;
+brute-force over the small per-character set — no native ANN index). *Was:* ChromaDB +
+fixed cosine top-k. [`ShortTermMemory`](../orchestrator/memory/short_term.py) is still a
+separate verbatim rolling buffer. Scoring guide: [`relevance-scoring.md`](relevance-scoring.md).
 
 ### 4.0 (historical) How retrieval worked before
 
@@ -354,8 +357,9 @@ the new `remember`) — a one-module job.
 | Character depth | game → engine | `register_game_extension` + `game_data` | DONE |
 | Respond trigger + context-in | game → engine | `RespondRequest` / `Situation` | DONE (full-loop per-turn = §5.6) |
 | Durable world events | game → engine | `memory.remember(ns, fact, when, kind, importance)` | DONE (WS `remember`) |
-| Memory store/embeddings | engine internal | behind `LongTermMemory` | DONE (JSONL + lexical/ST) |
-| Relevance scoring | engine internal | `memory/relevance.py` opponent-processing | DONE |
+| Memory store/embeddings | engine internal | behind `LongTermMemory` | DONE (JSONL + fastembed/lexical) |
+| Relevance scoring | engine internal | `memory/relevance.py` opponent-processing + z-score spread | DONE |
+| Character-aware salience | engine internal | `salience.py` (LLM rates importance per character) | DONE |
 
 Design rule for every new seam: **the engine exposes a registration point and a neutral
 data channel; the game supplies meaning at runtime.** No game concept (quests, factions,

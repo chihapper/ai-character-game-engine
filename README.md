@@ -128,17 +128,27 @@ field) — the cost/quality lever at scale.
 A character is universal core fields plus an open `game_data` bag the engine stores but
 never interprets; a game layer registers a renderer for its namespace
 ([`character_extensions.py`](orchestrator/character_extensions.py)) to add game-shaped
-depth. Generalizing the entry point from "reply to a chat message" to "respond given
-game context," plus the per-request situation channel and the durable memory-write API,
-is the active design work — see [`docs/architecture-seams.md`](docs/architecture-seams.md)
-and issue [#2](https://github.com/chihapper/ai-character-game-engine/issues/2).
+depth. The entry point is generalized from "reply to a chat message" to
+**`respond(RespondRequest)`** ([`context.py`](orchestrator/context.py)) — a player line
+and/or a game event plus a transient `Situation` (location, time, who's present, recent
+events) injected as a "Current situation" section; `run_turn` is now a thin wrapper.
+Durable world events come in via the **`remember()`** memory-write API. See
+[`docs/architecture-seams.md`](docs/architecture-seams.md) and issue
+[#2](https://github.com/chihapper/ai-character-game-engine/issues/2).
 
 **Memory** is two-tier: a short-term verbatim buffer of recent turns
-([`memory/short_term.py`](orchestrator/memory/short_term.py)) plus long-term vector
-recall ([`memory/long_term.py`](orchestrator/memory/long_term.py)) — each exchange is
-embedded and stored, and each request retrieves the top-k relevant past exchanges into
-the prompt. Relevance tuning and the store/embeddings choice are tracked in issue
-[#1](https://github.com/chihapper/ai-character-game-engine/issues/1).
+([`memory/short_term.py`](orchestrator/memory/short_term.py)) plus a long-term store
+([`memory/long_term.py`](orchestrator/memory/long_term.py)) recalled by **relevance
+realization**, not a fixed top-k. Each turn, [`memory/relevance.py`](orchestrator/memory/relevance.py)
+balances *similarity · recency · importance · diversity* under a budget — an
+opponent-processing scorer inspired by Vervaeke et al.; similarity is z-score-spread to
+counter embedder anisotropy. Stored memories carry a **character-aware salience**
+(`importance`) scored at write time by [`salience.py`](orchestrator/salience.py) — the
+player's loss is pivotal for a caring Bri, near-forgettable for a cold Corvin. Embeddings
+are local **fastembed** (ONNX; a lexical fallback when it's absent) — no ChromaDB, no
+native build. See [`docs/relevance-scoring.md`](docs/relevance-scoring.md) and issues
+[#1](https://github.com/chihapper/ai-character-game-engine/issues/1) /
+[#3](https://github.com/chihapper/ai-character-game-engine/issues/3).
 
 ---
 
@@ -270,7 +280,9 @@ identical regardless of TTS provider.
 ```
 orchestrator/
   main.py                FastAPI app: UI, character REST API, voice WebSocket
+  context.py             RespondRequest / Situation + instruction assembly (engine/game seam)
   pipeline.py            streaming STT→LLM→sentence-chunk→TTS loop (the overlap) + latency
+  salience.py            character-aware memory-importance scoring (LLM, at write time)
   config.py              settings + env loading
   sentence_chunker.py
   expressivity.py        per-provider performance-tag handling
@@ -278,16 +290,23 @@ orchestrator/
   character_extensions.py  game_data renderer registry (the engine/game seam)
   adapters/
     base.py              STTAdapter, LLMAdapter, TTSAdapter (the interfaces)
+    _audio.py            PCM helpers (resample, fades, WAV)
     stt_whisper.py / stt_assemblyai.py / stt_assemblyai_stream.py
     llm_anthropic.py
     tts_inworld.py / tts_elevenlabs.py / tts_cartesia.py / tts_fallback.py
+  realtime/
+    inworld_session.py   Inworld full-loop runtime (behind VOICE_RUNTIME=inworld_fullloop)
   memory/
     short_term.py        rolling buffer of recent turns
-    long_term.py         vector recall (ChromaDB today; see issue #1)
+    long_term.py         per-character JSONL store (fastembed/lexical) + remember()
+    relevance.py         relevance-realization scorer (similarity·recency·importance·diversity)
   characters/            character profiles (YAML)
-web/                     Conversation + Create Character UI, streaming PCM playback
+web/                     Conversation + Create Character UI, streaming PCM playback, RR debug panel
 tools/clone_voice.py     CLI fallback for cloning
-docs/architecture-seams.md   the engine/game seam design
+tools/backfill_salience.py  re-score a character's existing memories
+docs/architecture-seams.md   the engine/game seam design (Track V + Track E)
+docs/track-v-full-loop-plan.md  the Inworld full-loop migration plan
+docs/relevance-scoring.md    how memory recall is scored + the debug panel
 ```
 
 ---

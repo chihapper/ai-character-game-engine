@@ -328,6 +328,8 @@ const memDebugExpanded = new Set(); // expanded rows, keyed by tab+index
 let memDebugTab = "long"; // "long" | "short"
 let memDebugMin = false; // minimized to a pill?
 let memDebugLast = null; // last payload, so UI toggles can re-render
+let memDebugW = null; // persisted custom size (top-left resize grip)
+let memDebugH = null;
 
 const MEM_STOP = new Set(
   ("the a an and or but if then so to of in on at for with my your his her our their me you " +
@@ -415,17 +417,48 @@ function renderMemoryDebug(msg) {
     return;
   }
 
+  // Pinned bottom-right; grows up-left via the custom grip below (native resize handle
+  // would sit against the screen corner, unusable). max-height auto-sizes until the user
+  // resizes, then their explicit size persists across re-renders.
   panel.style.cssText =
     "position:fixed;right:12px;bottom:12px;width:480px;max-height:78vh;overflow:auto;" +
     "z-index:9999;background:rgba(18,18,22,.97);color:#ddd;font:11px/1.5 ui-monospace,monospace;" +
-    "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45);" +
-    "resize:both;min-width:300px;min-height:120px";
+    "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45)";
+  if (memDebugW) panel.style.width = memDebugW + "px";
+  if (memDebugH) {
+    panel.style.height = memDebugH + "px";
+    panel.style.maxHeight = "none";
+  }
 
-  // --- header: title · embedder · minimize ---
+  // --- header: resize grip (top-left) · title · embedder · minimize ---
   const header = el("div", "display:flex;align-items:center;gap:8px;margin-bottom:5px");
+  const grip = el("div", "cursor:nwse-resize;color:#888;user-select:none;font-size:13px;padding:0 2px", "⤡");
+  grip.title = "Drag to resize (bigger up-left, smaller down-right)";
+  grip.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, sw = panel.offsetWidth, sh = panel.offsetHeight;
+    const move = (ev) => {
+      memDebugW = Math.max(300, sw + (sx - ev.clientX));
+      memDebugH = Math.max(140, sh + (sy - ev.clientY));
+      panel.style.width = memDebugW + "px";
+      panel.style.height = memDebugH + "px";
+      panel.style.maxHeight = "none";
+    };
+    const up = () => {
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", up);
+    };
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+  });
+  header.appendChild(grip);
   header.appendChild(el("div", "color:#fff;font-weight:bold;flex:1", "🧠 relevance realization"));
   header.appendChild(el("div", "color:#888", msg.embedder || ""));
-  const minBtn = el("div", "color:#aaa;cursor:pointer;font-weight:bold;padding:0 5px", "—");
+  const minBtn = el(
+    "div",
+    "cursor:pointer;color:#ddd;background:#33333a;border:1px solid #555;border-radius:4px;padding:1px 9px;font-weight:bold",
+    "—",
+  );
   minBtn.title = "Minimize";
   minBtn.onclick = () => {
     memDebugMin = true;
