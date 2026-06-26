@@ -570,6 +570,25 @@ def _run_realtime_tool(call: dict) -> dict:
     return {"error": f"unknown tool {call.get('name')}"}
 
 
+async def _handle_remember(long_term, data: dict, emit_json) -> None:
+    """The memory-write seam over the WS: a game pushes a durable world event into the
+    character's long-term memory. {type:"remember", fact, when?, kind?, importance?}."""
+    fact = (data.get("fact") or "").strip()
+    if not fact:
+        return
+    try:
+        importance = float(data.get("importance", 0.7))
+    except (TypeError, ValueError):
+        importance = 0.7
+    await long_term.remember(
+        fact,
+        when=(data.get("when") or ""),
+        kind=(data.get("kind") or "world_event"),
+        importance=importance,
+    )
+    await emit_json({"type": "remembered", "fact": fact})
+
+
 async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
     """Voice the authored greeting via Inworld TTS-2 in the character's own voice (the
     same voice the session uses), so the open matches the pipeline path."""
@@ -680,6 +699,8 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
                         turn["user"] = txt
                         await emit_json({"type": "transcript", "text": txt})
                         await session.send_text_turn(txt)
+                elif mtype == "remember":
+                    await _handle_remember(long_term, data, emit_json)
     finally:
         await flush_memory()
         pump_task.cancel()
@@ -884,6 +905,8 @@ async def voice_ws(websocket: WebSocket) -> None:
                         situation=Situation.from_dict(data.get("situation")),
                     )
                     await pipeline.respond(request, latency, emit_json, emit_audio)
+                elif mtype == "remember":
+                    await _handle_remember(pipeline.long_term, data, emit_json)
     except WebSocketDisconnect:
         pass
     except Exception:

@@ -12,6 +12,7 @@ env/
 # Local model / data caches
 .chroma/
 chroma_db/
+.memory/
 *.wav
 *.webm
 

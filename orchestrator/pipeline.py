@@ -347,11 +347,13 @@ class Pipeline:
         await emit_json({"type": "assistant_done", "text": full_reply})
         await emit_json({"type": "latency", "marks": latency.summary()})
 
-        # Persist this exchange into both memory tiers.
+        # Persist this exchange into both memory tiers. Tag it with the game-time from
+        # the request's situation (if any) so recency-aware recall has a `when`.
         if full_reply:
             self.short_term.add_user(user_text)
             self.short_term.add_assistant(full_reply)
-            await self.long_term.add_exchange(user_text, full_reply)
+            when = request.situation.game_time if request.situation else ""
+            await self.long_term.add_exchange(user_text, full_reply, when=when)
 
     # ---------------------------------------------------------------- greeting
 

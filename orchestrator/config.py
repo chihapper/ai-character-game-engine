@@ -111,11 +111,24 @@ class Settings(BaseSettings):
     # character's expressivity carries) — verified in the Phase-0 spikes.
     realtime_tts_model: str = "inworld-tts-2"
 
-    # --- Long-term memory (step 4) ---
-    embedding_model: str = "all-MiniLM-L6-v2"
-    chroma_dir: str = str(ROOT_DIR / ".chroma")
+    # --- Long-term memory ---
+    embedding_model: str = "all-MiniLM-L6-v2"  # sentence-transformers, when installed
+    memory_dir: str = str(ROOT_DIR / ".memory")  # per-character JSONL stores
     short_term_turns: int = 8  # rolling buffer: last N exchanges kept verbatim
-    long_term_top_k: int = 4  # retrieved memories injected per turn
+    long_term_top_k: int = 4  # budget: max memories the relevance scorer injects per turn
+
+    # --- Relevance realization (opponent-processing memory recall) ---
+    # Each weight is a pole of the dialectic the scorer balances (see memory/relevance.py):
+    #   similarity = focusing/exploitation   recency = temporal salience
+    #   importance = goal/arena bearing      diversity = exploration (redundancy penalty)
+    # Tune the balance per deployment; relevance_floor drops weak matches instead of
+    # always returning the nearest k.
+    rr_weight_similarity: float = 1.0
+    rr_weight_recency: float = 0.35
+    rr_weight_importance: float = 0.5
+    rr_weight_diversity: float = 0.4
+    rr_recency_half_life: float = 20.0
+    rr_relevance_floor: float = 0.15
 
     # --- Server ---
     host: str = "127.0.0.1"
