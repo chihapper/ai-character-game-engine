@@ -3,9 +3,12 @@
 > Implementation plan for replacing the inherited modular pipeline with **Inworld's
 > full-loop realtime agent**. Companion to [`architecture-seams.md`](architecture-seams.md)
 > (which says *what* the architecture is and why); this says *how* we get `main` there.
-> Status: **scoping** — no code yet. Several load-bearing details are unverified and
-> explicitly gated behind a Phase-0 audio spike (§5); this plan does not assume Inworld
-> audio specifics from memory.
+> Status: **Phase 0 + Phase 1 DONE** (full loop wired behind `VOICE_RUNTIME=inworld_fullloop`,
+> verified end-to-end); Phase 2 partial; latency + cutover open (§10).
+>
+> 🧭 **Remember:** this whole track is *infrastructure* for the real goal — the
+> game-director **engine/game seam (Track E)**. Don't let voice polish here crowd it out.
+> See `architecture-seams.md` (North star).
 
 ## 1. Goal & success criteria
 

@@ -8,6 +8,14 @@
 > change. **RETIRING** marks inherited voice-engine machinery the full-loop direction
 > replaces — present in `main` today, but not the architecture going forward.
 
+> 🧭 **North star.** The long-term goal of this project is the **engine/game seam
+> (Track E, §2–4)** — the game-director that owns character state, memory, the world/time
+> seam, and game mechanics. The Inworld full-loop **voice runtime (Track V)** is
+> *enabling infrastructure*, not the destination: it gives the character a voice and
+> working tools so a game can drive it. Don't let voice-runtime polish (latency,
+> barge-in, audio quality) crowd out Track E. When the two interact, favor the choice
+> that keeps the Track E seam clean.
+
 ## What this doc is for
 
 The engine is a **real-time character runtime + game director**: given who a character
