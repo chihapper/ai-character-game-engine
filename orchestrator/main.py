@@ -65,7 +65,7 @@ from .config import (
     WEB_DIR,
     get_settings,
 )
-from .context import RespondRequest, Situation, build_instructions
+from .context import RespondRequest, Situation, build_arena_query, build_instructions
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
@@ -612,25 +612,23 @@ async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
 
 
 async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) -> None:
-    """Drive one Inworld full-loop session for a browser connection, mapping its events
-    onto the same browser protocol the pipeline path uses (so the frontend is unchanged).
+    """Drive one Inworld full-loop session, mapping its events onto the browser protocol.
 
-    Memory is write-only for now: each completed exchange is persisted to long-term
-    memory; per-turn retrieval-injection is deferred to Track E (the coupled STT->LLM
-    loop can't inject memories between transcription and generation)."""
+    Per turn (§5.6): before the model responds, retrieve memories against the arena query
+    and inject them via session.update — so the voice loop has the same relevance-realization
+    recall as the modular pipeline. Voice turns retrieve after the input transcript arrives
+    (on commit, before respond); typed turns retrieve immediately. Memory writes (salience-
+    scored) happen in the background, flushed at the next turn."""
     settings = get_settings()
-    # tts-2 honors [bracket] steering tags, so steer with the inworld performance
-    # directive regardless of how the character was authored. Same shared assembly the
-    # pipeline uses (context.build_instructions). Per-turn Situation injection in the
-    # full loop is the §5.6 deferred item (the coupled STT->LLM can't inject mid-turn).
-    instructions = build_instructions(character, performance_provider="inworld")
     session = InworldSession(
-        instructions=instructions, voice_id=character.voice_id, tools=_REALTIME_TOOLS
+        instructions=build_instructions(character, performance_provider="inworld"),
+        voice_id=character.voice_id, tools=_REALTIME_TOOLS,
     )
-    _engine_cfg = (character.game_data or {}).get("engine", {})
+    engine_cfg = (character.game_data or {}).get("engine", {})
     long_term = LongTermMemory(
-        character.memory_namespace, readonly=_engine_cfg.get("memory_readonly", False)
+        character.memory_namespace, readonly=engine_cfg.get("memory_readonly", False)
     )
+    short_term = ShortTermMemory(max_turns=settings.short_term_turns)
     await session.connect()
     await emit_json(
         {
@@ -642,26 +640,53 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
     )
     await _speak_greeting_fullloop(character, emit_json, emit_audio)
 
-    # Current turn's user text + accumulated reply; flushed to memory at the next turn.
-    turn = {"user": None, "reply": [], "audio_open": False}
+    turn = {"user": None, "reply": [], "situation": None, "audio_open": False}
     writes: set = set()  # in-flight background memory-write tasks (GC guard)
 
-    async def _store(user_text: str, reply: str) -> None:
-        importance = await score_salience(character, user_text, reply)
-        await long_term.add_exchange(user_text, reply, importance=importance)
-
-    async def flush_memory() -> None:
+    def flush_turn() -> None:
+        """Close the previous turn: commit it to short-term, and salience-score + persist
+        it to long-term in the background (skipped for read-only memory)."""
         reply = "".join(turn["reply"]).strip()
         if turn["user"] and reply:
-            # Background: salience scoring must not delay the next turn (flush runs on the
-            # next mic_start/text).
-            t = asyncio.create_task(_store(turn["user"], reply))
-            writes.add(t)
-            t.add_done_callback(writes.discard)
+            short_term.add_user(turn["user"])
+            short_term.add_assistant(reply)
+            if not long_term.readonly:
+                async def _store(u=turn["user"], r=reply) -> None:
+                    await long_term.add_exchange(u, r, importance=await score_salience(character, u, r))
+                t = asyncio.create_task(_store())
+                writes.add(t)
+                t.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
 
+    async def retrieve_and_respond(user_text: str, situation) -> None:
+        """The §5.6 step: retrieve against the arena query, inject via session.update, respond."""
+        flush_turn()  # close out the prior turn (-> short-term + background write)
+        turn["user"], turn["situation"] = user_text, situation
+        if settings.arena_query:
+            query = build_arena_query(
+                RespondRequest(player_input=user_text, situation=situation),
+                character, short_term.messages(),
+                max_recent_turns=settings.arena_query_recent_turns,
+            )
+        else:
+            query = user_text
+        memories: list[str] = []
+        if query:
+            if settings.memory_debug:
+                data = await long_term.retrieve_scored(query)
+                memories = data["selected"]
+                await emit_json({"type": "memories", "query": query,
+                                 "short_term": short_term.messages(), **data})
+            else:
+                memories = await long_term.retrieve(query)
+        await session.update_instructions(
+            build_instructions(character, memories=memories, situation=situation,
+                               performance_provider="inworld")
+        )
+        await session.respond()
+
     async def pump() -> None:
-        """Forward normalized session events to the browser; run tool calls."""
+        """Forward session events to the browser; on a voice transcript, retrieve+respond."""
         async for kind, data in session.events():
             if kind == "audio":
                 if not turn["audio_open"]:
@@ -670,9 +695,9 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
                 await emit_audio(data)
             elif kind == "partial_transcript":
                 await emit_json({"type": "partial_transcript", "text": data})
-            elif kind == "transcript":
-                turn["user"] = data
+            elif kind == "transcript":  # VOICE turn input (arrives on commit, before respond)
                 await emit_json({"type": "transcript", "text": data})
+                await retrieve_and_respond(data, None)
             elif kind == "assistant_delta":
                 await emit_json({"type": "assistant_delta", "text": data})
             elif kind == "assistant_done":
@@ -701,21 +726,19 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
                 except json.JSONDecodeError:
                     continue
                 mtype = data.get("type")
-                if mtype == "mic_start":
-                    await flush_memory()  # close out the previous turn before a new one
-                elif mtype == "mic_stop":
-                    await session.commit_audio_turn()
+                if mtype == "mic_stop":
+                    # Commit only; the transcript event drives retrieve+respond (pump).
+                    await session.commit_audio()
                 elif mtype == "text":
                     txt = (data.get("text") or "").strip()
                     if txt:
-                        await flush_memory()
-                        turn["user"] = txt
                         await emit_json({"type": "transcript", "text": txt})
-                        await session.send_text_turn(txt)
+                        await session.add_text(txt)
+                        await retrieve_and_respond(txt, Situation.from_dict(data.get("situation")))
                 elif mtype == "remember":
                     await _handle_remember(long_term, data, emit_json)
     finally:
-        await flush_memory()
+        flush_turn()
         pump_task.cancel()
         await session.close()
 

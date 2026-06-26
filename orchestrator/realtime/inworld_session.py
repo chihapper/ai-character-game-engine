@@ -142,15 +142,15 @@ class InworldSession:
             {"type": "input_audio_buffer.append", "audio": base64.b64encode(pcm24).decode()}
         )
 
-    async def commit_audio_turn(self) -> None:
-        """End the spoken turn: commit the buffered audio and ask for a response.
-        (Manual turn-taking — call this on mic-stop.)"""
+    async def commit_audio(self) -> None:
+        """Commit the buffered audio (manual turn). Does NOT trigger a response — the
+        input transcript arrives next (events()), so the caller can retrieve memories and
+        re-steer before calling respond()."""
         self._resample_state = None
         await self._send({"type": "input_audio_buffer.commit"})
-        await self._send({"type": "response.create"})
 
-    async def send_text_turn(self, text: str) -> None:
-        """Submit a typed user turn and ask for a response."""
+    async def add_text(self, text: str) -> None:
+        """Add a typed user turn to the conversation. Does NOT trigger a response."""
         await self._send(
             {
                 "type": "conversation.item.create",
@@ -161,7 +161,25 @@ class InworldSession:
                 },
             }
         )
+
+    async def update_instructions(self, instructions: str) -> None:
+        """Re-steer the session's system instructions mid-conversation — how per-turn
+        recalled memories + the live Situation are injected into the full loop (§5.6).
+        Conversation history and voice continuity are preserved."""
+        await self._send({"type": "session.update", "session": {"instructions": instructions}})
+
+    async def respond(self) -> None:
+        """Ask the model to generate its turn (after the user input + any re-steer)."""
         await self._send({"type": "response.create"})
+
+    # Convenience wrappers (input + immediate response, no interposed retrieval).
+    async def commit_audio_turn(self) -> None:
+        await self.commit_audio()
+        await self.respond()
+
+    async def send_text_turn(self, text: str) -> None:
+        await self.add_text(text)
+        await self.respond()
 
     async def send_tool_result(self, call_id: str, output: dict | str) -> None:
         """Return a tool result. The continuation is AUTOMATIC — we deliberately do NOT
