@@ -237,6 +237,38 @@ Sources: [Realtime WS API ref](https://docs.inworld.ai/api-reference/realtimeAPI
 [steering](https://docs.inworld.ai/tts/capabilities/steering),
 [examples repo](https://github.com/inworld-ai/inworld-api-examples).
 
+## 5E. Phase-0b results — all four blockers cleared (2026-06-25)
+
+Re-ran with Luna published and the diagnosed fixes. **All four resolved; latency is the
+one remaining optimization.**
+
+- **#2 voice/model — FIXED.** Published Luna (`voices:{id}:publish`) → the session honored
+  `audio.output.voice = <Luna library id>` + `model = inworld-tts-2` (no fallback).
+  Real-character fix: the stored voice id must be a *published* library voice (our create
+  flow already publishes). Also added `session.type: "realtime"`.
+- **#1 tool continuation — FIXED.** Two corrections: (a) the result item type is
+  **`function_call_output`** — Inworld explicitly rejects `function_call_result`
+  (`invalid_item_type`), so the doc that named it was wrong; (b) **do NOT send
+  `response.create` after submitting the tool output** — it auto-triggers the
+  continuation, and a manual `response.create` spawns a second response that cancels the
+  first (`status:"cancelled", reason:"superseded"` — the empty-continuation bug). With
+  the fix, Bri reacted in-character to the dice result (*"Mmm, fourteen — that's enough
+  for me, sugar…"*).
+- **#4 stage directions — SOLVED (prompt-side).** Adding `performance_directive("inworld")`
+  to the instructions made the model emit only `[bracket]` steering tags
+  (`[bright and teasing]`, `[whisper, conspiratorial]`, `[slow, deliberate]`) and **zero
+  asterisks** across all turns — tts-2 consumes these. Confirms the fix is prompting +
+  tts-2, and it depended on #2 (1.5-mini ignores tags). *Listen-check still wanted to
+  confirm the tags are consumed, not voiced.*
+- **#3 / 5.7 latency — IMPROVED, still open.** First audio ~2.8 s (was 4–7 s; the
+  voice/model fallback had inflated it). Audio streams incrementally. Still above the
+  ~1 s target — Phase-1 work: reply brevity, LLM time-to-first-token, possibly
+  `inworld-tts-1.5-mini` on latency-critical paths.
+
+**Phase-0 gate: GREEN.** The full loop is viable end-to-end — the character's real
+published voice, working tool mechanics, and clean expressive speech via tags. Carry into
+Phase 1: drive latency down, and complete the tag listen-check.
+
 ## 6. Memory integration (engine stays in charge)
 
 Per logical turn, around the session:
