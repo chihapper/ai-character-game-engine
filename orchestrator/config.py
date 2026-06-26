@@ -97,6 +97,20 @@ class Settings(BaseSettings):
     whisper_device: str = "cpu"  # "cpu" | "cuda"
     whisper_compute_type: str = "int8"  # int8 is fast + accurate enough on CPU
 
+    # --- Voice runtime (Track V) ---
+    # "pipeline"          = the inherited modular STT -> LLM -> TTS overlap pipeline
+    #                       (default / current code path).
+    # "inworld_fullloop"  = drive Inworld's Realtime agent: ONE session owns
+    #                       STT -> Claude -> Realtime TTS-2 with cross-turn voice
+    #                       continuity. Phase-1 work behind this flag — see
+    #                       docs/track-v-full-loop-plan.md.
+    voice_runtime: str = "pipeline"
+    # The LLM the Inworld Realtime session routes to (provider/name); billed via Inworld.
+    realtime_llm_model: str = "anthropic/claude-sonnet-4-6"
+    # The Realtime TTS model. inworld-tts-2 honors [bracket] steering tags (so the
+    # character's expressivity carries) — verified in the Phase-0 spikes.
+    realtime_tts_model: str = "inworld-tts-2"
+
     # --- Long-term memory (step 4) ---
     embedding_model: str = "all-MiniLM-L6-v2"
     chroma_dir: str = str(ROOT_DIR / ".chroma")

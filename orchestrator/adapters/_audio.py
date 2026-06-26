@@ -35,6 +35,37 @@ def fade_pcm(
     return samples.tobytes() + trailing
 
 
+def resample_pcm16(pcm: bytes, src_rate: int, dst_rate: int, state=None):
+    """Resample mono 16-bit PCM from `src_rate` to `dst_rate`.
+
+    Returns `(out_bytes, state)`. Pass the returned `state` back on the next call to
+    keep the resampler continuous across streamed frames (no per-frame click). Uses
+    `audioop.ratecv` when available; falls back to a stateless linear interpolation
+    (audioop was removed in Python 3.13+). Used to feed the browser's 16 kHz mic
+    frames into Inworld's 24 kHz Realtime input."""
+    if not pcm or src_rate == dst_rate:
+        return pcm, state
+    try:
+        import audioop  # type: ignore
+
+        return audioop.ratecv(pcm, 2, 1, src_rate, dst_rate, state)
+    except Exception:
+        samples = array("h")
+        samples.frombytes(pcm if len(pcm) % 2 == 0 else pcm[:-1])
+        n = len(samples)
+        out_n = int(n * dst_rate / src_rate)
+        out = array("h", bytes(2 * out_n))
+        ratio = src_rate / dst_rate
+        for i in range(out_n):
+            x = i * ratio
+            j = int(x)
+            frac = x - j
+            s0 = samples[j] if j < n else 0
+            s1 = samples[j + 1] if j + 1 < n else s0
+            out[i] = int(s0 + (s1 - s0) * frac)
+        return out.tobytes(), state
+
+
 def pcm_to_wav(pcm: bytes, sample_rate: int, channels: int = 1, bits: int = 16) -> bytes:
     """Wrap raw PCM in a minimal RIFF/WAVE header so a browser <audio> can play it.
     Our TTS yields headerless PCM for the realtime player; this is for the rare case
