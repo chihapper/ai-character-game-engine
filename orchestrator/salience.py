@@ -61,18 +61,17 @@ def _parse_score(text: str) -> float:
         return NEUTRAL
 
 
-async def score_salience(
-    character: Character, user_text: str, assistant_text: str, *, model: str | None = None
+async def score_salience_text(
+    character: Character, moment: str, *, model: str | None = None
 ) -> float:
-    """Rate, 0–1, how memorable this exchange is to `character`. Returns NEUTRAL on error."""
+    """Rate, 0–1, how memorable `moment` (any stored memory text) is to `character`.
+    Returns NEUTRAL when scoring is disabled or on error."""
     settings = get_settings()
     if not settings.salience_scoring:
         return NEUTRAL
-    summary = _character_summary(character)
     prompt = (
-        f"CHARACTER:\n{summary}\n\n"
-        f"MOMENT (one conversational turn):\n"
-        f"Player: {user_text}\n{character.name}: {assistant_text}\n\n"
+        f"CHARACTER:\n{_character_summary(character)}\n\n"
+        f"MOMENT:\n{moment}\n\n"
         f"How salient is this moment to {character.name}? Consider whether it touches "
         f"their goals, values, relationships, or fears, and whether they'd dwell on it or "
         f"forget it by tomorrow. Reply with only a number from 0.00 to 1.00."
@@ -86,3 +85,11 @@ async def score_salience(
     except Exception:
         logger.exception("Salience scoring failed; using neutral importance")
         return NEUTRAL
+
+
+async def score_salience(
+    character: Character, user_text: str, assistant_text: str, *, model: str | None = None
+) -> float:
+    """Rate, 0–1, how memorable this exchange is to `character`."""
+    moment = f"Player: {user_text}\n{character.name}: {assistant_text}"
+    return await score_salience_text(character, moment, model=model)
