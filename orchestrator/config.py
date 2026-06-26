@@ -119,6 +119,10 @@ class Settings(BaseSettings):
     memory_dir: str = str(ROOT_DIR / ".memory")  # per-character JSONL stores
     short_term_turns: int = 8  # rolling buffer: last N exchanges kept verbatim
     long_term_top_k: int = 4  # budget: max memories the relevance scorer injects per turn
+    # Write-time dedup: skip storing a memory that's an exact or near-duplicate of an
+    # existing one (raw-cosine >= this), so e.g. firing remember() twice doesn't store —
+    # or inject — the same fact twice. High threshold to only catch true duplicates.
+    memory_dedup_threshold: float = 0.97
     # Dev: emit the retrieved memories + their RR score breakdown to the browser each turn,
     # so the relevance realization is observable. Off in production.
     memory_debug: bool = False

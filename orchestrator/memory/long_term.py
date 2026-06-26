@@ -24,7 +24,7 @@ import re
 from pathlib import Path
 
 from ..config import get_settings
-from .relevance import MemoryRecord, RelevanceWeights, realize_relevance
+from .relevance import MemoryRecord, RelevanceWeights, cosine, realize_relevance
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +106,7 @@ class LongTermMemory:
             spread=settings.rr_similarity_spread,
             spread_gain=settings.rr_spread_gain,
         )
+        self._dedup_threshold = settings.memory_dedup_threshold
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.jsonl"
         self._records: list[MemoryRecord] | None = None  # lazily loaded + cached
 
@@ -146,12 +147,23 @@ class LongTermMemory:
 
     def _add_sync(self, text: str, importance: float, kind: str, when: str) -> None:
         records = self._all()
-        index = records[-1].index + 1 if records else 0
         embed, _, _ = _get_embedder()
+        embedding = embed(text)
+        importance = max(0.0, min(1.0, importance))
+        # Write-time dedup: don't store an exact or near-duplicate of an existing memory
+        # (e.g. remember() fired twice). Keep the higher importance on the original.
+        norm = text.strip().lower()
+        for r in records:
+            if r.text.strip().lower() == norm or cosine(embedding, r.embedding) >= self._dedup_threshold:
+                if importance > r.importance:
+                    r.importance = importance
+                logger.info("Skipping duplicate memory: %r", text[:60])
+                return
+        index = records[-1].index + 1 if records else 0
         records.append(
             MemoryRecord(
-                text=text, embedding=embed(text), index=index,
-                importance=max(0.0, min(1.0, importance)), kind=kind, when=when,
+                text=text, embedding=embedding, index=index,
+                importance=importance, kind=kind, when=when,
             )
         )
         self._path.parent.mkdir(parents=True, exist_ok=True)
