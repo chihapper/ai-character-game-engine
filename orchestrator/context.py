@@ -168,6 +168,28 @@ def render_situation(situation: Situation | None) -> str:
     )
 
 
+def render_memories(memories: list[str] | None) -> str:
+    """Render retrieved long-term memories into a prompt section, or "" if none."""
+    if not memories:
+        return ""
+    recalled = "\n".join(f"- {m}" for m in memories)
+    return (
+        "# Memories from past conversations with this user\n"
+        "Draw on these naturally if relevant; do not recite them verbatim.\n" + recalled
+    )
+
+
+def render_turn_context(
+    *, memories: list[str] | None = None, situation: Situation | None = None
+) -> str:
+    """The per-turn DYNAMIC half of a character's context: recalled memories + the live
+    Situation. The full loop injects this as a small context *item* each turn (keeping the
+    big static prompt stable + cacheable), while the modular pipeline folds it into the
+    full prompt via build_instructions. Returns "" when there's nothing dynamic to say."""
+    parts = [s for s in (render_memories(memories), render_situation(situation)) if s]
+    return "\n\n".join(parts)
+
+
 def build_instructions(
     character: Character,
     *,
@@ -184,15 +206,8 @@ def build_instructions(
         if directive:
             parts.append(directive)
 
-    if memories:
-        recalled = "\n".join(f"- {m}" for m in memories)
-        parts.append(
-            "# Memories from past conversations with this user\n"
-            "Draw on these naturally if relevant; do not recite them verbatim.\n" + recalled
-        )
-
-    situation_section = render_situation(situation)
-    if situation_section:
-        parts.append(situation_section)
+    turn_context = render_turn_context(memories=memories, situation=situation)
+    if turn_context:
+        parts.append(turn_context)
 
     return "\n\n".join(parts)

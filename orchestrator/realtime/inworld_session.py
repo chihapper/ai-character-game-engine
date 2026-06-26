@@ -163,10 +163,26 @@ class InworldSession:
         )
 
     async def update_instructions(self, instructions: str) -> None:
-        """Re-steer the session's system instructions mid-conversation — how per-turn
-        recalled memories + the live Situation are injected into the full loop (§5.6).
-        Conversation history and voice continuity are preserved."""
+        """Re-steer the session's system instructions mid-conversation. Replaces the whole
+        instructions string — so re-sending the full character prompt every turn busts the
+        provider's prompt cache. Prefer add_context() for per-turn memory injection; this
+        stays for whole-prompt changes."""
         await self._send({"type": "session.update", "session": {"instructions": instructions}})
+
+    async def add_context(self, text: str, *, item_id: str | None = None) -> None:
+        """Inject per-turn dynamic context (recalled memories + live Situation) as a small
+        SYSTEM context item, leaving the big base instructions untouched (so they stay
+        cached). The model treats it as its own background knowledge — verified in the #2
+        latency spike. Pair with delete_item() to keep only the current turn's item live."""
+        item = {"type": "message", "role": "system", "content": [{"type": "input_text", "text": text}]}
+        if item_id:
+            item["id"] = item_id
+        await self._send({"type": "conversation.item.create", "item": item})
+
+    async def delete_item(self, item_id: str) -> None:
+        """Remove a prior conversation item (e.g. last turn's memory context) so the
+        per-turn RR selection doesn't accumulate stale memory blocks in the session."""
+        await self._send({"type": "conversation.item.delete", "item_id": item_id})
 
     async def respond(self) -> None:
         """Ask the model to generate its turn (after the user input + any re-steer)."""

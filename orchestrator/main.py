@@ -65,7 +65,7 @@ from .config import (
     WEB_DIR,
     get_settings,
 )
-from .context import RespondRequest, Situation, build_arena_query, build_instructions
+from .context import RespondRequest, Situation, build_arena_query, build_instructions, render_turn_context
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
@@ -652,7 +652,8 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
     )
     await _speak_greeting_fullloop(character, emit_json, emit_audio)
 
-    turn = {"user": None, "reply": [], "situation": None, "audio_open": False}
+    turn = {"user": None, "reply": [], "situation": None, "audio_open": False,
+            "ctx_id": None, "seq": 0}
     writes: set = set()  # in-flight background memory-write tasks (GC guard)
 
     def flush_turn() -> None:
@@ -693,10 +694,18 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
             else:
                 memories = await long_term.retrieve(query)
         _t_ret = time.monotonic()
-        await session.update_instructions(
-            build_instructions(character, memories=memories, situation=situation,
-                               performance_provider="inworld")
-        )
+        # #2: inject the dynamic per-turn context (memories + Situation) as a SYSTEM context
+        # item, leaving the base instructions stable (cache-friendly). Delete the prior turn's
+        # item first so only the current RR selection is live — no stale-memory accumulation.
+        if turn["ctx_id"]:
+            await session.delete_item(turn["ctx_id"])
+            turn["ctx_id"] = None
+        turn_context = render_turn_context(memories=memories, situation=situation)
+        if turn_context:
+            turn["seq"] += 1
+            ctx_id = f"rr-ctx-{turn['seq']}"
+            await session.add_context(turn_context, item_id=ctx_id)
+            turn["ctx_id"] = ctx_id
         await session.respond()
         logger.info("RR-latency: build+retrieve=%.0fms (mem=%d) before respond",
                     (_t_ret - _t0) * 1000, len(memories))

@@ -106,7 +106,11 @@ class Settings(BaseSettings):
     #                       docs/track-v-full-loop-plan.md.
     voice_runtime: str = "pipeline"
     # The LLM the Inworld Realtime session routes to (provider/name); billed via Inworld.
-    realtime_llm_model: str = "anthropic/claude-sonnet-4-6"
+    # Haiku 4.5 over Sonnet 4.6: ~40% lower respond->first-audio (3.78s->2.29s in the
+    # Track V A/B) with no measurable loss in character voice or memory grounding — and
+    # first-audio latency is the whole game for the "real" feel. realtime_model_ab.py is
+    # the harness; flip back with REALTIME_LLM_MODEL=anthropic/claude-sonnet-4-6.
+    realtime_llm_model: str = "anthropic/claude-haiku-4-5"
     # The Realtime TTS model. inworld-tts-2 honors [bracket] steering tags (so the
     # character's expressivity carries) — verified in the Phase-0 spikes.
     realtime_tts_model: str = "inworld-tts-2"
