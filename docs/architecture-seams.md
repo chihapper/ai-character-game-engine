@@ -294,7 +294,7 @@ supplies** — the engine stores it opaquely; the game defines the calendar. Sto
 > (explore) — relative to the live query under a budget. Honestly an *approximation* (true
 > RR is non-computational); the LLM is the real relevance realizer, and this shapes what
 > enters its context. Implemented in [`memory/relevance.py`](../orchestrator/memory/relevance.py);
-> see [`relevance-realization-design`] in memory and the RR write-ups.
+> the scoring + how-to-read-the-debug-panel guide is [`relevance-scoring.md`](relevance-scoring.md).
 
 ### 4.1 How retrieval works ~~today~~ now (DONE — reworked 2026-06-26)
 

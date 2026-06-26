@@ -191,6 +191,10 @@ async function connect() {
     setStatus("Pick a character first.");
     return;
   }
+  // Clear any stale relevance panel from a previous session — it repopulates on the
+  // first turn of the new one (long-term memory itself persists on disk regardless).
+  document.getElementById("mem-debug")?.remove();
+  memDebugExpanded.clear();
   // Create the AudioContext + worklet from this user gesture so playback is allowed.
   try {
     await ensureAudio();
