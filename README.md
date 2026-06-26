@@ -1,96 +1,140 @@
 # 🎲 AI Character Game Engine
 
-> **This repo is the game-engine direction** — a "game director" that drives Inworld's
-> **full-loop realtime voice agent** (Claude LLM + Realtime TTS-2, with cross-turn voice
-> continuity) and owns the **game logic**: character state, memory, tools/mechanics, and
-> the world/time seam.
->
-> It was seeded with the full history of the provider-agnostic **voice engine**, which
+A **game director** for dialogue-driven games: it drives **Inworld's full-loop
+realtime voice agent** (STT → Claude LLM → Realtime TTS-2, with cross-turn voice
+continuity) and owns the **game logic** — character definition and state, memory,
+tools/mechanics, and the **world/time seam** between the game and the engine.
+
+You define a character; the game tells the engine what's happening; the engine makes
+that character respond — out loud, in a consistent cloned voice, remembering past
+sessions.
+
+> **Lineage.** This repo was seeded from the provider-agnostic **voice engine**, which
 > lives on as its own portfolio project:
-> - Original repo: [real-time-ai-character-engine](https://github.com/chihapper/real-time-ai-character-engine)
-> - Ancestry snapshot: tag **`voice-engine-v1`** (tagged in both repos)
+> [real-time-ai-character-engine](https://github.com/chihapper/real-time-ai-character-engine)
+> (ancestry snapshot: tag **`voice-engine-v1`**, in both repos). The modular streaming
+> pipeline described below is that inheritance — the foundation the game director is
+> built on.
 >
-> **Direction & open design:** see issues **[A](https://github.com/chihapper/ai-character-game-engine/issues/1)** (memory/retrieval) and **[B](https://github.com/chihapper/ai-character-game-engine/issues/2)** (generalize the engine for the game-director). _The README below is the inherited voice-engine README and will be rewritten as the game engine takes shape._
+> **Architecture & direction:** see [`docs/architecture-seams.md`](docs/architecture-seams.md)
+> for the engine/game seam design, and open issues
+> **[#1](https://github.com/chihapper/ai-character-game-engine/issues/1)** (memory/retrieval)
+> and **[#2](https://github.com/chihapper/ai-character-game-engine/issues/2)** (generalizing
+> the engine for the game-director).
 
 ---
 
-# Real-Time AI Character Engine <sub>(inherited voice-engine README, below)</sub>
+## The technical setup: Inworld's full loop
 
-A cloud-first, provider-agnostic engine for **real-time spoken conversation** with an
-AI character. You speak; a character with a distinct personality and a **cloned
-voice** answers out loud, in real time, and **remembers** past conversations.
+The voice runtime is **Inworld's Realtime API agent**, driven over a WebSocket
+(OpenAI Realtime protocol). One agent session is the whole loop — **STT → LLM → TTS** —
+so we get **cross-turn voice continuity** (prosody and timbre carry between turns)
+that a per-utterance TTS can't give. Inside that session:
 
-It runs locally as a web app: a Python backend serving a browser UI on `localhost`.
-
-> This is the foundation for a future multi-character "dialogue-driven game." v1 is
-> the full voice-to-voice loop plus in-app character creation — the game itself is
-> out of scope.
-
----
-
-## The one thing that matters: streaming overlap
-
-The character starts speaking **~1 second after you stop talking**. That only works
-because the pipeline stages *overlap* instead of running end-to-end:
+- **The LLM is routed to Claude** (`anthropic/claude-sonnet-4-6`) — the agent reasons
+  as Claude, Inworld handles the speech ends.
+- **Our character *is* the agent's instructions.** The engine compiles a character's
+  structured profile into a system prompt
+  ([`Character.build_prompt()`](orchestrator/character_store.py)) and hands it to the
+  session as the agent's instructions — so the same character definition that drives
+  the text path drives the voice agent.
+- **Tools are how the game runs mechanics.** Function-calling lets the engine execute
+  game logic *through the conversation* — a dice roll, a state change, a quest update —
+  instead of having the model narrate outcomes it shouldn't decide. (Feasibility for
+  steering + tools is validated; see the spike on branch `inworld-full-loop`.)
 
 ```
-You stop talking
+game event / player line
+        │
+        ▼
+  game director (this repo)  ──►  character prompt + tools + per-request situation
+        │                                         │
+        │  owns: character state, memory,         ▼
+        │  world/time seam, mechanics      Inworld Realtime agent
+        │                                  (STT → Claude → Realtime TTS-2,
+        ▼                                   cross-turn voice continuity)
+   long-term memory  ◄── remembers ───────────────┘
+                                                   │
+                                                   ▼
+                                            🔊 spoken, in-voice reply
+```
+
+What the engine owns vs. what Inworld owns is the point: **Inworld owns the voice
+loop; this repo owns the game-character logic.** The seams between them — context-in,
+the memory-write API, the world/time channel — are specified in
+[`docs/architecture-seams.md`](docs/architecture-seams.md).
+
+---
+
+## The foundation: streaming overlap (inherited)
+
+The full-loop agent is the direction; the inherited modular pipeline is what the repo
+runs today, and it's the reason latency is in the budget the game build needs. The
+character starts speaking **~1 second after the input lands** only because the stages
+*overlap* instead of running end-to-end:
+
+```
+input (player line / event)
       │
       ▼
-  STT (Whisper)  ──►  transcript
-                          │
-                          ▼
-                    LLM (Claude, streaming)  ──► "Oh, you're back." ──► "I wondered…" ──► …
-                                                        │                      │
-                                            sentence 1 ready              sentence 2 ready
-                                                        │                      │
-                                                        ▼                      ▼
-                                                  TTS sentence 1   ║    TTS sentence 2   (overlapping)
-                                                        │                      │
-                                                        ▼                      ▼
-                                         🔊 you hear sentence 1  while  sentence 2 is still being made
+  STT  ──►  transcript
+                │
+                ▼
+          LLM (Claude, streaming)  ──► "Oh, you're back." ──► "I wondered…" ──► …
+                                              │                      │
+                                  sentence 1 ready             sentence 2 ready
+                                              │                      │
+                                              ▼                      ▼
+                                        TTS sentence 1   ║    TTS sentence 2   (overlapping)
+                                              │                      │
+                                              ▼                      ▼
+                               🔊 you hear sentence 1  while  sentence 2 is still being made
 ```
 
 As the LLM streams tokens, [`sentence_chunker.py`](orchestrator/sentence_chunker.py)
-splits them into sentences on the fly. The moment sentence 1 is complete it's sent to
-TTS and audio streams back to the browser — **while the LLM is still generating the
-rest**. We never wait for the full reply before starting speech, and never wait for a
-full audio render before playback.
-
-Every stage is timed (VAD stop → transcript → LLM first token → first audio chunk →
-playback) and the **latency panel** in the UI makes the budget visible.
+splits them into sentences on the fly; the moment sentence 1 is complete it's sent to
+TTS and audio streams back — **while the LLM is still generating the rest**. The
+overlap logic lives in [`pipeline.py`](orchestrator/pipeline.py). Every stage is timed
+and the **latency panel** in the UI makes the budget visible. The same prompt-assembly
+and memory that feed this pipeline feed the full-loop agent.
 
 ---
 
-## Architecture
+## Architecture: adapters & seams
 
-```
-mic (browser) → STT → Orchestrator → LLM → sentence chunker → TTS → audio (browser)
-                                  ↕
-                          two-tier memory
-```
+Two families of seam keep the pieces swappable. The full design is in
+[`docs/architecture-seams.md`](docs/architecture-seams.md); in brief:
 
-Every external provider sits behind an **adapter interface**
-([`adapters/base.py`](orchestrator/adapters/base.py)). The pipeline depends only on
-the interfaces — never on a specific provider. That swappability is the architectural
-spine:
+**Provider seams** — every external vendor sits behind an adapter interface
+([`adapters/base.py`](orchestrator/adapters/base.py)); the pipeline depends only on the
+interface, never a concrete provider:
 
-| Role | Interface | Default implementation | Swap to |
-| --- | --- | --- | --- |
-| Speech-to-text | `STTAdapter` | `WhisperSTT` (faster-whisper + Silero VAD, local) | any `STTAdapter` |
-| LLM | `LLMAdapter` | `AnthropicLLM` (`claude-haiku-4-5`, streaming) | any `LLMAdapter` |
-| Text-to-speech | `TTSAdapter` | `InworldTTS` (default) / `CartesiaTTS` | per-character via YAML |
+| Role | Interface | Implementations |
+| --- | --- | --- |
+| Speech-to-text | `STTAdapter` | Whisper (local), AssemblyAI (batch + realtime) |
+| LLM | `LLMAdapter` | Anthropic (streaming) |
+| Text-to-speech | `TTSAdapter` | Inworld, ElevenLabs, Cartesia, Fallback |
 
-- **Swapping the TTS provider** is a one-line change in a character's YAML
-  (`tts_provider: inworld` → `cartesia`) — no code changes.
-- **Swapping the LLM** is a one-file adapter change.
+The audio wire format (PCM s16le, mono, 24 kHz) is fixed in
+[`config.py`](orchestrator/config.py) so the browser playback path is identical
+regardless of provider. Provider choice is **per-character** (the YAML `tts_provider`
+field) — the cost/quality lever at scale.
 
-Memory is two-tier: a **short-term** rolling buffer of recent turns
-([`memory/short_term.py`](orchestrator/memory/short_term.py)) plus **long-term** vector
-recall in a local ChromaDB, embedded with a local sentence-transformers model
-([`memory/long_term.py`](orchestrator/memory/long_term.py)). Each completed exchange is
-embedded and stored; each new turn retrieves the top-k relevant past exchanges and
-injects them into the prompt — so the character remembers you across sessions.
+**The engine/game seam** — how a game drives the engine and pushes in world state.
+A character is universal core fields plus an open `game_data` bag the engine stores but
+never interprets; a game layer registers a renderer for its namespace
+([`character_extensions.py`](orchestrator/character_extensions.py)) to add game-shaped
+depth. Generalizing the entry point from "reply to a chat message" to "respond given
+game context," plus the per-request situation channel and the durable memory-write API,
+is the active design work — see [`docs/architecture-seams.md`](docs/architecture-seams.md)
+and issue [#2](https://github.com/chihapper/ai-character-game-engine/issues/2).
+
+**Memory** is two-tier: a short-term verbatim buffer of recent turns
+([`memory/short_term.py`](orchestrator/memory/short_term.py)) plus long-term vector
+recall ([`memory/long_term.py`](orchestrator/memory/long_term.py)) — each exchange is
+embedded and stored, and each request retrieves the top-k relevant past exchanges into
+the prompt. Relevance tuning and the store/embeddings choice are tracked in issue
+[#1](https://github.com/chihapper/ai-character-game-engine/issues/1).
 
 ---
 
@@ -98,17 +142,16 @@ injects them into the prompt — so the character remembers you across sessions.
 
 - **Python 3.10+**
 - A microphone and a modern browser (Chrome/Edge/Firefox/Safari)
-- API keys:
-  - **Anthropic** — the LLM. Get one at <https://console.anthropic.com/>.
-  - **Inworld** — default TTS + voice cloning. From the
-    [Inworld portal](https://platform.inworld.ai/): API Keys → copy the **"Basic
-    (Base64)" signature** and paste it verbatim (it's already base64-encoded — do not
+- API keys (only for the providers you actually use):
+  - **Anthropic** — the LLM. <https://console.anthropic.com/>
+  - **Inworld** — default TTS, voice cloning, and the full-loop realtime agent. From
+    the [Inworld portal](https://platform.inworld.ai/): API Keys → copy the **"Basic
+    (Base64)" signature** and paste it verbatim (already base64-encoded — do not
     re-encode it).
-  - **Cartesia** *(optional)* — alternative TTS, for A/B testing on the same cloned
-    voice. Key format `sk_car_...` from <https://play.cartesia.ai/keys>.
-
-You only need the keys for the providers you actually use. The text-first vertical
-slice needs **Anthropic + Inworld** (or Cartesia).
+  - **ElevenLabs / Cartesia** *(optional)* — alternative TTS providers behind the same
+    adapter, for A/B on the same cloned voice.
+  - **AssemblyAI** *(optional)* — cloud STT (batch + realtime streaming), an
+    alternative to local Whisper.
 
 ---
 
@@ -116,22 +159,13 @@ slice needs **Anthropic + Inworld** (or Cartesia).
 
 ```bash
 git clone <this-repo>
-cd "Real-Time AI Character Engine"
-
+cd ai-character-game-engine
 cp .env.example .env        # then edit .env and paste your keys
 ```
 
-Then launch with the single command for your OS:
+Launch with the single command for your OS:
 
-**macOS / Linux**
-```bash
-./run.sh
-```
-
-**Windows (PowerShell)**
-```powershell
-./run.ps1
-```
+**macOS / Linux** — `./run.sh`  ·  **Windows (PowerShell)** — `./run.ps1`
 
 The launch script creates a virtualenv, installs dependencies, and starts the server.
 Open **<http://127.0.0.1:8000>**.
@@ -141,19 +175,19 @@ Open **<http://127.0.0.1:8000>**.
 The dependencies are split so the app always boots:
 
 - **`requirements.txt`** (core, pure-Python) — the full text → LLM → sentence-chunk →
-  TTS streaming loop and in-app character creation + voice cloning. Installs cleanly
+  TTS streaming loop, character creation, and voice cloning. Installs cleanly
   everywhere.
 - **`requirements-optional.txt`** — **voice input** (Whisper STT) and **cross-session
-  memory** (ChromaDB). These pull heavier, partly-compiled packages; on Windows / newer
-  Python they may need C++ build tools (or a 3.11/3.12 interpreter that has prebuilt
-  wheels). The launch script installs them **best-effort** — if they fail to build, the
-  app still runs with text input + TTS, voice input reports a clear error, and long-term
-  memory is silently disabled.
+  memory** (ChromaDB). These pull heavier, partly-compiled packages; the launch script
+  installs them **best-effort** — if they fail to build, the app still runs with text
+  input + TTS, voice input reports a clear error, and long-term memory is silently
+  disabled. *(The store swap in issue [#1](https://github.com/chihapper/ai-character-game-engine/issues/1)
+  is partly about removing this native-build pain.)*
 
-> If the optional extras are installed, the first run also downloads the local Whisper
-> and embedding models (a few hundred MB) and is slower to start. Subsequent runs are fast.
+> With the optional extras installed, the first run downloads the local Whisper and
+> embedding models (a few hundred MB) and is slower to start. Subsequent runs are fast.
 
-### Manual run (if you prefer)
+### Manual run
 
 ```bash
 python -m venv .venv
@@ -167,21 +201,15 @@ python -m orchestrator.main
 
 ## Using it
 
-**Conversation view**
-1. Pick a character (the sample **Aria** ships with the repo) and click **Connect**.
-   She greets you in her voice.
-2. Click **Hold to talk**, speak, click again to stop. ~1s later she replies out loud.
-   You can also type in the text box (handy for the text-first slice / quick testing).
-3. Watch the **latency panel** — "First audio N ms after you stopped talking" is the
-   headline number, and you can see the first audio chunk leave before the full reply
-   is generated.
+**Conversation view** — pick a character and **Connect**; it greets you in its voice.
+**Hold to talk**, speak, click to stop; ~1s later it replies out loud. You can also
+type (handy for quick testing). The **latency panel** shows the headline number —
+first audio N ms after you stopped talking.
 
-**Create Character view**
-1. Enter a name, a personality (system prompt), and a greeting.
-2. Either **record a ~12s voice sample** (it gets instant-cloned by the selected
-   provider) **or** paste a preset `voice_id` (e.g. `Ashley` for Inworld).
-3. Click **Create**, switch back to Conversation, **Refresh**, and talk to your new
-   character in its own cloned voice.
+**Create Character view** — enter the structured fields (or AI-draft them from a
+one-line concept), then give it a voice: **record a ~12s sample** (instant-cloned by
+the selected provider), **design** one from a text description, or **pick** a library/
+preset voice. Create, switch back to Conversation, **Refresh**, and talk to it.
 
 > **Consent:** voice cloning requires that the recorded sample is your own voice or a
 > consenting party's — both providers' terms require this.
@@ -191,39 +219,45 @@ python -m orchestrator.main
 ## Character profiles
 
 One YAML per character in [`orchestrator/characters/`](orchestrator/characters), written
-by the Create Character flow (or hand-authored):
+by the Create Character flow (or hand-authored). The engine compiles the structured
+fields into the system prompt; game-specific data rides in an open `game_data` bag the
+engine stores but never interprets (the engine/game seam):
 
 ```yaml
 name: "Aria"
-system_prompt: |
-  You are Aria, a sharp-witted archivist who speaks in clipped, dry sentences.
-  [personality, speaking style, what they know, boundaries, how they treat the user]
-tts_provider: inworld          # or: cartesia  — changes the voice provider, no code
-voice_id: "Ashley"             # preset, or a clone id from the Create Character flow
+concept: "a sharp-witted archivist who speaks in clipped, dry sentences"
+temperament: "Guarded, dry, allergic to small talk."
+goals: ["Find out why you came back"]
+secrets:
+  - text: "She kept the letters you never sent."
+    reveal_when: "you admit you missed her"
+boundaries: ["Won't discuss the fire"]
+tts_provider: inworld          # or: elevenlabs / cartesia — no code change
+voice_id: "Ashley"             # preset, library, or a clone id from Create Character
 greeting: "Oh — you're back. I wondered when you'd show up."
+game_data: {}                  # open, namespaced; a game layer renders this
 memory_namespace: "aria"       # isolates this character's long-term memory
 ```
 
-To A/B Inworld vs Cartesia on the **same** cloned voice: clone the voice on both
-providers (Create Character once per provider, or `tools/clone_voice.py`), then flip
-`tts_provider` between two YAMLs.
+Legacy characters with only a freeform `system_prompt` still work. To A/B two TTS
+providers on the same cloned voice, clone it on both and flip `tts_provider` between
+two YAMLs (or use the **Duplicate** action).
 
 ---
 
 ## Configuration
 
-All settings live in [`orchestrator/config.py`](orchestrator/config.py) and can be
-overridden in `.env`:
+All settings live in [`config.py`](orchestrator/config.py), overridable in `.env`:
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `LLM_MODEL` | `claude-haiku-4-5` | Fast model for snappy dialogue. Swap to `claude-sonnet-4-6` for richer personality at some latency cost. |
-| `DEFAULT_TTS_PROVIDER` | `inworld` | Fallback provider when a character YAML doesn't specify one. |
-| `WHISPER_MODEL` | `base.en` | faster-whisper size; larger = more accurate, slower. |
+| `LLM_MODEL` | `claude-sonnet-4-6` | Richer roleplay; switch to `claude-haiku-4-5` (fast) per session in the UI. |
+| `DEFAULT_TTS_PROVIDER` | `elevenlabs` | Fallback when a character YAML doesn't specify one. |
+| `STT_PROVIDER` | `whisper` | `whisper` (local) or `assemblyai` (cloud, batch + realtime). |
 | `HOST` / `PORT` | `127.0.0.1` / `8000` | |
 
-The audio wire format (PCM s16le, mono, 24 kHz) is fixed in `config.py` so the browser
-playback path is identical regardless of which TTS provider is active.
+The audio wire format (PCM s16le, mono, 24 kHz) is fixed in `config.py` so playback is
+identical regardless of TTS provider.
 
 ---
 
@@ -231,58 +265,33 @@ playback path is identical regardless of which TTS provider is active.
 
 ```
 orchestrator/
-  main.py            FastAPI app: serves the UI, character REST API, voice WebSocket
-  pipeline.py        streaming STT→LLM→sentence-chunk→TTS loop (the overlap) + latency
-  config.py          settings + env loading
+  main.py                FastAPI app: UI, character REST API, voice WebSocket
+  pipeline.py            streaming STT→LLM→sentence-chunk→TTS loop (the overlap) + latency
+  config.py              settings + env loading
   sentence_chunker.py
-  latency.py         per-stage latency instrumentation
-  character_store.py load / list / save character YAML
+  expressivity.py        per-provider performance-tag handling
+  character_store.py     Character model + YAML load/list/save; build_prompt()
+  character_extensions.py  game_data renderer registry (the engine/game seam)
   adapters/
-    base.py          STTAdapter, LLMAdapter, TTSAdapter (the interfaces)
-    stt_whisper.py   faster-whisper + Silero VAD
-    llm_anthropic.py Anthropic Messages API, streaming
-    tts_inworld.py   Inworld streaming TTS + instant clone
-    tts_cartesia.py  Cartesia WebSocket TTS + instant clone
-    _audio.py        shared PCM helper
+    base.py              STTAdapter, LLMAdapter, TTSAdapter (the interfaces)
+    stt_whisper.py / stt_assemblyai.py / stt_assemblyai_stream.py
+    llm_anthropic.py
+    tts_inworld.py / tts_elevenlabs.py / tts_cartesia.py / tts_fallback.py
   memory/
-    short_term.py    rolling buffer of recent turns
-    long_term.py     ChromaDB + sentence-transformers vector recall
-  characters/        character profiles (YAML)
-web/
-  index.html         Conversation + Create Character views
-  app.js             WebSocket client + streaming PCM playback + mic capture
-tools/
-  clone_voice.py     CLI fallback for cloning
+    short_term.py        rolling buffer of recent turns
+    long_term.py         vector recall (ChromaDB today; see issue #1)
+  characters/            character profiles (YAML)
+web/                     Conversation + Create Character UI, streaming PCM playback
+tools/clone_voice.py     CLI fallback for cloning
+docs/architecture-seams.md   the engine/game seam design
 ```
 
-## How it maps to the build order
-
-1. **Text-first vertical slice** — type → `AnthropicLLM` → chunker → `InworldTTS` →
-   audio in the browser, overlap working. (Use the text box in the Conversation view.)
-2. **Voice input** — `WhisperSTT` + Silero VAD + browser mic → full voice-to-voice.
-3. **In-app character creation + cloning** — the Create Character view.
-4. **Memory** — short-term buffer, then ChromaDB long-term recall across sessions.
-5. **Second TTS adapter** — `CartesiaTTS` behind the same interface, selectable by config.
-6. **Polish** — latency readout, this README, graceful API-error/WS handling.
-
 ---
 
-## Troubleshooting
+## Out of scope (for now)
 
-- **"Could not start session" on connect** — a required key is missing or wrong. Check
-  `.env`. The Inworld key must be the portal's Base64 signature, pasted verbatim.
-- **No audio plays** — browsers block audio until a user gesture; the AudioContext is
-  created when you click **Connect**, so connect before expecting sound. Check the OS
-  output device and tab volume.
-- **Mic does nothing** — the page must be `localhost`/`127.0.0.1` (or HTTPS) for
-  `getUserMedia`. Grant the mic permission when prompted.
-- **First start is slow** — Whisper + embedding models download once and cache locally.
-- **Transcription is rough** — bump `WHISPER_MODEL` (e.g. `small.en`) in `.env`.
-
----
-
-## Out of scope for v1
-
-Game integration, authentication, cloud hosting/deployment, packaging to a distributable
-`.exe`. Character creation is intentionally minimal (create, save, select) — profile
-editing, voice re-takes, avatars, and a browsable library come later.
+Authentication, cloud hosting/deployment, and packaging to a distributable binary. The
+**game integration itself** — the rules engine, world simulation, rendering — is a
+separate consumer layer that drives this engine across the seams documented in
+[`docs/architecture-seams.md`](docs/architecture-seams.md); this repo is the character
+runtime and game director, not the game.
