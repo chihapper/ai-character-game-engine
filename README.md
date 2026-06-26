@@ -13,8 +13,8 @@ sessions.
 > lives on as its own portfolio project:
 > [real-time-ai-character-engine](https://github.com/chihapper/real-time-ai-character-engine)
 > (ancestry snapshot: tag **`voice-engine-v1`**, in both repos). The modular streaming
-> pipeline described below is that inheritance — the foundation the game director is
-> built on.
+> pipeline described below is that inheritance — the path the full-loop agent
+> **replaces**. It still runs in `main` today, but it is being retired, not extended.
 >
 > **Architecture & direction:** see [`docs/architecture-seams.md`](docs/architecture-seams.md)
 > for the engine/game seam design, and open issues
@@ -66,12 +66,13 @@ the memory-write API, the world/time channel — are specified in
 
 ---
 
-## The foundation: streaming overlap (inherited)
+## The inherited pipeline: streaming overlap (being retired)
 
-The full-loop agent is the direction; the inherited modular pipeline is what the repo
-runs today, and it's the reason latency is in the budget the game build needs. The
-character starts speaking **~1 second after the input lands** only because the stages
-*overlap* instead of running end-to-end:
+Before the full-loop agent lands, `main` still runs the inherited modular pipeline, so
+it's documented here. It's good engineering — the character starts speaking **~1 second
+after the input lands** because the stages *overlap* instead of running end-to-end — but
+the full-loop session gives cross-turn voice continuity natively, so this path is being
+**replaced**, not extended:
 
 ```
 input (player line / event)
@@ -105,9 +106,12 @@ and memory that feed this pipeline feed the full-loop agent.
 Two families of seam keep the pieces swappable. The full design is in
 [`docs/architecture-seams.md`](docs/architecture-seams.md); in brief:
 
-**Provider seams** — every external vendor sits behind an adapter interface
-([`adapters/base.py`](orchestrator/adapters/base.py)); the pipeline depends only on the
-interface, never a concrete provider:
+**Provider seams (inherited, retiring)** — every external vendor sits behind an adapter
+interface ([`adapters/base.py`](orchestrator/adapters/base.py)); the pipeline depends
+only on the interface, never a concrete provider. Under the full loop the STT and TTS
+seams collapse into the Inworld session and the `LLMAdapter` is superseded by in-session
+Claude routing — so treat this layer as the retiring path. Voice cloning/design is the
+piece that survives (the engine still mints the voice id it hands to the session):
 
 | Role | Interface | Implementations |
 | --- | --- | --- |

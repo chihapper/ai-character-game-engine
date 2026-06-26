@@ -1,61 +1,124 @@
 # Architecture & seams
 
 > Design doc for the **game-director direction**. Status: design (target state),
-> not yet built. Tracks issues
+> not yet fully built. Tracks issues
 > [#1 — memory & retrieval](https://github.com/chihapper/ai-character-game-engine/issues/1)
 > and [#2 — generalize the engine](https://github.com/chihapper/ai-character-game-engine/issues/2).
-> Where the current code already implements a seam, it's marked **DONE**; where this
-> doc proposes a change, it's marked **TARGET**.
+> **DONE** marks a seam the current code already implements; **TARGET** marks a proposed
+> change. **RETIRING** marks inherited voice-engine machinery the full-loop direction
+> replaces — present in `main` today, but not the architecture going forward.
 
 ## What this doc is for
 
-The engine is a **real-time character runtime**: given who a character is and what's
-happening, it produces that character's spoken response, with memory across sessions.
-A separate **game layer** owns the world, the clock, and the rules. This doc defines
-the **seams** between the two — the interfaces that let either side change without
-touching the other — and the one generalization the game-director direction requires:
-making the engine's unit of work *"produce this character's response given game
-context,"* not *"reply to a user's chat message."*
+The engine is a **real-time character runtime + game director**: given who a character
+is and what's happening in the world, it drives a voice agent to make that character
+respond, and it owns the character's memory and state across sessions. A separate
+**game layer** owns the world, the clock, and the rules.
 
-There are two distinct families of seam, and keeping them separate is the whole
-design:
+The committed technical direction is to drive **Inworld's full-loop realtime voice
+agent** — one Inworld session owns STT → LLM → TTS as a single conversational loop,
+which is the only way to get cross-turn voice continuity (validated by the spike;
+see §1.3). This **replaces** the inherited provider-agnostic pipeline (separate
+STT/LLM/TTS adapters) that this repo was seeded with. That inherited pipeline still
+runs in `main` today, but it is being retired, not extended.
 
-1. **Provider seams** (engine ↔ external AI vendors) — STT, LLM, TTS. **Mature.**
-2. **The engine/game seam** (engine ↔ the game that drives it) — context-in,
-   memory-write, world/time, game-specific character depth. **The work ahead.**
+This doc defines the **seams**: the voice-runtime seam (engine ↔ Inworld agent) and,
+the larger body of work, the **engine/game seam** (engine ↔ the game that drives it).
+
+Two families of seam:
+
+1. **The voice-runtime seam** (engine ↔ Inworld Realtime agent) — §1. The engine drives
+   one Inworld session that owns the STT→LLM→TTS loop. **Replaces** the inherited
+   modular adapter pipeline.
+2. **The engine/game seam** (engine ↔ the game) — §2–4. Character depth, context-in,
+   memory-write, world/time. **The bulk of the design work**, and largely independent
+   of which voice runtime delivers the audio.
 
 ---
 
-## 1. Provider seams — the adapter spine (DONE)
+## 1. The voice-runtime seam — driving the Inworld full-loop agent (TARGET)
 
-Everything external sits behind an abstract adapter in
-[`adapters/base.py`](../orchestrator/adapters/base.py). The pipeline depends only on
-the interfaces, never on a concrete vendor.
+### 1.1 The shape
 
-| Role | Interface | Method | Implementations |
-| --- | --- | --- | --- |
-| Speech-to-text | `STTAdapter` | `transcribe(audio) -> str` | Whisper (local), AssemblyAI (batch + realtime stream) |
-| LLM | `LLMAdapter` | `stream_reply(messages, system) -> AsyncIterator[str]` | Anthropic (streaming) |
-| Text-to-speech | `TTSAdapter` | `stream_speech(text, voice_id) -> AsyncIterator[bytes]`, `clone_voice(...)` | Inworld, ElevenLabs, Cartesia, Fallback |
+The voice runtime is **one Inworld Realtime API session**, driven over a WebSocket
+(OpenAI Realtime protocol). That single session is the whole loop — **STT → LLM → TTS**
+— so prosody and timbre carry **across turns** (cross-turn voice continuity), which a
+per-utterance TTS fundamentally cannot give. The engine does not orchestrate STT, the
+LLM, and TTS as separate steps; it **steers one agent**.
 
-Two invariants make these swappable:
+```
+                ┌──────────────────────────────────────────────┐
+   engine ────► │  Inworld Realtime session                    │ ────► 🔊 spoken reply
+   provides:    │    STT → LLM(=Claude) → Realtime TTS-2        │       (voice continuity
+   - instructions    └──────────────────────────────────────────────┘        across turns)
+   - tools
+   - per-request context        ▲                    │
+   - tool-call results          └──── function call ─┘  (game mechanics)
+```
 
-- **Fixed audio wire format.** Every `TTSAdapter` MUST emit PCM s16le, mono,
-  `AUDIO_SAMPLE_RATE` (24 kHz) — see [`config.py:19`](../orchestrator/config.py).
-  The browser playback path is identical regardless of which provider is live.
-- **The pipeline never names a provider.** [`Pipeline`](../orchestrator/pipeline.py)
-  takes `LLMAdapter` and `TTSAdapter` by interface. Provider selection happens once,
-  at session setup, in [`main.py`](../orchestrator/main.py) (`make_tts`, `get_stt`).
+The engine supplies four things to the session and owns everything around it:
 
-Provider choice is **per-character** (a character's YAML `tts_provider` field) and the
-default is config-driven (`default_tts_provider`). `FallbackTTS` composes two adapters
-so a primary outage can't silence a session — itself a demonstration that the seam
-holds (a `TTSAdapter` wrapping `TTSAdapter`s).
+- **Instructions = the character.** The engine compiles a character's structured
+  profile into a system prompt
+  ([`Character.build_prompt()`](../orchestrator/character_store.py)) and sets it as the
+  session's agent instructions — the same character definition drives the voice agent.
+- **The LLM is routed to Claude.** The session's `model` field routes to
+  `anthropic/claude-sonnet-4-6` (the session default is otherwise a Gemini model). The
+  agent reasons as Claude; Inworld owns the speech ends.
+- **Tools = game mechanics.** Function-calling lets the game run logic *through the
+  conversation* — a dice roll, a state change, a quest update — instead of the model
+  narrating outcomes it shouldn't decide. The engine handles the tool call and returns
+  the result into the session.
+- **Per-request context** — the world/time situation (see §3), injected per response.
 
-**This family is settled.** It is the foundation, not the subject of this doc. The
-only forward note: the TTS interface carries inline performance tags (`[whispering]`,
-`[laughs]`) and each adapter renders-or-drops them per its provider profile — keep
-that contract when adding providers.
+### 1.2 What the engine keeps vs. what moves into the session
+
+| Concern | Owner under the full loop |
+| --- | --- |
+| STT, turn-taking, LLM hosting, TTS, voice continuity | **Inworld session** |
+| Character definition → instructions (`build_prompt`) | engine |
+| Tools / mechanics + tool-call handling | engine |
+| Memory (short + long term) | engine |
+| World/time seam + per-request situation | engine |
+| Voice identity (cloned/designed voice id) | engine (set on the session) |
+
+What the engine **gives up** from the inherited voice engine: its own STT adapters,
+its own Anthropic streaming orchestration, the sentence-chunk/TTS overlap pipeline, and
+the expressivity/tag layer — Inworld owns all of that inside the session.
+
+### 1.3 Why we're confident (spike)
+
+A text-only feasibility spike (`realtime_fullloop_spike.py`) confirmed the load-bearing
+assumptions: **steering works** (the session obeys our `build_prompt()` output and stays
+in character), **function-calling works** (a `roll_dice` tool fired with correct args),
+and **the LLM is routable to Claude**. Open follow-ups: the exact Anthropic model id,
+and tool-result *continuation* (returning `function_call_output` produced no follow-on
+text — a call-id format detail). These are integration details, not viability risks.
+
+### 1.4 RETIRING: the inherited modular adapter pipeline
+
+The repo was seeded from the provider-agnostic voice engine, whose spine is the adapter
+interface in [`adapters/base.py`](../orchestrator/adapters/base.py) — `STTAdapter`,
+`LLMAdapter`, `TTSAdapter` — orchestrated by the streaming-overlap
+[`Pipeline`](../orchestrator/pipeline.py). **This is what `main.py` still runs today**,
+and it is genuinely good engineering (sub-second first audio via producer/consumer
+overlap). But under the full-loop direction it is the **path being retired**, not the
+architecture:
+
+- The STT and TTS seams **collapse into the Inworld session** (Inworld owns both ends).
+- The `LLMAdapter` is **superseded** by the in-session Claude routing.
+- The overlap pipeline, sentence chunker, expressivity layer, and per-utterance TTS
+  batching/fades exist to make a *separate* TTS sound continuous — a problem the
+  full-loop session solves natively. They retire with it.
+
+What survives the migration is **not** the pipeline but the things around it that the
+engine still owns: `build_prompt()`, the memory tiers, and the game seam below. One
+piece of the adapter layer also survives in spirit — **voice cloning/design** — since
+the engine still mints the voice id it hands to the session.
+
+> **Note for implementers:** treat new work against `adapters/base.py`'s STT/LLM/TTS
+> interfaces as maintenance of a retiring path, not investment in the architecture. New
+> capability belongs behind the Inworld-session integration and the engine/game seam.
 
 ---
 
@@ -63,9 +126,10 @@ that contract when adding providers.
 
 A [`Character`](../orchestrator/character_store.py) is the unit a player talks to. The
 engine is **game-agnostic about identity**: it compiles a fixed set of *universal,
-dramatic* fields into the system prompt (`build_prompt`) — identity, manner,
-backstory, knowledge, plus game-agnostic mechanics (goals, secrets with reveal
-conditions, boundaries, relationships, disposition).
+dramatic* fields into the instructions (`build_prompt`) — identity, manner, backstory,
+knowledge, plus game-agnostic mechanics (goals, secrets with reveal conditions,
+boundaries, relationships, disposition). This survives the voice-runtime migration
+untouched — it produces the instructions the Inworld session runs on.
 
 Anything a *specific* game needs that the engine shouldn't understand lives in
 **`game_data`** — an open, namespaced bag the engine stores and round-trips verbatim
@@ -73,22 +137,22 @@ but never interprets. This is already the cleanest engine/game seam in the codeb
 
 - A game registers a **renderer** for its namespace via
   [`register_game_extension(namespace, renderer)`](../orchestrator/character_extensions.py).
-- At prompt-compile time, `build_prompt` calls `render_game_data` and appends each
-  registered namespace's section. Unregistered namespaces stay inert (stored, not
-  spoken). A renderer that throws is skipped, never fatal.
+- At compile time, `build_prompt` calls `render_game_data` and appends each registered
+  namespace's section. Unregistered namespaces stay inert (stored, not spoken). A
+  renderer that throws is skipped, never fatal.
 
 ```
 character.game_data = { "dnd5e": { "level": 5, "class": "rogue", ... } }
                               │
         register_game_extension("dnd5e", render_dnd5e)   ← game layer, at startup
                               │
-        build_prompt() ──► appends render_dnd5e(sheet) as a prompt section
+        build_prompt() ──► appends render_dnd5e(sheet) as an instructions section
 ```
 
 **Why it matters here:** this is the template for every other engine/game seam below.
 The engine exposes a *registration point* and a *neutral data channel*; the game
-supplies *meaning* at runtime. We want the context-in and memory seams to follow the
-same shape rather than baking game concepts into the engine.
+supplies *meaning* at runtime. The context-in and memory seams should follow the same
+shape rather than baking game concepts into the engine.
 
 ---
 
@@ -97,8 +161,7 @@ same shape rather than baking game concepts into the engine.
 ### 3.1 The problem: `run_turn(user_text)` is chat-shaped
 
 Today the entry point is
-[`Pipeline.run_turn(user_text, latency, emit_json, emit_audio)`](../orchestrator/pipeline.py),
-called from the WebSocket loop in [`main.py`](../orchestrator/main.py) once per
+[`Pipeline.run_turn(user_text, ...)`](../orchestrator/pipeline.py), called once per
 finalized transcript / typed line. Two assumptions are baked in:
 
 1. **The trigger is a user utterance.** But in a game the trigger is the *game's* to
@@ -109,7 +172,9 @@ finalized transcript / typed line. Two assumptions are baked in:
    what just happened, quest state.
 
 "Turn" is a conversation abstraction. The engine's real unit is: **produce this
-character's response/action given an input + game-supplied context.**
+character's response/action given an input + game-supplied context.** This is true
+regardless of whether the Inworld session or the (retiring) pipeline delivers the audio
+— the generalization is about *what feeds the agent*, not how audio is produced.
 
 ### 3.2 The shape: a `RespondRequest`, not a string
 
@@ -144,18 +209,14 @@ class Situation:
 ```
 
 `run_turn(user_text, ...)` becomes a thin compatibility wrapper that builds a
-`RespondRequest(player_input=user_text)` — so the current voice loop keeps working
-unchanged while the richer path opens up.
+`RespondRequest(player_input=user_text)`, so the current path keeps working while the
+richer one opens up.
 
-The streaming pipeline itself (producer/consumer overlap, sentence chunking, batching,
-fades — section "the one thing that matters" in the README) is **untouched**. This
-generalization is entirely about *what feeds the prompt and the retrieval query*, not
-how audio is produced.
-
-### 3.3 Prompt assembly: three sources, one system prompt
+### 3.3 Context assembly: three sources, one instruction set
 
 A character "understands their world" from three composable sources. Today
 [`_build_system`](../orchestrator/pipeline.py) composes two of them; the third is new.
+These compose into the instruction set the voice agent runs on.
 
 | Source | Lifetime | Owner | Where it enters |
 | --- | --- | --- | --- |
@@ -176,10 +237,10 @@ A character "understands their world" from three composable sources. Today
                     └─────────────────────────────────────────┘
 ```
 
-The key design point: **not everything the game knows needs to live in memory.**
-"It's raining and the guard is watching you" is true *now* and injected per request;
-it should not pollute the durable store. The `Situation` channel is how the game says
-"here's what's true at this instant" without committing it to memory.
+The key point: **not everything the game knows needs to live in memory.** "It's raining
+and the guard is watching you" is true *now* and injected per request; it should not
+pollute the durable store. The `Situation` channel says "here's what's true at this
+instant" without committing it to memory.
 
 ### 3.4 The memory-write API: durable world events (TARGET)
 
@@ -196,18 +257,17 @@ await memory.remember(
 )
 ```
 
-This is the same embed-and-store path as a conversation exchange (see §4), so
-retrieval surfaces game-pushed events exactly like remembered dialogue. **Game-time is
-a tag the game supplies** — the engine stores it opaquely; the game defines the
-calendar. Storing `when` is also what unlocks **recency weighting** in retrieval (§4).
+Same embed-and-store path as a conversation exchange (§4), so retrieval surfaces
+game-pushed events exactly like remembered dialogue. **Game-time is a tag the game
+supplies** — the engine stores it opaquely; the game defines the calendar. Storing
+`when` is also what unlocks **recency weighting** in retrieval (§4).
 
 **Division of ownership, stated plainly:**
 
-- The **engine owns the character's memory** — embedding, storage, retrieval,
-  namespaces.
-- The **game owns the world and the clock** — it decides what happened, when, and
-  what's true right now, and pushes that across the seam two ways: transient
-  `Situation` per request, durable `remember(...)` for events worth recalling.
+- The **engine owns the character's memory** — embedding, storage, retrieval, namespaces.
+- The **game owns the world and the clock** — what happened, when, and what's true now,
+  pushed across the seam two ways: transient `Situation` per request, durable
+  `remember(...)` for events worth recalling.
 
 ---
 
@@ -217,81 +277,87 @@ calendar. Storing `when` is also what unlocks **recency weighting** in retrieval
 
 [`LongTermMemory`](../orchestrator/memory/long_term.py): each completed exchange is
 embedded (local `all-MiniLM-L6-v2`, 384-dim) and stored in a per-character ChromaDB
-collection (one collection per `memory_namespace`). On each request the input is
-embedded the same way and the *k* nearest by cosine distance are injected. Semantic,
-not keyword: *"remember the boat I fixed?"* surfaces the boat exchange even if worded
-differently. [`ShortTermMemory`](../orchestrator/memory/short_term.py) is a separate
-verbatim rolling buffer of the last N turns.
+collection (one per `memory_namespace`). On each request the input is embedded the same
+way and the *k* nearest by cosine distance are injected. Semantic, not keyword.
+[`ShortTermMemory`](../orchestrator/memory/short_term.py) is a separate verbatim rolling
+buffer of recent turns. **Memory is engine-owned and survives the voice-runtime
+migration unchanged.**
 
 ### 4.2 Known limits (to fix)
 
-- **Pure similarity.** No recency or importance weighting — an ancient weak match can
-  edge out a recent strong one. Storing `when` (§3.4) is the prerequisite for recency.
+- **Pure similarity.** No recency or importance weighting — storing `when` (§3.4) is the
+  prerequisite for recency.
 - **Fixed `k=4`, no threshold.** Returns the 4 nearest even when all are weak; should
   support a relevance floor and a query-dependent `k`.
 - **Query = last message only.** Should accept the game's richer `retrieval_query`
-  (location + situation + input), per §3.2.
+  (location + situation + input).
 
 ### 4.3 Store & embeddings — drop the heavy ANN index (TARGET)
 
-The build pain was ChromaDB's native ANN index (hnswlib) on Windows. The key
-realization: **per-character memory is small** (hundreds–low-thousands of exchanges),
-so a heavy approximate index buys nothing.
+The build pain was ChromaDB's native ANN index (hnswlib) on Windows. The realization:
+**per-character memory is small** (hundreds–low-thousands of exchanges), so a heavy
+approximate index buys nothing.
 
 - **Embeddings:** `fastembed` (ONNX, no PyTorch — light, Windows-friendly), or keep
-  `sentence-transformers` (GPU-accelerable). **Avoid cloud embedding APIs** — a
-  network hop per request hurts latency.
-- **Store:** drop Chroma. Either `sqlite-vec` / LanceDB (embedded, pip-only, no native
-  build, ~1–10 ms), or — given the data size — brute-force cosine over a NumPy array
-  (sub-millisecond, zero extra deps).
+  `sentence-transformers`. **Avoid cloud embedding APIs** — a network hop per request
+  hurts latency.
+- **Store:** drop Chroma. `sqlite-vec` / LanceDB (embedded, pip-only, no native build),
+  or — given the size — brute-force cosine over a NumPy array (sub-ms, zero deps).
 - **Recommendation:** `fastembed` + LanceDB (or `sqlite-vec`). Local retrieval is a few
-  ms; the real latency budget is LLM + TTS, so memory stays off the critical path.
+  ms; the latency budget is the voice agent, so memory stays off the critical path.
 
-This is a swap *behind the existing `LongTermMemory` surface* (`add_exchange`,
-`retrieve`, plus the new `remember`). Because the pipeline only touches that surface,
-the store change is a one-module job — the same discipline as the provider seams.
+A swap *behind the existing `LongTermMemory` surface* (`add_exchange`, `retrieve`, plus
+the new `remember`) — a one-module job.
 
 ---
 
 ## 5. Proposed seam surface (summary)
 
-The engine exposes, and the game consumes:
-
 | Seam | Direction | Mechanism | Status |
 | --- | --- | --- | --- |
-| Provider (STT/LLM/TTS) | engine → vendor | `*Adapter` ABCs | DONE |
+| Voice runtime | engine → Inworld agent | one Realtime session; instructions + tools + context | TARGET (spiked) |
+| Modular STT/LLM/TTS adapters | engine → vendors | `*Adapter` ABCs + overlap pipeline | RETIRING (in `main` today) |
+| Voice cloning/design | engine → vendor | TTS-adapter clone/design methods | DONE (survives) |
 | Character depth | game → engine | `register_game_extension` + `game_data` | DONE |
 | Respond trigger + context-in | game → engine | `RespondRequest` / `Situation` | TARGET |
 | Durable world events | game → engine | `memory.remember(ns, fact, when, kind)` | TARGET |
 | Memory store/embeddings | engine internal | behind `LongTermMemory` | TARGET |
 
-Design rule for every new seam: **the engine exposes a registration point and a
-neutral data channel; the game supplies meaning at runtime.** No game concept
-(quests, factions, D&D classes, clocks) is ever named in engine code.
+Design rule for every new seam: **the engine exposes a registration point and a neutral
+data channel; the game supplies meaning at runtime.** No game concept (quests, factions,
+D&D classes, clocks) is ever named in engine code.
 
 ---
 
 ## 6. Build order
 
-1. **Generalize the entry point.** Introduce `RespondRequest` + `Situation`; make
-   `run_turn` a wrapper. Inject the "Current situation" section in `_build_system`.
-   Pipeline internals unchanged. *(Smallest change that unblocks the game-director.)*
-2. **Memory store swap.** Replace Chroma behind `LongTermMemory` with
-   fastembed + LanceDB/sqlite-vec. Add a relevance threshold and query-dependent `k`.
-3. **Memory-write API + `when` tag.** Add `remember(...)`; store the game-time tag;
-   add recency weighting to retrieval now that timestamps exist.
-4. **Richer retrieval query.** Wire `RespondRequest.retrieval_query` (location +
-   situation + input) through `retrieve`.
+Two roughly independent tracks.
 
-Steps 1–2 are independent and can land in either order; 3 depends on 2, and 4 on 1.
+**Track V — voice runtime (replace the inherited pipeline):**
+1. Build the Inworld Realtime session integration: connect, set instructions from
+   `build_prompt()`, route the LLM to Claude, stream audio to the browser.
+2. Wire tools/function-calling end-to-end (close the tool-result continuation gap).
+3. Cut `main.py`'s WebSocket loop over from `Pipeline` to the session; retire the STT/
+   LLM/TTS adapters + overlap pipeline. (Keep voice cloning/design.)
+
+**Track E — engine/game seam (this doc's focus, independent of Track V):**
+1. Generalize the entry point: `RespondRequest` + `Situation`; make `run_turn` a
+   wrapper; inject the "Current situation" section.
+2. Memory store swap (fastembed + LanceDB/sqlite-vec); relevance threshold; query-dependent `k`.
+3. Memory-write API + `when` tag; recency weighting once timestamps exist.
+4. Richer retrieval query (location + situation + input).
+
+Track E lands against whichever runtime is live, because it shapes the instructions and
+memory the agent runs on — not the audio path.
 
 ---
 
 ## 7. Out of scope
 
-- The game itself (rules engine, world simulation, rendering) — that's the *consumer*
-  of these seams, a separate layer/repo.
+- The game itself (rules engine, world simulation, rendering) — the *consumer* of these
+  seams, a separate layer/repo.
 - Multi-character scene orchestration (who speaks when) — a game-layer concern; the
   engine produces *one character's* response per request.
-- Auth, cloud hosting, packaging — unchanged from v1's out-of-scope list.
-- Provider-seam churn — the STT/LLM/TTS adapters are settled; don't reopen them here.
+- Auth, cloud hosting, packaging.
+- Net-new investment in the modular STT/LLM/TTS adapter seams — that path is retiring
+  (§1.4); new capability belongs behind the Inworld session or the engine/game seam.
