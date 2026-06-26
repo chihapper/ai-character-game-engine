@@ -80,22 +80,30 @@ def realize_relevance(
     weights: RelevanceWeights | None = None,
     budget: int = 4,
     now_index: int | None = None,
-) -> list[MemoryRecord]:
+    return_debug: bool = False,
+):
     """Select up to `budget` memories by balancing similarity, recency, importance and
-    diversity (see module docstring). Returns the chosen records, most-relevant first."""
+    diversity (see module docstring). Returns the chosen records, most-relevant first.
+
+    With `return_debug=True`, returns `(selected, breakdown)` where breakdown is a list of
+    per-candidate dicts (sim/recency/importance/base, selection order) — so the relevance
+    realization is observable in a debug panel."""
     if not candidates or budget <= 0:
-        return []
+        return ([], []) if return_debug else []
     w = weights or RelevanceWeights()
     if now_index is None:
         now_index = max(c.index for c in candidates) + 1
 
-    # Normalize similarity (cosine in [-1,1]) into [0,1] so it composes with the others.
-    def base(c: MemoryRecord) -> float:
+    # Per-candidate term breakdown. Similarity (cosine in [-1,1]) normalized into [0,1].
+    parts: dict[int, dict] = {}
+    scored: list[tuple[MemoryRecord, float]] = []
+    for c in candidates:
         sim = (cosine(query_embedding, c.embedding) + 1.0) / 2.0
         rec = _recency(c.index, now_index, w.recency_half_life)
-        return w.similarity * sim + w.recency * rec + w.importance * c.importance
+        base = w.similarity * sim + w.recency * rec + w.importance * c.importance
+        parts[id(c)] = {"similarity": sim, "recency": rec, "importance": c.importance, "base": base}
+        scored.append((c, base))
 
-    scored = [(c, base(c)) for c in candidates]
     max_base = w.similarity + w.recency + w.importance  # for normalizing the floor
     eligible = [(c, b) for c, b in scored if b >= w.floor * max_base]
     if not eligible:
@@ -118,4 +126,19 @@ def realize_relevance(
                 best, best_val = (c, b), val
         selected.append(best[0])
         remaining.remove(best)
-    return selected
+
+    if not return_debug:
+        return selected
+    order = {id(c): i for i, c in enumerate(selected)}
+    breakdown = [
+        {
+            "text": c.text,
+            "kind": c.kind,
+            "when": c.when,
+            **parts[id(c)],
+            "selected": id(c) in order,
+            "rank": order.get(id(c)),
+        }
+        for c, _ in sorted(scored, key=lambda cb: cb[1], reverse=True)
+    ]
+    return selected, breakdown

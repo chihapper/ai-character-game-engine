@@ -24,7 +24,7 @@ from typing import Awaitable, Callable
 from .adapters._audio import fade_pcm
 from .adapters.base import LLMAdapter, TTSAdapter
 from .character_store import Character
-from .config import AUDIO_SAMPLE_RATE
+from .config import AUDIO_SAMPLE_RATE, get_settings
 from .context import ENGINE_DIRECTION, RespondRequest, Situation, build_instructions
 from .expressivity import (
     leading_tone,
@@ -171,7 +171,13 @@ class Pipeline:
         the character with context, not just relay user text."""
         user_text = request.input_text()
         query = request.query()
-        memories = await self.long_term.retrieve(query) if query else []
+        if query and get_settings().memory_debug:
+            # Dev: surface what relevance realization selected (and why) to the browser.
+            data = await self.long_term.retrieve_scored(query)
+            memories = data["selected"]
+            await emit_json({"type": "memories", "query": query, **data})
+        else:
+            memories = await self.long_term.retrieve(query) if query else []
         system = self._build_system(memories, request.situation)
         messages = self.short_term.messages() + [
             {"role": "user", "content": user_text}

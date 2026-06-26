@@ -112,10 +112,16 @@ class Settings(BaseSettings):
     realtime_tts_model: str = "inworld-tts-2"
 
     # --- Long-term memory ---
-    embedding_model: str = "all-MiniLM-L6-v2"  # sentence-transformers, when installed
+    # Embedder preference: fastembed (ONNX, light, Windows-friendly) -> sentence-transformers
+    # -> dependency-free lexical fallback. fastembed is the issue-#1 recommendation.
+    fastembed_model: str = "BAAI/bge-small-en-v1.5"  # preferred semantic embedder
+    embedding_model: str = "all-MiniLM-L6-v2"  # sentence-transformers, if used
     memory_dir: str = str(ROOT_DIR / ".memory")  # per-character JSONL stores
     short_term_turns: int = 8  # rolling buffer: last N exchanges kept verbatim
     long_term_top_k: int = 4  # budget: max memories the relevance scorer injects per turn
+    # Dev: emit the retrieved memories + their RR score breakdown to the browser each turn,
+    # so the relevance realization is observable. Off in production.
+    memory_debug: bool = False
 
     # --- Relevance realization (opponent-processing memory recall) ---
     # Each weight is a pole of the dialectic the scorer balances (see memory/relevance.py):

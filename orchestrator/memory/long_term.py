@@ -47,6 +47,19 @@ def _lexical_embed(text: str) -> list[float]:
 
 def _make_embedder():
     settings = get_settings()
+    # Preferred: fastembed (ONNX, no torch, Windows-friendly — issue #1's pick).
+    try:
+        from fastembed import TextEmbedding
+
+        model = TextEmbedding(model_name=settings.fastembed_model)
+        dim = len(next(iter(model.embed(["probe"]))))
+        logger.info(
+            "Long-term memory embedder: fastembed '%s' (dim=%d)", settings.fastembed_model, dim
+        )
+        return (lambda t: list(next(iter(model.embed([t])))), dim, "fastembed")
+    except Exception:
+        pass
+    # Next: sentence-transformers, if installed.
     try:
         from sentence_transformers import SentenceTransformer
 
@@ -59,8 +72,8 @@ def _make_embedder():
         return (lambda t: model.encode(t).tolist(), dim, "sentence-transformers")
     except Exception:
         logger.warning(
-            "Long-term memory embedder: lexical fallback (install sentence-transformers "
-            "for semantic embeddings; recall still works, just coarser)."
+            "Long-term memory embedder: lexical fallback (install fastembed for semantic "
+            "embeddings; recall still works, just coarser)."
         )
         return (_lexical_embed, _LEXICAL_DIM, "lexical")
 
@@ -182,3 +195,21 @@ class LongTermMemory:
         if not query:
             return []
         return await asyncio.to_thread(self._retrieve_sync, query, k or self._budget)
+
+    def _retrieve_scored_sync(self, query: str, k: int) -> dict:
+        records = self._all()
+        if not records:
+            return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
+        embed, _, name = _get_embedder()
+        selected, breakdown = realize_relevance(
+            embed(query), records, weights=self._weights, budget=k,
+            now_index=len(records), return_debug=True,
+        )
+        return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
+
+    async def retrieve_scored(self, query: str, k: int | None = None) -> dict:
+        """Like `retrieve`, but also returns the per-candidate RR score breakdown (for the
+        dev memory-debug panel). `{selected: [text], scored: [...], embedder: name}`."""
+        if not query:
+            return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
+        return await asyncio.to_thread(self._retrieve_scored_sync, query, k or self._budget)

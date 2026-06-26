@@ -206,6 +206,10 @@ async function connect() {
       `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}`,
   );
   ws.binaryType = "arraybuffer";
+  // Dev: expose the socket so you can drive the engine/game seam from the console, e.g.
+  //   __ws.send(JSON.stringify({type:"remember", fact:"Bri owes the player a favor", importance:0.9}))
+  //   __ws.send(JSON.stringify({type:"text", text:"hey", situation:{location:"the docks", present:["Marco"]}}))
+  window.__ws = ws;
 
   ws.onopen = () => {
     setConnected(true);
@@ -279,6 +283,12 @@ function handleControl(msg) {
       break;
     case "audio_end":
       break;
+    case "memories":
+      renderMemoryDebug(msg);
+      break;
+    case "remembered":
+      setStatus(`Remembered: "${msg.fact}"`);
+      break;
     case "latency":
       renderLatency(msg.marks);
       break;
@@ -297,6 +307,46 @@ function disconnect() {
 
 function setStatus(text) {
   $("conv-status").textContent = text;
+}
+
+// ---- dev: relevance-realization memory debug panel (server emits "memories") ----
+function escapeHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s == null ? "" : String(s);
+  return d.innerHTML;
+}
+
+function renderMemoryDebug(msg) {
+  let panel = document.getElementById("mem-debug");
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "mem-debug";
+    panel.style.cssText =
+      "position:fixed;right:12px;bottom:12px;width:400px;max-height:55vh;overflow:auto;" +
+      "z-index:9999;background:rgba(18,18,22,.96);color:#ddd;font:11px/1.45 ui-monospace,monospace;" +
+      "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45)";
+    document.body.appendChild(panel);
+  }
+  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(0).padStart(3);
+  const rows = (msg.scored || [])
+    .map((m) => {
+      const tag = m.selected ? `★${m.rank}` : "· ";
+      const color = m.selected ? "#9be29b" : "#7a7a82";
+      const flag = m.kind === "world_event" ? " ⚑" : "";
+      const txt = escapeHtml((m.text || "").replace(/\s+/g, " ").slice(0, 78));
+      return (
+        `<div style="color:${color};margin:3px 0;border-top:1px solid #2a2a30;padding-top:3px">` +
+        `${tag} base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}` +
+        `<br><span style="color:#bbb">${txt}</span></div>`
+      );
+    })
+    .join("");
+  panel.innerHTML =
+    `<div style="color:#fff;font-weight:bold;margin-bottom:5px">🧠 relevance realization` +
+    `<span style="float:right;color:#888;font-weight:normal">${escapeHtml(msg.embedder)}</span></div>` +
+    `<div style="color:#9aa;margin-bottom:4px">query: ${escapeHtml((msg.query || "").slice(0, 90))}</div>` +
+    `<div style="color:#888;margin-bottom:4px">★ = injected into the prompt (budget ${(msg.selected || []).length})</div>` +
+    (rows || '<div style="color:#888">(no memories stored yet)</div>');
 }
 
 // ============================================================ mic capture
