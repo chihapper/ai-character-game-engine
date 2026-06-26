@@ -179,6 +179,16 @@ def _inworld_steer(direction: str) -> str:
     return f"[{d}]" if head in _STEER_VERBS else f"[sound {d}]"
 
 
+# Meta-descriptor words that add nothing to a delivery direction but that TTS-2
+# occasionally reads ALOUD instead of consuming (e.g. "[speak in a hushed style]" ->
+# the voice says "style"). Strip them from Inworld directions as a safety net.
+_META_WORD_RE = re.compile(r"\b(?:style|manner|fashion)\b", re.IGNORECASE)
+
+
+def _strip_meta_words(direction: str) -> str:
+    return re.sub(r"\s+", " ", _META_WORD_RE.sub("", direction)).strip(" ,")
+
+
 # Delivery/emotion words the instruction-following voices reliably PERFORM rather than
 # read out loud. This is the safety net: a bracket the model invents (a made-up or
 # misspelled cue like "[Shusing]", a sound-effect like "[explosion]", or an overly
@@ -327,7 +337,7 @@ class InworldProfile(VoiceProfile):
         # direction can't be honored, so drop it (the pipeline splits true shifts).
         if not leading:
             return None
-        d = _strip_articles(tone.strip()).lower()
+        d = _strip_meta_words(_strip_articles(tone.strip()).lower())
         if not d:
             return None
         # An imperative instruction ("lowers his voice", "speak low and slow") is what
@@ -351,9 +361,10 @@ class InworldProfile(VoiceProfile):
             + "- One direction per line, up front. For a SUDDEN shift, drop a new tag right "
             'where it turns: "[calm] For the last time... [yell] GET OUT!" — the engine adds a '
             "tiny beat to carry it.\n"
-            + "- Keep cues clean: don't weld a pause onto a delivery note. Natural sounds go "
-            "inline where they fit: [laughs], [sighs], [breathes], [coughs], [clears throat]. "
-            "Put a stressed word in CAPITALS.\n"
+            + "- Keep cues clean: don't weld a pause onto a delivery note, and use plain "
+            'feeling/verb words — never tack on "style", "manner", or "in a ... way" (the '
+            "voice may read those aloud). Natural sounds go inline where they fit: [laughs], "
+            "[sighs], [breathes], [coughs], [clears throat]. Put a stressed word in CAPITALS.\n"
             + "- TIMING: [pause] or [long pause] on its OWN line holds a beat of silence.\n"
             + _CARRY
             + "Match every direction to the words; never stay flat. No physical actions — you "
