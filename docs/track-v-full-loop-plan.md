@@ -125,6 +125,53 @@ without resetting voice continuity. Verify in the spike.
 **5.7 Latency.** Measure VAD-stop → first-audio under the full loop and compare to the
 current budget; the `LatencyTracker` marks port over.
 
+## 5R. Phase-0 spike results (2026-06-25)
+
+Ran `realtime_audio_spike.py` (gitignored) against the live Inworld Realtime API with a
+SAPI-synthesized 16 kHz clip (the real browser mic format), resampled to 24 kHz.
+
+**GREEN — resolved:**
+- **5.1 Output audio.** Carried as `response.output_audio.delta` (base64 PCM16 in the
+  `.delta` field); session echoes output format **`audio/pcm @ 24000`** — *our 24 kHz
+  wire format exactly*, so Inworld frames forward to the browser with **no resample**.
+- **5.2 Input STT.** Works; verbatim-accurate transcript via
+  `conversation.item.input_audio_transcription.completed`. Input format is
+  **`audio/pcm @ 24000`**, so the browser's 16 kHz mic is resampled **server-side**
+  (cheap; we already do this elsewhere).
+- **5.3 Turn-taking.** `turn_detection: semantic_vad` (`create_response:true`) is
+  default-**on** and races a manual commit → empty response. Setting
+  `audio.input.turn_detection: null` gives deterministic manual turns
+  (append → commit → `response.create`), matching our `mic_start`/`mic_stop`. Use manual
+  for v1; revisit server-VAD/barge-in later.
+- **5.5 Model.** `anthropic/claude-sonnet-4-6` confirmed via `response.done` usage.
+
+**RED — must clear before Phase 1:**
+- **5.7 Latency ≈ 4.0 s to first audio** on a ~72-word reply (manual turns). Well over
+  the ~1 s budget — the top risk. Audio *does* stream (65 deltas), so investigate TTS
+  TTFB, stricter brevity, and whether the voice/model fallback (below) inflates it.
+- **NEW — voice not applied (HIGH).** Sent `audio.output.{voice=<char design id>,
+  model=inworld-tts-2}`; the session silently fell back to **`voice: Olivia,
+  model: inworld-tts-1.5-mini`**. The character's designed voice never loaded — resolve
+  the Realtime voice/model schema (and whether designed voices need publishing or a
+  tts-2-compatible id). Blocks "the character speaks in its own voice."
+- **5.4 — tool CALL works, CONTINUATION broken (BLOCKER).** The model emits `roll_dice`
+  with correct args, but returning `function_call_output` (call_id `toolu_…`) yields an
+  **empty** response — no text, no audio. Reproduces the text-spike TODO; not
+  audio-specific. Blocks game mechanics. Needs Inworld's continuation contract
+  (likely a call-id / output-format detail) — **fetch the docs, don't guess**.
+- **NEW — stage directions get voiced (ARCHITECTURAL).** Even with `ENGINE_DIRECTION`
+  forbidding asterisk actions, the model emitted `*a tray balanced…*` in the spoken
+  transcript. The full loop couples LLM→TTS *inside* Inworld, so our
+  `text_cleanup`/`expressivity` seam — which today strips this **between** LLM and TTS —
+  has nowhere to live. Mitigation is prompt-only (shown unreliable here) unless Inworld
+  TTS ignores the markup in the actual audio (needs a listen to confirm). A real cost of
+  the coupled loop.
+
+**Net:** the loop is viable end-to-end (voice in → Claude → voice out, with tool
+*calls*). Four items gate Phase 1: voice wiring, tool continuation, latency, and
+stage-direction leakage. Next step is **Inworld Realtime API docs** for the voice/model
+and tool-continuation schemas (fetch, don't guess), then a targeted re-spike.
+
 ## 6. Memory integration (engine stays in charge)
 
 Per logical turn, around the session:
