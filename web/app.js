@@ -382,8 +382,9 @@ function renderMemoryDebug(msg) {
       d.appendChild(body);
       d.appendChild(el("div", "color:#9aa",
         `kind: ${m.kind || ""}` + (m.when ? `   ·   when: ${m.when}` : "")));
+      const simRaw = m.similarity_raw != null ? ` (raw ${m.similarity_raw.toFixed(3)})` : "";
       d.appendChild(el("div", "color:#9aa",
-        `base ${m.base.toFixed(3)}  =  sim ${m.similarity.toFixed(3)} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`));
+        `base ${m.base.toFixed(3)}  =  sim ${m.similarity.toFixed(3)}${simRaw} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`));
       d.appendChild(el("div", "color:#9aa",
         m.selected ? `injected · selection rank ${m.rank}` : "not injected (below budget, after diversity)"));
       d.addEventListener("click", (e) => e.stopPropagation()); // let text be selected

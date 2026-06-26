@@ -135,6 +135,10 @@ class Settings(BaseSettings):
     rr_weight_diversity: float = 0.4
     rr_recency_half_life: float = 20.0
     rr_relevance_floor: float = 0.15
+    # Similarity spreading to counter embedding anisotropy (issue #3): "zscore" (gentle,
+    # default), "minmax" (aggressive), or "none". Computed within each turn's candidates.
+    rr_similarity_spread: str = "zscore"
+    rr_spread_gain: float = 1.5  # zscore logistic steepness (higher = wider spread)
 
     # --- Server ---
     host: str = "127.0.0.1"

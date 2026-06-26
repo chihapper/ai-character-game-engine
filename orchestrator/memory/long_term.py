@@ -103,6 +103,8 @@ class LongTermMemory:
             diversity=settings.rr_weight_diversity,
             recency_half_life=settings.rr_recency_half_life,
             floor=settings.rr_relevance_floor,
+            spread=settings.rr_similarity_spread,
+            spread_gain=settings.rr_spread_gain,
         )
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.jsonl"
         self._records: list[MemoryRecord] | None = None  # lazily loaded + cached

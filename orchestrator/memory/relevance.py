@@ -53,6 +53,8 @@ class RelevanceWeights:
     diversity: float = 0.4  # strength of the redundancy penalty during selection
     recency_half_life: float = 20.0  # in "memories newer than this one"
     floor: float = 0.15  # minimum base score to be eligible (relevance threshold)
+    spread: str = "zscore"  # similarity spreading across candidates: "zscore"|"minmax"|"none"
+    spread_gain: float = 1.5  # zscore logistic steepness (higher = wider spread)
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -71,6 +73,35 @@ def _recency(record_index: int, now_index: int, half_life: float) -> float:
     closer to 1). Avoids parsing game-time while still honoring 'recent weighs more'."""
     age = max(0, now_index - record_index)
     return 0.5 ** (age / max(1e-6, half_life))
+
+
+def _spread_similarities(sims: list[float], method: str, gain: float) -> list[float]:
+    """Re-spread per-candidate similarities to counter embedding *anisotropy* — real
+    embedders bunch cosines into a narrow band, so a genuinely-relevant memory barely
+    outscores noise and recency/importance drown it out (issue #3). This is monotonic
+    (preserves ordering) but widens the dynamic range, computed *within the candidate set*.
+
+    - "zscore" (default): standardize across the set, then a logistic squash — gentle,
+      bounded, keeps relative magnitude. The set mean maps to 0.5.
+    - "minmax": stretch to the full [0,1]. Aggressive — can crush low-similarity items
+      (e.g. a high-importance off-topic world event), so prefer zscore unless you want a
+      hard separation.
+    - "none": passthrough (raw normalized cosine).
+
+    Two heavier alternatives live at the EMBEDDER layer if spreading here isn't enough
+    (see `memory/long_term.py`): whitening / mean-centering the stored embeddings (cancels
+    the anisotropy cone at the source), or a less-anisotropic / larger model."""
+    n = len(sims)
+    if n <= 1 or method == "none":
+        return list(sims)
+    if method == "minmax":
+        lo, hi = min(sims), max(sims)
+        return [0.5] * n if hi - lo < 1e-9 else [(s - lo) / (hi - lo) for s in sims]
+    mean = sum(sims) / n
+    sd = (sum((s - mean) ** 2 for s in sims) / n) ** 0.5
+    if sd < 1e-9:
+        return [0.5] * n
+    return [1.0 / (1.0 + math.exp(-gain * (s - mean) / sd)) for s in sims]
 
 
 def realize_relevance(
@@ -94,18 +125,23 @@ def realize_relevance(
     if now_index is None:
         now_index = max(c.index for c in candidates) + 1
 
-    # Per-candidate term breakdown. Similarity (cosine in [-1,1]) normalized into [0,1].
+    # Similarity: cosine (in [-1,1]) normalized to [0,1], then SPREAD across the candidate
+    # set to counter embedding anisotropy (raw cosines bunch in a narrow band, so a
+    # relevant memory barely outscores noise and recency wins — issue #3).
+    raw_sims = [(cosine(query_embedding, c.embedding) + 1.0) / 2.0 for c in candidates]
+    sims = _spread_similarities(raw_sims, w.spread, w.spread_gain)
+
     parts: dict[int, dict] = {}
     scored: list[tuple[MemoryRecord, float]] = []
-    for c in candidates:
-        sim = (cosine(query_embedding, c.embedding) + 1.0) / 2.0
+    for c, sim_raw, sim in zip(candidates, raw_sims, sims):
         rec = _recency(c.index, now_index, w.recency_half_life)
         base = w.similarity * sim + w.recency * rec + w.importance * c.importance
         # Cast to native floats so the debug breakdown is always JSON-serializable
-        # (embeddings may be numpy float32).
+        # (embeddings may be numpy float32). similarity = spread (drives base);
+        # similarity_raw = the original cosine, so the anisotropy is visible.
         parts[id(c)] = {
-            "similarity": float(sim), "recency": float(rec),
-            "importance": float(c.importance), "base": float(base),
+            "similarity": float(sim), "similarity_raw": float(sim_raw),
+            "recency": float(rec), "importance": float(c.importance), "base": float(base),
         }
         scored.append((c, base))
 

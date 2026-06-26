@@ -29,6 +29,16 @@ This is why a `remember()`'d world event (imp 90) can sit **above** a more seman
 similar piece of chat (higher sim, imp 50): importance + recency outweigh raw similarity.
 That's the point — relevance isn't just "what matches."
 
+**Similarity spreading (anisotropy correction).** Real embedders bunch cosine scores into
+a narrow band (e.g. 0.72–0.88), so a relevant memory barely outscores noise and recency
+drowns it out ([issue #3](https://github.com/chihapper/ai-character-game-engine/issues/3)).
+So `sim` is **re-spread within each turn's candidates** before it feeds `base` — the
+default `zscore` standardizes the set and squashes it logistically (on-topic memories rise
+toward ~1.0, off-topic fall), `minmax` stretches to the full range (aggressive), `none`
+disables it. The expanded panel shows both the spread `sim` and the `(raw …)` cosine, so
+you can see the correction. Heavier alternatives, if this isn't enough, live at the
+embedder layer: whitening/mean-centering the embeddings, or a less-anisotropic model.
+
 ## How rows get the ★ (selection)
 
 1. **Floor:** memories below `RR_RELEVANCE_FLOOR` are dropped — weak matches are *not*
@@ -64,6 +74,8 @@ Set in `.env` and restart:
 | `RR_WEIGHT_DIVERSITY` | 0.4 | strength of the near-duplicate penalty |
 | `RR_RECENCY_HALF_LIFE` | 20 | memories-newer before recency halves |
 | `RR_RELEVANCE_FLOOR` | 0.15 | min normalized base to be eligible |
+| `RR_SIMILARITY_SPREAD` | zscore | anisotropy correction: `zscore` / `minmax` / `none` |
+| `RR_SPREAD_GAIN` | 1.5 | zscore steepness — higher = wider spread |
 | `LONG_TERM_TOP_K` | 4 | budget: max memories injected per turn |
 
 E.g. raise `RR_WEIGHT_IMPORTANCE` so world events dominate; raise `RR_WEIGHT_DIVERSITY`
