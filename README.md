@@ -157,15 +157,16 @@ native build. See [`docs/relevance-scoring.md`](docs/relevance-scoring.md) and i
 - **Python 3.10+**
 - A microphone and a modern browser (Chrome/Edge/Firefox/Safari)
 - API keys (only for the providers you actually use):
-  - **Anthropic** — the LLM. <https://console.anthropic.com/>
-  - **Inworld** — default TTS, voice cloning, and the full-loop realtime agent. From
-    the [Inworld portal](https://platform.inworld.ai/): API Keys → copy the **"Basic
-    (Base64)" signature** and paste it verbatim (already base64-encoded — do not
-    re-encode it).
-  - **ElevenLabs / Cartesia** *(optional)* — alternative TTS providers behind the same
-    adapter, for A/B on the same cloned voice.
-  - **AssemblyAI** *(optional)* — cloud STT (batch + realtime streaming), an
-    alternative to local Whisper.
+  - **Anthropic** — the LLM (the character's brain; also drives character drafting and
+    memory-salience scoring). <https://console.anthropic.com/>
+  - **Inworld** — TTS + voice cloning, and — in the full-loop runtime — the realtime
+    agent that runs STT + LLM + TTS in one session. From the
+    [Inworld portal](https://platform.inworld.ai/): API Keys → copy the **"Basic
+    (Base64)" signature** verbatim (already base64-encoded — do not re-encode it).
+  - **ElevenLabs / Cartesia** *(optional)* — alternative TTS providers behind the same adapter.
+  - **AssemblyAI** *(optional)* — cloud STT for **voice input on the inherited modular
+    runtime only** (the full loop uses Inworld's built-in STT; local **Whisper** is the
+    offline alternative). Typed input needs no STT at all.
 
 ---
 
@@ -188,18 +189,18 @@ Open **<http://127.0.0.1:8000>**.
 
 The dependencies are split so the app always boots:
 
-- **`requirements.txt`** (core, pure-Python) — the full text → LLM → sentence-chunk →
-  TTS streaming loop, character creation, and voice cloning. Installs cleanly
-  everywhere.
-- **`requirements-optional.txt`** — **voice input** (Whisper STT) and **cross-session
-  memory** (ChromaDB). These pull heavier, partly-compiled packages; the launch script
-  installs them **best-effort** — if they fail to build, the app still runs with text
-  input + TTS, voice input reports a clear error, and long-term memory is silently
-  disabled. *(The store swap in issue [#1](https://github.com/chihapper/ai-character-game-engine/issues/1)
-  is partly about removing this native-build pain.)*
+- **`requirements.txt`** (core) — the full text → LLM → TTS loop, character creation,
+  voice cloning, **and cross-session memory** (relevance-realization recall works out of
+  the box via a dependency-free lexical embedder). Installs cleanly everywhere.
+- **`requirements-optional.txt`** — **fastembed** (ONNX semantic embeddings — sharper
+  recall than the lexical fallback) and **Whisper** (local STT for voice input on the
+  modular runtime). Installed **best-effort**; if they're absent the app still runs —
+  memory just uses the coarser lexical embedder and local voice input is unavailable
+  (typed input and the Inworld full loop are unaffected). No ChromaDB, no native ANN
+  build (dropped per issue [#1](https://github.com/chihapper/ai-character-game-engine/issues/1)).
 
-> With the optional extras installed, the first run downloads the local Whisper and
-> embedding models (a few hundred MB) and is slower to start. Subsequent runs are fast.
+> fastembed downloads a small ONNX model on first use (and Whisper its model, if
+> installed). Subsequent runs are fast.
 
 ### Manual run
 
@@ -265,13 +266,18 @@ All settings live in [`config.py`](orchestrator/config.py), overridable in `.env
 
 | Setting | Default | Notes |
 | --- | --- | --- |
+| `VOICE_RUNTIME` | `pipeline` | `pipeline` = inherited modular STT→LLM→TTS (current default); `inworld_fullloop` = drive Inworld's realtime agent. |
 | `LLM_MODEL` | `claude-sonnet-4-6` | Richer roleplay; switch to `claude-haiku-4-5` (fast) per session in the UI. |
 | `DEFAULT_TTS_PROVIDER` | `elevenlabs` | Fallback when a character YAML doesn't specify one. |
-| `STT_PROVIDER` | `whisper` | `whisper` (local) or `assemblyai` (cloud, batch + realtime). |
+| `STT_PROVIDER` | `whisper` | Modular-runtime voice input: `whisper` (local) or `assemblyai` (cloud). |
+| `SALIENCE_MODEL` | `claude-sonnet-4-6` | Rates memory importance per character at write time (drop to haiku for cost). |
+| `MEMORY_DEBUG` | `false` | Stream the relevance-realization panel to the browser (dev). |
 | `HOST` / `PORT` | `127.0.0.1` / `8000` | |
 
 The audio wire format (PCM s16le, mono, 24 kHz) is fixed in `config.py` so playback is
-identical regardless of TTS provider.
+identical regardless of TTS provider. The relevance-realization memory weights
+(`RR_WEIGHT_*`, `RR_SIMILARITY_SPREAD`, …) live in `config.py` too — see
+[`docs/relevance-scoring.md`](docs/relevance-scoring.md).
 
 ---
 

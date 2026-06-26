@@ -24,22 +24,36 @@ logger = logging.getLogger(__name__)
 NEUTRAL = 0.5  # fallback when scoring is off or fails
 
 _SYSTEM = (
-    "You rate how memorable a single moment is to a specific fictional character — how "
-    "much THEY, given their personality and what they care about, would hold onto it. "
-    "Not how dramatic it is in the abstract; how much it matters to THEM. A warm, caring "
-    "character finds a lot salient; a cold, self-absorbed, or guarded one finds little "
-    "salient unless it touches their own goals, fears, or interests. Reply with ONLY a "
-    "number from 0.00 (instantly forgotten) to 1.00 (deeply significant, never forgotten)."
+    "You output a single number, 0.00–1.00: how reliably a specific fictional character "
+    "would RECALL this moment later. This is about retrievable memory, not drama.\n"
+    "Two things make a moment recallable — take the HIGHER:\n"
+    "1) EMOTIONAL/PERSONAL weight — it touches their goals, values, relationships, or "
+    "fears. A warm character: more; a cold or guarded one: less.\n"
+    "2) ROLE RELEVANCE — assume the character is COMPETENT at their job and expertise "
+    "unless the profile clearly says otherwise. A competent professional reliably recalls "
+    "facts in their domain EVEN WHEN ROUTINE — routine-ness does NOT make something "
+    "forgettable for them. A bartender recalls a patron's drink order; a guard a face; a "
+    "merchant a deal; a detective a detail.\n"
+    "Calibration: pure filler / greetings → 0.0–0.1. Pleasant but inconsequential chatter "
+    "→ 0.1–0.25. A fact a competent character would track in their role (a customer's "
+    "order, a client's request, a detail in their expertise) → 0.6–0.8. A personally "
+    "pivotal moment → 0.8–1.0. Do NOT rate a role-relevant fact low just because it is "
+    "ordinary. Reply with ONLY the number."
 )
 
 
 def _character_summary(character: Character) -> str:
-    """A compact 'who they are and what they care about' for the rater (not the full prompt)."""
+    """A compact 'who they are, their role, and what they care about' for the rater — must
+    include role + expertise so it can judge role/competence salience (not the full prompt)."""
     bits: list[str] = [f"Name: {character.name}"]
     if character.concept:
         bits.append(character.concept)
+    if character.role:
+        bits.append(f"Role / job: {character.role}")
     if character.temperament:
         bits.append(f"Temperament: {character.temperament}")
+    if character.knows:
+        bits.append("Competent in / knows: " + "; ".join(character.knows))
     if character.goals:
         bits.append("Cares about / wants: " + "; ".join(character.goals))
     if character.disposition:
@@ -72,9 +86,9 @@ async def score_salience_text(
     prompt = (
         f"CHARACTER:\n{_character_summary(character)}\n\n"
         f"MOMENT:\n{moment}\n\n"
-        f"How salient is this moment to {character.name}? Consider whether it touches "
-        f"their goals, values, relationships, or fears, and whether they'd dwell on it or "
-        f"forget it by tomorrow. Reply with only a number from 0.00 to 1.00."
+        f"How reliably would {character.name} RECALL this later? Weigh both personal/"
+        f"emotional weight and role relevance — a competent professional recalls facts in "
+        f"their domain even when routine. Reply with only a number from 0.00 to 1.00."
     )
     try:
         llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=16)
