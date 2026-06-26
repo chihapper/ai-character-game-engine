@@ -623,7 +623,15 @@ async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
         await emit_json({"type": "audio_end"})
 
 
-async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) -> None:
+# Allow-list for the per-session full-loop LLM override (?realtime_llm=…) — so only vetted
+# Inworld-routed ids reach the API. The Track V latency A/B candidates plus the prior default.
+ALLOWED_REALTIME_LLMS = {
+    "anthropic/claude-haiku-4-5", "anthropic/claude-sonnet-4-6",
+    "openai/gpt-4o", "openai/gpt-4o-mini", "openai/gpt-4.1-mini", "openai/gpt-4.1-nano",
+}
+
+
+async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character, llm_override=None) -> None:
     """Drive one Inworld full-loop session, mapping its events onto the browser protocol.
 
     Per turn (§5.6): before the model responds, retrieve memories against the arena query
@@ -632,10 +640,13 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
     (on commit, before respond); typed turns retrieve immediately. Memory writes (salience-
     scored) happen in the background, flushed at the next turn."""
     settings = get_settings()
+    active_model = llm_override or settings.realtime_llm_model
     session = InworldSession(
         instructions=build_instructions(character, performance_provider="inworld"),
-        voice_id=character.voice_id, tools=_REALTIME_TOOLS,
+        voice_id=character.voice_id, tools=_REALTIME_TOOLS, llm_model=active_model,
     )
+    if llm_override:
+        logger.info("Full-loop LLM override for this session: %s", active_model)
     engine_cfg = (character.game_data or {}).get("engine", {})
     long_term = LongTermMemory(
         character.memory_namespace, readonly=engine_cfg.get("memory_readonly", False)
@@ -646,7 +657,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character) 
         {
             "type": "ready",
             "character": character.public_dict(),
-            "model": settings.realtime_llm_model,
+            "model": active_model,
             "streaming": True,
         }
     )
@@ -814,8 +825,11 @@ async def voice_ws(websocket: WebSocket) -> None:
             await emit_json({"type": "error", "message": f"Could not start session: {exc}"})
             await websocket.close()
             return
+        # Per-session LLM override for A/B testing (?realtime_llm=…), allow-listed.
+        rt_llm = websocket.query_params.get("realtime_llm", "")
+        rt_override = rt_llm if rt_llm in ALLOWED_REALTIME_LLMS else None
         try:
-            await run_full_loop(websocket, emit_json, emit_audio, character)
+            await run_full_loop(websocket, emit_json, emit_audio, character, llm_override=rt_override)
         except WebSocketDisconnect:
             pass
         except Exception:

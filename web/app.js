@@ -206,9 +206,13 @@ async function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const model = $("model").value;
   const profile = $("profile").value;
+  // A/B: full-loop LLM override from the page URL (?realtime_llm=openai/gpt-4o), forwarded
+  // to the session so Bri/Corvin can be tested across models without a server restart.
+  const rtLlm = new URLSearchParams(location.search).get("realtime_llm") || "";
   ws = new WebSocket(
     `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}` +
-      `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}`,
+      `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}` +
+      (rtLlm ? `&realtime_llm=${encodeURIComponent(rtLlm)}` : ``),
   );
   ws.binaryType = "arraybuffer";
   // Dev: expose the socket so you can drive the engine/game seam from the console, e.g.
