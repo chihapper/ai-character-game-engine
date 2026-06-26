@@ -316,37 +316,89 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
+// Which rows the user expanded (keyed by position), kept across re-renders.
+const memDebugExpanded = new Set();
+
 function renderMemoryDebug(msg) {
   let panel = document.getElementById("mem-debug");
   if (!panel) {
     panel = document.createElement("div");
     panel.id = "mem-debug";
     panel.style.cssText =
-      "position:fixed;right:12px;bottom:12px;width:400px;max-height:55vh;overflow:auto;" +
-      "z-index:9999;background:rgba(18,18,22,.96);color:#ddd;font:11px/1.45 ui-monospace,monospace;" +
-      "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45)";
+      "position:fixed;right:12px;bottom:12px;width:460px;max-height:75vh;overflow:auto;" +
+      "z-index:9999;background:rgba(18,18,22,.97);color:#ddd;font:11px/1.5 ui-monospace,monospace;" +
+      "border:1px solid #444;border-radius:8px;padding:10px;box-shadow:0 4px 18px rgba(0,0,0,.45);" +
+      "resize:both;min-width:280px;min-height:120px";
     document.body.appendChild(panel);
   }
-  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(0).padStart(3);
-  const rows = (msg.scored || [])
-    .map((m) => {
-      const tag = m.selected ? `★${m.rank}` : "· ";
-      const color = m.selected ? "#9be29b" : "#7a7a82";
-      const flag = m.kind === "world_event" ? " ⚑" : "";
-      const txt = escapeHtml((m.text || "").replace(/\s+/g, " ").slice(0, 78));
-      return (
-        `<div style="color:${color};margin:3px 0;border-top:1px solid #2a2a30;padding-top:3px">` +
-        `${tag} base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}` +
-        `<br><span style="color:#bbb">${txt}</span></div>`
+  panel.replaceChildren();
+  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(0);
+  const el = (tag, css, txt) => {
+    const n = document.createElement(tag);
+    if (css) n.style.cssText = css;
+    if (txt != null) n.textContent = txt;
+    return n;
+  };
+
+  const header = el("div", "color:#fff;font-weight:bold;margin-bottom:5px");
+  header.innerHTML =
+    `🧠 relevance realization` +
+    `<span style="float:right;color:#888;font-weight:normal">${escapeHtml(msg.embedder)}</span>`;
+  panel.appendChild(header);
+  panel.appendChild(el("div", "color:#9aa;margin-bottom:3px;word-break:break-word", "query: " + (msg.query || "")));
+  panel.appendChild(
+    el("div", "color:#777;margin-bottom:6px",
+      `★ injected (budget ${(msg.selected || []).length}) · click a row for full detail`)
+  );
+
+  (msg.scored || []).forEach((m, i) => {
+    const key = "row" + i;
+    const expanded = memDebugExpanded.has(key);
+    const color = m.selected ? "#9be29b" : "#8a8a92";
+    const tag = m.selected ? `★${m.rank}` : "·";
+    const flag = m.kind === "world_event" ? " ⚑" : "";
+
+    const row = el("div", "border-top:1px solid #2a2a30;padding:4px 0");
+    const head = el("div", `color:${color};cursor:pointer`);
+    head.textContent =
+      `${expanded ? "▾" : "▸"} ${tag}  base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}`;
+    row.appendChild(head);
+
+    if (!expanded) {
+      const oneLine = (m.text || "").replace(/\s+/g, " ");
+      row.appendChild(
+        el("div", "color:#bbb;margin-left:15px;cursor:pointer",
+          oneLine.length > 88 ? oneLine.slice(0, 88) + "…" : oneLine)
       );
-    })
-    .join("");
-  panel.innerHTML =
-    `<div style="color:#fff;font-weight:bold;margin-bottom:5px">🧠 relevance realization` +
-    `<span style="float:right;color:#888;font-weight:normal">${escapeHtml(msg.embedder)}</span></div>` +
-    `<div style="color:#9aa;margin-bottom:4px">query: ${escapeHtml((msg.query || "").slice(0, 90))}</div>` +
-    `<div style="color:#888;margin-bottom:4px">★ = injected into the prompt (budget ${(msg.selected || []).length})</div>` +
-    (rows || '<div style="color:#888">(no memories stored yet)</div>');
+    } else {
+      const d = el("div", "margin-left:15px;margin-top:3px");
+      const body = el("div",
+        "color:#e2e2e8;background:#23232a;padding:6px;border-radius:4px;margin:2px 0;white-space:pre-wrap;word-break:break-word");
+      body.textContent = m.text || "";
+      d.appendChild(body);
+      d.appendChild(el("div", "color:#9aa",
+        `kind: ${m.kind || ""}` + (m.when ? `   ·   when: ${m.when}` : "")));
+      d.appendChild(el("div", "color:#9aa",
+        `base ${m.base.toFixed(3)}  =  sim ${m.similarity.toFixed(3)} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`));
+      d.appendChild(el("div", "color:#9aa",
+        m.selected ? `injected · selection rank ${m.rank}` : "not injected (below budget, after diversity)"));
+      d.addEventListener("click", (e) => e.stopPropagation()); // let text be selected
+      row.appendChild(d);
+    }
+
+    const toggle = () => {
+      if (memDebugExpanded.has(key)) memDebugExpanded.delete(key);
+      else memDebugExpanded.add(key);
+      renderMemoryDebug(msg);
+    };
+    head.addEventListener("click", toggle);
+    if (!expanded) row.lastChild.addEventListener("click", toggle);
+    panel.appendChild(row);
+  });
+
+  if (!(msg.scored || []).length) {
+    panel.appendChild(el("div", "color:#888", "(no memories stored yet)"));
+  }
 }
 
 // ============================================================ mic capture
