@@ -186,7 +186,12 @@ regardless of whether the Inworld session or the (retiring) pipeline delivers th
 
 ### 3.2 The shape: a `RespondRequest`, not a string
 
-**TARGET.** Generalize the entry point to accept a structured request. Sketch:
+**DONE (2026-06-26)** — implemented in `orchestrator/context.py` (`RespondRequest`,
+`Situation`, `render_situation`, `build_instructions`). `Pipeline.run_turn` is now a thin
+wrapper over `Pipeline.respond(RespondRequest)`; the modular path injects the per-request
+"Current situation" section, and the typed `/ws` turn accepts an optional `situation`
+payload. (Per-turn `Situation` injection in the full loop is the deferred §5.6 item.) The
+original sketch:
 
 ```python
 @dataclass
@@ -327,7 +332,7 @@ the new `remember`) — a one-module job.
 | Modular STT/LLM/TTS adapters | engine → vendors | `*Adapter` ABCs + overlap pipeline | RETIRING (in `main` today) |
 | Voice cloning/design | engine → vendor | TTS-adapter clone/design methods | DONE (survives) |
 | Character depth | game → engine | `register_game_extension` + `game_data` | DONE |
-| Respond trigger + context-in | game → engine | `RespondRequest` / `Situation` | TARGET |
+| Respond trigger + context-in | game → engine | `RespondRequest` / `Situation` | DONE (full-loop per-turn = §5.6) |
 | Durable world events | game → engine | `memory.remember(ns, fact, when, kind)` | TARGET |
 | Memory store/embeddings | engine internal | behind `LongTermMemory` | TARGET |
 
@@ -349,8 +354,9 @@ Two roughly independent tracks.
    LLM/TTS adapters + overlap pipeline. (Keep voice cloning/design.)
 
 **Track E — engine/game seam (this doc's focus, independent of Track V):**
-1. Generalize the entry point: `RespondRequest` + `Situation`; make `run_turn` a
-   wrapper; inject the "Current situation" section.
+1. ✅ **DONE (2026-06-26)** — Generalize the entry point: `RespondRequest` + `Situation`
+   (`context.py`); `run_turn` is a wrapper over `respond`; the "Current situation" section
+   is injected per turn (modular path; full-loop per-turn injection = §5.6).
 2. Memory store swap (fastembed + LanceDB/sqlite-vec); relevance threshold; query-dependent `k`.
 3. Memory-write API + `when` tag; recency weighting once timestamps exist.
 4. Richer retrieval query (location + situation + input).
