@@ -1,12 +1,8 @@
-# Optional extras — enable voice input and cross-session memory.
-# These pull heavier, partly-compiled dependencies (PyTorch, CTranslate2,
-# chroma-hnswlib). On Windows / newer Python you may need C++ build tools
-# (Visual Studio Build Tools) for chroma-hnswlib to compile, or a Python version
-# with prebuilt wheels available (3.11 / 3.12 are the safest).
+# Optional extras — enable voice input and SEMANTIC long-term memory.
 #
-# The app runs without these — voice input then reports a clear error and
-# long-term memory is silently disabled — so install them only when you want the
-# full experience.
+# The app runs without these: voice input reports a clear error, and long-term
+# memory still works via a dependency-free lexical fallback (word-overlap recall) —
+# install fastembed for true semantic recall.
 
 # --- Speech-to-text (voice input). Bundles Silero VAD via vad_filter=True. ---
 faster-whisper==1.1.1
@@ -14,6 +10,10 @@ faster-whisper==1.1.1
 # pulls it in transitively — declare it explicitly so STT imports cleanly.
 requests>=2.31
 
-# --- Long-term vector memory (cross-session recall) ---
-chromadb==0.6.3
-sentence-transformers==3.3.1
+# --- Semantic embeddings for long-term memory recall ---
+# fastembed (ONNX, no PyTorch) is the preferred embedder: light, Windows-friendly,
+# prebuilt wheels. The engine no longer uses ChromaDB (per-character JSONL store +
+# brute-force relevance scoring instead), so no native ANN index to compile.
+fastembed>=0.3
+# sentence-transformers is an alternative embedder (heavier; pulls torch). Optional.
+# sentence-transformers==3.3.1
