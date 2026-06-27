@@ -369,9 +369,12 @@ class InworldProfile(VoiceProfile):
             'voice]"); for a BIG beat go BIG ("[practically shouting, bursting with '
             'excitement]"). You can stack a sound + a delivery at the start: '
             '"[giggling][breathless and thrilled] You know I\'m in!".\n'
-            + "- ONE direction per sentence, at the very START — the voice applies a tag where "
-            "a sentence begins, NOT mid-sentence. For a sudden shift, break to a NEW sentence "
-            'and lead it with the new tag: "[calm] For the last time. [snap] GET OUT."\n'
+            + "- Re-tag at EVERY shift, even mid-reply — every question, exclamation, or change "
+            "of feeling STARTS its sentence with a fresh tag (tts-2 applies a tag only at a "
+            "sentence start, never mid-sentence). Do NOT front-load one tag and let the rest "
+            "ride flat — that is the #1 thing that makes it sound robotic. Copy this density:\n"
+            '    "[giggling, breathless] You actually came back! [softer, curious] So... did '
+            'you miss me, or just the drinks? [teasing, leaning close] Be honest now."\n'
             + "- Keep cues clean: don't weld a pause onto a delivery note, and use plain "
             'feeling/verb words — never tack on "style", "manner", or "in a ... way" (the '
             "voice may read those aloud). Natural sounds go inline where they fit: [laughs], "
