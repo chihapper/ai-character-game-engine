@@ -293,8 +293,10 @@ function handleControl(msg) {
       break;
     case "audio_start":
       resetPlaybackClock();
+      isPlaying = true;
       break;
     case "audio_end":
+      isPlaying = false;
       break;
     case "memories":
       renderMemoryDebug(msg);
@@ -543,6 +545,7 @@ let mediaRecorder = null;
 let recordedChunks = [];
 
 // Streaming capture state
+let isPlaying = false; // true while the character's audio is streaming (for barge-in)
 let micStream = null;
 let captureCtx = null;
 let captureNode = null;
@@ -598,6 +601,10 @@ async function toggleStreamingMic() {
   capOutBuf = new Float32Array(0);
   capActive = true;
   captureNode.port.onmessage = (e) => onMicChunk(e.data);
+  // Barge-in: silence any audio still playing the instant the player starts talking, so
+  // the character doesn't talk over them while the server cancels its response.
+  if (isPlaying) resetPlaybackClock();
+  isPlaying = false;
   ws.send(JSON.stringify({ type: "mic_start" }));
   setTalkState("listening");
   setStatus("Listening… speak, then pause.");

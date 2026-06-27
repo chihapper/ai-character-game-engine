@@ -194,6 +194,13 @@ class InworldSession:
         """Ask the model to generate its turn (after the user input + any re-steer)."""
         await self._send({"type": "response.create"})
 
+    async def interrupt(self) -> None:
+        """Barge-in: stop the in-progress response and drop any audio the server has queued
+        but not yet streamed. Send when the player starts talking over the character. The
+        cancelled response surfaces as response.done status=cancelled, which events() ignores."""
+        await self._send({"type": "response.cancel"})
+        await self._send({"type": "output_audio_buffer.clear"})
+
     # Convenience wrappers (input + immediate response, no interposed retrieval).
     async def commit_audio_turn(self) -> None:
         await self.commit_audio()

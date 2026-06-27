@@ -675,7 +675,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
     await _speak_greeting_fullloop(character, emit_json, emit_audio)
 
     turn = {"user": None, "reply": [], "situation": None, "audio_open": False,
-            "ctx_id": None, "seq": 0}
+            "ctx_id": None, "seq": 0, "responding": False}
     writes: set = set()  # in-flight background memory-write tasks (GC guard)
 
     def flush_turn() -> None:
@@ -729,6 +729,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             await session.add_context(turn_context, item_id=ctx_id)
             turn["ctx_id"] = ctx_id
         await session.respond()
+        turn["responding"] = True
         logger.info("RR-latency: build+retrieve=%.0fms (mem=%d) before respond",
                     (_t_ret - _t0) * 1000, len(memories))
 
@@ -748,6 +749,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             elif kind == "assistant_delta":
                 await emit_json({"type": "assistant_delta", "text": data})
             elif kind == "assistant_done":
+                turn["responding"] = False
                 if data:
                     turn["reply"].append(data)
                 if turn["audio_open"]:
@@ -773,7 +775,18 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                 except json.JSONDecodeError:
                     continue
                 mtype = data.get("type")
-                if mtype == "mic_stop":
+                if mtype == "mic_start":
+                    # Barge-in: the player started talking. If the character is mid-reply,
+                    # cut it off (cancel the response + drop queued output) so they can
+                    # interrupt naturally; the browser already stopped local playback.
+                    if turn["responding"]:
+                        await session.interrupt()
+                        turn["responding"] = False
+                        if turn["audio_open"]:
+                            await emit_json({"type": "audio_end"})
+                            turn["audio_open"] = False
+                        logger.info("Barge-in: interrupted in-progress response")
+                elif mtype == "mic_stop":
                     # Commit only; the transcript event drives retrieve+respond (pump).
                     await session.commit_audio()
                 elif mtype == "text":
