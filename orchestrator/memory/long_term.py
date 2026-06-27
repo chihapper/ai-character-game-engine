@@ -102,9 +102,12 @@ def _safe_name(namespace: str) -> str:
 
 
 class LongTermMemory:
-    def __init__(self, namespace: str, *, readonly: bool = False) -> None:
+    def __init__(self, namespace: str, *, readonly: bool = False, speaker: str = "Me") -> None:
         settings = get_settings()
         self._namespace = namespace
+        # How the character's own past lines are labelled in stored exchange text (recalled
+        # into the prompt). First-person "Me" by default — never the raw namespace slug.
+        self._speaker = speaker or "Me"
         self.readonly = readonly  # if True, writes are no-ops (recall still works)
         self._budget = settings.long_term_top_k
         self._weights = RelevanceWeights(
@@ -226,7 +229,7 @@ class LongTermMemory:
     ) -> None:
         if not user_text or not assistant_text:
             return
-        document = f"User: {user_text}\n{self._namespace}: {assistant_text}"
+        document = f"User: {user_text}\n{self._speaker}: {assistant_text}"
         await asyncio.to_thread(self._add_sync, document, importance, "exchange", when, t)
 
     async def remember(
