@@ -117,7 +117,7 @@ class LongTermMemory:
             spread=settings.rr_similarity_spread,
             spread_gain=settings.rr_spread_gain,
             decay_half_life=settings.rr_decay_half_life,
-            decay_importance_gain=settings.rr_decay_importance_gain,
+            decay_importance_scale=settings.rr_decay_importance_scale,
             decay_reinforce_gain=settings.rr_decay_reinforce_gain,
         )
         self._dedup_threshold = settings.memory_dedup_threshold

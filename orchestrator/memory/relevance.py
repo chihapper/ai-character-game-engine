@@ -66,9 +66,11 @@ class RelevanceWeights:
     # STRENGTH that fades over game-time Δt with a half-life extended by salience and
     # reinforcement — so a one-off fades while an important/repeated memory persists. Units
     # are the GAME's; tune decay_half_life to the game's time scale (engine stays agnostic).
-    decay_half_life: float = 30.0       # base half-life in the game's time units
-    decay_importance_gain: float = 4.0  # importance=1 multiplies the half-life by (1+gain)
-    decay_reinforce_gain: float = 1.0   # n reinforcements multiply the half-life by (1+gain*n)
+    decay_half_life: float = 30.0        # base half-life (importance 0) in the game's time units
+    decay_importance_scale: float = 50.0  # half-life *= scale**importance — SUPER-linear, so a
+                                          # truly significant memory (saving a life) becomes
+                                          # near-permanent while a trivial one fades fast
+    decay_reinforce_gain: float = 1.0     # n reinforcements multiply the half-life by (1+gain*n)
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -101,7 +103,7 @@ def _strength(record: "MemoryRecord", now_t: float | None, now_index: int,
         age = max(0.0, now_t - anchor)
         half_life = (
             w.decay_half_life
-            * (1.0 + w.decay_importance_gain * record.importance)
+            * (w.decay_importance_scale ** record.importance)  # super-linear in significance
             * (1.0 + w.decay_reinforce_gain * record.reinforcement)
         )
         return 0.5 ** (age / max(1e-9, half_life))
