@@ -143,6 +143,11 @@ class Settings(BaseSettings):
     # Dev: emit the retrieved memories + their RR score breakdown to the browser each turn,
     # so the relevance realization is observable. Off in production.
     memory_debug: bool = False
+    # Freeze ALL long-term stores (writes become no-ops, recall still works) for the whole
+    # process. For controlled A/B runs: pre-seed a fixture, then no turn can mutate it, so
+    # every model sees identical memory. Per-character game_data.engine.memory_readonly also
+    # exists; this is the global override.
+    memory_readonly: bool = False
 
     # --- Relevance realization (opponent-processing memory recall) ---
     # Each weight is a pole of the dialectic the scorer balances (see memory/relevance.py):

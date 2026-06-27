@@ -28,3 +28,6 @@ Thumbs.db
 # Realtime API feasibility spikes (throwaway)
 spike_out/
 realtime_*.py
+
+# A/B protocol outputs (transcripts + audio)
+ab_out/

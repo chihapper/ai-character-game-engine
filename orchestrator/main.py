@@ -652,7 +652,8 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character, 
         logger.info("Full-loop LLM override for this session: %s", active_model)
     engine_cfg = (character.game_data or {}).get("engine", {})
     long_term = LongTermMemory(
-        character.memory_namespace, readonly=engine_cfg.get("memory_readonly", False)
+        character.memory_namespace,
+        readonly=engine_cfg.get("memory_readonly", False) or settings.memory_readonly,
     )
     short_term = ShortTermMemory(max_turns=settings.short_term_turns)
     await session.connect()
@@ -857,7 +858,8 @@ async def voice_ws(websocket: WebSocket) -> None:
         short_term = ShortTermMemory(max_turns=get_settings().short_term_turns)
         _engine_cfg = (character.game_data or {}).get("engine", {})
         long_term = LongTermMemory(
-            character.memory_namespace, readonly=_engine_cfg.get("memory_readonly", False)
+            character.memory_namespace,
+            readonly=_engine_cfg.get("memory_readonly", False) or get_settings().memory_readonly,
         )
         pipeline = Pipeline(character, llm, tts, short_term, long_term)
     except Exception as exc:
