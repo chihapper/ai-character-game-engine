@@ -91,6 +91,17 @@ move him, slowly — a warm Bri moves more readily). It's RR-core: the stance fo
 one. Behavioral payoff is visible — low trust → deflect/guard, high trust → engage/help.
 *(Coming, #12: disposition also shifts from world events the game pushes, even indirect ones.)*
 
+### Evolving intent (issue #8)
+The character's **immediate short-term aim** with the player — a concrete agenda *from their
+POV* ("find out who sent them", "keep them close tonight", "test if they can be trusted with
+the ledger") that sits **on top of** their standing profile goals and **evolves** with the
+scene and their feelings. Set in the same background call (`INTENT_STATE` opt-in), persisted
+per character. It turns reaction into **agency**: injected so the character pursues the aim
+without announcing it, and folded into the **arena query** so recall serves the aim — RR
+again: relevance is relative to the agent's *goals*, so intent conditions both behavior and
+what past is retrieved, just as relationship (#6) conditions caring. **Character-aware**: the
+same approach grows a schemer's probe in Corvin and a toying test in Bri.
+
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
 - `commit` / `resolve_commitment` — the game declares / closes a character's obligations.

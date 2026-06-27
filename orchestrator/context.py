@@ -200,14 +200,14 @@ def render_memories(memories: list[str] | None) -> str:
 
 def render_turn_context(
     *, memories: list[str] | None = None, situation: Situation | None = None,
-    commitments: str = "", relationship: str = "",
+    commitments: str = "", relationship: str = "", intent: str = "",
 ) -> str:
     """The per-turn DYNAMIC half of a character's context: recalled memories, the evolving
-    relationship/feelings toward the player, OPEN commitments (always surfaced), and the live
-    Situation. The full loop injects this as a small context *item* each turn (keeping the big
-    static prompt stable + cacheable); the modular pipeline folds it into the full prompt via
-    build_instructions. Returns "" when there's nothing dynamic."""
-    parts = [s for s in (render_memories(memories), relationship, commitments,
+    relationship/feelings toward the player, the character's current short-term intent, OPEN
+    commitments (always surfaced), and the live Situation. The full loop injects this as a small
+    context *item* each turn (keeping the big static prompt stable + cacheable); the modular
+    pipeline folds it into the full prompt. Returns "" when there's nothing dynamic."""
+    parts = [s for s in (render_memories(memories), relationship, intent, commitments,
                          render_situation(situation)) if s]
     return "\n\n".join(parts)
 
@@ -219,11 +219,12 @@ def build_instructions(
     situation: Situation | None = None,
     commitments: str = "",
     relationship: str = "",
+    intent: str = "",
     performance_provider: str | None = None,
 ) -> str:
-    """Assemble a character's full system prompt from the sources. With no memories,
-    commitments, relationship, or situation, this equals the legacy prompt, so existing
-    behavior is unchanged."""
+    """Assemble a character's full system prompt from the sources. With no dynamic context
+    (memories/commitments/relationship/intent/situation), this equals the legacy prompt, so
+    existing behavior is unchanged."""
     parts: list[str] = [ENGINE_DIRECTION + "\n" + character.build_prompt()]
 
     if performance_provider:
@@ -232,7 +233,8 @@ def build_instructions(
             parts.append(directive)
 
     turn_context = render_turn_context(
-        memories=memories, situation=situation, commitments=commitments, relationship=relationship
+        memories=memories, situation=situation, commitments=commitments,
+        relationship=relationship, intent=intent,
     )
     if turn_context:
         parts.append(turn_context)
