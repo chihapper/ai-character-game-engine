@@ -67,6 +67,23 @@ Two things stretch the half-life so a memory resists forgetting:
 game to vet recall-as-reinforcement (it's *selective* — keeps revisited memories vivid
 without inflating never-revisited ones).
 
+## Commitments — always-injected obligations — [issue #4](https://github.com/chihapper/ai-character-game-engine/issues/4)
+
+A **commitment** — a promise, deal, or constraint ("meet at dawn", "never tell anyone the
+player's name") — is a *standing concern*, not a scored recollection. While **open** it's
+injected **every turn** (a `# Your open commitments` section), so it never falls out of
+context or competes in the relevance top-k, and it does **not** decay. The game owns it via
+the `commit` / `resolve_commitment` WS seam (siblings of `remember`); the 🧠 panel shows the
+open set in an amber banner above the scored tabs.
+
+When a commitment **closes** — the game marks it fulfilled/broken, or it **expires** past its
+due clock — it converts into an ordinary (decaying) memory of the outcome, inheriting the
+commitment's **significance** to the NPC (an unkept promise stings a little more). So a
+high-stakes betrayal (letting someone go to debtor's prison) stays vivid for in-game years
+via the super-linear decay above, while a trivial broken promise fades; a constraint with no
+deadline never lapses on its own. `tools/commitment_scenarios.py` sweeps the full lifecycle
+across timetables.
+
 ## How rows get the ★ (selection)
 
 1. **Floor:** memories below `RR_RELEVANCE_FLOOR` are dropped — weak matches are *not*
@@ -153,10 +170,12 @@ what matters — and they fight.** Tune the weights to change who wins that figh
   of double-injecting); **arena query** (recall is searched against the trigger + recent turns
   + live `Situation` + goals, not just the last line); and **[#5](https://github.com/chihapper/ai-character-game-engine/issues/5)
   temporal decay + reinforcement** (above).
-- **Queued next — [#4](https://github.com/chihapper/ai-character-game-engine/issues/4)
-  long-range commitment tracking:** promises/constraints a character makes ("I'll meet you at
-  dawn") currently fall out of context once past the short-term buffer. They need to be held
-  as durable, surfaced commitments rather than ordinary decaying memories.
+- **Done:** [#4](https://github.com/chihapper/ai-character-game-engine/issues/4) commitment
+  tracking (above) — durable obligations, always injected, converting to significance-weighted
+  memories on close (game-API driven).
+- **Queued:** automatic **detection** of commitments from dialogue — the engine noticing a
+  character said "I'll meet you at dawn" on its own, rather than the game declaring it. The
+  optional layer on top of the game API.
 
 > This is a deliberate *approximation* of relevance realization (Vervaeke et al.) for an
 > authored-goal NPC — the LLM remains the real relevance realizer over its context; this

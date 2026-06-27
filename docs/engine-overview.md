@@ -68,8 +68,19 @@ half_life = base_half_life · scale^importance · (1 + reinforce_gain · reinfor
   shows this is *selective* — it keeps revisited memories alive without inflating
   never-revisited ones.
 
+### Commitments (issue #4)
+A **commitment** (promise / deal / constraint — "meet at dawn", "never tell anyone the
+player's name") is a *standing concern*, not a decaying memory. While **open** it's injected
+into the prompt every turn, so the character always honors its active obligations; it doesn't
+decay or fall out of context. When it **closes** (the game marks it fulfilled/broken, or it
+**expires** past its due clock) it converts into an ordinary decaying memory of the outcome,
+inheriting its **significance** — a high-stakes betrayal stays vivid for in-game years; a
+trivial broken promise fades. The game owns it via `commit` / `resolve_commitment` (siblings
+of `remember`); `tools/commitment_scenarios.py` sweeps the lifecycle across timetables.
+
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
+- `commit` / `resolve_commitment` — the game declares / closes a character's obligations.
 - `Situation` — transient "what's true now" (location, time, who's present, recent events,
   and the numeric `clock`), pushed per turn.
 - Memory persists per character at `.memory/<slug>.jsonl`.
@@ -86,6 +97,11 @@ __ws.send(JSON.stringify({ type:"remember",
 // Drive a turn with live situation + clock (so recall decays against in-game time):
 __ws.send(JSON.stringify({ type:"text", text:"remember me?",
   situation:{ location:"the docks", clock:120, present:["Marco"] } }))
+
+// Give the character an obligation (always injected until it closes); break it later:
+__ws.send(JSON.stringify({ type:"commit",
+  text:"meet the player at the harbor at dawn", importance:0.85, due_t:130, parties:["the player"] }))
+__ws.send(JSON.stringify({ type:"resolve_commitment", id:"<id from 'committed'>", status:"broken", clock:131 }))
 ```
 
 ```bash
