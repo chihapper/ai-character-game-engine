@@ -201,6 +201,11 @@ class Settings(BaseSettings):
     # a commitment — no extra round-trip (folded into the salience call), ~0 player latency.
     # Off by default: it's fuzzy (false positives/misses), so toggle it on for beta A/B.
     commitment_detection: bool = False
+    # Dynamic relationship state (issue #6), OPT-IN: when on, the per-turn background call
+    # ALSO returns how the exchange moved the character's feelings toward the player
+    # (affection/trust/respect deltas + mood), folded in (no extra round-trip). RR note: this
+    # is the agent's CARING conditioning the relevance realizer, not just tone. Off by default.
+    relationship_state: bool = False
     # Arena query (Track E / issue #2): build the long-term retrieval query from the player
     # input + recent conversation + Situation + goals (not just the last line), so recall
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.

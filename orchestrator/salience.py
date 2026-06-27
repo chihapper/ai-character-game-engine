@@ -109,75 +109,113 @@ async def score_salience(
     return await score_salience_text(character, moment, model=model)
 
 
-# --- Commitment detection (issue #4-B): folded into the salience call ----------------------
+# --- Post-turn reflection: one folded call (salience + #4-B detection + #6 relationship) ----
 
-_DETECT_SYSTEM = (
-    "You analyze one exchange with a fictional character and return JSON ONLY — no prose.\n"
-    'Return exactly: {"importance": <0.00-1.00>, "commitment": null | '
-    '{"text": "<obligation from the character\'s POV>", "significance": <0.00-1.00>, '
-    '"due": "<deadline if stated, else empty>"}}\n\n'
+_IMPORTANCE_BLOCK = (
     "importance — how reliably THIS character would RECALL this moment later (memory, not "
     "drama). Take the higher of emotional/personal weight or role relevance; a competent "
-    "professional recalls facts in their domain even when routine. Filler/greeting 0.0-0.1; "
-    "a role-relevant fact 0.6-0.8; a personally pivotal moment 0.8-1.0.\n\n"
+    "professional recalls facts in their domain even when routine. Filler/greeting 0.0-0.1; a "
+    "role-relevant fact 0.6-0.8; a personally pivotal moment 0.8-1.0."
+)
+
+_COMMITMENT_BLOCK = (
     "commitment — set ONLY if the CHARACTER (not the player) STATED a concrete, durable "
-    "promise, obligation, deal, or constraint they could later be held to (\"I'll meet you at "
-    "dawn\", \"I won't tell anyone\", \"I'll pay off your debt\"). Write `text` as the "
-    "obligation from the character's POV (\"meet the player at dawn\"). Extract it even if the "
-    "character may be lying or scheming — they still SAID it and must remember they did.\n"
-    "`significance` is CHARACTER-AWARE: how much genuinely honoring this matters to THIS "
-    "character given their nature. An honest, caring character weighs a promise heavily "
-    "(high); a deceptive or self-serving one who says it to manipulate and won't keep it "
-    "weighs it lightly (low) — unless the scheme itself matters to them. Be CONSERVATIVE about "
-    "WHETHER it's a commitment: hedges (\"maybe\", \"we'll see\"), pleasantries, hypotheticals, "
-    "and anything the PLAYER said are NOT commitments → null."
+    "promise, obligation, deal, or constraint they could be held to (\"I'll meet you at dawn\", "
+    "\"I won't tell anyone\"). Write `text` as the obligation from the character's POV (\"meet "
+    "the player at dawn\"); extract it even if they may be lying — they still SAID it. "
+    "`significance` is CHARACTER-AWARE: an honest character weighs a promise heavily; a "
+    "deceptive one who won't keep it weighs it lightly. Be CONSERVATIVE: hedges, pleasantries, "
+    "hypotheticals, and anything the PLAYER said are NOT commitments → null."
 )
 
 
-def _parse_score_and_commitment(text: str) -> tuple[float, dict | None]:
+def _relationship_block(rel) -> str:
+    return (
+        "relationship — how THIS exchange moved the character's feelings toward the player, as "
+        "SMALL signed deltas (range -0.30..0.30; most turns are tiny, ~±0.05 — one exchange "
+        "rarely transforms a bond). CHARACTER-AWARE: a guarded, cynical, or proud character "
+        "resists and moves slowly; a warm or impulsive one moves more. affection_delta "
+        "(colder/fonder), trust_delta (warier/more trusting), respect_delta (contempt/admiration). "
+        "`mood` = their acute feeling right now, 1-2 words. "
+        f"(Current standing, 0.5=baseline — affection {rel.affection:.2f}, trust {rel.trust:.2f}, "
+        f"respect {rel.respect:.2f}.)"
+    )
+
+
+def _parse_reflection(text: str, want_commit: bool, want_rel: bool):
     import json
 
     m = re.search(r"\{.*\}", text or "", re.DOTALL)
     if not m:
-        return _parse_score(text), None
+        return _parse_score(text), None, None
     try:
         d = json.loads(m.group())
     except (ValueError, TypeError):
-        return _parse_score(text), None
+        return _parse_score(text), None, None
     imp = d.get("importance")
     importance = max(0.0, min(1.0, float(imp))) if isinstance(imp, (int, float)) else NEUTRAL
-    c = d.get("commitment")
     commitment = None
-    if isinstance(c, dict) and str(c.get("text") or "").strip():
-        sig = c.get("significance")
-        commitment = {
-            "text": str(c["text"]).strip(),
-            "significance": max(0.0, min(1.0, float(sig))) if isinstance(sig, (int, float)) else 0.5,
-            "due": str(c.get("due") or "").strip(),
+    if want_commit and isinstance(d.get("commitment"), dict):
+        c = d["commitment"]
+        if str(c.get("text") or "").strip():
+            sig = c.get("significance")
+            commitment = {
+                "text": str(c["text"]).strip(),
+                "significance": max(0.0, min(1.0, float(sig))) if isinstance(sig, (int, float)) else 0.5,
+                "due": str(c.get("due") or "").strip(),
+            }
+    relationship = None
+    if want_rel and isinstance(d.get("relationship"), dict):
+        r = d["relationship"]
+        clamp = lambda x: max(-0.3, min(0.3, float(x))) if isinstance(x, (int, float)) else 0.0
+        relationship = {
+            "d_affection": clamp(r.get("affection_delta")), "d_trust": clamp(r.get("trust_delta")),
+            "d_respect": clamp(r.get("respect_delta")), "mood": str(r.get("mood") or "").strip() or None,
         }
-    return importance, commitment
+    return importance, commitment, relationship
+
+
+async def reflect_on_turn(
+    character: Character, user_text: str, assistant_text: str, *,
+    relationship=None, model: str | None = None,
+) -> tuple[float, dict | None, dict | None]:
+    """ONE background LLM call: salience importance, plus — when enabled — any commitment the
+    character made (#4-B) and how the exchange moved their feelings toward the player (#6).
+    Folded into a single call (~0 player latency). Returns (importance, commitment|None,
+    relationship_update|None); (NEUTRAL, None, None) when all off or on error."""
+    settings = get_settings()
+    want_commit = settings.commitment_detection
+    want_rel = settings.relationship_state and relationship is not None
+    if not settings.salience_scoring and not want_commit and not want_rel:
+        return NEUTRAL, None, None
+    fields = ['"importance": <0.00-1.00>']
+    blocks = [_IMPORTANCE_BLOCK]
+    if want_commit:
+        fields.append('"commitment": null | {"text": "...", "significance": <0.00-1.00>, "due": "..."}')
+        blocks.append(_COMMITMENT_BLOCK)
+    if want_rel:
+        fields.append('"relationship": {"affection_delta": <-0.3..0.3>, "trust_delta": '
+                      '<-0.3..0.3>, "respect_delta": <-0.3..0.3>, "mood": "<1-2 words>"}')
+        blocks.append(_relationship_block(relationship))
+    system = ("You analyze one exchange with a fictional character and return JSON ONLY — no "
+              "prose.\nReturn: {" + ", ".join(fields) + "}\n\n" + "\n\n".join(blocks))
+    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+              f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
+              "Return the JSON described.")
+    try:
+        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=320)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+            parts.append(delta)
+        return _parse_reflection("".join(parts), want_commit, want_rel)
+    except Exception:
+        logger.exception("Reflection (salience/detect/relationship) failed; neutral fallback")
+        return NEUTRAL, None, None
 
 
 async def score_and_detect(
     character: Character, user_text: str, assistant_text: str, *, model: str | None = None
 ) -> tuple[float, dict | None]:
-    """One LLM call returning BOTH the salience importance (0–1) and any commitment the
-    character just MADE in this reply (or None) — folded together so detection adds a few
-    output tokens, not a new round-trip. Returns (NEUTRAL, None) when off or on error."""
-    settings = get_settings()
-    if not settings.salience_scoring and not settings.commitment_detection:
-        return NEUTRAL, None
-    prompt = (
-        f"CHARACTER:\n{_character_summary(character)}\n\n"
-        f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
-        "Return the JSON described."
-    )
-    try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=220)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], _DETECT_SYSTEM):
-            parts.append(delta)
-        return _parse_score_and_commitment("".join(parts))
-    except Exception:
-        logger.exception("Salience+detection failed; using neutral importance, no commitment")
-        return NEUTRAL, None
+    """Back-compat: salience + commitment only (no relationship)."""
+    importance, commitment, _ = await reflect_on_turn(character, user_text, assistant_text, model=model)
+    return importance, commitment

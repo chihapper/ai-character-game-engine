@@ -76,7 +76,8 @@ from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .pipeline import Pipeline
 from .realtime.inworld_session import InworldSession
-from .salience import score_and_detect, score_salience
+from .salience import reflect_on_turn, score_salience
+from .memory.relationship import RelationshipStore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -676,6 +677,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         readonly=engine_cfg.get("memory_readonly", False) or settings.memory_readonly,
     )
     commitments = CommitmentStore(character.memory_namespace, readonly=long_term.readonly)
+    relationship_store = RelationshipStore(character.memory_namespace, readonly=long_term.readonly)
     short_term = ShortTermMemory(max_turns=settings.short_term_turns)
     await session.connect()
     await emit_json(
@@ -702,15 +704,20 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             if not long_term.readonly:
                 clock = turn["situation"].clock if turn["situation"] else None  # -> decay
                 async def _store(u=turn["user"], r=reply, t=clock) -> None:
-                    # #4-B: when detection is on, one call returns salience AND any commitment
-                    # the character just made (folded together — no extra round-trip). Runs in
-                    # the background, so it never reaches the player.
-                    if settings.commitment_detection:
-                        importance, detected = await score_and_detect(character, u, r)
+                    # One folded background call (#4-B detection + #6 relationship) returns
+                    # salience AND any commitment the character made AND how the exchange moved
+                    # their feelings — no extra round-trip, never reaches the player.
+                    if settings.commitment_detection or settings.relationship_state:
+                        importance, detected, rel = await reflect_on_turn(
+                            character, u, r, relationship=relationship_store.get()
+                        )
                         if detected and not commitments.readonly:
                             commitments.add(detected["text"], made_t=t,
                                             importance=detected["significance"], due=detected["due"])
                             logger.info("Detected commitment: %r", detected["text"][:60])
+                        if rel and not relationship_store.readonly:
+                            relationship_store.update(**rel)
+                            logger.info("Relationship moved: %s", rel)
                     else:
                         importance = await score_salience(character, u, r)
                     await long_term.add_exchange(u, r, importance=importance, t=t)
@@ -751,6 +758,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         for c in commitments.sweep_expired(now_t):
             _convert_commitment(c, now_t)
         commit_section = render_commitments(commitments.open_items())
+        rel_section = relationship_store.get().render()  # #6: evolving feelings -> conditions the realizer
         if query:
             if settings.memory_debug:
                 data = await long_term.retrieve_scored(query, now_t=now_t)
@@ -771,7 +779,8 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             await session.delete_item(turn["ctx_id"])
             turn["ctx_id"] = None
         turn_context = render_turn_context(
-            memories=memories, situation=situation, commitments=commit_section
+            memories=memories, situation=situation, commitments=commit_section,
+            relationship=rel_section,
         )
         if turn_context:
             turn["seq"] += 1
