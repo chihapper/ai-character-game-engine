@@ -7,11 +7,17 @@ is simply "unchanged" and doesn't fight the profile. Persisted per character, up
 background (folded into the salience call), and injected so the evolving relationship colors
 responses. Character-aware: a guarded character moves slowly; a warm one warms fast.
 
-NOTE (issue #12): today this moves only through CONVERSATION. Per game build, disposition
-should also shift from WORLD EVENTS the game pushes — including ones that hit the NPC
-indirectly (the player's faction burns their warehouse, a loved one is hurt). update() already
-takes deltas, so the hook is small; the open work is the game-facing affect API + the dynamic
-starting baseline (profile + accumulated world events) instead of neutral.
+NOTE (issue #12): today this moves only through CONVERSATION, and ONLY through conversation —
+it has NO temporal dynamics. Two open pieces, both folding into #12:
+  1. WORLD EVENTS: the game should be able to shift disposition directly, including events that
+     hit the NPC indirectly (the player's faction burns their warehouse, a loved one is hurt).
+     update() already takes deltas, so the hook is small; the work is the game-facing affect API
+     + a dynamic starting baseline (profile + accumulated world events) instead of neutral.
+  2. TIME (surfaced by the engine stress test): state never relaxes toward baseline over a long
+     absence — a betrayal floors trust at ~0.36 on day 112 and it is STILL 0.36 on day 480,
+     even as the betrayal *memory* decays. For a grudge-holder that reads right; for most others,
+     feelings should drift back toward baseline across long gaps (a clock-aware decay-to-baseline,
+     rate scaled by the character's nature, the mirror of memory decay). Deliberately deferred.
 """
 from __future__ import annotations
 

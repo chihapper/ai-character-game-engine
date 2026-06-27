@@ -149,7 +149,10 @@ class Settings(BaseSettings):
     embedding_model: str = "all-MiniLM-L6-v2"  # sentence-transformers, if used
     memory_dir: str = str(ROOT_DIR / ".memory")  # per-character JSONL stores
     short_term_turns: int = 8  # rolling buffer: last N exchanges kept verbatim
-    long_term_top_k: int = 4  # budget: max memories the relevance scorer injects per turn
+    long_term_top_k: int = 6  # budget: max memories the relevance scorer injects per turn
+    # (raised 4->6 after the engine stress test: a defining high-importance memory — e.g. a
+    # betrayal — was edged out of the top-4 at long range by a query more *similar* to lesser
+    # memories. The extra headroom lets the wound resurface on an off-topic reconciliation.)
     # Write-time dedup: skip storing a memory that's an exact or near-duplicate of an
     # existing one (raw-cosine >= this), so e.g. firing remember() twice doesn't store —
     # or inject — the same fact twice. High threshold to only catch true duplicates.
@@ -171,7 +174,9 @@ class Settings(BaseSettings):
     # always returning the nearest k.
     rr_weight_similarity: float = 1.0
     rr_weight_recency: float = 0.35
-    rr_weight_importance: float = 0.5
+    rr_weight_importance: float = 0.7  # raised 0.5->0.7 (stress test): a defining event should
+    # intrude on recall even when the current query isn't on its topic — that's the goal/arena
+    # bearing pole, and how a grudge or a pivotal moment actually resurfaces.
     rr_weight_diversity: float = 0.4
     rr_recency_half_life: float = 20.0
     rr_relevance_floor: float = 0.15

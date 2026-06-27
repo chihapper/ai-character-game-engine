@@ -44,7 +44,8 @@ from orchestrator.engine import Engine  # noqa: E402
 
 GEN_MODEL = os.environ.get("STRESS_GEN_MODEL", "claude-sonnet-4-6")
 SESSION_GAP = 0.4  # clock units (days); a larger gap => new session => short-term buffer cleared
-REPORT = pathlib.Path(__file__).resolve().parent.parent / "stress_report.md"
+REPORT = pathlib.Path(__file__).resolve().parent.parent / os.environ.get(
+    "STRESS_REPORT", "stress_report.md")
 
 # --- the two arcs (player lines are fixed so the only variable across horizons is the clock) ---
 
