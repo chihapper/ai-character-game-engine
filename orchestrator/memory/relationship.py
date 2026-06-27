@@ -27,6 +27,21 @@ def _word(v: float, low: str, mid: str, high: str) -> str:
     return low if v < 0.4 else (high if v > 0.6 else mid)
 
 
+def _band(v: float) -> int:
+    """5 bands so the injection conveys MAGNITUDE, not just direction: rock-bottom / low /
+    neutral / high / peak. (trust 0.0 must read very differently from trust 0.4.)"""
+    return 0 if v < 0.2 else 1 if v < 0.4 else 2 if v <= 0.6 else 3 if v <= 0.8 else 4
+
+
+# Per-axis phrases by band; "" (neutral) lines are dropped so the injection shows what MOVED.
+_AFFECTION = ["cold and closed off toward them", "cooler toward them", "",
+              "warmer toward them", "deeply fond of them"]
+_TRUST = ["you DEEPLY distrust them — assume they want something, give nothing you needn't",
+          "wary of them", "", "you have come to trust them", "you trust them — rare, and earned"]
+_RESPECT = ["you hold them in contempt", "your respect for them has slipped", "",
+            "your respect for them has risen", "you genuinely admire them"]
+
+
 @dataclass
 class RelationshipState:
     affection: float = 0.5  # 0.5 = unchanged from baseline; >0.6 warmer, <0.4 cooler
@@ -40,17 +55,16 @@ class RelationshipState:
         shaped it yet (turn 0 — the static disposition still speaks for itself)."""
         if self.turns <= 0:
             return ""
-        lines = [
-            f"- Warmth toward them: {_word(self.affection, 'cooled', 'unchanged', 'grown warmer')}",
-            f"- Trust in them: {_word(self.trust, 'eroded', 'unchanged', 'grown')}",
-            f"- Respect for them: {_word(self.respect, 'fallen', 'unchanged', 'risen')}",
-        ]
+        bands = [(self.affection, _AFFECTION), (self.trust, _TRUST), (self.respect, _RESPECT)]
+        lines = [f"- {ph[_band(v)]}" for v, ph in bands if ph[_band(v)]]
         if self.mood:
             lines.append(f"- Right now you feel: {self.mood}")
+        if not lines:
+            return ""
         return (
             "# How the player has affected you\n"
             "Your baseline is your disposition above; this interaction has moved you as below. "
-            "Let it color your tone naturally, in character — don't narrate it.\n" + "\n".join(lines)
+            "Let it SHAPE HOW YOU TREAT THEM — in character, not narrated.\n" + "\n".join(lines)
         )
 
     def to_dict(self) -> dict:
