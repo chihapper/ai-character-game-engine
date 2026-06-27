@@ -116,6 +116,9 @@ class LongTermMemory:
             floor=settings.rr_relevance_floor,
             spread=settings.rr_similarity_spread,
             spread_gain=settings.rr_spread_gain,
+            decay_half_life=settings.rr_decay_half_life,
+            decay_importance_gain=settings.rr_decay_importance_gain,
+            decay_reinforce_gain=settings.rr_decay_reinforce_gain,
         )
         self._dedup_threshold = settings.memory_dedup_threshold
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.jsonl"
@@ -152,52 +155,82 @@ class LongTermMemory:
                     importance=float(d.get("importance", 0.5)),
                     kind=d.get("kind", "exchange"),
                     when=d.get("when", ""),
+                    t=d.get("t"),  # game clock at creation (None on legacy records -> index recency)
+                    last_t=d.get("last_t", d.get("t")),
+                    reinforcement=int(d.get("reinforcement", 0)),
                 )
             )
         return records
 
-    def _add_sync(self, text: str, importance: float, kind: str, when: str) -> None:
+    @staticmethod
+    def _to_json(r: MemoryRecord) -> str:
+        """Serialize a record to a JSONL line — embeddings are derived at load, never stored.
+        Decay fields are written only when set so legacy/clockless stores stay compact."""
+        d = {"text": r.text, "importance": r.importance, "kind": r.kind,
+             "when": r.when, "index": r.index}
+        if r.t is not None:
+            d["t"] = r.t
+        if r.last_t is not None and r.last_t != r.t:
+            d["last_t"] = r.last_t
+        if r.reinforcement:
+            d["reinforcement"] = r.reinforcement
+        return json.dumps(d, ensure_ascii=False)
+
+    def _rewrite(self, records: list[MemoryRecord]) -> None:
+        """Rewrite the whole store (the JSONL is otherwise append-only). Used when an existing
+        record is mutated in place — e.g. a reinforcement bump. Per-character stores are small,
+        so a full rewrite on the occasional dedup-hit is cheap."""
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with self._path.open("w", encoding="utf-8") as f:
+            for r in records:
+                f.write(self._to_json(r) + "\n")
+
+    def _add_sync(self, text: str, importance: float, kind: str, when: str,
+                  t: float | None = None) -> None:
         if self.readonly:
             return
         records = self._all()
         embed, _, _ = _get_embedder()
         embedding = embed(text)
         importance = max(0.0, min(1.0, importance))
-        # Write-time dedup: don't store an exact or near-duplicate of an existing memory
-        # (e.g. remember() fired twice). Keep the higher importance on the original.
+        # Write-time dedup. A re-encounter of an existing memory (exact or near-duplicate) is
+        # REINFORCEMENT (issue #5), not a no-op: bump the count and refresh 'last seen' so its
+        # decay restarts from now — repetition makes it stick. Keep the higher importance.
         norm = text.strip().lower()
         for r in records:
             if r.text.strip().lower() == norm or cosine(embedding, r.embedding) >= self._dedup_threshold:
+                r.reinforcement += 1
+                if t is not None:
+                    r.last_t = t
                 if importance > r.importance:
                     r.importance = importance
-                logger.info("Skipping duplicate memory: %r", text[:60])
+                self._rewrite(records)
+                logger.info("Reinforced memory (x%d): %r", r.reinforcement, text[:60])
                 return
         index = records[-1].index + 1 if records else 0
-        records.append(
-            MemoryRecord(
-                text=text, embedding=embedding, index=index,
-                importance=importance, kind=kind, when=when,
-            )
+        record = MemoryRecord(
+            text=text, embedding=embedding, index=index, importance=importance,
+            kind=kind, when=when, t=t, last_t=t, reinforcement=0,
         )
+        records.append(record)
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(
-                {"text": text, "importance": importance, "kind": kind, "when": when, "index": index},
-                ensure_ascii=False,
-            ) + "\n")
+            f.write(self._to_json(record) + "\n")
 
     # --- writes ---
 
     async def add_exchange(
-        self, user_text: str, assistant_text: str, *, importance: float = 0.5, when: str = ""
+        self, user_text: str, assistant_text: str, *, importance: float = 0.5,
+        when: str = "", t: float | None = None
     ) -> None:
         if not user_text or not assistant_text:
             return
         document = f"User: {user_text}\n{self._namespace}: {assistant_text}"
-        await asyncio.to_thread(self._add_sync, document, importance, "exchange", when)
+        await asyncio.to_thread(self._add_sync, document, importance, "exchange", when, t)
 
     async def remember(
-        self, fact: str, *, when: str = "", kind: str = "world_event", importance: float = 0.7
+        self, fact: str, *, when: str = "", kind: str = "world_event",
+        importance: float = 0.7, t: float | None = None
     ) -> None:
         """Durable memory-write API for the GAME: persist a world event into a character's
         memory so retrieval can surface it later ("Player burned the bridge", when="day 3").
@@ -206,39 +239,40 @@ class LongTermMemory:
         fact = (fact or "").strip()
         if not fact:
             return
-        await asyncio.to_thread(self._add_sync, fact, importance, kind, when)
+        await asyncio.to_thread(self._add_sync, fact, importance, kind, when, t)
 
     # --- reads ---
 
-    def _retrieve_sync(self, query: str, k: int) -> list[str]:
+    def _retrieve_sync(self, query: str, k: int, now_t: float | None) -> list[str]:
         records = self._all()
         if not records:
             return []
         embed, _, _ = _get_embedder()
         selected = realize_relevance(
-            embed(query), records, weights=self._weights, budget=k, now_index=len(records)
+            embed(query), records, weights=self._weights, budget=k,
+            now_index=len(records), now_t=now_t,
         )
         return [r.text for r in selected]
 
-    async def retrieve(self, query: str, k: int | None = None) -> list[str]:
+    async def retrieve(self, query: str, k: int | None = None, *, now_t: float | None = None) -> list[str]:
         if not query:
             return []
-        return await asyncio.to_thread(self._retrieve_sync, query, k or self._budget)
+        return await asyncio.to_thread(self._retrieve_sync, query, k or self._budget, now_t)
 
-    def _retrieve_scored_sync(self, query: str, k: int) -> dict:
+    def _retrieve_scored_sync(self, query: str, k: int, now_t: float | None) -> dict:
         records = self._all()
         if not records:
             return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
         embed, _, name = _get_embedder()
         selected, breakdown = realize_relevance(
             embed(query), records, weights=self._weights, budget=k,
-            now_index=len(records), return_debug=True,
+            now_index=len(records), now_t=now_t, return_debug=True,
         )
         return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
 
-    async def retrieve_scored(self, query: str, k: int | None = None) -> dict:
+    async def retrieve_scored(self, query: str, k: int | None = None, *, now_t: float | None = None) -> dict:
         """Like `retrieve`, but also returns the per-candidate RR score breakdown (for the
         dev memory-debug panel). `{selected: [text], scored: [...], embedder: name}`."""
         if not query:
             return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
-        return await asyncio.to_thread(self._retrieve_scored_sync, query, k or self._budget)
+        return await asyncio.to_thread(self._retrieve_scored_sync, query, k or self._budget, now_t)

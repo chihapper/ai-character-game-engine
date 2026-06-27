@@ -179,6 +179,12 @@ class Settings(BaseSettings):
     # default), "minmax" (aggressive), or "none". Computed within each turn's candidates.
     rr_similarity_spread: str = "zscore"
     rr_spread_gain: float = 1.5  # zscore logistic steepness (higher = wider spread)
+    # Temporal decay (issue #5): when a memory carries a game clock, recency fades over
+    # game-time with a half-life stretched by salience + reinforcement. Units are the GAME's
+    # (engine is game-agnostic) — set rr_decay_half_life to the game's time scale.
+    rr_decay_half_life: float = 30.0       # base half-life in the game's time units
+    rr_decay_importance_gain: float = 4.0  # importance=1 -> half-life * (1+gain)
+    rr_decay_reinforce_gain: float = 1.0   # n reinforcements -> half-life * (1+gain*n)
     # Character-aware salience: at write time, an LLM rates how memorable an exchange is
     # TO THIS character (their goals/temperament), setting its memory `importance` — so
     # the brother's death is salient for a caring Bri but ~nil for a cold Corvin. Runs in
