@@ -45,6 +45,14 @@ REALTIME_MODELS = [
 ]
 ALLOWED_REALTIME_MODEL_IDS = {m["id"] for m in REALTIME_MODELS}
 
+# tts-2 delivery presets (stability vs expressiveness), surfaced in the full-loop UI.
+DELIVERY_MODES = [
+    {"id": "STABLE", "label": "Stable — most consistent"},
+    {"id": "BALANCED", "label": "Balanced — middle"},
+    {"id": "CREATIVE", "label": "Creative — most expressive"},
+]
+ALLOWED_DELIVERY_MODES = {m["id"] for m in DELIVERY_MODES}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -127,6 +135,12 @@ class Settings(BaseSettings):
     # The Realtime TTS model. inworld-tts-2 honors [bracket] steering tags (so the
     # character's expressivity carries) — verified in the Phase-0 spikes.
     realtime_tts_model: str = "inworld-tts-2"
+    # tts-2 generation preset (providerData.tts.delivery_mode): STABLE | BALANCED | CREATIVE
+    # — stability vs expressiveness. CREATIVE for the full loop: the single-session TTS
+    # context keeps the voice coherent across turns, so we can afford the widest emotional
+    # range (the per-turn drift that made us pick BALANCED on the modular path matters less
+    # here). Per-session selectable in the UI; the modular path keeps its own delivery mode.
+    realtime_delivery_mode: str = "CREATIVE"
 
     # --- Long-term memory ---
     # Embedder preference: fastembed (ONNX, light, Windows-friendly) -> sentence-transformers

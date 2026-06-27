@@ -60,9 +60,11 @@ from .character_store import (
     slugify,
 )
 from .config import (
+    ALLOWED_DELIVERY_MODES,
     ALLOWED_MODEL_IDS,
     ALLOWED_REALTIME_MODEL_IDS,
     AVAILABLE_MODELS,
+    DELIVERY_MODES,
     REALTIME_MODELS,
     WEB_DIR,
     get_settings,
@@ -188,6 +190,8 @@ async def get_models() -> JSONResponse:
         "default": s.llm_model,
         "realtime_models": REALTIME_MODELS,
         "realtime_default": s.realtime_llm_model,
+        "delivery_modes": DELIVERY_MODES,
+        "delivery_default": s.realtime_delivery_mode,
         "runtime": s.voice_runtime,
     })
 
@@ -634,7 +638,8 @@ async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
         await emit_json({"type": "audio_end"})
 
 
-async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character, llm_override=None) -> None:
+async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
+                        llm_override=None, delivery_override=None) -> None:
     """Drive one Inworld full-loop session, mapping its events onto the browser protocol.
 
     Per turn (§5.6): before the model responds, retrieve memories against the arena query
@@ -647,9 +652,11 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character, 
     session = InworldSession(
         instructions=build_instructions(character, performance_provider="inworld"),
         voice_id=character.voice_id, tools=_REALTIME_TOOLS, llm_model=active_model,
+        delivery_mode=delivery_override,
     )
-    if llm_override:
-        logger.info("Full-loop LLM override for this session: %s", active_model)
+    if llm_override or delivery_override:
+        logger.info("Full-loop session overrides: llm=%s delivery=%s",
+                    active_model, delivery_override or settings.realtime_delivery_mode)
     engine_cfg = (character.game_data or {}).get("engine", {})
     long_term = LongTermMemory(
         character.memory_namespace,
@@ -829,11 +836,14 @@ async def voice_ws(websocket: WebSocket) -> None:
             await emit_json({"type": "error", "message": f"Could not start session: {exc}"})
             await websocket.close()
             return
-        # Per-session LLM override for A/B testing (dropdown or ?realtime_llm=…), allow-listed.
+        # Per-session overrides for A/B (dropdowns or ?realtime_llm= / ?delivery=), allow-listed.
         rt_llm = websocket.query_params.get("realtime_llm", "")
         rt_override = rt_llm if rt_llm in ALLOWED_REALTIME_MODEL_IDS else None
+        dlv = websocket.query_params.get("delivery", "").upper()
+        dlv_override = dlv if dlv in ALLOWED_DELIVERY_MODES else None
         try:
-            await run_full_loop(websocket, emit_json, emit_audio, character, llm_override=rt_override)
+            await run_full_loop(websocket, emit_json, emit_audio, character,
+                                llm_override=rt_override, delivery_override=dlv_override)
         except WebSocketDisconnect:
             pass
         except Exception:

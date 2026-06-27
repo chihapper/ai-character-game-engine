@@ -54,6 +54,7 @@ class InworldSession:
         tools: list[dict] | None = None,
         llm_model: str | None = None,
         tts_model: str | None = None,
+        delivery_mode: str | None = None,
     ) -> None:
         settings = get_settings()
         if not settings.inworld_api_key:
@@ -67,6 +68,8 @@ class InworldSession:
         self._tools = tools or []
         self._llm_model = llm_model or settings.realtime_llm_model
         self._tts_model = tts_model or settings.realtime_tts_model
+        mode = (delivery_mode or settings.realtime_delivery_mode or "CREATIVE").upper()
+        self._delivery_mode = mode if mode in {"STABLE", "BALANCED", "CREATIVE"} else "CREATIVE"
         self._ws = None
         self._resample_state = None  # carried across mic frames for click-free resampling
 
@@ -101,6 +104,8 @@ class InworldSession:
                     },
                     "tools": self._tools,
                     "tool_choice": "auto" if self._tools else "none",
+                    # tts-2 generation preset (stability vs expressiveness).
+                    "providerData": {"tts": {"delivery_mode": self._delivery_mode}},
                 },
             }
         )
@@ -113,8 +118,9 @@ class InworldSession:
             if msg.get("type") == "session.updated":
                 out = (msg.get("session") or {}).get("audio", {}).get("output", {})
                 logger.info(
-                    "Inworld session ready: voice=%s model=%s llm=%s",
-                    out.get("voice"), out.get("model"), (msg.get("session") or {}).get("model"),
+                    "Inworld session ready: voice=%s model=%s llm=%s delivery=%s",
+                    out.get("voice"), out.get("model"),
+                    (msg.get("session") or {}).get("model"), self._delivery_mode,
                 )
                 return
             if msg.get("type") == "error":

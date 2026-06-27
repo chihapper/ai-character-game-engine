@@ -183,6 +183,7 @@ function setConnected(isConnected) {
   $("send").disabled = !isConnected;
   $("character").disabled = isConnected;
   $("model").disabled = isConnected;
+  $("delivery").disabled = isConnected;
   $("profile").disabled = isConnected;
 }
 
@@ -210,10 +211,12 @@ async function connect() {
   // Full-loop LLM selection: the conversation dropdown (realtime list) drives it; a
   // ?realtime_llm= URL param still overrides. Lets Bri/Corvin be A/B'd across models live.
   const rtLlm = new URLSearchParams(location.search).get("realtime_llm") || (fullLoop ? model : "");
+  const delivery = fullLoop ? ($("delivery").value || "") : "";
   ws = new WebSocket(
     `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}` +
       `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}` +
-      (rtLlm ? `&realtime_llm=${encodeURIComponent(rtLlm)}` : ``),
+      (rtLlm ? `&realtime_llm=${encodeURIComponent(rtLlm)}` : ``) +
+      (delivery ? `&delivery=${encodeURIComponent(delivery)}` : ``),
   );
   ws.binaryType = "arraybuffer";
   // Dev: expose the socket so you can drive the engine/game seam from the console, e.g.
@@ -786,6 +789,13 @@ async function loadModels() {
   const convDefault = fullLoop ? data.realtime_default : data.default;
   fillSelect($("model"), convList, convDefault);
   fillSelect($("c-ai-model"), data.models, data.default);
+  // Delivery (tts-2 expressiveness) only applies to the full loop — show it there, hide
+  // it on the modular path (which has its own configured delivery mode).
+  const delivery = $("delivery");
+  if (delivery) {
+    delivery.style.display = fullLoop ? "" : "none";
+    if (fullLoop) fillSelect(delivery, data.delivery_modes || [], data.delivery_default);
+  }
 }
 
 function fillSelect(select, models, defaultId) {
