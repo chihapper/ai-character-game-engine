@@ -48,6 +48,25 @@ _RESPECT = ["you hold them in contempt", "your respect for them has slipped", ""
             "your respect for them has risen", "you genuinely admire them"]
 
 
+# How an axis moves: an ASYMPTOTIC (saturating) update, not raw addition. A delta's effect
+# shrinks as the axis nears the edge it heads toward, so the extremes (0 = utter distrust/
+# contempt, 1 = unconditional devotion) take ever-stronger, repeated evidence and are never
+# quite reached by a single grand gesture. Falls out naturally: a warm character no longer pins
+# to 1.00 in a few good beats (headroom stays up top); a betrayal from HIGH trust craters harder
+# (lots of room to fall); digging out of rock-bottom distrust is slow from below. `gain` is set
+# so that at the 0.5 baseline the move equals the raw delta (factor 1.0) — the mid-range
+# calibration we already tuned is preserved; only the approach to the extremes changes.
+_EASE_GAIN = 2.0
+
+
+def _ease(value: float, delta: float) -> float:
+    """Apply `delta` to `value`∈[0,1] with saturating headroom toward the extreme it heads for."""
+    if delta == 0.0:
+        return value
+    headroom = (1.0 - value) if delta > 0 else value
+    return max(0.0, min(1.0, value + delta * _EASE_GAIN * headroom))
+
+
 @dataclass
 class RelationshipState:
     affection: float = 0.5  # 0.5 = unchanged from baseline; >0.6 warmer, <0.4 cooler
@@ -99,10 +118,9 @@ class RelationshipState:
 
     def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0,
               d_respect: float = 0.0, mood: str | None = None) -> None:
-        clamp = lambda x: max(0.0, min(1.0, x))
-        self.affection = clamp(self.affection + d_affection)
-        self.trust = clamp(self.trust + d_trust)
-        self.respect = clamp(self.respect + d_respect)
+        self.affection = _ease(self.affection, d_affection)
+        self.trust = _ease(self.trust, d_trust)
+        self.respect = _ease(self.respect, d_respect)
         if mood is not None:
             self.mood = mood.strip()
         self.turns += 1
