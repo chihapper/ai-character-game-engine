@@ -55,13 +55,20 @@ class Situation:
     to nothing. `extra` is an open, game-namespaced bag the engine renders generically."""
 
     location: str = ""
-    game_time: str = ""  # game-defined clock string; the engine stores/renders, never parses
+    game_time: str = ""  # game-defined clock STRING for display; the engine never parses it
     present: list[str] = field(default_factory=list)  # who else is in the scene
     recent_events: list[str] = field(default_factory=list)  # what just happened
     extra: dict = field(default_factory=dict)
+    # Numeric game clock for temporal decay (issue #5): a single monotonic number whose units
+    # the GAME owns (days/ticks/turns/seconds). The engine only takes differences — never
+    # rendered, never interpreted. Optional; absent -> memory falls back to index recency.
+    clock: float | None = None
 
     def is_empty(self) -> bool:
-        return not (self.location or self.game_time or self.present or self.recent_events or self.extra)
+        # `clock` counts: a clock-only Situation must survive from_dict so decay still gets it
+        # (render_situation separately renders nothing when there are no DISPLAY fields).
+        return not (self.location or self.game_time or self.present or self.recent_events
+                    or self.extra or self.clock is not None)
 
     @classmethod
     def from_dict(cls, data: dict | None) -> "Situation | None":
@@ -69,12 +76,16 @@ class Situation:
         an absent/empty payload so callers can pass it straight through."""
         if not isinstance(data, dict) or not data:
             return None
+        raw_clock = data.get("clock")
+        if raw_clock is None:
+            raw_clock = data.get("t")
         sit = cls(
             location=str(data.get("location") or "").strip(),
             game_time=str(data.get("game_time") or data.get("time") or "").strip(),
             present=[str(p).strip() for p in (data.get("present") or []) if str(p).strip()],
             recent_events=[str(e).strip() for e in (data.get("recent_events") or []) if str(e).strip()],
             extra={k: v for k, v in (data.get("extra") or {}).items()} if isinstance(data.get("extra"), dict) else {},
+            clock=float(raw_clock) if isinstance(raw_clock, (int, float)) else None,
         )
         return None if sit.is_empty() else sit
 
@@ -161,6 +172,8 @@ def render_situation(situation: Situation | None) -> str:
         lines.extend(f"  - {e}" for e in situation.recent_events)
     for key, value in (situation.extra or {}).items():
         lines.append(f"- {key}: {value}")
+    if not lines:  # clock-only situation carries decay metadata but nothing to display
+        return ""
     return (
         "# Current situation\n"
         "What is true in the scene right now. React to it naturally as your character; "

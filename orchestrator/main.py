@@ -608,11 +608,14 @@ async def _handle_remember(long_term, data: dict, emit_json) -> None:
         importance = float(data.get("importance", 0.7))
     except (TypeError, ValueError):
         importance = 0.7
+    raw_clock = data.get("clock", data.get("t"))  # numeric game clock -> temporal decay
+    clock = float(raw_clock) if isinstance(raw_clock, (int, float)) else None
     await long_term.remember(
         fact,
         when=(data.get("when") or ""),
         kind=(data.get("kind") or "world_event"),
         importance=importance,
+        t=clock,
     )
     await emit_json({"type": "remembered", "fact": fact})
 
@@ -690,11 +693,14 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             short_term.add_user(turn["user"])
             short_term.add_assistant(reply)
             if not long_term.readonly:
-                async def _store(u=turn["user"], r=reply) -> None:
-                    await long_term.add_exchange(u, r, importance=await score_salience(character, u, r))
-                t = asyncio.create_task(_store())
-                writes.add(t)
-                t.add_done_callback(writes.discard)
+                clock = turn["situation"].clock if turn["situation"] else None  # -> decay
+                async def _store(u=turn["user"], r=reply, t=clock) -> None:
+                    await long_term.add_exchange(
+                        u, r, importance=await score_salience(character, u, r), t=t
+                    )
+                task = asyncio.create_task(_store())
+                writes.add(task)
+                task.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
 
     async def retrieve_and_respond(user_text: str, situation) -> None:
@@ -711,14 +717,15 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         else:
             query = user_text
         memories: list[str] = []
+        now_t = situation.clock if situation else None  # game clock -> temporal decay
         if query:
             if settings.memory_debug:
-                data = await long_term.retrieve_scored(query)
+                data = await long_term.retrieve_scored(query, now_t=now_t)
                 memories = data["selected"]
                 await emit_json({"type": "memories", "query": query,
                                  "short_term": short_term.messages(), **data})
             else:
-                memories = await long_term.retrieve(query)
+                memories = await long_term.retrieve(query, now_t=now_t)
         _t_ret = time.monotonic()
         # #2: inject the dynamic per-turn context (memories + Situation) as a SYSTEM context
         # item, leaving the base instructions stable (cache-friendly). Delete the prior turn's

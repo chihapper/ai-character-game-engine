@@ -193,17 +193,18 @@ class Pipeline:
             )
         else:
             query = request.query()
+        now_t = request.situation.clock if request.situation else None  # game clock -> decay
         if query and settings.memory_debug:
             # Dev: surface what relevance realization selected (long-term) AND the
             # short-term buffer (recent verbatim turns, also injected) to the browser.
-            data = await self.long_term.retrieve_scored(query)
+            data = await self.long_term.retrieve_scored(query, now_t=now_t)
             memories = data["selected"]
             await emit_json({
                 "type": "memories", "query": query,
                 "short_term": self.short_term.messages(), **data,
             })
         else:
-            memories = await self.long_term.retrieve(query) if query else []
+            memories = await self.long_term.retrieve(query, now_t=now_t) if query else []
         system = self._build_system(memories, request.situation)
         messages = self.short_term.messages() + [
             {"role": "user", "content": user_text}
@@ -388,15 +389,17 @@ class Pipeline:
             # don't score salience or write long-term, so the seeded store stays pristine.
             if not self.long_term.readonly:
                 when = request.situation.game_time if request.situation else ""
+                t = request.situation.clock if request.situation else None  # game clock -> decay
                 # Score salience + persist in the BACKGROUND, so the LLM rating never
                 # delays the next turn (the exchange is already in short-term).
-                task = asyncio.create_task(self._store_exchange(user_text, full_reply, when))
+                task = asyncio.create_task(self._store_exchange(user_text, full_reply, when, t))
                 self._writes.add(task)
                 task.add_done_callback(self._writes.discard)
 
-    async def _store_exchange(self, user_text: str, reply: str, when: str) -> None:
+    async def _store_exchange(self, user_text: str, reply: str, when: str,
+                              t: float | None = None) -> None:
         importance = await score_salience(self.character, user_text, reply)
-        await self.long_term.add_exchange(user_text, reply, importance=importance, when=when)
+        await self.long_term.add_exchange(user_text, reply, importance=importance, when=when, t=t)
 
     # ---------------------------------------------------------------- greeting
 
