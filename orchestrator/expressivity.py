@@ -361,18 +361,21 @@ class InworldProfile(VoiceProfile):
             + "- DESCRIBE the manner — the more you say about HOW to perform, the more the "
             'voice actually moves. A bare single word ("[playful]", "[cold]") barely shifts '
             'it; give it a few words ("[warm and playful, a grin in your voice]").\n'
-            + "- One direction per line, up front. For a SUDDEN shift, drop a new tag right "
-            'where it turns: "[calm] For the last time... [yell] GET OUT!" — the engine adds a '
-            "tiny beat to carry it.\n"
+            + "- ONE direction per sentence, at the very START — the voice applies a tag where "
+            "a sentence begins, NOT mid-sentence. For a sudden shift, break to a NEW sentence "
+            'and lead it with the new tag: "[calm] For the last time. [snap] GET OUT."\n'
             + "- Keep cues clean: don't weld a pause onto a delivery note, and use plain "
             'feeling/verb words — never tack on "style", "manner", or "in a ... way" (the '
             "voice may read those aloud). Natural sounds go inline where they fit: [laughs], "
             "[sighs], [breathes], [coughs], [clears throat]. Put a stressed word in CAPITALS.\n"
-            + "- TIMING: [pause] or [long pause] on its OWN line holds a beat of silence.\n"
-            + "- Be GENEROUS, not sparse — a real voice keeps moving. Don't ride one tone for "
-            "a whole reply: re-open with a fresh direction when the feeling turns, and lace in "
-            "natural sounds where a person would make them — [laughs], [soft laugh], [sighs], "
-            "[scoffs], [hums], [under your breath]. Aim for a cue every sentence or two.\n"
+            + "- PAUSES come from PUNCTUATION or a break tag — NEVER a word-tag. Use \"...\" or "
+            'an em-dash for a natural trailing beat (real speech trails off — keep those), or '
+            '<break time="600ms" /> for a held silence. "[pause]"/"[pauses]" do NOTHING here; '
+            'and never fold timing into a delivery note ("[pauses, whispering]" is ignored).\n'
+            + "- Be GENEROUS, not sparse — a real voice keeps moving. Don't ride one tone for a "
+            "whole reply: when the feeling turns, START THE NEXT SENTENCE with a fresh direction, "
+            "and lace in natural sounds where a person would — [laughs], [soft laugh], [sighs], "
+            "[scoffs], [hums]. Aim for a cue every sentence or two.\n"
             + _CARRY
             + "Match every direction to the words; never stay flat. No physical actions — you "
             "are only a voice."
