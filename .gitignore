@@ -38,3 +38,4 @@ server.log
 # stress-test transcript + run log (tools/stress_test.py)
 stress_report*.md
 stress_run*.log
+stress_suite*.md
