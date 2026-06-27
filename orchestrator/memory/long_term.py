@@ -136,6 +136,11 @@ class LongTermMemory:
             self._records = self._load()
         return self._records
 
+    def beliefs(self, limit: int = 8) -> list[str]:
+        """The character's consolidated BELIEFS (issue #9), most recent last — so a reflection
+        cycle can deepen or revise the convictions already held, not just pile on new ones."""
+        return [r.text for r in self._all() if r.kind == "belief"][-limit:]
+
     def _load(self) -> list[MemoryRecord]:
         if not self._path.exists():
             return []

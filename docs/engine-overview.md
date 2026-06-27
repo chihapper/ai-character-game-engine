@@ -102,6 +102,20 @@ again: relevance is relative to the agent's *goals*, so intent conditions both b
 what past is retrieved, just as relationship (#6) conditions caring. **Character-aware**: the
 same approach grows a schemer's probe in Corvin and a toying test in Bri.
 
+### Reflection / consolidation — beliefs (issue #9)
+Periodically the engine compresses raw exchanges into higher-level **beliefs** — the
+through-lines a character forms from experience (*"either a trap or the one person I've waited
+years for"*, *"no one down here is what they seem"*). An **importance-accumulation trigger**
+(generative-agents style) fires one background LLM call once enough has happened since the last
+reflection (`REFLECTION_ENABLED` opt-in); each belief is stored as an ordinary memory
+(`kind="belief"`) with **high importance**, so it persists (long decay half-life — beliefs are
+through-lines, not trivia) and **resurfaces through the normal arena query**, no separate path.
+It's **character-aware** (the same loyal-player events make schemer Corvin *suspicious* and
+honest Bri *warm*) and can **deepen/revise** the beliefs already held. RR-core: forming
+higher-order abstractions *is* relevance realization — the agent compresses episodes into
+convictions that bear on its goals more than any single line, and those convictions then
+condition what it later finds relevant and how it behaves.
+
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
 - `commit` / `resolve_commitment` — the game declares / closes a character's obligations.

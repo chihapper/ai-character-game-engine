@@ -218,6 +218,15 @@ class Settings(BaseSettings):
     # Injected so they act proactively, and folds into the arena query so recall serves the aim
     # (RR: relevance relative to the agent's goals). Off by default.
     intent_state: bool = False
+    # Reflection / consolidation (issue #9), OPT-IN: periodically compress raw exchanges into
+    # higher-level BELIEFS (through-lines) stored as high-importance memories that persist and
+    # feed back into recall. Triggered when the importance accumulated since the last reflection
+    # crosses the threshold (generative-agents style), so it's infrequent + off the critical path.
+    reflection_enabled: bool = False
+    reflection_importance_threshold: float = 3.0  # sum of exchange-importance that triggers a cycle
+    reflection_max_inputs: int = 12               # most-recent exchanges fed to a reflection
+    reflection_importance: float = 0.85           # beliefs are through-lines -> stored salient
+    reflection_model: str = "claude-sonnet-4-6"   # synthesis needs nuance; matches salience_model
     # Arena query (Track E / issue #2): build the long-term retrieval query from the player
     # input + recent conversation + Situation + goals (not just the last line), so recall
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.
