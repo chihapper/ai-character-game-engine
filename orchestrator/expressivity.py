@@ -273,8 +273,11 @@ _HEADER = "# Performance tags (spoken aloud; the bracketed directions are never 
 # only its rendering differs per provider, via render_direction).
 _CARRY = (
     "Your tone CARRIES to the following lines until you change it, so don't snap back "
-    "to a flat/neutral tone after a pause or '...'. When you shift it, EASE it — step "
-    "through it (e.g. tender -> wistful -> cold), don't jump in a single beat.\n"
+    "to a flat/neutral tone after a pause or '...'. EASE big EMOTIONAL shifts — step "
+    "through them (tender -> wistful -> cold), don't jump in a single beat. BUT match each "
+    "sentence's OWN energy to its punctuation: a '!' lifts into excitement/emphasis, a '?' "
+    "lifts with curiosity, a '.' settles — let the punctuation move you, and never flatten "
+    "a '!' or '?' just because the line before it was calm or teasing.\n"
 )
 
 
