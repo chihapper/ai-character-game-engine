@@ -121,6 +121,7 @@ class LongTermMemory:
             decay_reinforce_gain=settings.rr_decay_reinforce_gain,
         )
         self._dedup_threshold = settings.memory_dedup_threshold
+        self._reinforce_on_recall = settings.reinforce_on_recall
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.jsonl"
         self._records: list[MemoryRecord] | None = None  # lazily loaded + cached
 
@@ -243,6 +244,18 @@ class LongTermMemory:
 
     # --- reads ---
 
+    def _reinforce_recalled(self, selected: list[MemoryRecord], now_t: float | None) -> None:
+        """Recall-as-reinforcement (opt-in, issue #5): retrieving a memory rehearses it — bump
+        its count and refresh 'last seen' so its decay restarts from now. Persisted, so a
+        frequently-recalled memory resists decay. No-op when off or read-only."""
+        if not self._reinforce_on_recall or self.readonly or not selected:
+            return
+        for m in selected:
+            m.reinforcement += 1
+            if now_t is not None:
+                m.last_t = now_t
+        self._rewrite(self._all())
+
     def _retrieve_sync(self, query: str, k: int, now_t: float | None) -> list[str]:
         records = self._all()
         if not records:
@@ -252,6 +265,7 @@ class LongTermMemory:
             embed(query), records, weights=self._weights, budget=k,
             now_index=len(records), now_t=now_t,
         )
+        self._reinforce_recalled(selected, now_t)
         return [r.text for r in selected]
 
     async def retrieve(self, query: str, k: int | None = None, *, now_t: float | None = None) -> list[str]:
@@ -268,6 +282,7 @@ class LongTermMemory:
             embed(query), records, weights=self._weights, budget=k,
             now_index=len(records), now_t=now_t, return_debug=True,
         )
+        self._reinforce_recalled(selected, now_t)
         return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
 
     async def retrieve_scored(self, query: str, k: int | None = None, *, now_t: float | None = None) -> dict:

@@ -185,6 +185,11 @@ class Settings(BaseSettings):
     rr_decay_half_life: float = 30.0        # base half-life (importance 0) in the game's units
     rr_decay_importance_scale: float = 50.0  # half-life *= scale**importance (super-linear)
     rr_decay_reinforce_gain: float = 1.0     # n reinforcements -> half-life * (1+gain*n)
+    # Recall-as-reinforcement (issue #5), OPT-IN: when on, retrieving a memory reinforces it
+    # (rehearsal) so frequently-recalled memories resist decay. The simulation shows this is
+    # selective (never-recalled memories still fade — no blanket inflation). Off by default;
+    # writes the store on each retrieve, so leave off for read-only/throughput-sensitive runs.
+    reinforce_on_recall: bool = False
     # Character-aware salience: at write time, an LLM rates how memorable an exchange is
     # TO THIS character (their goals/temperament), setting its memory `importance` — so
     # the brother's death is salient for a caring Bri but ~nil for a cold Corvin. Runs in
