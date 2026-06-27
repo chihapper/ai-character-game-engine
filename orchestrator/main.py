@@ -748,6 +748,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                 RespondRequest(player_input=user_text, situation=situation),
                 character, short_term.messages(),
                 max_recent_turns=settings.arena_query_recent_turns,
+                relationship_hint=relationship_store.get().query_hint(),
             )
         else:
             query = user_text

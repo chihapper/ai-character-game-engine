@@ -47,6 +47,26 @@ class RelationshipState:
             "Let it color your tone naturally, in character — don't narrate it.\n" + "\n".join(lines)
         )
 
+    def query_hint(self) -> str:
+        """A short stance phrase folded into the arena query so RECALL is conditioned by the
+        relationship (RR: relevance relative to the agent's caring). A wary character surfaces
+        guard/deception-relevant memories; a fond one surfaces warmth — different past, same
+        trigger. "" until the relationship has been shaped."""
+        if self.turns <= 0:
+            return ""
+        bits: list[str] = []
+        if self.trust < 0.4:
+            bits.append("wary of them, guarding against deception or betrayal")
+        elif self.trust > 0.65:
+            bits.append("trusting them, open")
+        if self.affection < 0.4:
+            bits.append("cold and distant toward them")
+        elif self.affection > 0.65:
+            bits.append("fond of them, close")
+        if self.mood:
+            bits.append(self.mood)
+        return ", ".join(bits)
+
     def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0,
               d_respect: float = 0.0, mood: str | None = None) -> None:
         clamp = lambda x: max(0.0, min(1.0, x))

@@ -132,11 +132,16 @@ _COMMITMENT_BLOCK = (
 def _relationship_block(rel) -> str:
     return (
         "relationship — how THIS exchange moved the character's feelings toward the player, as "
-        "SMALL signed deltas (range -0.30..0.30; most turns are tiny, ~±0.05 — one exchange "
-        "rarely transforms a bond). CHARACTER-AWARE: a guarded, cynical, or proud character "
-        "resists and moves slowly; a warm or impulsive one moves more. affection_delta "
-        "(colder/fonder), trust_delta (warier/more trusting), respect_delta (contempt/admiration). "
-        "`mood` = their acute feeling right now, 1-2 words. "
+        "signed deltas (range -0.30..0.30). MOST EXCHANGES ARE 0.00 — feelings move rarely. "
+        "Magnitude is judged by THIS CHARACTER'S NATURE, not the surface niceness:\n"
+        "- A guarded, cynical, jaded, or proud character: routine pleasantries, flattery, and "
+        "nice talk roll off like WATER OFF A DUCK'S BACK — they've seen it all; move them 0.00. "
+        "ONLY rare, proven, costly things shift them — genuine sacrifice, loyalty proven over "
+        "real time, being truly SEEN, or a real betrayal — and even then slowly (±0.05-0.15). "
+        "Very few people ever get close to such a character.\n"
+        "- A warm, open, lonely, or impulsive character moves more readily to ordinary warmth.\n"
+        "affection_delta (colder/fonder), trust_delta (warier/more trusting), respect_delta "
+        "(contempt/admiration). `mood` = their acute feeling right now, 1-2 words. "
         f"(Current standing, 0.5=baseline — affection {rel.affection:.2f}, trust {rel.trust:.2f}, "
         f"respect {rel.respect:.2f}.)"
     )

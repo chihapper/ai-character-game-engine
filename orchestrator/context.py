@@ -118,6 +118,7 @@ def build_arena_query(
     *,
     max_recent_turns: int = 2,
     include_goals: bool = True,
+    relationship_hint: str = "",
 ) -> str:
     """Compose the long-term retrieval query — the *arena* the agent is in, not just the
     last line. Relevance realization: what's relevant is relative to the situation + the
@@ -151,6 +152,11 @@ def build_arena_query(
     # The agent's standing concerns — relevance is relative to what THEY want.
     if include_goals and character.goals:
         parts.extend(character.goals[:3])
+
+    # The agent's current stance toward the player — relevance is relative to their caring, so
+    # a wary character recalls a different past than a fond one (issue #6 RR-deepening).
+    if relationship_hint:
+        parts.append(relationship_hint)
 
     return "  ".join(parts).strip() or trigger
 
