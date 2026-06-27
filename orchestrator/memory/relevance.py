@@ -36,10 +36,17 @@ class MemoryRecord:
 
     text: str
     embedding: list[float]
-    index: int  # monotonic insertion order — drives recency without parsing game-time
+    index: int  # monotonic insertion order — drives recency when there's no game clock
     importance: float = 0.5  # 0..1 salience captured at write time (goal/arena bearing)
     kind: str = "exchange"  # "exchange" | "world_event"
     when: str = ""  # game-supplied time tag; stored/displayed, never parsed by the engine
+    # Temporal decay (issue #5). `t` is the GAME's clock value at creation — a single
+    # monotonic number whose units the game owns (days/ticks/turns/seconds); the engine only
+    # ever takes a difference. `last_t` is the clock at the most recent reinforcement (decay
+    # is measured from there), and `reinforcement` counts how often the memory was re-met.
+    t: float | None = None
+    last_t: float | None = None
+    reinforcement: int = 0
 
 
 @dataclass
@@ -55,6 +62,13 @@ class RelevanceWeights:
     floor: float = 0.15  # minimum base score to be eligible (relevance threshold)
     spread: str = "zscore"  # similarity spreading across candidates: "zscore"|"minmax"|"none"
     spread_gain: float = 1.5  # zscore logistic steepness (higher = wider spread)
+    # Temporal decay (issue #5). When a memory carries a game clock `t`, recency becomes a
+    # STRENGTH that fades over game-time Δt with a half-life extended by salience and
+    # reinforcement — so a one-off fades while an important/repeated memory persists. Units
+    # are the GAME's; tune decay_half_life to the game's time scale (engine stays agnostic).
+    decay_half_life: float = 30.0       # base half-life in the game's time units
+    decay_importance_gain: float = 4.0  # importance=1 multiplies the half-life by (1+gain)
+    decay_reinforce_gain: float = 1.0   # n reinforcements multiply the half-life by (1+gain*n)
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -73,6 +87,25 @@ def _recency(record_index: int, now_index: int, half_life: float) -> float:
     closer to 1). Avoids parsing game-time while still honoring 'recent weighs more'."""
     age = max(0, now_index - record_index)
     return 0.5 ** (age / max(1e-6, half_life))
+
+
+def _strength(record: "MemoryRecord", now_t: float | None, now_index: int,
+              w: "RelevanceWeights") -> float:
+    """Temporal salience as an opponent-processing pole. Over GAME-TIME when the memory and
+    the query both carry a clock, else by insertion index (back-compat). The game-time
+    half-life is stretched by importance and by reinforcement, so a trivial one-off fades
+    over in-game time while an important or repeated memory survives (issue #5). `now_t` and
+    `record.t` are in the GAME's own units — the engine only takes their difference."""
+    if record.t is not None and now_t is not None:
+        anchor = record.last_t if record.last_t is not None else record.t
+        age = max(0.0, now_t - anchor)
+        half_life = (
+            w.decay_half_life
+            * (1.0 + w.decay_importance_gain * record.importance)
+            * (1.0 + w.decay_reinforce_gain * record.reinforcement)
+        )
+        return 0.5 ** (age / max(1e-9, half_life))
+    return _recency(record.index, now_index, w.recency_half_life)
 
 
 def _spread_similarities(sims: list[float], method: str, gain: float) -> list[float]:
@@ -111,6 +144,7 @@ def realize_relevance(
     weights: RelevanceWeights | None = None,
     budget: int = 4,
     now_index: int | None = None,
+    now_t: float | None = None,
     return_debug: bool = False,
 ):
     """Select up to `budget` memories by balancing similarity, recency, importance and
@@ -134,7 +168,7 @@ def realize_relevance(
     parts: dict[int, dict] = {}
     scored: list[tuple[MemoryRecord, float]] = []
     for c, sim_raw, sim in zip(candidates, raw_sims, sims):
-        rec = _recency(c.index, now_index, w.recency_half_life)
+        rec = _strength(c, now_t, now_index, w)  # game-time decay, or index recency
         base = w.similarity * sim + w.recency * rec + w.importance * c.importance
         # Cast to native floats so the debug breakdown is always JSON-serializable
         # (embeddings may be numpy float32). similarity = spread (drives base);
