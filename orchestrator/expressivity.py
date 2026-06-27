@@ -366,6 +366,10 @@ class InworldProfile(VoiceProfile):
             "voice may read those aloud). Natural sounds go inline where they fit: [laughs], "
             "[sighs], [breathes], [coughs], [clears throat]. Put a stressed word in CAPITALS.\n"
             + "- TIMING: [pause] or [long pause] on its OWN line holds a beat of silence.\n"
+            + "- Be GENEROUS, not sparse — a real voice keeps moving. Don't ride one tone for "
+            "a whole reply: re-open with a fresh direction when the feeling turns, and lace in "
+            "natural sounds where a person would make them — [laughs], [soft laugh], [sighs], "
+            "[scoffs], [hums], [under your breath]. Aim for a cue every sentence or two.\n"
             + _CARRY
             + "Match every direction to the words; never stay flat. No physical actions — you "
             "are only a voice."
