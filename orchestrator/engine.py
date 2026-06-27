@@ -29,6 +29,7 @@ from .memory.intent import IntentStore
 from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
+from .consolidation import consolidate_beliefs
 from .salience import reflect_on_turn, score_salience
 
 
@@ -43,6 +44,10 @@ class Engine:
         self.relationship = RelationshipStore(ns, readonly=readonly)
         self.intent = IntentStore(ns, readonly=readonly)
         self.short_term = ShortTermMemory(max_turns=s.short_term_turns)
+        # Reflection/consolidation (#9): accumulate exchanges + their importance until enough has
+        # happened to be worth forming beliefs (process-lifetime; resets on restart).
+        self._reflect_buffer: list[str] = []
+        self._reflect_acc = 0.0
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
     async def remember(self, fact: str, **kw) -> None:
@@ -112,6 +117,25 @@ class Engine:
         else:
             importance = await score_salience(self.character, user_text, reply)
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
+        if s.reflection_enabled:
+            await self._maybe_consolidate(user_text, reply, importance, now_t)
+
+    async def _maybe_consolidate(self, user_text: str, reply: str, importance: float,
+                                 now_t: float | None) -> None:
+        """Accumulate the exchange; once enough importance has piled up since the last reflection,
+        compress what happened into durable BELIEFS (issue #9) and store them as salient memories
+        so they persist and resurface through normal recall."""
+        s = get_settings()
+        self._reflect_buffer.append(f"User: {user_text}\nMe: {reply}")
+        self._reflect_acc += importance
+        if self._reflect_acc < s.reflection_importance_threshold:
+            return
+        recent = self._reflect_buffer[-s.reflection_max_inputs:]
+        beliefs = await consolidate_beliefs(self.character, recent, existing=self.long_term.beliefs())
+        for b in beliefs:
+            await self.long_term.remember(b, kind="belief", importance=s.reflection_importance, t=now_t)
+        self._reflect_buffer.clear()
+        self._reflect_acc = 0.0
 
     async def respond(self, request: RespondRequest, *, debug: bool = False):
         """Headless convenience: prepare -> generate (direct LLM) -> record short-term ->
