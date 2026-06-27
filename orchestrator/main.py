@@ -702,7 +702,8 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             short_term.add_user(turn["user"])
             short_term.add_assistant(reply)
             if not long_term.readonly:
-                task = asyncio.create_task(engine.reflect(turn["user"], reply, turn["situation"]))
+                task = asyncio.create_task(
+                    engine.reflect(turn["user"], reply, turn["situation"], memories=turn.get("memories")))
                 writes.add(task)
                 task.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
@@ -715,6 +716,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         flush_turn()  # close out the prior turn (-> short-term + background reflect)
         turn["user"], turn["situation"] = user_text, situation
         injected, dbg = await engine.prepare(RespondRequest(player_input=user_text, situation=situation))
+        turn["memories"] = dbg["memories"]  # for the next flush's contradiction check (#10)
         if settings.memory_debug:
             await emit_json({"type": "memories", "query": dbg["query"],
                              "short_term": short_term.messages(),

@@ -227,6 +227,12 @@ class Settings(BaseSettings):
     reflection_max_inputs: int = 12               # most-recent exchanges fed to a reflection
     reflection_importance: float = 0.85           # beliefs are through-lines -> stored salient
     reflection_model: str = "claude-sonnet-4-6"   # synthesis needs nuance; matches salience_model
+    # Contradiction detection (issue #10), OPT-IN: the always-on knowledge directive makes a
+    # character NOTICE contradictions live; this background check additionally RECORDS one (the
+    # player's claim vs the established fact) as a salient memory, so a caught lie is carried
+    # forward. Costs a call only when enabled AND memories were recalled to contradict.
+    contradiction_detection: bool = False
+    contradiction_importance: float = 0.8  # a caught contradiction is memorable (feeds wariness)
     # Arena query (Track E / issue #2): build the long-term retrieval query from the player
     # input + recent conversation + Situation + goals (not just the last line), so recall
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.
