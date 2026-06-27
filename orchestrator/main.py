@@ -76,7 +76,7 @@ from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .pipeline import Pipeline
 from .realtime.inworld_session import InworldSession
-from .salience import score_salience
+from .salience import score_and_detect, score_salience
 
 logging.basicConfig(
     level=logging.INFO,
@@ -702,9 +702,18 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             if not long_term.readonly:
                 clock = turn["situation"].clock if turn["situation"] else None  # -> decay
                 async def _store(u=turn["user"], r=reply, t=clock) -> None:
-                    await long_term.add_exchange(
-                        u, r, importance=await score_salience(character, u, r), t=t
-                    )
+                    # #4-B: when detection is on, one call returns salience AND any commitment
+                    # the character just made (folded together — no extra round-trip). Runs in
+                    # the background, so it never reaches the player.
+                    if settings.commitment_detection:
+                        importance, detected = await score_and_detect(character, u, r)
+                        if detected and not commitments.readonly:
+                            commitments.add(detected["text"], made_t=t,
+                                            importance=detected["significance"], due=detected["due"])
+                            logger.info("Detected commitment: %r", detected["text"][:60])
+                    else:
+                        importance = await score_salience(character, u, r)
+                    await long_term.add_exchange(u, r, importance=importance, t=t)
                 task = asyncio.create_task(_store())
                 writes.add(task)
                 task.add_done_callback(writes.discard)

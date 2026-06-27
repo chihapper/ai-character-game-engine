@@ -196,6 +196,11 @@ class Settings(BaseSettings):
     # the background (off the critical path). Set false to store at a flat 0.5.
     salience_scoring: bool = True
     salience_model: str = "claude-sonnet-4-6"  # nuanced judgement; drop to haiku for cost
+    # Commitment DETECTION (issue #4-B), OPT-IN: when on, the per-turn background salience
+    # call ALSO extracts any concrete promise/obligation the character just made and creates
+    # a commitment — no extra round-trip (folded into the salience call), ~0 player latency.
+    # Off by default: it's fuzzy (false positives/misses), so toggle it on for beta A/B.
+    commitment_detection: bool = False
     # Arena query (Track E / issue #2): build the long-term retrieval query from the player
     # input + recent conversation + Situation + goals (not just the last line), so recall
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.

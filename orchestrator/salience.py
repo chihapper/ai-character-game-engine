@@ -107,3 +107,72 @@ async def score_salience(
     """Rate, 0–1, how memorable this exchange is to `character`."""
     moment = f"Player: {user_text}\n{character.name}: {assistant_text}"
     return await score_salience_text(character, moment, model=model)
+
+
+# --- Commitment detection (issue #4-B): folded into the salience call ----------------------
+
+_DETECT_SYSTEM = (
+    "You analyze one exchange with a fictional character and return JSON ONLY — no prose.\n"
+    'Return exactly: {"importance": <0.00-1.00>, "commitment": null | '
+    '{"text": "<obligation from the character\'s POV>", "significance": <0.00-1.00>, '
+    '"due": "<deadline if stated, else empty>"}}\n\n'
+    "importance — how reliably THIS character would RECALL this moment later (memory, not "
+    "drama). Take the higher of emotional/personal weight or role relevance; a competent "
+    "professional recalls facts in their domain even when routine. Filler/greeting 0.0-0.1; "
+    "a role-relevant fact 0.6-0.8; a personally pivotal moment 0.8-1.0.\n\n"
+    "commitment — set ONLY if the CHARACTER (not the player) made a CONCRETE, durable promise, "
+    "obligation, deal, or constraint they could later be held to (\"I'll meet you at dawn\", "
+    "\"I won't tell anyone\", \"I'll pay off your debt\"). Write `text` as the obligation from "
+    "the character's POV (\"meet the player at dawn\"); `significance` = how much honoring it "
+    "matters to this character. Be CONSERVATIVE: hedges (\"maybe\", \"I'll think about it\"), "
+    "pleasantries, hypotheticals, and anything the PLAYER said are NOT commitments → null."
+)
+
+
+def _parse_score_and_commitment(text: str) -> tuple[float, dict | None]:
+    import json
+
+    m = re.search(r"\{.*\}", text or "", re.DOTALL)
+    if not m:
+        return _parse_score(text), None
+    try:
+        d = json.loads(m.group())
+    except (ValueError, TypeError):
+        return _parse_score(text), None
+    imp = d.get("importance")
+    importance = max(0.0, min(1.0, float(imp))) if isinstance(imp, (int, float)) else NEUTRAL
+    c = d.get("commitment")
+    commitment = None
+    if isinstance(c, dict) and str(c.get("text") or "").strip():
+        sig = c.get("significance")
+        commitment = {
+            "text": str(c["text"]).strip(),
+            "significance": max(0.0, min(1.0, float(sig))) if isinstance(sig, (int, float)) else 0.5,
+            "due": str(c.get("due") or "").strip(),
+        }
+    return importance, commitment
+
+
+async def score_and_detect(
+    character: Character, user_text: str, assistant_text: str, *, model: str | None = None
+) -> tuple[float, dict | None]:
+    """One LLM call returning BOTH the salience importance (0–1) and any commitment the
+    character just MADE in this reply (or None) — folded together so detection adds a few
+    output tokens, not a new round-trip. Returns (NEUTRAL, None) when off or on error."""
+    settings = get_settings()
+    if not settings.salience_scoring and not settings.commitment_detection:
+        return NEUTRAL, None
+    prompt = (
+        f"CHARACTER:\n{_character_summary(character)}\n\n"
+        f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
+        "Return the JSON described."
+    )
+    try:
+        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=220)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], _DETECT_SYSTEM):
+            parts.append(delta)
+        return _parse_score_and_commitment("".join(parts))
+    except Exception:
+        logger.exception("Salience+detection failed; using neutral importance, no commitment")
+        return NEUTRAL, None
