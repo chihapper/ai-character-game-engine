@@ -149,12 +149,14 @@ class CommitmentStore:
         return None
 
     def sweep_expired(self, now_t: float | None) -> list[Commitment]:
-        """Mark open commitments whose due clock has passed as EXPIRED. Returns them so the
-        engine can convert each into an ordinary memory. No-op without a clock."""
+        """Mark open commitments whose due clock has PASSED as EXPIRED. Strictly past
+        (now_t > due_t), so a commitment 'due by day 2' stays open *during* day 2 and only
+        lapses once the clock moves beyond it — the actor gets the whole due window. Returns
+        the expired ones so the engine can convert each to a memory. No-op without a clock."""
         if now_t is None:
             return []
         expired = [c for c in self._all()
-                   if c.status == OPEN and c.due_t is not None and now_t >= c.due_t]
+                   if c.status == OPEN and c.due_t is not None and now_t > c.due_t]
         for c in expired:
             c.status = EXPIRED
         if expired:
