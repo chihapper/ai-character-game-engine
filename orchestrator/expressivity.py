@@ -357,7 +357,10 @@ class InworldProfile(VoiceProfile):
             "START it with a verb (speak/say/whisper/lower/growl/snap/drawl) or a feeling "
             "word (cold, hushed, frantic, tender) — then the voice performs it:\n"
             + '- e.g. "[speak low and unhurried]", "[lower your voice, careful now]", '
-            '"[whisper, conspiratorial]", "[cold]", "[bright and teasing]".\n'
+            '"[whisper, conspiratorial]", "[a bright, teasing lilt, almost laughing]".\n'
+            + "- DESCRIBE the manner — the more you say about HOW to perform, the more the "
+            'voice actually moves. A bare single word ("[playful]", "[cold]") barely shifts '
+            'it; give it a few words ("[warm and playful, a grin in your voice]").\n'
             + "- One direction per line, up front. For a SUDDEN shift, drop a new tag right "
             'where it turns: "[calm] For the last time... [yell] GET OUT!" — the engine adds a '
             "tiny beat to carry it.\n"
