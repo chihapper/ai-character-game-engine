@@ -14,15 +14,16 @@ For every stored memory, scored against the current turn's query:
 | Field | Range | Meaning | RR pole |
 | --- | --- | --- | --- |
 | **sim** | 0–100 | **Semantic similarity** — how close in *meaning* to the query (cosine of embeddings, normalized; ~50 = unrelated, 100 ≈ identical meaning). | focusing / exploit |
-| **rec** | 0–100 | **Recency** — how recently it was stored; decays as newer memories pile on (half-life ≈ 20 memories). | temporal salience |
+| **str** | 0–100 | **Temporal strength** — the recency/"freshness" pole. With a game clock it **decays over in-game time** (half-life stretched by importance + reinforcement — see below); without one, falls back to decay-by-memory-count (half-life ≈ 20). | temporal salience |
 | **imp** | 0–100 | **Importance** — the salience stored *with* the memory. Conversation exchanges = **50**; world events from `remember()` default **70** (or whatever you pass). | goal / arena bearing |
-| **base** | ~0–1.85 | The **weighted blend** of the three (see formula). The headline score. | — |
+| **↺N** | — | **Reinforcement** — times this memory has been *rehearsed* (re-encountered, or recalled when recall-reinforcement is on). Each one stretches the decay half-life. Shown only when N>0; the expanded row also lists its game clock `t`. | temporal salience |
+| **base** | ~0–1.85 | The **weighted blend** of sim/str/imp (see formula). The headline score. | — |
 
 The blend (weights are tunable in `.env`):
 
 ```
-base = w_sim·sim  +  w_rec·rec  +  w_imp·imp        (sim/rec/imp as 0–1 here)
-     =  1.0·sim   +  0.35·rec   +  0.5·imp           (defaults)  → max ≈ 1.85
+base = w_sim·sim  +  w_rec·str  +  w_imp·imp        (sim/str/imp as 0–1 here)
+     =  1.0·sim   +  0.35·str   +  0.5·imp           (defaults)  → max ≈ 1.85
 ```
 
 This is why a `remember()`'d world event (imp 90) can sit **above** a more semantically
@@ -38,6 +39,33 @@ toward ~1.0, off-topic fall), `minmax` stretches to the full range (aggressive),
 disables it. The expanded panel shows both the spread `sim` and the `(raw …)` cosine, so
 you can see the correction. Heavier alternatives, if this isn't enough, live at the
 embedder layer: whitening/mean-centering the embeddings, or a less-anisotropic model.
+
+## Temporal decay & reinforcement (game-time) — [issue #5](https://github.com/chihapper/ai-character-game-engine/issues/5)
+
+The **str** pole models *forgetting*. When the game supplies a clock, a memory's strength
+fades over **in-game time**, not over how many other memories piled on top. The game owns
+the clock — a single monotonic number (days, ticks, turns, seconds; the engine never
+interprets the unit, only takes a difference), passed as `Situation.clock` (or `t` on
+`remember()`). No clock → falls back to decay-by-memory-count, so older saves still work.
+
+```
+strength  = 0.5 ^ (Δt / half_life)
+half_life = base_half_life · scale^importance · (1 + reinforce_gain · reinforcement)
+```
+
+Two things stretch the half-life so a memory resists forgetting:
+
+- **Salience** (`scale^importance`, super-linear): a trivial one-off fades within the base
+  half-life; a life-saving moment (importance ≈ .95) lasts dozens of times longer — vivid
+  even after in-game years. This is *on top of* importance's undecayed contribution to
+  `base`, so a significant memory stays relevant two ways.
+- **Reinforcement** (`1 + gain·N`): a fact that's **re-encountered** — or **recalled**, when
+  `REINFORCE_ON_RECALL` is on — bumps its count and resets its "last seen", so rehearsal
+  keeps it alive. A one-off fades; something the player keeps bringing up persists.
+
+`tools/decay_demo.py` plots the curves; `tools/recall_reinforce_sim.py` simulates a long
+game to vet recall-as-reinforcement (it's *selective* — keeps revisited memories vivid
+without inflating never-revisited ones).
 
 ## How rows get the ★ (selection)
 
@@ -76,6 +104,10 @@ Set in `.env` and restart:
 | `RR_RELEVANCE_FLOOR` | 0.15 | min normalized base to be eligible |
 | `RR_SIMILARITY_SPREAD` | zscore | anisotropy correction: `zscore` / `minmax` / `none` |
 | `RR_SPREAD_GAIN` | 1.5 | zscore steepness — higher = wider spread |
+| `RR_DECAY_HALF_LIFE` | 30 | base half-life (importance 0) in the **game's** time units |
+| `RR_DECAY_IMPORTANCE_SCALE` | 50 | half-life ×= `scale^importance` (super-linear; significant memories near-permanent) |
+| `RR_DECAY_REINFORCE_GAIN` | 1.0 | each reinforcement ×= `(1+gain·N)` the half-life |
+| `REINFORCE_ON_RECALL` | off | recalling a memory rehearses it (slows decay); writes the store on each retrieve |
 | `LONG_TERM_TOP_K` | 4 | budget: max memories injected per turn |
 
 E.g. raise `RR_WEIGHT_IMPORTANCE` so world events dominate; raise `RR_WEIGHT_DIVERSITY`
@@ -83,11 +115,12 @@ to suppress near-duplicates; lower `RR_RELEVANCE_FLOOR` to admit weaker matches.
 
 ## Worked examples
 
-All use the default weights (`sim 1.0, rec 0.35, imp 0.5`), so `base = sim + 0.35·rec +
-0.5·imp` (sim/rec/imp as 0–1). Imagine the player asks **"do you remember my brother?"**
-and these candidates are scored:
+All use the default weights (`sim 1.0, str 0.35, imp 0.5`), so `base = sim + 0.35·str +
+0.5·imp` (sim/str/imp as 0–1). The **str** column here shows index-recency (no game clock);
+with a clock it would be the game-time decay above. Imagine the player asks **"do you
+remember my brother?"** and these candidates are scored:
 
-| memory | sim | rec | imp | base | outcome |
+| memory | sim | str | imp | base | outcome |
 | --- | --- | --- | --- | --- | --- |
 | "…my brother disappeared in the mines" (old) | .81 | .35 | .50 | **1.18** | ❌ not injected |
 | "Hey" (generic, very recent) | .77 | .97 | .50 | **1.36** | ✅ injected |
@@ -112,18 +145,18 @@ What each row teaches:
 Net intuition: **`sim` finds what's on-topic, `rec` favors what's fresh, `imp` protects
 what matters — and they fight.** Tune the weights to change who wins that fight.
 
-## Known limitation & queued work
+## Built since, and queued work
 
-- **[issue #3](https://github.com/chihapper/ai-character-game-engine/issues/3) (current focus):**
-  important memories get buried by recency because (a) the embedder's similarities cluster
-  too tightly and (b) `importance` is flat / not character-aware. Fixes: higher-spread
-  similarity + character-aware salience at write time.
-- **Queued next (after #3):**
-  - **Write-time dedup** — skip storing identical facts and collapse near-duplicates (you
-    can fire `remember()` twice today and both copies get injected).
-  - **Arena query** — fold the live `Situation` + the character's goals into the *retrieval
-    query*, so recall is searched against the whole scene, not just the last line
-    (issue #2 / [`architecture-seams.md`](architecture-seams.md) §6 Track E step 4).
+- **Done:** [#3](https://github.com/chihapper/ai-character-game-engine/issues/3) high-spread
+  similarity + **character-aware salience** (an LLM rates how memorable an exchange is *to
+  this character* at write time); **write-time dedup** (re-encounters now *reinforce* instead
+  of double-injecting); **arena query** (recall is searched against the trigger + recent turns
+  + live `Situation` + goals, not just the last line); and **[#5](https://github.com/chihapper/ai-character-game-engine/issues/5)
+  temporal decay + reinforcement** (above).
+- **Queued next — [#4](https://github.com/chihapper/ai-character-game-engine/issues/4)
+  long-range commitment tracking:** promises/constraints a character makes ("I'll meet you at
+  dawn") currently fall out of context once past the short-term buffer. They need to be held
+  as durable, surfaced commitments rather than ordinary decaying memories.
 
 > This is a deliberate *approximation* of relevance realization (Vervaeke et al.) for an
 > authored-goal NPC — the LLM remains the real relevance realizer over its context; this
