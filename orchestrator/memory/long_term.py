@@ -122,6 +122,7 @@ class LongTermMemory:
             decay_half_life=settings.rr_decay_half_life,
             decay_importance_scale=settings.rr_decay_importance_scale,
             decay_reinforce_gain=settings.rr_decay_reinforce_gain,
+            decay_reinforce_cap=settings.rr_decay_reinforce_cap,
         )
         self._dedup_threshold = settings.memory_dedup_threshold
         self._reinforce_on_recall = settings.reinforce_on_recall

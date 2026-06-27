@@ -70,7 +70,10 @@ class RelevanceWeights:
     decay_importance_scale: float = 50.0  # half-life *= scale**importance — SUPER-linear, so a
                                           # truly significant memory (saving a life) becomes
                                           # near-permanent while a trivial one fades fast
-    decay_reinforce_gain: float = 1.0     # n reinforcements multiply the half-life by (1+gain*n)
+    decay_reinforce_gain: float = 1.0     # initial slope: small n stretch the half-life ~(1+gain*n)
+    decay_reinforce_cap: float = 12.0     # ...but with DIMINISHING returns, bounded so the boost
+                                          # asymptotes at (1+cap)x — a constantly-recalled memory
+                                          # can't grow permanent and crowd recall forever
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -91,6 +94,14 @@ def _recency(record_index: int, now_index: int, half_life: float) -> float:
     return 0.5 ** (age / max(1e-6, half_life))
 
 
+def _reinforce_factor(reinforcement: int, gain: float, cap: float) -> float:
+    """Half-life multiplier from rehearsal: ≈ (1 + gain·n) while small, saturating at (1 + cap)
+    so a memory recalled without end can't become effectively permanent (asymptotic, like the
+    relationship axes)."""
+    boost = gain * max(0, reinforcement)
+    return 1.0 + (cap * boost / (cap + boost) if boost > 0 else 0.0)
+
+
 def _strength(record: "MemoryRecord", now_t: float | None, now_index: int,
               w: "RelevanceWeights") -> float:
     """Temporal salience as an opponent-processing pole. Over GAME-TIME when the memory and
@@ -104,7 +115,7 @@ def _strength(record: "MemoryRecord", now_t: float | None, now_index: int,
         half_life = (
             w.decay_half_life
             * (w.decay_importance_scale ** record.importance)  # super-linear in significance
-            * (1.0 + w.decay_reinforce_gain * record.reinforcement)
+            * _reinforce_factor(record.reinforcement, w.decay_reinforce_gain, w.decay_reinforce_cap)
         )
         return 0.5 ** (age / max(1e-9, half_life))
     return _recency(record.index, now_index, w.recency_half_life)
