@@ -25,6 +25,7 @@ from .context import (
     RespondRequest, build_arena_query, build_instructions, render_turn_context,
 )
 from .memory.commitments import CommitmentStore, render_commitments
+from .memory.intent import IntentStore
 from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
@@ -40,6 +41,7 @@ class Engine:
         self.long_term = LongTermMemory(ns, readonly=readonly)
         self.commitments = CommitmentStore(ns, readonly=readonly)
         self.relationship = RelationshipStore(ns, readonly=readonly)
+        self.intent = IntentStore(ns, readonly=readonly)
         self.short_term = ShortTermMemory(max_turns=s.short_term_turns)
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
@@ -67,11 +69,14 @@ class Engine:
         now_t = request.situation.clock if request.situation else None
         for c in self.commitments.sweep_expired(now_t):
             await self._convert(c, now_t)
+        # The agent's stance toward the player: feelings (#6) AND current aim (#8) both condition
+        # what's relevant — a wary, "find out who sent them" character recalls a different past.
+        stance = "; ".join(h for h in (self.relationship.get().query_hint(),
+                                       self.intent.get().query_hint()) if h)
         if s.arena_query:
             query = build_arena_query(
                 request, self.character, self.short_term.messages(),
-                max_recent_turns=s.arena_query_recent_turns,
-                relationship_hint=self.relationship.get().query_hint(),
+                max_recent_turns=s.arena_query_recent_turns, relationship_hint=stance,
             )
         else:
             query = request.query()
@@ -79,10 +84,11 @@ class Engine:
         injected = render_turn_context(
             memories=scored.get("selected", []), situation=request.situation,
             commitments=render_commitments(self.commitments.open_items()),
-            relationship=self.relationship.get().render(),
+            relationship=self.relationship.get().render(), intent=self.intent.get().render(),
         )
         return injected, {"query": query, "memories": scored.get("selected", []),
-                          "scored": scored.get("scored", []), "embedder": scored.get("embedder", "")}
+                          "scored": scored.get("scored", []), "embedder": scored.get("embedder", ""),
+                          "intent": self.intent.get().intent}
 
     async def reflect(self, user_text: str, reply: str, situation) -> None:
         """Second half (background-safe): salience + any detected commitment + the relationship
@@ -92,14 +98,17 @@ class Engine:
             return
         s = get_settings()
         now_t = situation.clock if situation else None
-        if s.commitment_detection or s.relationship_state:
-            importance, detected, rel = await reflect_on_turn(
-                self.character, user_text, reply, relationship=self.relationship.get())
+        if s.commitment_detection or s.relationship_state or s.intent_state:
+            importance, detected, rel, intent = await reflect_on_turn(
+                self.character, user_text, reply,
+                relationship=self.relationship.get(), intent=self.intent.get())
             if detected and not self.commitments.readonly:
                 self.commitments.add(detected["text"], made_t=now_t,
                                      importance=detected["significance"], due=detected["due"])
             if rel and not self.relationship.readonly:
                 self.relationship.update(**rel)
+            if intent is not None and not self.intent.readonly:
+                self.intent.update(intent)
         else:
             importance = await score_salience(self.character, user_text, reply)
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)

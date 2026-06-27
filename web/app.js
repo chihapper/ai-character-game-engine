@@ -510,6 +510,16 @@ function renderMemoryDebug(msg) {
     panel.appendChild(rbox);
   }
 
+  // --- current intent (the character's immediate short-term aim; evolves per turn, #8) ---
+  const intent = msg.intent;
+  if (intent && intent.trim()) {
+    const ibox = el("div",
+      "margin-bottom:6px;padding:5px 7px;background:#262030;border:1px solid #4a3a5a;border-radius:5px");
+    ibox.appendChild(el("div", "color:#b08ad9;font-weight:bold;margin-bottom:2px", "◆ current intent"));
+    ibox.appendChild(el("div", "color:#c4b0d9", intent));
+    panel.appendChild(ibox);
+  }
+
   // --- tabs ---
   const longN = (msg.scored || []).length;
   const shortN = (msg.short_term || []).length;

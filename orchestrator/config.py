@@ -206,6 +206,11 @@ class Settings(BaseSettings):
     # (affection/trust/respect deltas + mood), folded in (no extra round-trip). RR note: this
     # is the agent's CARING conditioning the relevance realizer, not just tone. Off by default.
     relationship_state: bool = False
+    # Evolving intent / short-term goals (issue #8), OPT-IN: the same background call ALSO sets
+    # the character's immediate aim with the player (a short agenda they pursue), folded in.
+    # Injected so they act proactively, and folds into the arena query so recall serves the aim
+    # (RR: relevance relative to the agent's goals). Off by default.
+    intent_state: bool = False
     # Arena query (Track E / issue #2): build the long-term retrieval query from the player
     # input + recent conversation + Situation + goals (not just the last line), so recall
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.

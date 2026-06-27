@@ -15,6 +15,7 @@ import pathlib
 import sys
 
 os.environ.setdefault("RELATIONSHIP_STATE", "true")
+os.environ.setdefault("INTENT_STATE", "true")  # show the evolving short-term agenda (#8)
 os.environ.setdefault("COMMITMENT_DETECTION", "false")  # this game declares commitments explicitly
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from dotenv import load_dotenv  # noqa: E402
@@ -44,6 +45,8 @@ def show(reply, dbg, name):
     r = dbg["relationship"]
     print(f"   relationship: affection {r['affection']:.2f} · trust {r['trust']:.2f} · "
           f"respect {r['respect']:.2f}  ({r['mood']})")
+    if dbg.get("intent"):
+        print(f"   intent: {dbg['intent']}")
     print(f"\n   {name}: {reply}\n")
 
 

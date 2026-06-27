@@ -147,16 +147,29 @@ def _relationship_block(rel) -> str:
     )
 
 
-def _parse_reflection(text: str, want_commit: bool, want_rel: bool):
+def _intent_block(intent) -> str:
+    cur = f' (their current aim: "{intent.intent}")' if intent and intent.intent else " (none set yet)"
+    return (
+        "intent — the character's IMMEDIATE short-term aim with the player right now, beyond "
+        "their standing profile goals. A concrete agenda from their POV (\"find out who sent "
+        "them\", \"keep them close tonight\", \"test if they can be trusted with the ledger\", "
+        "\"get rid of them\"). It EVOLVES — it may continue, sharpen, or change with the scene "
+        "and their feelings. CHARACTER-AWARE: a schemer probes and uses; a lonely flirt wants to "
+        "be chosen; a guarded one wants distance until trust is earned. Empty string if they have "
+        "no particular agenda." + cur
+    )
+
+
+def _parse_reflection(text: str, want_commit: bool, want_rel: bool, want_intent: bool):
     import json
 
     m = re.search(r"\{.*\}", text or "", re.DOTALL)
     if not m:
-        return _parse_score(text), None, None
+        return _parse_score(text), None, None, None
     try:
         d = json.loads(m.group())
     except (ValueError, TypeError):
-        return _parse_score(text), None, None
+        return _parse_score(text), None, None, None
     imp = d.get("importance")
     importance = max(0.0, min(1.0, float(imp))) if isinstance(imp, (int, float)) else NEUTRAL
     commitment = None
@@ -177,22 +190,26 @@ def _parse_reflection(text: str, want_commit: bool, want_rel: bool):
             "d_affection": clamp(r.get("affection_delta")), "d_trust": clamp(r.get("trust_delta")),
             "d_respect": clamp(r.get("respect_delta")), "mood": str(r.get("mood") or "").strip() or None,
         }
-    return importance, commitment, relationship
+    intent = None
+    if want_intent and isinstance(d.get("intent"), str):
+        intent = d["intent"].strip() or None
+    return importance, commitment, relationship, intent
 
 
 async def reflect_on_turn(
     character: Character, user_text: str, assistant_text: str, *,
-    relationship=None, model: str | None = None,
-) -> tuple[float, dict | None, dict | None]:
+    relationship=None, intent=None, model: str | None = None,
+) -> tuple[float, dict | None, dict | None, str | None]:
     """ONE background LLM call: salience importance, plus — when enabled — any commitment the
-    character made (#4-B) and how the exchange moved their feelings toward the player (#6).
-    Folded into a single call (~0 player latency). Returns (importance, commitment|None,
-    relationship_update|None); (NEUTRAL, None, None) when all off or on error."""
+    character made (#4-B), how the exchange moved their feelings (#6), and their updated
+    short-term intent (#8). Folded into a single call (~0 player latency). Returns (importance,
+    commitment|None, relationship_update|None, intent|None); fallbacks are all-None."""
     settings = get_settings()
     want_commit = settings.commitment_detection
     want_rel = settings.relationship_state and relationship is not None
-    if not settings.salience_scoring and not want_commit and not want_rel:
-        return NEUTRAL, None, None
+    want_intent = settings.intent_state and intent is not None
+    if not settings.salience_scoring and not want_commit and not want_rel and not want_intent:
+        return NEUTRAL, None, None, None
     fields = ['"importance": <0.00-1.00>']
     blocks = [_IMPORTANCE_BLOCK]
     if want_commit:
@@ -202,25 +219,28 @@ async def reflect_on_turn(
         fields.append('"relationship": {"affection_delta": <-0.3..0.3>, "trust_delta": '
                       '<-0.3..0.3>, "respect_delta": <-0.3..0.3>, "mood": "<1-2 words>"}')
         blocks.append(_relationship_block(relationship))
+    if want_intent:
+        fields.append('"intent": "<short aim from their POV, or empty>"')
+        blocks.append(_intent_block(intent))
     system = ("You analyze one exchange with a fictional character and return JSON ONLY — no "
               "prose.\nReturn: {" + ", ".join(fields) + "}\n\n" + "\n\n".join(blocks))
     prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
               f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
               "Return the JSON described.")
     try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=320)
+        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=380)
         parts: list[str] = []
         async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
             parts.append(delta)
-        return _parse_reflection("".join(parts), want_commit, want_rel)
+        return _parse_reflection("".join(parts), want_commit, want_rel, want_intent)
     except Exception:
-        logger.exception("Reflection (salience/detect/relationship) failed; neutral fallback")
-        return NEUTRAL, None, None
+        logger.exception("Reflection (salience/detect/relationship/intent) failed; neutral fallback")
+        return NEUTRAL, None, None, None
 
 
 async def score_and_detect(
     character: Character, user_text: str, assistant_text: str, *, model: str | None = None
 ) -> tuple[float, dict | None]:
-    """Back-compat: salience + commitment only (no relationship)."""
-    importance, commitment, _ = await reflect_on_turn(character, user_text, assistant_text, model=model)
+    """Back-compat: salience + commitment only (no relationship/intent)."""
+    importance, commitment, _, _ = await reflect_on_turn(character, user_text, assistant_text, model=model)
     return importance, commitment

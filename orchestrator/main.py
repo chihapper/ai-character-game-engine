@@ -721,6 +721,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                              "commitments": [{"text": c.text, "due": c.due, "importance": c.importance}
                                              for c in commitments.open_items()],
                              "relationship": relationship_store.get().to_dict(),
+                             "intent": dbg["intent"],
                              "selected": dbg["memories"], "scored": dbg["scored"],
                              "embedder": dbg["embedder"]})
         _t_ret = time.monotonic()
