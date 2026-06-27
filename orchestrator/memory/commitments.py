@@ -33,6 +33,9 @@ class Commitment:
     due_t: float | None = None                  # numeric clock for expiry (optional)
     due: str = ""                               # human-readable deadline, for display (optional)
     parties: list[str] = field(default_factory=list)  # who it's to, e.g. ["the player"]
+    importance: float = 0.5                     # how SIGNIFICANT this obligation is to the NPC
+                                                # (0-1) — drives how strongly the eventual
+                                                # memory of keeping/breaking it persists
 
     def render(self) -> str:
         # Parties stay metadata (often the text already names them); only the deadline is
@@ -47,8 +50,13 @@ class Commitment:
         return f"I {verb} my promise{who}: {self.text}"
 
     def memory_importance(self) -> float:
-        # A broken promise is the most memorable; a kept one matters; a lapsed one less so.
-        return {BROKEN: 0.85, FULFILLED: 0.6, EXPIRED: 0.5}.get(self.status, 0.5)
+        """How significant the *resulting memory* is — it inherits the commitment's own
+        significance to the NPC, and an UNKEPT promise (broken/expired) stings a little
+        more. So a high-stakes betrayal (let someone go to debtor's prison) stays vivid for
+        in-game years via the super-linear decay, while a trivial broken promise still fades."""
+        if self.status in (BROKEN, EXPIRED):
+            return min(1.0, self.importance + 0.1)
+        return self.importance  # fulfilled/kept: as significant as the promise was
 
 
 def render_commitments(items: list[Commitment]) -> str:
@@ -95,6 +103,7 @@ class CommitmentStore:
                     text=d["text"], id=d["id"], status=d.get("status", OPEN),
                     made_t=d.get("made_t"), due_t=d.get("due_t"), due=d.get("due", ""),
                     parties=list(d.get("parties") or []),
+                    importance=float(d.get("importance", 0.5)),
                 ))
         return out
 
@@ -107,17 +116,20 @@ class CommitmentStore:
                 f.write(json.dumps({
                     "text": c.text, "id": c.id, "status": c.status, "made_t": c.made_t,
                     "due_t": c.due_t, "due": c.due, "parties": c.parties,
+                    "importance": c.importance,
                 }, ensure_ascii=False) + "\n")
 
     # --- writes (game-owned) ---
 
     def add(self, text: str, *, made_t: float | None = None, due_t: float | None = None,
-            due: str = "", parties: list[str] | None = None) -> Commitment | None:
+            due: str = "", parties: list[str] | None = None,
+            importance: float = 0.5) -> Commitment | None:
         text = (text or "").strip()
         if not text or self.readonly:
             return None
         c = Commitment(text=text, id=uuid.uuid4().hex[:12], made_t=made_t, due_t=due_t,
-                       due=(due or "").strip(), parties=parties or [])
+                       due=(due or "").strip(), parties=parties or [],
+                       importance=max(0.0, min(1.0, importance)))
         self._all().append(c)
         self._save()
         return c

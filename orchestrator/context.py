@@ -193,13 +193,15 @@ def render_memories(memories: list[str] | None) -> str:
 
 
 def render_turn_context(
-    *, memories: list[str] | None = None, situation: Situation | None = None
+    *, memories: list[str] | None = None, situation: Situation | None = None,
+    commitments: str = "",
 ) -> str:
-    """The per-turn DYNAMIC half of a character's context: recalled memories + the live
-    Situation. The full loop injects this as a small context *item* each turn (keeping the
-    big static prompt stable + cacheable), while the modular pipeline folds it into the
-    full prompt via build_instructions. Returns "" when there's nothing dynamic to say."""
-    parts = [s for s in (render_memories(memories), render_situation(situation)) if s]
+    """The per-turn DYNAMIC half of a character's context: recalled memories, OPEN
+    commitments (always surfaced — pre-rendered by memory.commitments.render_commitments),
+    and the live Situation. The full loop injects this as a small context *item* each turn
+    (keeping the big static prompt stable + cacheable), while the modular pipeline folds it
+    into the full prompt via build_instructions. Returns "" when there's nothing dynamic."""
+    parts = [s for s in (render_memories(memories), commitments, render_situation(situation)) if s]
     return "\n\n".join(parts)
 
 
@@ -208,10 +210,12 @@ def build_instructions(
     *,
     memories: list[str] | None = None,
     situation: Situation | None = None,
+    commitments: str = "",
     performance_provider: str | None = None,
 ) -> str:
-    """Assemble a character's full system prompt from the three sources. With no memories
-    and no situation, this equals the legacy prompt, so existing behavior is unchanged."""
+    """Assemble a character's full system prompt from the sources. With no memories,
+    commitments, or situation, this equals the legacy prompt, so existing behavior is
+    unchanged."""
     parts: list[str] = [ENGINE_DIRECTION + "\n" + character.build_prompt()]
 
     if performance_provider:
@@ -219,7 +223,9 @@ def build_instructions(
         if directive:
             parts.append(directive)
 
-    turn_context = render_turn_context(memories=memories, situation=situation)
+    turn_context = render_turn_context(
+        memories=memories, situation=situation, commitments=commitments
+    )
     if turn_context:
         parts.append(turn_context)
 

@@ -70,6 +70,7 @@ from .config import (
     get_settings,
 )
 from .context import RespondRequest, Situation, build_arena_query, build_instructions, render_turn_context
+from .memory.commitments import CommitmentStore, render_commitments
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
@@ -598,6 +599,11 @@ def _run_realtime_tool(call: dict) -> dict:
     return {"error": f"unknown tool {call.get('name')}"}
 
 
+def _num(x) -> float | None:
+    """A game clock value from a WS payload, or None if absent/non-numeric."""
+    return float(x) if isinstance(x, (int, float)) else None
+
+
 async def _handle_remember(long_term, data: dict, emit_json) -> None:
     """The memory-write seam over the WS: a game pushes a durable world event into the
     character's long-term memory. {type:"remember", fact, when?, kind?, importance?}."""
@@ -669,6 +675,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         character.memory_namespace,
         readonly=engine_cfg.get("memory_readonly", False) or settings.memory_readonly,
     )
+    commitments = CommitmentStore(character.memory_namespace, readonly=long_term.readonly)
     short_term = ShortTermMemory(max_turns=settings.short_term_turns)
     await session.connect()
     await emit_json(
@@ -703,6 +710,18 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                 task.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
 
+    def _convert_commitment(c, now_t) -> None:
+        """A closed commitment (resolved or expired) becomes an ordinary decaying memory of
+        the outcome — the character remembers it, but it's no longer an active duty."""
+        if long_term.readonly:
+            return
+        async def _w(c=c, now_t=now_t) -> None:
+            await long_term.remember(c.memory_text(), importance=c.memory_importance(),
+                                     t=now_t, kind="commitment")
+        task = asyncio.create_task(_w())
+        writes.add(task)
+        task.add_done_callback(writes.discard)
+
     async def retrieve_and_respond(user_text: str, situation) -> None:
         """The §5.6 step: retrieve against the arena query, inject via session.update, respond."""
         _t0 = time.monotonic()
@@ -718,6 +737,11 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             query = user_text
         memories: list[str] = []
         now_t = situation.clock if situation else None  # game clock -> temporal decay
+        # #4: expire overdue commitments (they convert to ordinary memories) + always-inject
+        # the open set, so active obligations never fall out of context.
+        for c in commitments.sweep_expired(now_t):
+            _convert_commitment(c, now_t)
+        commit_section = render_commitments(commitments.open_items())
         if query:
             if settings.memory_debug:
                 data = await long_term.retrieve_scored(query, now_t=now_t)
@@ -733,7 +757,9 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         if turn["ctx_id"]:
             await session.delete_item(turn["ctx_id"])
             turn["ctx_id"] = None
-        turn_context = render_turn_context(memories=memories, situation=situation)
+        turn_context = render_turn_context(
+            memories=memories, situation=situation, commitments=commit_section
+        )
         if turn_context:
             turn["seq"] += 1
             ctx_id = f"rr-ctx-{turn['seq']}"
@@ -856,6 +882,25 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                         await retrieve_and_respond(txt, Situation.from_dict(data.get("situation")))
                 elif mtype == "remember":
                     await _handle_remember(long_term, data, emit_json)
+                elif mtype == "commit":
+                    # The game declares an obligation the character has taken on.
+                    c = commitments.add(
+                        (data.get("text") or "").strip(),
+                        made_t=_num(data.get("made_t", data.get("clock", data.get("t")))),
+                        due_t=_num(data.get("due_t")), due=(data.get("due") or ""),
+                        parties=data.get("parties") or [],
+                        importance=float(data.get("importance", 0.5) or 0.5),
+                    )
+                    if c:
+                        await emit_json({"type": "committed", "id": c.id, "text": c.text})
+                elif mtype == "resolve_commitment":
+                    # The game marks an obligation fulfilled/broken; it converts to a memory.
+                    c = commitments.resolve((data.get("id") or "").strip(),
+                                            (data.get("status") or "").strip())
+                    if c:
+                        _convert_commitment(c, _num(data.get("clock", data.get("t"))))
+                    await emit_json({"type": "commitment_resolved", "id": data.get("id"),
+                                     "status": c.status if c else "unknown"})
     finally:
         stop.set()  # tell the supervisor not to reconnect during teardown
         flush_turn()
