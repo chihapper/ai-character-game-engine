@@ -84,6 +84,12 @@ via the super-linear decay above, while a trivial broken promise fades; a constr
 deadline never lapses on its own. `tools/commitment_scenarios.py` sweeps the full lifecycle
 across timetables.
 
+Commitments are created two ways: the game declares them (`commit`), or — with
+`COMMITMENT_DETECTION` on — the engine **detects** one the character makes in dialogue ("I'll
+meet you at dawn"), folded into the per-turn background salience call so it costs no extra
+round-trip. Detection is conservative (hedges/pleasantries/player-side promises don't count)
+and opt-in, since it's fuzzier than the game API.
+
 ## How rows get the ★ (selection)
 
 1. **Floor:** memories below `RR_RELEVANCE_FLOOR` are dropped — weak matches are *not*
@@ -172,10 +178,11 @@ what matters — and they fight.** Tune the weights to change who wins that figh
   temporal decay + reinforcement** (above).
 - **Done:** [#4](https://github.com/chihapper/ai-character-game-engine/issues/4) commitment
   tracking (above) — durable obligations, always injected, converting to significance-weighted
-  memories on close (game-API driven).
-- **Queued:** automatic **detection** of commitments from dialogue — the engine noticing a
-  character said "I'll meet you at dawn" on its own, rather than the game declaring it. The
-  optional layer on top of the game API.
+  memories on close. Two ways to create them: the game API (`commit` / `resolve_commitment`)
+  and opt-in **detection from dialogue** (`COMMITMENT_DETECTION`) — one background LLM call,
+  folded into the salience scorer, extracts a concrete promise the character makes (no extra
+  round-trip, ~0 player latency). Detection scored 8/8 on a discrimination set (real promises
+  in, hedges/pleasantries/player-side/hypotheticals out).
 
 > This is a deliberate *approximation* of relevance realization (Vervaeke et al.) for an
 > authored-goal NPC — the LLM remains the real relevance realizer over its context; this

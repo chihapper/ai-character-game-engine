@@ -76,7 +76,10 @@ decay or fall out of context. When it **closes** (the game marks it fulfilled/br
 **expires** past its due clock) it converts into an ordinary decaying memory of the outcome,
 inheriting its **significance** — a high-stakes betrayal stays vivid for in-game years; a
 trivial broken promise fades. The game owns it via `commit` / `resolve_commitment` (siblings
-of `remember`); `tools/commitment_scenarios.py` sweeps the lifecycle across timetables.
+of `remember`); `tools/commitment_scenarios.py` sweeps the lifecycle across timetables. With
+`COMMITMENT_DETECTION` on, the engine also auto-detects commitments the character makes in
+dialogue (folded into the background salience call — no extra round-trip), opt-in since it's
+fuzzier than the explicit API.
 
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
@@ -125,6 +128,7 @@ python -m tools.recall_reinforce_sim
 | `MEMORY_DEBUG` | off | emit the 🧠 score panel each turn (shows `str` / `↺N` / `t`) |
 | `MEMORY_READONLY` | off | freeze all stores (for controlled A/B — writes become no-ops) |
 | `REINFORCE_ON_RECALL` | off | recalling a memory rehearses it (slows decay) |
+| `COMMITMENT_DETECTION` | off | auto-detect commitments a character makes in dialogue (folded into salience) |
 | `RR_DECAY_HALF_LIFE` | 30 | base half-life in the **game's** time units |
 | `RR_DECAY_IMPORTANCE_SCALE` | 50 | half-life ×= `scale^importance` (significance → near-permanent) |
 | `RR_DECAY_REINFORCE_GAIN` | 1.0 | each reinforcement ×= `(1+gain·N)` half-life |
