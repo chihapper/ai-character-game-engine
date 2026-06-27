@@ -32,6 +32,19 @@ AVAILABLE_MODELS = [
 ]
 ALLOWED_MODEL_IDS = {m["id"] for m in AVAILABLE_MODELS}
 
+# Full-loop (Inworld-routed) LLMs surfaced in the conversation dropdown when
+# VOICE_RUNTIME=inworld_fullloop. Provider/name ids; labels carry the Track V latency
+# findings (first-audio is dominated by the routed LLM's TTFT, not TTS). Single source for
+# the dropdown and the ?realtime_llm= allow-list.
+REALTIME_MODELS = [
+    {"id": "anthropic/claude-haiku-4-5", "label": "Haiku 4.5 — best character (~2.4s)"},
+    {"id": "openai/gpt-4o", "label": "GPT-4o — fast & strong (~1.1s)"},
+    {"id": "openai/gpt-4o-mini", "label": "GPT-4o mini — fastest (~1.1s)"},
+    {"id": "openai/gpt-4.1-mini", "label": "GPT-4.1 mini — fast"},
+    {"id": "anthropic/claude-sonnet-4-6", "label": "Sonnet 4.6 — richest, slowest"},
+]
+ALLOWED_REALTIME_MODEL_IDS = {m["id"] for m in REALTIME_MODELS}
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

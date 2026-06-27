@@ -41,6 +41,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 let audioCtx = null;
 let pcmNode = null;
 let pcmCarry = new Uint8Array(0); // holds a trailing odd byte across frames
+let fullLoop = false; // true when the server runs the Inworld full loop (set by loadModels)
 
 async function ensureAudio() {
   if (!audioCtx) {
@@ -206,9 +207,9 @@ async function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const model = $("model").value;
   const profile = $("profile").value;
-  // A/B: full-loop LLM override from the page URL (?realtime_llm=openai/gpt-4o), forwarded
-  // to the session so Bri/Corvin can be tested across models without a server restart.
-  const rtLlm = new URLSearchParams(location.search).get("realtime_llm") || "";
+  // Full-loop LLM selection: the conversation dropdown (realtime list) drives it; a
+  // ?realtime_llm= URL param still overrides. Lets Bri/Corvin be A/B'd across models live.
+  const rtLlm = new URLSearchParams(location.search).get("realtime_llm") || (fullLoop ? model : "");
   ws = new WebSocket(
     `${proto}://${location.host}/ws?character=${encodeURIComponent(slug)}` +
       `&model=${encodeURIComponent(model)}&profile=${encodeURIComponent(profile)}` +
@@ -778,18 +779,24 @@ async function deleteCharacter(slug, name) {
 async function loadModels() {
   const res = await fetch("/api/models");
   const data = await res.json();
-  // Conversation model picker + the AI-draft model picker share the same list.
-  for (const selId of ["model", "c-ai-model"]) {
-    const select = $(selId);
-    if (!select) continue;
-    select.innerHTML = "";
-    for (const m of data.models) {
-      const opt = document.createElement("option");
-      opt.value = m.id;
-      opt.textContent = m.label;
-      if (m.id === data.default) opt.selected = true;
-      select.appendChild(opt);
-    }
+  fullLoop = data.runtime === "inworld_fullloop";
+  // The conversation picker uses the full-loop (Inworld-routed) list when the server runs
+  // the full loop; the AI-draft picker always uses the Anthropic list (it drafts via Claude).
+  const convList = fullLoop ? data.realtime_models : data.models;
+  const convDefault = fullLoop ? data.realtime_default : data.default;
+  fillSelect($("model"), convList, convDefault);
+  fillSelect($("c-ai-model"), data.models, data.default);
+}
+
+function fillSelect(select, models, defaultId) {
+  if (!select) return;
+  select.innerHTML = "";
+  for (const m of models) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.label;
+    if (m.id === defaultId) opt.selected = true;
+    select.appendChild(opt);
   }
 }
 

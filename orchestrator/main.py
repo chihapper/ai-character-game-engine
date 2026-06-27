@@ -61,7 +61,9 @@ from .character_store import (
 )
 from .config import (
     ALLOWED_MODEL_IDS,
+    ALLOWED_REALTIME_MODEL_IDS,
     AVAILABLE_MODELS,
+    REALTIME_MODELS,
     WEB_DIR,
     get_settings,
 )
@@ -177,8 +179,17 @@ async def get_character_full(slug: str) -> JSONResponse:
 
 @app.get("/api/models")
 async def get_models() -> JSONResponse:
-    """Selectable LLMs for the UI dropdown, plus the default selection."""
-    return JSONResponse({"models": AVAILABLE_MODELS, "default": get_settings().llm_model})
+    """Selectable LLMs for the UI dropdowns. `models`/`default` drive the draft picker (and
+    the modular conversation model); `realtime_models`/`realtime_default` drive the full-loop
+    conversation model. `runtime` tells the frontend which list the conversation dropdown uses."""
+    s = get_settings()
+    return JSONResponse({
+        "models": AVAILABLE_MODELS,
+        "default": s.llm_model,
+        "realtime_models": REALTIME_MODELS,
+        "realtime_default": s.realtime_llm_model,
+        "runtime": s.voice_runtime,
+    })
 
 
 @app.get("/api/profiles")
@@ -623,14 +634,6 @@ async def _speak_greeting_fullloop(character, emit_json, emit_audio) -> None:
         await emit_json({"type": "audio_end"})
 
 
-# Allow-list for the per-session full-loop LLM override (?realtime_llm=…) — so only vetted
-# Inworld-routed ids reach the API. The Track V latency A/B candidates plus the prior default.
-ALLOWED_REALTIME_LLMS = {
-    "anthropic/claude-haiku-4-5", "anthropic/claude-sonnet-4-6",
-    "openai/gpt-4o", "openai/gpt-4o-mini", "openai/gpt-4.1-mini", "openai/gpt-4.1-nano",
-}
-
-
 async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character, llm_override=None) -> None:
     """Drive one Inworld full-loop session, mapping its events onto the browser protocol.
 
@@ -825,9 +828,9 @@ async def voice_ws(websocket: WebSocket) -> None:
             await emit_json({"type": "error", "message": f"Could not start session: {exc}"})
             await websocket.close()
             return
-        # Per-session LLM override for A/B testing (?realtime_llm=…), allow-listed.
+        # Per-session LLM override for A/B testing (dropdown or ?realtime_llm=…), allow-listed.
         rt_llm = websocket.query_params.get("realtime_llm", "")
-        rt_override = rt_llm if rt_llm in ALLOWED_REALTIME_LLMS else None
+        rt_override = rt_llm if rt_llm in ALLOWED_REALTIME_MODEL_IDS else None
         try:
             await run_full_loop(websocket, emit_json, emit_audio, character, llm_override=rt_override)
         except WebSocketDisconnect:
