@@ -69,15 +69,13 @@ from .config import (
     WEB_DIR,
     get_settings,
 )
-from .context import RespondRequest, Situation, build_arena_query, build_instructions, render_turn_context
-from .memory.commitments import CommitmentStore, render_commitments
+from .context import RespondRequest, Situation, build_instructions
+from .engine import Engine
 from .latency import LatencyTracker
 from .memory.long_term import LongTermMemory
 from .memory.short_term import ShortTermMemory
 from .pipeline import Pipeline
 from .realtime.inworld_session import InworldSession
-from .salience import reflect_on_turn, score_salience
-from .memory.relationship import RelationshipStore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -672,13 +670,14 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
         logger.info("Full-loop session overrides: llm=%s delivery=%s",
                     active_model, delivery_override or settings.realtime_delivery_mode)
     engine_cfg = (character.game_data or {}).get("engine", {})
-    long_term = LongTermMemory(
-        character.memory_namespace,
-        readonly=engine_cfg.get("memory_readonly", False) or settings.memory_readonly,
-    )
-    commitments = CommitmentStore(character.memory_namespace, readonly=long_term.readonly)
-    relationship_store = RelationshipStore(character.memory_namespace, readonly=long_term.readonly)
-    short_term = ShortTermMemory(max_turns=settings.short_term_turns)
+    readonly = engine_cfg.get("memory_readonly", False) or settings.memory_readonly
+    # The runtime-agnostic engine core owns the turn logic (prepare/reflect) + the stores; this
+    # voice loop is just its Inworld wrapper (STT in, TTS out, barge-in, reconnect).
+    engine = Engine(character, readonly=readonly)
+    long_term = engine.long_term  # local aliases for the WS handlers + debug emit
+    commitments = engine.commitments
+    relationship_store = engine.relationship
+    short_term = engine.short_term
     await session.connect()
     await emit_json(
         {
@@ -695,104 +694,51 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
     writes: set = set()  # in-flight background memory-write tasks (GC guard)
 
     def flush_turn() -> None:
-        """Close the previous turn: commit it to short-term, and salience-score + persist
-        it to long-term in the background (skipped for read-only memory)."""
+        """Close the previous turn: record it to short-term SYNCHRONOUSLY (so the next turn's
+        arena query sees it), then reflect it (salience + relationship + long-term) in the
+        background via the engine — never on the player's critical path."""
         reply = "".join(turn["reply"]).strip()
         if turn["user"] and reply:
             short_term.add_user(turn["user"])
             short_term.add_assistant(reply)
             if not long_term.readonly:
-                clock = turn["situation"].clock if turn["situation"] else None  # -> decay
-                async def _store(u=turn["user"], r=reply, t=clock) -> None:
-                    # One folded background call (#4-B detection + #6 relationship) returns
-                    # salience AND any commitment the character made AND how the exchange moved
-                    # their feelings — no extra round-trip, never reaches the player.
-                    if settings.commitment_detection or settings.relationship_state:
-                        importance, detected, rel = await reflect_on_turn(
-                            character, u, r, relationship=relationship_store.get()
-                        )
-                        if detected and not commitments.readonly:
-                            commitments.add(detected["text"], made_t=t,
-                                            importance=detected["significance"], due=detected["due"])
-                            logger.info("Detected commitment: %r", detected["text"][:60])
-                        if rel and not relationship_store.readonly:
-                            relationship_store.update(**rel)
-                            logger.info("Relationship moved: %s", rel)
-                    else:
-                        importance = await score_salience(character, u, r)
-                    await long_term.add_exchange(u, r, importance=importance, t=t)
-                task = asyncio.create_task(_store())
+                task = asyncio.create_task(engine.reflect(turn["user"], reply, turn["situation"]))
                 writes.add(task)
                 task.add_done_callback(writes.discard)
         turn["user"], turn["reply"] = None, []
 
-    def _convert_commitment(c, now_t) -> None:
-        """A closed commitment (resolved or expired) becomes an ordinary decaying memory of
-        the outcome — the character remembers it, but it's no longer an active duty."""
-        if long_term.readonly:
-            return
-        async def _w(c=c, now_t=now_t) -> None:
-            await long_term.remember(c.memory_text(), importance=c.memory_importance(),
-                                     t=now_t, kind="commitment")
-        task = asyncio.create_task(_w())
-        writes.add(task)
-        task.add_done_callback(writes.discard)
-
     async def retrieve_and_respond(user_text: str, situation) -> None:
-        """The §5.6 step: retrieve against the arena query, inject via session.update, respond."""
+        """Per turn: the engine prepares recall + the dynamic context (§5.6, commitments,
+        relationship, decay); we inject it as a context item and let Inworld generate.
+        Reflection runs in the background at the next flush."""
         _t0 = time.monotonic()
-        flush_turn()  # close out the prior turn (-> short-term + background write)
+        flush_turn()  # close out the prior turn (-> short-term + background reflect)
         turn["user"], turn["situation"] = user_text, situation
-        if settings.arena_query:
-            query = build_arena_query(
-                RespondRequest(player_input=user_text, situation=situation),
-                character, short_term.messages(),
-                max_recent_turns=settings.arena_query_recent_turns,
-                relationship_hint=relationship_store.get().query_hint(),
-            )
-        else:
-            query = user_text
-        memories: list[str] = []
-        now_t = situation.clock if situation else None  # game clock -> temporal decay
-        # #4: expire overdue commitments (they convert to ordinary memories) + always-inject
-        # the open set, so active obligations never fall out of context.
-        for c in commitments.sweep_expired(now_t):
-            _convert_commitment(c, now_t)
-        commit_section = render_commitments(commitments.open_items())
-        rel_section = relationship_store.get().render()  # #6: evolving feelings -> conditions the realizer
-        if query:
-            if settings.memory_debug:
-                data = await long_term.retrieve_scored(query, now_t=now_t)
-                memories = data["selected"]
-                await emit_json({"type": "memories", "query": query,
-                                 "short_term": short_term.messages(),
-                                 "commitments": [{"text": c.text, "due": c.due,
-                                                  "importance": c.importance}
-                                                 for c in commitments.open_items()],
-                                 "relationship": relationship_store.get().to_dict(),
-                                 **data})
-            else:
-                memories = await long_term.retrieve(query, now_t=now_t)
+        injected, dbg = await engine.prepare(RespondRequest(player_input=user_text, situation=situation))
+        if settings.memory_debug:
+            await emit_json({"type": "memories", "query": dbg["query"],
+                             "short_term": short_term.messages(),
+                             "commitments": [{"text": c.text, "due": c.due, "importance": c.importance}
+                                             for c in commitments.open_items()],
+                             "relationship": relationship_store.get().to_dict(),
+                             "selected": dbg["memories"], "scored": dbg["scored"],
+                             "embedder": dbg["embedder"]})
         _t_ret = time.monotonic()
-        # #2: inject the dynamic per-turn context (memories + Situation) as a SYSTEM context
-        # item, leaving the base instructions stable (cache-friendly). Delete the prior turn's
-        # item first so only the current RR selection is live — no stale-memory accumulation.
+        # #2: inject the dynamic per-turn context as a SYSTEM context item, leaving the base
+        # instructions stable (cache-friendly). Delete the prior turn's item first so only the
+        # current RR selection is live — no stale-memory accumulation.
         if turn["ctx_id"]:
             await session.delete_item(turn["ctx_id"])
             turn["ctx_id"] = None
-        turn_context = render_turn_context(
-            memories=memories, situation=situation, commitments=commit_section,
-            relationship=rel_section,
-        )
-        if turn_context:
+        if injected:
             turn["seq"] += 1
             ctx_id = f"rr-ctx-{turn['seq']}"
-            await session.add_context(turn_context, item_id=ctx_id)
+            await session.add_context(injected, item_id=ctx_id)
             turn["ctx_id"] = ctx_id
         await session.respond()
         turn["responding"] = True
         logger.info("RR-latency: build+retrieve=%.0fms (mem=%d) before respond",
-                    (_t_ret - _t0) * 1000, len(memories))
+                    (_t_ret - _t0) * 1000, len(dbg["memories"]))
 
     async def pump() -> None:
         """Forward session events to the browser; on a voice transcript, retrieve+respond."""
@@ -919,10 +865,9 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                         await emit_json({"type": "committed", "id": c.id, "text": c.text})
                 elif mtype == "resolve_commitment":
                     # The game marks an obligation fulfilled/broken; it converts to a memory.
-                    c = commitments.resolve((data.get("id") or "").strip(),
-                                            (data.get("status") or "").strip())
-                    if c:
-                        _convert_commitment(c, _num(data.get("clock", data.get("t"))))
+                    c = await engine.resolve_commitment(
+                        (data.get("id") or "").strip(), (data.get("status") or "").strip(),
+                        t=_num(data.get("clock", data.get("t"))))
                     await emit_json({"type": "commitment_resolved", "id": data.get("id"),
                                      "status": c.status if c else "unknown"})
     finally:

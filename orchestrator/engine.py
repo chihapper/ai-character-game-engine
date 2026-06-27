@@ -16,7 +16,7 @@ from __future__ import annotations
 from .character_store import Character
 from .config import get_settings
 from .context import (
-    RespondRequest, build_arena_query, build_instructions,
+    RespondRequest, build_arena_query, build_instructions, render_turn_context,
 )
 from .memory.commitments import CommitmentStore, render_commitments
 from .memory.long_term import LongTermMemory
@@ -26,7 +26,7 @@ from .salience import reflect_on_turn, score_salience
 
 
 class Engine:
-    def __init__(self, character: Character, llm, *, readonly: bool = False) -> None:
+    def __init__(self, character: Character, llm=None, *, readonly: bool = False) -> None:
         s = get_settings()
         self.character = character
         self.llm = llm
@@ -52,58 +52,71 @@ class Engine:
             await self._convert(c, t)
         return c
 
-    # ---- one turn of the engine (what the GAME asks for) --------------------------------
-    async def respond(self, request: RespondRequest, *, debug: bool = False):
-        """Produce the character's response to a player line / event, given the live Situation.
-        Owns the whole cycle: expire commitments, build the relationship-conditioned arena
-        query, retrieve (decay-aware), assemble the prompt, generate, then reflect (salience +
-        relationship) and persist — the reflection mirrors the background write in run_full_loop."""
+    # ---- one turn, in two halves (so any driver plugs its generation in between) ---------
+    async def prepare(self, request: RespondRequest) -> tuple[str, dict]:
+        """First half: expire overdue commitments, build the relationship-conditioned arena
+        query, retrieve (decay-aware), and render the per-turn dynamic context (memories +
+        commitments + relationship + situation) to inject. Returns (injected_context, debug)."""
         s = get_settings()
         now_t = request.situation.clock if request.situation else None
-
-        # Overdue commitments expire -> become ordinary (decaying) memories.
         for c in self.commitments.sweep_expired(now_t):
             await self._convert(c, now_t)
-
-        # Recall, conditioned by the live arena AND the character's stance toward the player.
-        query = build_arena_query(
-            request, self.character, self.short_term.messages(),
-            max_recent_turns=s.arena_query_recent_turns,
-            relationship_hint=self.relationship.get().query_hint(),
-        ) if s.arena_query else request.query()
+        if s.arena_query:
+            query = build_arena_query(
+                request, self.character, self.short_term.messages(),
+                max_recent_turns=s.arena_query_recent_turns,
+                relationship_hint=self.relationship.get().query_hint(),
+            )
+        else:
+            query = request.query()
         scored = await self.long_term.retrieve_scored(query, now_t=now_t) if query else {"selected": [], "scored": []}
-        memories = scored.get("selected", [])
-
-        system = build_instructions(
-            self.character, memories=memories, situation=request.situation,
+        injected = render_turn_context(
+            memories=scored.get("selected", []), situation=request.situation,
             commitments=render_commitments(self.commitments.open_items()),
             relationship=self.relationship.get().render(),
         )
+        return injected, {"query": query, "memories": scored.get("selected", []),
+                          "scored": scored.get("scored", []), "embedder": scored.get("embedder", "")}
+
+    async def reflect(self, user_text: str, reply: str, situation) -> None:
+        """Second half (background-safe): salience + any detected commitment + the relationship
+        shift, then persist the exchange. Does NOT touch short-term — the caller owns that, so
+        it can be updated synchronously before the next turn's query reads it."""
+        if not user_text or not reply or self.long_term.readonly:
+            return
+        s = get_settings()
+        now_t = situation.clock if situation else None
+        if s.commitment_detection or s.relationship_state:
+            importance, detected, rel = await reflect_on_turn(
+                self.character, user_text, reply, relationship=self.relationship.get())
+            if detected and not self.commitments.readonly:
+                self.commitments.add(detected["text"], made_t=now_t,
+                                     importance=detected["significance"], due=detected["due"])
+            if rel and not self.relationship.readonly:
+                self.relationship.update(**rel)
+        else:
+            importance = await score_salience(self.character, user_text, reply)
+        await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
+
+    async def respond(self, request: RespondRequest, *, debug: bool = False):
+        """Headless convenience: prepare -> generate (direct LLM) -> record short-term ->
+        reflect. The voice runtime instead calls prepare()/reflect() around Inworld's own
+        generation (audio in, audio out)."""
+        if self.llm is None:
+            raise RuntimeError("Engine.respond needs an llm; voice drivers use prepare()/reflect().")
+        injected, dbg = await self.prepare(request)
+        system = build_instructions(self.character)
+        if injected:
+            system += "\n\n" + injected
         messages = self.short_term.messages() + [{"role": "user", "content": request.input_text()}]
         reply = await self._generate(system, messages)
-
-        # Reflect: salience + relationship shift (folded), then persist the exchange.
-        importance, _commit, rel = await reflect_on_turn(
-            self.character, request.input_text(), reply, relationship=self.relationship.get()
-        )
-        if rel and not self.relationship.readonly:
-            self.relationship.update(**rel)
         if request.input_text() and reply:
             self.short_term.add_user(request.input_text())
             self.short_term.add_assistant(reply)
-            await self.long_term.add_exchange(
-                request.input_text(), reply,
-                importance=importance if importance is not None else await score_salience(
-                    self.character, request.input_text(), reply),
-                t=now_t,
-            )
-
+        await self.reflect(request.input_text(), reply, request.situation)
         if debug:
-            return reply, {
-                "query": query, "scored": scored.get("scored", []),
-                "relationship": self.relationship.get().to_dict(),
-                "commitments": [{"text": c.text, "due": c.due} for c in self.commitments.open_items()],
-            }
+            return reply, {**dbg, "relationship": self.relationship.get().to_dict(),
+                           "commitments": [{"text": c.text, "due": c.due} for c in self.commitments.open_items()]}
         return reply
 
     # ---- internals ----------------------------------------------------------------------
