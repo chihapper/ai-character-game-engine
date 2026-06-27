@@ -212,6 +212,8 @@ def realize_relevance(
             "text": c.text,
             "kind": c.kind,
             "when": c.when,
+            "reinforcement": c.reinforcement,  # times rehearsed (resists decay)
+            "t": c.t,  # game clock at creation (None -> index recency)
             **parts[id(c)],
             "selected": id(c) in order,
             "rank": order.get(id(c)),

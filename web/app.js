@@ -511,15 +511,20 @@ function renderMemoryDebug(msg) {
     (msg.scored || []).forEach((m, i) => {
       const tag = m.selected ? `★${m.rank}` : "·";
       const flag = m.kind === "world_event" ? " ⚑" : "";
+      // "str" = temporal strength (the decayed recency pole); ↺N = times reinforced/rehearsed.
+      const reinf = m.reinforcement ? ` ↺${m.reinforcement}` : "";
       const headText =
-        `${tag}  base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} rec ${pct(m.recency)} imp ${pct(m.importance)}${flag}`;
+        `${tag}  base ${m.base.toFixed(2)} · sim ${pct(m.similarity)} str ${pct(m.recency)} imp ${pct(m.importance)}${reinf}${flag}`;
       const row = addRow("L" + i, headText, m.selected ? "#9be29b" : "#8a8a92", m.text || "");
       if (memDebugExpanded.has("L" + i)) {
         const simRaw = m.similarity_raw != null ? ` (raw ${m.similarity_raw.toFixed(3)})` : "";
+        const decay =
+          (m.reinforcement ? ` · reinforced ×${m.reinforcement}` : "") +
+          (m.t != null ? ` · t ${m.t}` : " · t —");
         const meta = el("div", "margin-left:15px;color:#9aa");
         meta.textContent =
-          `kind ${m.kind || ""}${m.when ? " · when " + m.when : ""}  ·  ` +
-          `base ${m.base.toFixed(3)} = sim ${m.similarity.toFixed(3)}${simRaw} · rec ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`;
+          `kind ${m.kind || ""}${m.when ? " · when " + m.when : ""}${decay}  ·  ` +
+          `base ${m.base.toFixed(3)} = sim ${m.similarity.toFixed(3)}${simRaw} · str ${m.recency.toFixed(3)} · imp ${m.importance.toFixed(3)}`;
         row.appendChild(meta);
       }
     });
