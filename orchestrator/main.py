@@ -649,11 +649,15 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
     scored) happen in the background, flushed at the next turn."""
     settings = get_settings()
     active_model = llm_override or settings.realtime_llm_model
-    session = InworldSession(
-        instructions=build_instructions(character, performance_provider="inworld"),
-        voice_id=character.voice_id, tools=_REALTIME_TOOLS, llm_model=active_model,
-        delivery_mode=delivery_override,
-    )
+    _instructions = build_instructions(character, performance_provider="inworld")
+
+    def make_session() -> InworldSession:
+        return InworldSession(
+            instructions=_instructions, voice_id=character.voice_id, tools=_REALTIME_TOOLS,
+            llm_model=active_model, delivery_mode=delivery_override,
+        )
+
+    session = make_session()
     if llm_override or delivery_override:
         logger.info("Full-loop session overrides: llm=%s delivery=%s",
                     active_model, delivery_override or settings.realtime_delivery_mode)
@@ -761,7 +765,55 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
             elif kind == "error":
                 await emit_json({"type": "error", "message": data})
 
-    pump_task = asyncio.create_task(pump())
+    stop = asyncio.Event()
+
+    async def reconnect() -> bool:
+        """Rebuild the Inworld session after it drops, restoring recent dialogue so the
+        character keeps the thread. Engine memory (short/long-term) persists across this;
+        only the Inworld-side session is recreated."""
+        nonlocal session
+        for attempt in range(1, 4):
+            await asyncio.sleep(min(2 * attempt, 6))  # backoff
+            try:
+                fresh = make_session()
+                await fresh.connect()
+                for m in short_term.messages():  # replay recent turns as history
+                    if m["role"] == "user":
+                        await fresh.add_text(m["content"])
+                    else:
+                        await fresh.add_assistant(m["content"])
+                try:
+                    await session.close()
+                except Exception:
+                    pass
+                session = fresh
+                turn["responding"] = False
+                turn["ctx_id"] = None  # the prior turn's context item died with the session
+                logger.info("Reconnected the Inworld session (attempt %d)", attempt)
+                return True
+            except Exception:
+                logger.exception("Reconnect attempt %d failed", attempt)
+        return False
+
+    async def pump_supervisor() -> None:
+        """Run the pump; if the session dies while the browser is still here, reconnect."""
+        while not stop.is_set():
+            try:
+                await pump()
+            except Exception:
+                logger.exception("Full-loop pump error")
+            if stop.is_set():
+                break
+            await emit_json({"type": "info", "message": "Reconnecting the voice…"})
+            if await reconnect():
+                await emit_json({"type": "info", "message": "Reconnected."})
+            else:
+                await emit_json(
+                    {"type": "error", "message": "Lost the voice connection — please reconnect."}
+                )
+                break
+
+    pump_task = asyncio.create_task(pump_supervisor())
     try:
         while True:
             message = await websocket.receive()
@@ -798,6 +850,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                 elif mtype == "remember":
                     await _handle_remember(long_term, data, emit_json)
     finally:
+        stop.set()  # tell the supervisor not to reconnect during teardown
         flush_turn()
         pump_task.cancel()
         await session.close()

@@ -168,6 +168,21 @@ class InworldSession:
             }
         )
 
+    async def add_assistant(self, text: str) -> None:
+        """Add a prior ASSISTANT turn to the conversation history without speaking it — used
+        to restore recent dialogue into a fresh session after a reconnect (a 'text' assistant
+        item is stored as history, not synthesized; verified in the §5.6 spikes)."""
+        await self._send(
+            {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": text}],
+                },
+            }
+        )
+
     async def update_instructions(self, instructions: str) -> None:
         """Re-steer the session's system instructions mid-conversation. Replaces the whole
         instructions string — so re-sending the full character prompt every turn busts the
