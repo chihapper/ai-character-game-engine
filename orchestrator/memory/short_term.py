@@ -28,3 +28,9 @@ class ShortTermMemory:
     def messages(self) -> list[dict]:
         """A copy of the buffered messages, oldest first."""
         return list(self._messages)
+
+    def clear(self) -> None:
+        """Drop the live conversation buffer — e.g. a new session/scene begins after
+        in-game time has passed. Durable state (long-term memory, relationship, intent)
+        is untouched; only the verbatim recent-turns context resets."""
+        self._messages = []
