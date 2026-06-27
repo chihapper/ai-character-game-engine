@@ -65,9 +65,11 @@ def render_commitments(items: list[Commitment]) -> str:
         return ""
     lines = "\n".join(c.render() for c in items)
     return (
-        "# Your open commitments\n"
-        "Promises and obligations you have actively made and NOT yet fulfilled. Honor them "
-        "in character — act as someone who remembers what they owe and to whom.\n" + lines
+        "# Open commitments you've made\n"
+        "Promises, deals, and constraints you have stated to others and not yet resolved. You "
+        "KNOW you made each of these. Whether you keep, bend, or break one is up to WHO YOU "
+        "ARE — an honest character honors their word; a cunning or self-serving one may exploit "
+        "or abandon a promise the moment it no longer suits them. Stay in character.\n" + lines
     )
 
 

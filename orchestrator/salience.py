@@ -120,12 +120,17 @@ _DETECT_SYSTEM = (
     "drama). Take the higher of emotional/personal weight or role relevance; a competent "
     "professional recalls facts in their domain even when routine. Filler/greeting 0.0-0.1; "
     "a role-relevant fact 0.6-0.8; a personally pivotal moment 0.8-1.0.\n\n"
-    "commitment — set ONLY if the CHARACTER (not the player) made a CONCRETE, durable promise, "
-    "obligation, deal, or constraint they could later be held to (\"I'll meet you at dawn\", "
-    "\"I won't tell anyone\", \"I'll pay off your debt\"). Write `text` as the obligation from "
-    "the character's POV (\"meet the player at dawn\"); `significance` = how much honoring it "
-    "matters to this character. Be CONSERVATIVE: hedges (\"maybe\", \"I'll think about it\"), "
-    "pleasantries, hypotheticals, and anything the PLAYER said are NOT commitments → null."
+    "commitment — set ONLY if the CHARACTER (not the player) STATED a concrete, durable "
+    "promise, obligation, deal, or constraint they could later be held to (\"I'll meet you at "
+    "dawn\", \"I won't tell anyone\", \"I'll pay off your debt\"). Write `text` as the "
+    "obligation from the character's POV (\"meet the player at dawn\"). Extract it even if the "
+    "character may be lying or scheming — they still SAID it and must remember they did.\n"
+    "`significance` is CHARACTER-AWARE: how much genuinely honoring this matters to THIS "
+    "character given their nature. An honest, caring character weighs a promise heavily "
+    "(high); a deceptive or self-serving one who says it to manipulate and won't keep it "
+    "weighs it lightly (low) — unless the scheme itself matters to them. Be CONSERVATIVE about "
+    "WHETHER it's a commitment: hedges (\"maybe\", \"we'll see\"), pleasantries, hypotheticals, "
+    "and anything the PLAYER said are NOT commitments → null."
 )
 
 
