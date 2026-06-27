@@ -116,6 +116,18 @@ higher-order abstractions *is* relevance realization — the agent compresses ep
 convictions that bear on its goals more than any single line, and those convictions then
 condition what it later finds relevant and how it behaves.
 
+### Knowledge boundaries + contradiction detection (issue #10)
+A character knows only **its profile + what it actually lived with the player** (its memories) —
+it is **not omniscient**. An always-on performance directive enforces this: asked about something
+outside its world, expertise, or memory, it is **honestly ignorant in character** (*"WiFi? The hell
+is that?"*) instead of fabricating, and it **refuses a fake shared past** (*"Mallorca. Never been —
+and I'd remember a beach trip"*). The same directive makes it **notice contradictions**: if the
+player asserts something that clashes with what it knows, it pushes back in character (*"Castel?
+You told me Joran not two minutes ago"*). On top of that, opt-in **`CONTRADICTION_DETECTION`** runs
+a background check (off the critical path, only when memories were recalled) that **records** a
+caught contradiction — claim vs established fact — as a salient memory, so a lie is carried forward
+and feeds future recall + wariness. RR: a contradiction is high-relevance to a wary agent.
+
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
 - `commit` / `resolve_commitment` — the game declares / closes a character's obligations.

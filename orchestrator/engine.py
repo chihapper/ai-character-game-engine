@@ -30,6 +30,7 @@ from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
 from .consolidation import consolidate_beliefs
+from .consistency import detect_contradiction
 from .salience import reflect_on_turn, score_salience
 
 
@@ -95,10 +96,12 @@ class Engine:
                           "scored": scored.get("scored", []), "embedder": scored.get("embedder", ""),
                           "intent": self.intent.get().intent}
 
-    async def reflect(self, user_text: str, reply: str, situation) -> None:
+    async def reflect(self, user_text: str, reply: str, situation, *,
+                      memories: list[str] | None = None) -> None:
         """Second half (background-safe): salience + any detected commitment + the relationship
         shift, then persist the exchange. Does NOT touch short-term — the caller owns that, so
-        it can be updated synchronously before the next turn's query reads it."""
+        it can be updated synchronously before the next turn's query reads it. `memories` are the
+        ones recalled this turn, used (opt-in) to record a contradiction the player just made."""
         if not user_text or not reply or self.long_term.readonly:
             return
         s = get_settings()
@@ -117,6 +120,12 @@ class Engine:
         else:
             importance = await score_salience(self.character, user_text, reply)
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
+        if s.contradiction_detection and memories:
+            contra = await detect_contradiction(self.character, user_text, memories)
+            if contra:
+                await self.long_term.remember(
+                    f"the player claimed {contra['claimed']}, contradicting that {contra['remembered']}",
+                    kind="contradiction", importance=s.contradiction_importance, t=now_t)
         if s.reflection_enabled:
             await self._maybe_consolidate(user_text, reply, importance, now_t)
 
@@ -152,7 +161,7 @@ class Engine:
         if request.input_text() and reply:
             self.short_term.add_user(request.input_text())
             self.short_term.add_assistant(reply)
-        await self.reflect(request.input_text(), reply, request.situation)
+        await self.reflect(request.input_text(), reply, request.situation, memories=dbg["memories"])
         if debug:
             return reply, {**dbg, "relationship": self.relationship.get().to_dict(),
                            "commitments": [{"text": c.text, "due": c.due} for c in self.commitments.open_items()]}
