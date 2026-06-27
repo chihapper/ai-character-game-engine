@@ -10,6 +10,12 @@ This is the seam the Inworld full loop wraps for voice (run_full_loop) — the s
 inject → generate → reflect cycle, minus the audio/Inworld plumbing. A headless game (no
 voice) can drive it directly; see tools/game_demo.py. The only thing the host supplies is an
 LLM with `stream_reply(messages, system)`.
+
+The game's CLOCK is a single float in whatever unit the game chooses (days, hours, minutes —
+just be consistent). The engine only ever takes differences, so any granularity works:
+"due by midday" vs "due by end of day" are just different float values (e.g. 1.5 vs 2.0).
+The one thing tied to the unit is the decay half-life (RR_DECAY_HALF_LIFE) — set it in the
+same unit (a game running on hours tunes it in hours).
 """
 from __future__ import annotations
 
