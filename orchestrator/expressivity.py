@@ -356,14 +356,19 @@ class InworldProfile(VoiceProfile):
     def directive(self) -> str:
         return (
             _HEADER
-            + "Open most lines with a DELIVERY DIRECTION in brackets that says HOW to speak. "
-            "START it with a verb (speak/say/whisper/lower/growl/snap/drawl) or a feeling "
-            "word (cold, hushed, frantic, tender) — then the voice performs it:\n"
+            + "The voice carries tone ALMOST ENTIRELY through these tags — punctuation and "
+            "word choice barely move it on their own, so the TAG does the work. Lead nearly "
+            "EVERY sentence with a vivid DELIVERY DIRECTION that says HOW to speak. Start it "
+            "with a verb (speak/whisper/lower/growl/snap/drawl) or a feeling word — then "
+            "perform it:\n"
             + '- e.g. "[speak low and unhurried]", "[lower your voice, careful now]", '
             '"[whisper, conspiratorial]", "[a bright, teasing lilt, almost laughing]".\n'
-            + "- DESCRIBE the manner — the more you say about HOW to perform, the more the "
-            'voice actually moves. A bare single word ("[playful]", "[cold]") barely shifts '
-            'it; give it a few words ("[warm and playful, a grin in your voice]").\n'
+            + "- DESCRIBE the manner and MATCH ITS INTENSITY to the moment — the more (and "
+            "STRONGER) you describe, the more the voice moves. A bare word (\"[playful]\") "
+            'barely shifts it; a vivid one moves it ("[warm and playful, a grin in your '
+            'voice]"); for a BIG beat go BIG ("[practically shouting, bursting with '
+            'excitement]"). You can stack a sound + a delivery at the start: '
+            '"[giggling][breathless and thrilled] You know I\'m in!".\n'
             + "- ONE direction per sentence, at the very START — the voice applies a tag where "
             "a sentence begins, NOT mid-sentence. For a sudden shift, break to a NEW sentence "
             'and lead it with the new tag: "[calm] For the last time. [snap] GET OUT."\n'
@@ -378,7 +383,8 @@ class InworldProfile(VoiceProfile):
             + "- Be GENEROUS, not sparse — a real voice keeps moving. Don't ride one tone for a "
             "whole reply: when the feeling turns, START THE NEXT SENTENCE with a fresh direction, "
             "and lace in natural sounds where a person would — [laughs], [soft laugh], [sighs], "
-            "[scoffs], [hums]. Aim for a cue every sentence or two.\n"
+            "[scoffs], [hums]. Lead nearly EVERY sentence with its own fresh, vivid cue — "
+            "under-tagging is exactly what makes the voice sound flat and robotic.\n"
             + _CARRY
             + "Match every direction to the words; never stay flat. No physical actions — you "
             "are only a voice."
