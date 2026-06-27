@@ -31,3 +31,6 @@ realtime_*.py
 
 # A/B protocol outputs (transcripts + audio)
 ab_out/
+
+# runtime server log
+server.log
