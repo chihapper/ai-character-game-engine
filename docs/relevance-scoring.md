@@ -90,6 +90,26 @@ meet you at dawn"), folded into the per-turn background salience call so it cost
 round-trip. Detection is conservative (hedges/pleasantries/player-side promises don't count)
 and opt-in, since it's fuzzier than the game API.
 
+## Relationship state — feelings that evolve and condition recall — [issue #6](https://github.com/chihapper/ai-character-game-engine/issues/6)
+
+A character's stance toward the player starts from their static `disposition` and then SHIFTS
+with the interaction: **affection / trust / respect** as movement from a 0.5 baseline, plus an
+acute **mood**. Updated in the background — **folded into the same salience call** (one
+round-trip; `RELATIONSHIP_STATE` opt-in) — and CHARACTER-AWARE: most exchanges move nothing;
+pleasantries roll off a guarded character (water off a duck's back), while genuine, proven, or
+costly acts move them slowly; a warm character moves more readily.
+
+It's **RR-core, not a tone sticker**: the current stance folds into the **arena query**, so
+*recall itself* is relationship-conditioned — a wary character surfaces deception/threat
+memories, a fond one surfaces warmth (relevance relative to the agent's caring). The 🧠 panel
+shows the axes (▲/▼ = moved from baseline) and mood, and the behavioral payoff is real — at
+low trust a character deflects and guards; at high trust they engage and help, in character.
+
+Coming ([#12](https://github.com/chihapper/ai-character-game-engine/issues/12)): disposition
+should also shift from **world events** the game pushes (even indirect ones — the player's
+faction burns the NPC's warehouse), and a conversation's starting baseline should be seeded
+from the profile + accumulated events rather than neutral.
+
 ## How rows get the ★ (selection)
 
 1. **Floor:** memories below `RR_RELEVANCE_FLOOR` are dropped — weak matches are *not*

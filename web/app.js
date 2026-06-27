@@ -496,6 +496,20 @@ function renderMemoryDebug(msg) {
     panel.appendChild(box);
   }
 
+  // --- relationship state (evolving feelings toward the player; ▲/▼ = moved from baseline) ---
+  const rel = msg.relationship;
+  if (rel && rel.turns > 0) {
+    const arrow = (v) => (v > 0.58 ? " ▲" : v < 0.42 ? " ▼" : "");
+    const axis = (label, v) => `${label} ${Math.round(v * 100)}${arrow(v)}`;
+    const rbox = el("div",
+      "margin-bottom:6px;padding:5px 7px;background:#202630;border:1px solid #2a4a5a;border-radius:5px");
+    rbox.appendChild(el("div", "color:#66b0d9;font-weight:bold;margin-bottom:2px",
+      `♥ relationship with player${rel.mood ? " — " + rel.mood : ""}`));
+    rbox.appendChild(el("div", "color:#9cc4d9",
+      `${axis("affection", rel.affection)}  ·  ${axis("trust", rel.trust)}  ·  ${axis("respect", rel.respect)}`));
+    panel.appendChild(rbox);
+  }
+
   // --- tabs ---
   const longN = (msg.scored || []).length;
   const shortN = (msg.short_term || []).length;

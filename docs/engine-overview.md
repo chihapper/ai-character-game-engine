@@ -81,6 +81,16 @@ of `remember`); `tools/commitment_scenarios.py` sweeps the lifecycle across time
 dialogue (folded into the background salience call — no extra round-trip), opt-in since it's
 fuzzier than the explicit API.
 
+### Relationship state (issue #6)
+A character's feelings toward the player — **affection / trust / respect** (movement from a
+baseline) plus an acute **mood** — that **evolve with the interaction** on top of the static
+disposition. Updated in the background (folded into the salience call, `RELATIONSHIP_STATE`
+opt-in), **character-aware** (pleasantries roll off a guarded Corvin; only proven/costly acts
+move him, slowly — a warm Bri moves more readily). It's RR-core: the stance folds into the
+**arena query**, so a wary character *recalls* a different past (deception/threat) than a fond
+one. Behavioral payoff is visible — low trust → deflect/guard, high trust → engage/help.
+*(Coming, #12: disposition also shifts from world events the game pushes, even indirect ones.)*
+
 ### The seam (engine ↔ game)
 - `remember` — the game pushes a durable world event into a character's memory.
 - `commit` / `resolve_commitment` — the game declares / closes a character's obligations.
@@ -129,6 +139,7 @@ python -m tools.recall_reinforce_sim
 | `MEMORY_READONLY` | off | freeze all stores (for controlled A/B — writes become no-ops) |
 | `REINFORCE_ON_RECALL` | off | recalling a memory rehearses it (slows decay) |
 | `COMMITMENT_DETECTION` | off | auto-detect commitments a character makes in dialogue (folded into salience) |
+| `RELATIONSHIP_STATE` | off | evolving affection/trust/respect + mood toward the player (folded into salience; conditions recall) |
 | `RR_DECAY_HALF_LIFE` | 30 | base half-life in the **game's** time units |
 | `RR_DECAY_IMPORTANCE_SCALE` | 50 | half-life ×= `scale^importance` (significance → near-permanent) |
 | `RR_DECAY_REINFORCE_GAIN` | 1.0 | each reinforcement ×= `(1+gain·N)` half-life |

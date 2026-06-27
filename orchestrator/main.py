@@ -769,6 +769,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                                  "commitments": [{"text": c.text, "due": c.due,
                                                   "importance": c.importance}
                                                  for c in commitments.open_items()],
+                                 "relationship": relationship_store.get().to_dict(),
                                  **data})
             else:
                 memories = await long_term.retrieve(query, now_t=now_t)

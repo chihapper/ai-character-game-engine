@@ -6,6 +6,12 @@ Framing it as *movement from baseline* (not an absolute stance) means a fresh, u
 is simply "unchanged" and doesn't fight the profile. Persisted per character, updated in the
 background (folded into the salience call), and injected so the evolving relationship colors
 responses. Character-aware: a guarded character moves slowly; a warm one warms fast.
+
+NOTE (issue #12): today this moves only through CONVERSATION. Per game build, disposition
+should also shift from WORLD EVENTS the game pushes — including ones that hit the NPC
+indirectly (the player's faction burns their warehouse, a loved one is hurt). update() already
+takes deltas, so the hook is small; the open work is the game-facing affect API + the dynamic
+starting baseline (profile + accumulated world events) instead of neutral.
 """
 from __future__ import annotations
 
@@ -46,6 +52,10 @@ class RelationshipState:
             "Your baseline is your disposition above; this interaction has moved you as below. "
             "Let it color your tone naturally, in character — don't narrate it.\n" + "\n".join(lines)
         )
+
+    def to_dict(self) -> dict:
+        return {"affection": self.affection, "trust": self.trust, "respect": self.respect,
+                "mood": self.mood, "turns": self.turns}
 
     def query_hint(self) -> str:
         """A short stance phrase folded into the arena query so RECALL is conditioned by the
