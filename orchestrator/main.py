@@ -747,7 +747,11 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                 data = await long_term.retrieve_scored(query, now_t=now_t)
                 memories = data["selected"]
                 await emit_json({"type": "memories", "query": query,
-                                 "short_term": short_term.messages(), **data})
+                                 "short_term": short_term.messages(),
+                                 "commitments": [{"text": c.text, "due": c.due,
+                                                  "importance": c.importance}
+                                                 for c in commitments.open_items()],
+                                 **data})
             else:
                 memories = await long_term.retrieve(query, now_t=now_t)
         _t_ret = time.monotonic()

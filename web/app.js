@@ -481,6 +481,21 @@ function renderMemoryDebug(msg) {
     el("div", "color:#9aa;margin-bottom:5px;word-break:break-word", "query: " + (msg.query || "")),
   );
 
+  // --- open commitments (always injected, not scored — shown above the tabs) ---
+  const commits = msg.commitments || [];
+  if (commits.length) {
+    const box = el("div",
+      "margin-bottom:6px;padding:5px 7px;background:#2a2620;border:1px solid #5a4a2a;border-radius:5px");
+    box.appendChild(el("div", "color:#d9b066;font-weight:bold;margin-bottom:2px",
+      `⚖ open commitments (${commits.length}) — always injected`));
+    commits.forEach((c) => {
+      const due = c.due ? ` · due ${c.due}` : "";
+      box.appendChild(el("div", "color:#cdb88a;word-break:break-word",
+        `• ${c.text}${due} · sig ${Math.round((c.importance || 0) * 100)}`));
+    });
+    panel.appendChild(box);
+  }
+
   // --- tabs ---
   const longN = (msg.scored || []).length;
   const shortN = (msg.short_term || []).length;
