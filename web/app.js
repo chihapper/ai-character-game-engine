@@ -689,13 +689,17 @@ async function loadCharacters() {
   const chars = await res.json();
   const select = $("character");
   select.innerHTML = "";
-  if (!chars.length) {
+  // In full-loop mode the session's TTS is Inworld, so only Inworld-voiced characters can
+  // be synthesized — hide the ElevenLabs variants from the conversation picker (they'd 404
+  // with "Unknown voice"). The Create-tab roster still lists all of them for editing.
+  const pickable = fullLoop ? chars.filter((c) => c.tts_provider === "inworld") : chars;
+  if (!pickable.length) {
     const opt = document.createElement("option");
-    opt.textContent = "No characters — create one →";
+    opt.textContent = fullLoop ? "No Inworld-voiced characters" : "No characters — create one →";
     opt.value = "";
     select.appendChild(opt);
   } else {
-    for (const c of chars) {
+    for (const c of pickable) {
       const opt = document.createElement("option");
       opt.value = c.slug;
       opt.textContent = c.name;
@@ -1767,6 +1771,7 @@ if (buildEl) {
 console.log("[AI Character Engine] app.js", APP_VERSION, "| server build", window.__BUILD__);
 
 populateVoiceModes();
-loadCharacters();
-loadModels();
+// loadModels() sets `fullLoop`, which loadCharacters() needs to filter the picker — so
+// run models first, then characters.
+loadModels().then(loadCharacters);
 loadProfiles();
