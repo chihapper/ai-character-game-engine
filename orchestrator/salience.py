@@ -291,26 +291,33 @@ async def score_and_detect(
 # --- Issue #12: world events shift disposition; per-character emotional persistence -----------
 
 async def assess_event_impact(
-    character: Character, event: str, *, player_role: str, relationship, model: str | None = None,
+    character: Character, event: str, *, attribution: str, relationship, model: str | None = None,
 ) -> dict | None:
-    """How does a player-attributable WORLD EVENT (something off-screen, not a conversation) move
-    THIS character's feelings toward the player? Same character-aware rubric as the per-turn
-    relationship update (deltas + a possible permanent scar). `player_role` is the game's
-    attribution ("caused", "benefited", ...). Returns the relationship update or None."""
+    """How does an EVENT — a world event OR the character's own internal change — move THIS
+    character's feelings toward the player? `attribution` describes how the event relates to the
+    player ("the player caused this", "the player benefited from this", or "the character THEMSELVES
+    underwent this — a change of heart; the player did nothing"). Same character-aware rubric as the
+    per-turn update: deltas + a possible permanent scar, or a scar_heal (e.g. forgiveness the
+    character reaches on their own — issue #19). Returns the relationship update or None."""
     settings = get_settings()
     system = (
-        "You judge how a WORLD EVENT — something that happened off-screen, attributed to the player "
-        "— moves a fictional character's feelings TOWARD THE PLAYER. Return JSON ONLY: "
-        '{"relationship": null} if it does not bear on how they feel about the player, else '
-        '{"relationship": {"affection_delta": <-0.3..0.3>, "trust_delta": <-0.3..0.3>, '
-        '"respect_delta": <-0.3..0.3>, "mood": "<1-2 words>", "scar": {"affection": <0-1>, '
-        '"trust": <0-1>, "respect": <0-1>}}}.\n\n' + _relationship_block(relationship) +
+        "You judge how an EVENT moves a fictional character's feelings TOWARD THE PLAYER. The event "
+        "may be something in the world, or the character's OWN internal change (a change of heart, a "
+        "transformation, a decision they reached on their own, the player having done nothing). "
+        "Return JSON ONLY: {\"relationship\": null} if it doesn't bear on how they feel about the "
+        "player, else {\"relationship\": {\"affection_delta\": <-0.3..0.3>, \"trust_delta\": "
+        "<-0.3..0.3>, \"respect_delta\": <-0.3..0.3>, \"mood\": \"<1-2 words>\", \"scar\": "
+        "{\"affection\": <0-1>, \"trust\": <0-1>, \"respect\": <0-1>}, \"scar_heal\": {\"affection\": "
+        "<0-1>, \"trust\": <0-1>, \"respect\": <0-1>}}}.\n\n" + _relationship_block(relationship) +
         "\nINDIRECTNESS: weigh how directly the player is to blame/credit — a fair-minded character "
         "separates the player from their faction or allies; a vengeful or absolutist one does not. A "
-        "severe harm (their faction got a loved one killed) can permanently SCAR exactly like a "
-        "personal betrayal; a minor or impersonal one moves little.")
+        "severe harm can permanently SCAR like a personal betrayal.\n"
+        "SELF-CHANGE: if the character THEMSELVES underwent a GENUINE, hard-won transformation (a "
+        "change of life or faith, years of reflection, finally letting go of a grudge), that can "
+        "warm them toward the player AND heal a scar (scar_heal) EVEN THOUGH THE PLAYER DID NOTHING — "
+        "forgiveness they arrived at on their own. A passing mood or a whim heals nothing.")
     prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
-              f"WORLD EVENT (the player {player_role} this):\n{event}\n\n"
+              f"EVENT ({attribution}):\n{event}\n\n"
               "How does it move how they feel about the player? JSON only.")
     try:
         llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=240)
