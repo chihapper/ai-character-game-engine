@@ -103,17 +103,22 @@ async def live(mode):
         ch = bool(d.get("changed"))
         changes += ch
         tag = "CHANGED" if ch else ("skip" if d.get("skipped") else "no-change")
-        w(f"\n[day {int(clock)}] {tag}")
+        ev = LIFE_EVENTS[i][:90] if i < len(LIFE_EVENTS) else ""
+        w(f"\n[day {int(clock)}] {tag}   (life: {ev})")
+        if d.get("reflection"):  # full reasoning every deliberation, even when he decides NOT to change
+            w(f"   reflection: {d['reflection']}")
         if ch:
-            if d.get("reflection"):
-                w(f"   reflection: {d['reflection'][:150]}")
             if d.get("internal"):
-                w(f"   internal: {d['internal'][:110]}")
+                w(f"   internal:   {d['internal']}")
+            if d.get("new_intent"):
+                w(f"   new_intent: {d['new_intent']}")
             if d.get("new_goals"):
-                w(f"   new goals: {d['new_goals']}")
+                w("   new goals:")
+                for g in d["new_goals"]:
+                    w(f"      - {g}")
                 goal_snaps.append((f"day{int(clock)}", d["new_goals"]))
             if d.get("world_action"):
-                w(f"   world_action: {d['world_action'][:110]}")
+                w(f"   world_action: {d['world_action']}")
     final_goals = eng.agency.goals() or profile_goals
     w(f"\n=> deliberations: {epochs}, changed: {changes} ({100*changes//max(1,epochs)}%)")
     w(f"=> final goals: {final_goals}")
