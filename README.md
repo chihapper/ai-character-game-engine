@@ -1,14 +1,21 @@
 # 🎲 AI Character Game Engine
 
-A **game director** for dialogue-driven games: it drives **Inworld's full-loop
-realtime voice agent** (STT → Claude LLM → Realtime TTS-2, with cross-turn voice
-continuity) and owns the **game logic** — character definition and state, memory,
-tools/mechanics, and the **world/time seam** between the game and the engine.
+A **runtime-agnostic game-director engine** for dialogue-driven games. Its core — the
+*power* — is a deep **character mind** behind a clean **engine/game seam**: character
+definition and state, relevance-realization **memory**, the full **affect model** (feelings
+that move and *scar*, beliefs, earned forgiveness), **autonomous agency**, and the
+**world/time channel** the game pushes state through. The same `Engine` core drives a
+headless game or a voice runtime alike.
+
+As one front-end — the *crown* — the engine can drive **Inworld's full-loop realtime voice
+agent** (STT → Claude LLM → Realtime TTS-2, with cross-turn voice continuity), so a character
+speaks aloud in a consistent cloned voice. The voice is a **presentation layer the engine
+animates, not the engine itself.**
 
 You define a character; the game tells the engine what's happening; the engine makes
-that character respond — out loud, in a consistent cloned voice, with an **evolving inner
-life**: memory that decays and reinforces, feelings that move and *scar*, beliefs formed
-from experience, and forgiveness that must be earned. See
+that character respond — with an **evolving inner life**: memory that decays and reinforces,
+feelings that move and *scar*, beliefs formed from experience, forgiveness that must be
+earned, and NPCs that **deliberate and change on their own**. See
 **[The character mind (Track E)](#the-character-mind-track-e)** below — it's the heart of
 the project — and [`docs/engine-overview.md`](docs/engine-overview.md) for the full design.
 
@@ -191,15 +198,20 @@ the LLM is the relevance realizer, never a hard-coded rule. Each layer is opt-in
 - **World events + time** — disposition shifts from events the game pushes (even ones that hit the
   character indirectly), and feelings drift toward the character's baseline over in-game time —
   while a scar holds the line (#12).
+- **Autonomous agency** — NPCs that **live their own lives**: the game can push a character's *own*
+  change of heart (forgiveness it reaches alone, player inactive — #19), and the character can
+  **deliberate and decide unprompted**, between scenes, what it does or becomes from everything
+  accumulated — evolving its goals and acting on its own (#20). Game-driven cadence, gated by
+  accumulated cause; the engine applies the inner change, the game enacts the outward action.
 
 The full design and rationale live in [`docs/engine-overview.md`](docs/engine-overview.md). Every
 layer is validated by the harnesses in [`tools/`](tools) — multi-arc, multi-timescale, adversarial,
 scale, and a lifetime-spanning integrated saga (to in-game clock 10,000) that asserts hard
 invariants (scars never decrease, no axis exceeds its ceiling, values stay bounded).
 
-> **Roadmap frontier.** The engine is *reactive* — it animates a character on demand. The next
-> horizon is **autonomous agency**: NPCs that deliberate and act *unprompted*, living their own
-> lives between sessions (issues [#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20)).
+> **From reactive to alive.** The engine began *reactive* (it animates a character on demand) and
+> now reaches **autonomous agency** — NPCs that deliberate and act *unprompted*, living their own
+> lives between scenes (issues [#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20), shipped). The remaining milestone is **Track V** — the voice runtime — the *crown*, not the power.
 
 ---
 
@@ -344,6 +356,7 @@ orchestrator/
                          (relationship / intent / commitment / scar, one background call)
   consolidation.py       periodic belief formation (generative-agents-style reflection)
   consistency.py         contradiction detection (player claim vs established memory)
+  agency.py              autonomous deliberation: the character decides + acts unprompted (#20)
   config.py              settings + env loading
   sentence_chunker.py
   expressivity.py        per-provider performance-tag handling
@@ -364,6 +377,7 @@ orchestrator/
     relationship.py      evolving affection/trust/respect + mood, betrayal scars, time-decay
     intent.py            the character's evolving short-term aim (agency seed)
     commitments.py       promises the character makes (open / resolve / expire → memory)
+    agency_store.py      evolving standing goals + last-deliberation clock (#20)
   characters/            character profiles (YAML)
 web/                     Conversation + Create Character UI, streaming PCM playback, RR debug panel
 tools/clone_voice.py     CLI fallback for cloning
