@@ -50,7 +50,8 @@ SYSTEM = (
     '  "in_character": <0-1>,\n'
     '  "issues": [<specific problems with the day, e.g. "day 120: distrusts player over Marsh\'s '
     'betrayal (attribution leak)"; empty list if none>],\n'
-    '  "verdict": "<2 sentences, blunt>"\n}'
+    '  "verdict": "<2 sentences, blunt>"\n}\n'
+    "Output ONLY the JSON object — no analysis, preamble, or any text before or after it."
 )
 
 
@@ -77,7 +78,7 @@ def split_runs(text: str) -> list[tuple[str, str]]:
 
 async def judge(title: str, body: str) -> dict:
     try:
-        llm = AnthropicLLM(model=JUDGE_MODEL, max_tokens=700)
+        llm = AnthropicLLM(model=JUDGE_MODEL, max_tokens=1500)
         parts = []
         async for d in llm.stream_reply([{"role": "user", "content": f"RUN: {title}\n\n{body}\n\nAudit. JSON only."}], SYSTEM):
             parts.append(d)
