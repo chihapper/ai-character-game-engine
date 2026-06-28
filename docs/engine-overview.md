@@ -100,7 +100,13 @@ per-axis `scar` (0–1 = fraction of that axis put permanently out of reach) —
 axes and how deep from character × betrayal-type, never a formula* (a business double-cross scars a
 schemer's trust but spares his respect; a romantic betrayal scars trust, respect, *and* affection).
 The axis can rebuild only up to its ceiling (`1 − scar`), and a caution note stays in the prompt so
-the wound shapes behavior even once the number climbs back.
+the wound shapes behavior even once the number climbs back. A scar can also **heal** (issue #17), but
+only the hard way: the reflection emits a per-axis `scar_heal` *exclusively* for **extraordinary,
+wound-relevant proof** — it's asymptotic (`scar *= 1 − heal`, a faint trace lingers), the betrayal
+*memory* is never erased ("trust again, knowing what they did"), and a **safeguard ignores any heal
+below a threshold** so words, time, and ordinary favors lift nothing and trivial acts can't accumulate
+into forgiveness. The AI judges by *relevance to the wound*, not magnitude (serving the prison term
+your double-cross caused lifts the trust scar; an unrelated heroic act doesn't).
 
 **World events + time (issue #12).** Disposition no longer moves *only* through conversation. **(A)**
 A player-attributable **world event** the game pushes (`remember(fact, player_role="caused" |
