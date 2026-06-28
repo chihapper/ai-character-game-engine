@@ -143,7 +143,12 @@ It's **character-aware** (the same loyal-player events make schemer Corvin *susp
 honest Bri *warm*) and can **deepen/revise** the beliefs already held. RR-core: forming
 higher-order abstractions *is* relevance realization — the agent compresses episodes into
 convictions that bear on its goals more than any single line, and those convictions then
-condition what it later finds relevant and how it behaves.
+condition what it later finds relevant and how it behaves. Beliefs render in their **own prompt
+section** ("What you've come to believe", issue #14) — distinct from recalled exchanges — and the
+**top few are always surfaced** so convictions colour every turn, not only when a query happens to
+recall one. The set stays tight: a new belief that's a near-duplicate of an existing one
+**supersedes** it, and the total is **capped** (oldest evicted), so beliefs don't pile up as
+reworded variants (issue #15).
 
 ### Knowledge boundaries + contradiction detection (issue #10)
 A character knows only **its profile + what it actually lived with the player** (its memories) —
