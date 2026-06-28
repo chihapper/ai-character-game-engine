@@ -41,3 +41,4 @@ stress_run*.log
 stress_suite*.md
 stress_beliefs*.md
 stress_beliefs*.log
+stress_recovery*.md
