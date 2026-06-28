@@ -109,12 +109,15 @@ class Engine:
         return c
 
     # ---- autonomous agency: the character decides + acts on its OWN (issue #20) -----------
-    async def deliberate(self, situation=None, *, mode: str = "gated") -> dict:
+    async def deliberate(self, situation=None, *, mode: str = "free") -> dict:
         """The GAME calls this whenever it wants (no engine cadence) — between scenes, the character
         decides on its OWN what it does or how it changes from everything that's accumulated. The
         engine APPLIES the inner half (a change of heart via the #19 self-change seam, an updated
         intent, evolved goals) and RETURNS the Decision so the game can enact any `world_action`.
-        `mode`: 'gated' (default — a real change needs accumulated cause) or 'free' (emergence)."""
+        `mode`: 'free' (DEFAULT — the RR-grounded character acts as it best sees fit; the stress
+        pass found this is actually the MORE coherent, identity-preserving mode) or 'gated' (fewer,
+        larger changes that need accumulated cause + a cheap structural skip — for games that want a
+        controlled / on-rails environment or to minimize cost)."""
         now_t = situation.clock if situation else None
         last_t = self.agency.last_t()
         # Cheap structural skip: in gated mode, if nothing has happened since the last deliberation,

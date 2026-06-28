@@ -136,14 +136,18 @@ absent*, decides what (if anything) it does or becomes from **everything that's 
 (memory, beliefs, relationship + scars, intent, goals, elapsed time). The engine **applies the
 inner half** through the seams already built — a change of heart via the #19 self-change path, an
 updated intent, **evolved standing goals** — and **returns** the Decision so the game can enact any
-`world_action` in its world. Default **`gated`** mode means a real change needs accumulated *cause*
-(most calls return `changed:false` — the character continues as they are, and a cheap structural
-skip avoids the LLM when nothing has happened); **`free`** mode lowers the bar for emergent games.
-The grounding *is* the guardrail: decisions are in-character, never arbitrary. Validated — a weary,
-scarred Corvin, *unprompted*, makes a **cold pragmatic peace** (not a scripted redemption: he keeps
-the scar, *"I won't trust him with my life,"* and his goals shift toward "use the player as a
-watched courier"), and that new direction shapes his later behavior. Together with #19, this is the
-engine's bridge from *animating characters on demand* to **NPCs that live their own lives**.
+`world_action` in its world. Default **`free`** mode lets the RR-grounded character act as it best
+sees fit each tick; **`gated`** mode makes a real change need accumulated *cause* (most calls return
+`changed:false`, plus a cheap structural skip) — for games that want a controlled/on-rails
+environment or to minimize cost. The grounding *is* the guardrail: decisions are in-character, never
+arbitrary. The autonomy-loop stress pass found the **counter-intuitive result that `free` is the
+*more* coherent, identity-preserving mode**: by reconsidering each tick it *metabolizes every life
+event* into a continuous, grounded evolution, where gated can only batch (holding a fixed plan and
+skipping the texture between big jumps — and it can lock in an early, hot decision). So free is the
+default; gating is the opt-in *constraint*, not the baseline. Validated over a full life (judge:
+free recognizable 0.95, *"cynicism deepens into methodology; abbey exit is earned, not a betrayal of
+self"*). Together with #19, this is the engine's bridge from *animating characters on demand* to
+**NPCs that live their own lives**.
 
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their

@@ -67,8 +67,10 @@ the LLM is the relevance realizer, never a hard-coded rule. Each layer is opt-in
 - **Autonomous agency** — characters that **live their own lives**: the game can push a character's
   *own* change of heart (forgiveness it reaches alone, player inactive — #19), and the character can
   **deliberate and decide unprompted**, between scenes, what it does or becomes from everything
-  accumulated — evolving its goals and acting on its own (#20). Game-driven cadence, gated by
-  accumulated cause; the engine applies the inner change, the game enacts the outward action.
+  accumulated — evolving its goals and acting on its own (#20). Game-driven cadence; the engine
+  applies the inner change, the game enacts the outward action. Runs **free** by default (the
+  RR-grounded character acts as it sees fit — found to be the *more* coherent, identity-preserving
+  mode); a **gated** mode is the opt-in constraint for controlled/on-rails games.
 
 The full design and rationale live in [`docs/engine-overview.md`](docs/engine-overview.md). Every
 layer is validated by the harnesses in [`tools/`](tools) — multi-arc, multi-timescale, adversarial,
