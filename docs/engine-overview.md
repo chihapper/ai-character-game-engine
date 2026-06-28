@@ -101,7 +101,18 @@ axes and how deep from character × betrayal-type, never a formula* (a business 
 schemer's trust but spares his respect; a romantic betrayal scars trust, respect, *and* affection).
 The axis can rebuild only up to its ceiling (`1 − scar`), and a caution note stays in the prompt so
 the wound shapes behavior even once the number climbs back.
-*(Coming, #12: disposition also shifts from world events the game pushes, even indirect ones.)*
+
+**World events + time (issue #12).** Disposition no longer moves *only* through conversation. **(A)**
+A player-attributable **world event** the game pushes (`remember(fact, player_role="caused" |
+"benefited")`) shifts disposition too — the AI judges the character-aware impact (deltas + a possible
+scar), weighing *indirect* blame in character (the player's faction burning your warehouse craters
+trust and scars; their crew clearing your debt warms you). **(B)** Feelings **drift toward the
+character's baseline disposition over in-game time** (lazy, on next contact): warmth fades if
+neglected, a transient hurt cools off — but a **scar holds the line** (time never heals a betrayal;
+only earned proof does). The drift rate is **per-character** (an AI-derived "emotional persistence"
+from temperament, cached, further resisted by bond depth), and band-gated so it never reads as a
+ticking meter. Because baseline = *their disposition*, a warm character fades back to warm, never to
+cold.
 
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their
