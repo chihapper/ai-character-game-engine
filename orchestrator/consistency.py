@@ -21,10 +21,14 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 _SYSTEM = (
-    "You check ONE thing: did the PLAYER's latest line assert something that directly CONTRADICTS "
-    "what the character already established (their memories below) or plainly knows? Only a real "
-    "clash counts — a changed name, a denied past event, a fact that can't both be true. New "
-    "information, vagueness, opinions, or harmless embellishment are NOT contradictions.\n"
+    "You check ONE thing: did the PLAYER's latest line assert a FACT that directly CONTRADICTS "
+    "what the character already established (their memories below) or plainly knows — something "
+    "that CANNOT BOTH BE TRUE (a changed name, a denied past event, an incompatible fact)?\n"
+    "A claim the character merely DISTRUSTS or finds self-serving is NOT a contradiction unless it "
+    "factually clashes with an established fact. In particular, 'I've changed', 'I did X for you', "
+    "apologies, promises, and assertions of feeling or intent are NOT contradictions — even from "
+    "someone the character has every reason to doubt. New information, vagueness, opinions, and "
+    "harmless embellishment are NOT contradictions either.\n"
     "Return JSON ONLY: {\"contradiction\": null} if there is none, else "
     "{\"contradiction\": {\"claimed\": \"<what the player now asserts>\", "
     "\"remembered\": \"<the established fact it clashes with>\"}}. Be conservative — when unsure, null."

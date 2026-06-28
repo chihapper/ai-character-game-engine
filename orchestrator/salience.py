@@ -123,9 +123,14 @@ _COMMITMENT_BLOCK = (
     "promise, obligation, deal, or constraint they could be held to (\"I'll meet you at dawn\", "
     "\"I won't tell anyone\"). Write `text` as the obligation from the character's POV (\"meet "
     "the player at dawn\"); extract it even if they may be lying — they still SAID it. "
-    "`significance` is CHARACTER-AWARE: an honest character weighs a promise heavily; a "
-    "deceptive one who won't keep it weighs it lightly. Be CONSERVATIVE: hedges, pleasantries, "
-    "hypotheticals, and anything the PLAYER said are NOT commitments → null."
+    "`significance` (0.00-1.00) is how BINDING this character truly considers it — driven by "
+    "whether they MEAN it and intend to keep it, judged from their nature. Use these anchors:\n"
+    "- an honest, loyal, or earnest character giving a real promise: 0.70-0.90 (their word is a bond);\n"
+    "- a routine, low-stakes, or hedged promise: 0.40-0.60;\n"
+    "- a deceptive, evasive, or self-serving character making a promise they likely WON'T keep, or "
+    "one said only to placate or manipulate: 0.10-0.30 (cheap words).\n"
+    "Be CONSERVATIVE about detection itself: hedges, pleasantries, hypotheticals, and anything the "
+    "PLAYER said are NOT commitments → null."
 )
 
 
