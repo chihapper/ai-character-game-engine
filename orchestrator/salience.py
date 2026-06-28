@@ -157,7 +157,16 @@ def _relationship_block(rel) -> str:
         "game) unless it was a cheap lowball; a lover cheated on after years of vulnerability scars "
         "TRUST, RESPECT (\"how could I respect someone that low\"), AND AFFECTION. A forgiving or "
         "naive character scars shallower; a proud or guarded one deeper. Scar only what they'd "
-        "truly carry for life. (Scars only deepen — they never undo a prior one.)\n"
+        "truly carry for life.\n"
+        "- SCAR_HEAL (the hardest thing) — set `scar_heal` per axis (0-1 = fraction of the REMAINING "
+        "scar this act lifts) ONLY for EXTRAORDINARY, scar-lifting proof — monumental, costly, often "
+        "sustained. This does NOT erase the memory of the betrayal (that's forever); it only lets "
+        "them feel/trust again DESPITE remembering. Normally the axis must already have rebuilt as "
+        "far as the scar allows (straining at its cap) before proof can lift the cap — BUT a single "
+        "DRAMATIC act (saving their child's life, ruin taken on for them) can lift it even mid-"
+        "recovery. CHARACTER-AWARE: a forgiving soul's scar can lift toward gone; a guarded grudge-"
+        "holder's barely budges (small heal even for huge acts). MOST exchanges: 0 — words, time, "
+        "apologies, and ordinary favors lift NOTHING.\n"
         f"(Current standing, 0.5=baseline — affection {rel.affection:.2f}, trust {rel.trust:.2f}, "
         f"respect {rel.respect:.2f}; existing scars — affection {rel.scar_affection:.2f}, trust "
         f"{rel.scar_trust:.2f}, respect {rel.scar_respect:.2f}.)"
@@ -187,13 +196,14 @@ def _parse_relationship(r) -> dict | None:
         "d_affection": clamp(r.get("affection_delta")), "d_trust": clamp(r.get("trust_delta")),
         "d_respect": clamp(r.get("respect_delta")), "mood": str(r.get("mood") or "").strip() or None,
     }
-    sc = r.get("scar")
-    if isinstance(sc, dict):
-        c01 = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
-        scar = {"affection": c01(sc.get("affection")), "trust": c01(sc.get("trust")),
-                "respect": c01(sc.get("respect"))}
-        if any(scar.values()):
-            rel["scar"] = scar
+    c01 = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
+    for key in ("scar", "scar_heal"):
+        v = r.get(key)
+        if isinstance(v, dict):
+            axes = {"affection": c01(v.get("affection")), "trust": c01(v.get("trust")),
+                    "respect": c01(v.get("respect"))}
+            if any(axes.values()):
+                rel[key] = axes
     return rel
 
 
@@ -248,7 +258,8 @@ async def reflect_on_turn(
     if want_rel:
         fields.append('"relationship": {"affection_delta": <-0.3..0.3>, "trust_delta": '
                       '<-0.3..0.3>, "respect_delta": <-0.3..0.3>, "mood": "<1-2 words>", '
-                      '"scar": {"affection": <0-1>, "trust": <0-1>, "respect": <0-1>}}')
+                      '"scar": {"affection": <0-1>, "trust": <0-1>, "respect": <0-1>}, '
+                      '"scar_heal": {"affection": <0-1>, "trust": <0-1>, "respect": <0-1>}}')
         blocks.append(_relationship_block(relationship))
     if want_intent:
         fields.append('"intent": "<short aim from their POV, or empty>"')

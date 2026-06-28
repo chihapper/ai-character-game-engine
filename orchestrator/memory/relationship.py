@@ -68,6 +68,8 @@ def _ease(value: float, delta: float) -> float:
 
 
 _SCAR_MIN = 0.12  # below this a scar is negligible; above it, it caps the axis + shows in render
+_SCAR_HEAL_MIN = 0.15  # a scar-heal below this is ignored — only a DECISIVE act lifts a scar, so
+#                        trivial actions can never accumulate into healing (issue #17 safeguard)
 _SCAR_PHRASE = {
     "trust": "they betrayed your trust once — even as it returns, a part of you stays braced; "
              "you can never be fully unguarded with them again",
@@ -174,13 +176,23 @@ class RelationshipState:
         self.trust = self._drift(self.trust, self.scar_trust, remain)
         self.respect = self._drift(self.respect, self.scar_respect, remain)
 
-    def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0,
-              d_respect: float = 0.0, mood: str | None = None, scar: dict | None = None) -> None:
-        if scar:  # a betrayal permanently caps the axes the AI judged scarred (deepen to worst)
-            c = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
+    def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0, d_respect: float = 0.0,
+              mood: str | None = None, scar: dict | None = None, scar_heal: dict | None = None) -> None:
+        c = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
+        if scar:  # a betrayal caps the axes the AI judged scarred (deepen to worst)
             self.scar_affection = max(self.scar_affection, c(scar.get("affection")))
             self.scar_trust = max(self.scar_trust, c(scar.get("trust")))
             self.scar_respect = max(self.scar_respect, c(scar.get("respect")))
+        if scar_heal:  # EXTRAORDINARY proof lifts a cap — asymptotic (lift a fraction of the remaining
+            # scar, so it approaches but rarely reaches 0; the betrayal MEMORY is untouched). A
+            # heal below _SCAR_HEAL_MIN is IGNORED, so only a DECISIVE act lifts a scar — trivial
+            # drips can never accumulate into healing (the mistake we avoided on recovery deltas).
+            def _heal(scar, h):
+                h = c(h)
+                return scar * (1.0 - h) if h >= _SCAR_HEAL_MIN else scar
+            self.scar_affection = _heal(self.scar_affection, scar_heal.get("affection"))
+            self.scar_trust = _heal(self.scar_trust, scar_heal.get("trust"))
+            self.scar_respect = _heal(self.scar_respect, scar_heal.get("respect"))
         # move each axis, then clamp to its permanent ceiling (1 - scar): it can rebuild, never past
         self.affection = min(_ease(self.affection, d_affection), 1.0 - self.scar_affection)
         self.trust = min(_ease(self.trust, d_trust), 1.0 - self.scar_trust)
