@@ -213,6 +213,15 @@ class Settings(BaseSettings):
     # (affection/trust/respect deltas + mood), folded in (no extra round-trip). RR note: this
     # is the agent's CARING conditioning the relevance realizer, not just tone. Off by default.
     relationship_state: bool = False
+    # Relationship time-decay (issue #12-B): when feelings have been shaped, they drift back toward
+    # the character's baseline disposition over in-game time on next contact (warmth fades if
+    # neglected; a transient hurt cools off) — EXCEPT a betrayal scar holds the line (time doesn't
+    # heal it). Rate is per-character (AI-derived "persistence" from temperament, cached) and
+    # further resisted by how deep the bond is (turns). Lazy, Δt-based; only active with
+    # relationship_state. Set the half-life in the game's clock unit.
+    relationship_time_decay: bool = True
+    relationship_decay_half_life: float = 180.0  # global default until per-character persistence is set
+    relationship_decay_bond_resist: float = 0.05  # each shaping turn extends the half-life by this×
     # Evolving intent / short-term goals (issue #8), OPT-IN: the same background call ALSO sets
     # the character's immediate aim with the player (a short agenda they pursue), folded in.
     # Injected so they act proactively, and folds into the arena query so recall serves the aim
