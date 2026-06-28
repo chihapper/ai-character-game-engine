@@ -67,6 +67,15 @@ def _ease(value: float, delta: float) -> float:
     return max(0.0, min(1.0, value + delta * _EASE_GAIN * headroom))
 
 
+_SCAR_MIN = 0.12  # below this a scar is negligible; above it, it caps the axis + shows in render
+_SCAR_PHRASE = {
+    "trust": "they betrayed your trust once — even as it returns, a part of you stays braced; "
+             "you can never be fully unguarded with them again",
+    "respect": "what they did cost them your respect in a way that can never be entirely undone",
+    "affection": "the warmth you once felt is permanently shadowed by what they did",
+}
+
+
 @dataclass
 class RelationshipState:
     affection: float = 0.5  # 0.5 = unchanged from baseline; >0.6 warmer, <0.4 cooler
@@ -74,6 +83,12 @@ class RelationshipState:
     respect: float = 0.5
     mood: str = ""          # acute current feeling ("amused", "guarded", "stung", "furious")
     turns: int = 0          # how many exchanges have shaped this
+    # Permanent betrayal SCAR per axis (issue #16): 0 = unscarred, x = fraction of that axis put
+    # permanently out of reach (ceiling = 1 - x). The AI/reflection decides which axes scar and how
+    # deep (character x betrayal-type), never a hard rule; the engine only persists + enforces it.
+    scar_affection: float = 0.0
+    scar_trust: float = 0.0
+    scar_respect: float = 0.0
 
     def render(self) -> str:
         """The injected 'how the player has affected you' section, or "" if nothing has
@@ -84,6 +99,12 @@ class RelationshipState:
         lines = [f"- {ph[_band(v)]}" for v, ph in bands if ph[_band(v)]]
         if self.mood:
             lines.append(f"- Right now you feel: {self.mood}")
+        # Permanent scars from past betrayal — shown even once an axis has rebuilt, so the wound
+        # keeps shaping behavior at any level (not just while the number is low).
+        for axis, scar in (("trust", self.scar_trust), ("respect", self.scar_respect),
+                           ("affection", self.scar_affection)):
+            if scar >= _SCAR_MIN:
+                lines.append(f"- A scar you carry: {_SCAR_PHRASE[axis]}.")
         if not lines:
             return ""
         return (
@@ -94,7 +115,8 @@ class RelationshipState:
 
     def to_dict(self) -> dict:
         return {"affection": self.affection, "trust": self.trust, "respect": self.respect,
-                "mood": self.mood, "turns": self.turns}
+                "mood": self.mood, "turns": self.turns, "scar_affection": self.scar_affection,
+                "scar_trust": self.scar_trust, "scar_respect": self.scar_respect}
 
     def query_hint(self) -> str:
         """A short stance phrase folded into the arena query so RECALL is conditioned by the
@@ -117,10 +139,16 @@ class RelationshipState:
         return ", ".join(bits)
 
     def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0,
-              d_respect: float = 0.0, mood: str | None = None) -> None:
-        self.affection = _ease(self.affection, d_affection)
-        self.trust = _ease(self.trust, d_trust)
-        self.respect = _ease(self.respect, d_respect)
+              d_respect: float = 0.0, mood: str | None = None, scar: dict | None = None) -> None:
+        if scar:  # a betrayal permanently caps the axes the AI judged scarred (deepen to worst)
+            c = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
+            self.scar_affection = max(self.scar_affection, c(scar.get("affection")))
+            self.scar_trust = max(self.scar_trust, c(scar.get("trust")))
+            self.scar_respect = max(self.scar_respect, c(scar.get("respect")))
+        # move each axis, then clamp to its permanent ceiling (1 - scar): it can rebuild, never past
+        self.affection = min(_ease(self.affection, d_affection), 1.0 - self.scar_affection)
+        self.trust = min(_ease(self.trust, d_trust), 1.0 - self.scar_trust)
+        self.respect = min(_ease(self.respect, d_respect), 1.0 - self.scar_respect)
         if mood is not None:
             self.mood = mood.strip()
         self.turns += 1
@@ -149,6 +177,9 @@ class RelationshipStore:
                 affection=float(d.get("affection", 0.5)), trust=float(d.get("trust", 0.5)),
                 respect=float(d.get("respect", 0.5)), mood=str(d.get("mood", "")),
                 turns=int(d.get("turns", 0)),
+                scar_affection=float(d.get("scar_affection", 0.0)),
+                scar_trust=float(d.get("scar_trust", 0.0)),
+                scar_respect=float(d.get("scar_respect", 0.0)),
             )
         except Exception:
             return RelationshipState()
@@ -156,12 +187,8 @@ class RelationshipStore:
     def save(self) -> None:
         if self.readonly:
             return
-        s = self.get()
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(json.dumps({
-            "affection": s.affection, "trust": s.trust, "respect": s.respect,
-            "mood": s.mood, "turns": s.turns,
-        }), encoding="utf-8")
+        self._path.write_text(json.dumps(self.get().to_dict()), encoding="utf-8")
 
     def update(self, **deltas) -> RelationshipState:
         self.get().apply(**deltas)
