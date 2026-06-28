@@ -164,6 +164,12 @@ loop and any headless game. A single background "reflection" call updates the wh
 turn at **~0 added player latency**, and every judgment is **AI-driven and character-aware** —
 the LLM is the relevance realizer, never a hard-coded rule. Each layer is opt-in via config.
 
+> **What makes this different.** Most "character engines" keep a *fixed* personality plus a single
+> relationship counter — they optimize for **consistency**. This one optimizes for **believable
+> change**: feelings move and *scar*, beliefs form and can be broken under pressure, trust is lost
+> fast and earned back slowly, and the character can act *against* its own convictions when the
+> stakes demand it — all grounded in relevance realization. A consistent mask vs. a psyche.
+
 - **Relevance-realization recall** with **game-time decay + reinforcement** — trivial moments
   fade, pivotal ones stay vivid for in-game years; rehearsed memories resist forgetting
   (issues [#3](https://github.com/chihapper/ai-character-game-engine/issues/3) / #5).
