@@ -89,6 +89,10 @@ class RelationshipState:
     scar_affection: float = 0.0
     scar_trust: float = 0.0
     scar_respect: float = 0.0
+    # Time-decay (issue #12-B): the game clock at the last update, and the AI-derived per-character
+    # "emotional persistence" half-life (0 = not yet assessed -> use the global default).
+    last_t: float | None = None
+    persistence_half_life: float = 0.0
 
     def render(self) -> str:
         """The injected 'how the player has affected you' section, or "" if nothing has
@@ -116,7 +120,8 @@ class RelationshipState:
     def to_dict(self) -> dict:
         return {"affection": self.affection, "trust": self.trust, "respect": self.respect,
                 "mood": self.mood, "turns": self.turns, "scar_affection": self.scar_affection,
-                "scar_trust": self.scar_trust, "scar_respect": self.scar_respect}
+                "scar_trust": self.scar_trust, "scar_respect": self.scar_respect,
+                "last_t": self.last_t, "persistence_half_life": self.persistence_half_life}
 
     def query_hint(self) -> str:
         """A short stance phrase folded into the arena query so RECALL is conditioned by the
@@ -137,6 +142,37 @@ class RelationshipState:
         if self.mood:
             bits.append(self.mood)
         return ", ".join(bits)
+
+    @staticmethod
+    def _drift(value: float, scar: float, remain: float) -> float:
+        """Move one axis toward baseline 0.5 by `remain` (fraction of the offset that persists).
+        Warmth above baseline always fades (neglect cools); below-baseline fades up ONLY if the
+        axis isn't scarred — a betrayal wound holds the line, time alone never heals it."""
+        offset = value - 0.5
+        if offset > 0:
+            return 0.5 + offset * remain
+        if scar >= _SCAR_MIN:
+            return value
+        return 0.5 + offset * remain
+
+    def age(self, now_t: float | None, *, half_life: float, bond_resist: float = 0.0) -> None:
+        """Drift feelings toward the character's baseline disposition over the in-game time since
+        the last update (lazy — call on next contact). Deeper bonds (more turns) resist; scars
+        don't heal. Updates last_t. No-op without a clock or elapsed time."""
+        if now_t is None:
+            return
+        if self.last_t is None:
+            self.last_t = now_t
+            return
+        dt = now_t - self.last_t
+        self.last_t = now_t
+        if dt <= 0 or half_life <= 0:
+            return
+        effective = half_life * (1.0 + bond_resist * self.turns)  # deep bonds fade slower
+        remain = 0.5 ** (dt / effective)
+        self.affection = self._drift(self.affection, self.scar_affection, remain)
+        self.trust = self._drift(self.trust, self.scar_trust, remain)
+        self.respect = self._drift(self.respect, self.scar_respect, remain)
 
     def apply(self, *, d_affection: float = 0.0, d_trust: float = 0.0,
               d_respect: float = 0.0, mood: str | None = None, scar: dict | None = None) -> None:
@@ -180,6 +216,8 @@ class RelationshipStore:
                 scar_affection=float(d.get("scar_affection", 0.0)),
                 scar_trust=float(d.get("scar_trust", 0.0)),
                 scar_respect=float(d.get("scar_respect", 0.0)),
+                last_t=(float(d["last_t"]) if isinstance(d.get("last_t"), (int, float)) else None),
+                persistence_half_life=float(d.get("persistence_half_life", 0.0)),
             )
         except Exception:
             return RelationshipState()

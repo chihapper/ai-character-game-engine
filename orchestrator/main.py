@@ -603,9 +603,11 @@ def _num(x) -> float | None:
     return float(x) if isinstance(x, (int, float)) else None
 
 
-async def _handle_remember(long_term, data: dict, emit_json) -> None:
+async def _handle_remember(long_term, data: dict, emit_json, *, engine=None) -> None:
     """The memory-write seam over the WS: a game pushes a durable world event into the
-    character's long-term memory. {type:"remember", fact, when?, kind?, importance?}."""
+    character's long-term memory. {type:"remember", fact, when?, kind?, importance?, player_role?}.
+    When `engine` is given and `player_role` is set ("caused"/"benefited"), the event ALSO shifts
+    the character's disposition toward the player (#12-A) — the engine judges the impact."""
     fact = (data.get("fact") or "").strip()
     if not fact:
         return
@@ -615,13 +617,13 @@ async def _handle_remember(long_term, data: dict, emit_json) -> None:
         importance = 0.7
     raw_clock = data.get("clock", data.get("t"))  # numeric game clock -> temporal decay
     clock = float(raw_clock) if isinstance(raw_clock, (int, float)) else None
-    await long_term.remember(
-        fact,
-        when=(data.get("when") or ""),
-        kind=(data.get("kind") or "world_event"),
-        importance=importance,
-        t=clock,
-    )
+    kw = dict(when=(data.get("when") or ""), kind=(data.get("kind") or "world_event"),
+              importance=importance, t=clock)
+    player_role = (data.get("player_role") or "").strip() or None
+    if engine is not None:
+        await engine.remember(fact, player_role=player_role, **kw)
+    else:
+        await long_term.remember(fact, **kw)
     await emit_json({"type": "remembered", "fact": fact})
 
 
@@ -854,7 +856,7 @@ async def run_full_loop(websocket: WebSocket, emit_json, emit_audio, character,
                         await session.add_text(txt)
                         await retrieve_and_respond(txt, Situation.from_dict(data.get("situation")))
                 elif mtype == "remember":
-                    await _handle_remember(long_term, data, emit_json)
+                    await _handle_remember(long_term, data, emit_json, engine=engine)
                 elif mtype == "commit":
                     # The game declares an obligation the character has taken on.
                     c = commitments.add(

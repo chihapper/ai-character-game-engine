@@ -177,6 +177,26 @@ def _intent_block(intent) -> str:
     )
 
 
+def _parse_relationship(r) -> dict | None:
+    """Build a relationship update {d_affection, d_trust, d_respect, mood, scar?} from the model's
+    JSON `relationship` object — shared by the per-turn reflection and the world-event assessor."""
+    if not isinstance(r, dict):
+        return None
+    clamp = lambda x: max(-0.3, min(0.3, float(x))) if isinstance(x, (int, float)) else 0.0
+    rel = {
+        "d_affection": clamp(r.get("affection_delta")), "d_trust": clamp(r.get("trust_delta")),
+        "d_respect": clamp(r.get("respect_delta")), "mood": str(r.get("mood") or "").strip() or None,
+    }
+    sc = r.get("scar")
+    if isinstance(sc, dict):
+        c01 = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
+        scar = {"affection": c01(sc.get("affection")), "trust": c01(sc.get("trust")),
+                "respect": c01(sc.get("respect"))}
+        if any(scar.values()):
+            rel["scar"] = scar
+    return rel
+
+
 def _parse_reflection(text: str, want_commit: bool, want_rel: bool, want_intent: bool):
     import json
 
@@ -199,21 +219,7 @@ def _parse_reflection(text: str, want_commit: bool, want_rel: bool, want_intent:
                 "significance": max(0.0, min(1.0, float(sig))) if isinstance(sig, (int, float)) else 0.5,
                 "due": str(c.get("due") or "").strip(),
             }
-    relationship = None
-    if want_rel and isinstance(d.get("relationship"), dict):
-        r = d["relationship"]
-        clamp = lambda x: max(-0.3, min(0.3, float(x))) if isinstance(x, (int, float)) else 0.0
-        relationship = {
-            "d_affection": clamp(r.get("affection_delta")), "d_trust": clamp(r.get("trust_delta")),
-            "d_respect": clamp(r.get("respect_delta")), "mood": str(r.get("mood") or "").strip() or None,
-        }
-        sc = r.get("scar")
-        if isinstance(sc, dict):
-            clamp01 = lambda x: max(0.0, min(1.0, float(x))) if isinstance(x, (int, float)) else 0.0
-            scar = {"affection": clamp01(sc.get("affection")), "trust": clamp01(sc.get("trust")),
-                    "respect": clamp01(sc.get("respect"))}
-            if any(scar.values()):
-                relationship["scar"] = scar
+    relationship = _parse_relationship(d.get("relationship")) if want_rel else None
     intent = None
     if want_intent and isinstance(d.get("intent"), str):
         intent = d["intent"].strip() or None
@@ -269,3 +275,69 @@ async def score_and_detect(
     """Back-compat: salience + commitment only (no relationship/intent)."""
     importance, commitment, _, _ = await reflect_on_turn(character, user_text, assistant_text, model=model)
     return importance, commitment
+
+
+# --- Issue #12: world events shift disposition; per-character emotional persistence -----------
+
+async def assess_event_impact(
+    character: Character, event: str, *, player_role: str, relationship, model: str | None = None,
+) -> dict | None:
+    """How does a player-attributable WORLD EVENT (something off-screen, not a conversation) move
+    THIS character's feelings toward the player? Same character-aware rubric as the per-turn
+    relationship update (deltas + a possible permanent scar). `player_role` is the game's
+    attribution ("caused", "benefited", ...). Returns the relationship update or None."""
+    settings = get_settings()
+    system = (
+        "You judge how a WORLD EVENT — something that happened off-screen, attributed to the player "
+        "— moves a fictional character's feelings TOWARD THE PLAYER. Return JSON ONLY: "
+        '{"relationship": null} if it does not bear on how they feel about the player, else '
+        '{"relationship": {"affection_delta": <-0.3..0.3>, "trust_delta": <-0.3..0.3>, '
+        '"respect_delta": <-0.3..0.3>, "mood": "<1-2 words>", "scar": {"affection": <0-1>, '
+        '"trust": <0-1>, "respect": <0-1>}}}.\n\n' + _relationship_block(relationship) +
+        "\nINDIRECTNESS: weigh how directly the player is to blame/credit — a fair-minded character "
+        "separates the player from their faction or allies; a vengeful or absolutist one does not. A "
+        "severe harm (their faction got a loved one killed) can permanently SCAR exactly like a "
+        "personal betrayal; a minor or impersonal one moves little.")
+    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+              f"WORLD EVENT (the player {player_role} this):\n{event}\n\n"
+              "How does it move how they feel about the player? JSON only.")
+    try:
+        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=240)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+            parts.append(delta)
+        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
+        if not m:
+            return None
+        import json
+        d = json.loads(m.group())
+        return _parse_relationship(d.get("relationship")) if isinstance(d, dict) else None
+    except Exception:
+        logger.exception("World-event impact assessment failed; no disposition shift")
+        return None
+
+
+async def assess_persistence(character: Character, *, model: str | None = None) -> float:
+    """AI-derived 'emotional persistence' -> a decay half-life (game-clock units) for how long this
+    character's player-specific feelings linger before drifting back to baseline with no contact.
+    Warm/loyal/devoted/obsessive/grudge-holding -> long; mercurial/fickle/cold/transactional ->
+    short. Falls back to the global default on error."""
+    settings = get_settings()
+    default = settings.relationship_decay_half_life
+    system = (
+        "From a character's nature, judge how LONG their feelings toward someone linger before "
+        "fading back to baseline when they have NO contact. Warm, loyal, devoted, obsessive, or "
+        "grudge-holding natures persist a LONG time; mercurial, fickle, cold, transactional, or "
+        "easily-distracted ones fade FAST. Return JSON ONLY: {\"persistence_days\": <number, ~30 "
+        "for fast-fading to ~1000 for barely-fading>}.")
+    prompt = f"CHARACTER:\n{_character_summary(character)}\n\nHow long do their feelings linger? JSON only."
+    try:
+        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=40)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+            parts.append(delta)
+        m = re.search(r"\d+\.?\d*", "".join(parts))
+        return max(5.0, min(5000.0, float(m.group()))) if m else default
+    except Exception:
+        logger.exception("Persistence assessment failed; using global default")
+        return default

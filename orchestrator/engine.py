@@ -31,7 +31,9 @@ from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
 from .consolidation import consolidate_beliefs
 from .consistency import detect_contradiction
-from .salience import reflect_on_turn, score_salience
+from .salience import (
+    assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
+)
 
 
 class Engine:
@@ -51,9 +53,32 @@ class Engine:
         self._reflect_acc = 0.0
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
-    async def remember(self, fact: str, **kw) -> None:
-        """Push a durable world event into the character's memory (direct or indirect)."""
+    async def remember(self, fact: str, *, player_role: str | None = None, **kw) -> None:
+        """Push a durable world event into the character's memory (direct or indirect). If the event
+        is attributable to the player (`player_role`, e.g. "caused"/"benefited"), it ALSO shifts the
+        character's disposition toward the player — the AI judges the character-aware impact (deltas
+        + possible scar), so e.g. the player's faction burning a warehouse costs real trust (#12-A)."""
         await self.long_term.remember(fact, **kw)
+        s = get_settings()
+        if player_role and s.relationship_state and not self.relationship.readonly:
+            now_t = kw.get("t")
+            self._age_relationship(now_t)  # drift over the gap, then apply the event's shift
+            rel = await assess_event_impact(
+                self.character, fact, player_role=player_role, relationship=self.relationship.get())
+            if rel:
+                self.relationship.update(**rel)
+
+    def _age_relationship(self, now_t) -> None:
+        """Drift feelings toward baseline over the in-game time since last contact (#12-B), using the
+        character's persistence half-life (per-character if assessed, else the global default) and
+        bond-depth resistance. Lazy + cheap (no LLM); a no-op without the feature or a clock."""
+        s = get_settings()
+        if not (s.relationship_state and s.relationship_time_decay) or self.relationship.readonly:
+            return
+        rel = self.relationship.get()
+        base = rel.persistence_half_life or s.relationship_decay_half_life
+        rel.age(now_t, half_life=base, bond_resist=s.relationship_decay_bond_resist)
+        self.relationship.save()
 
     def commit(self, text: str, **kw):
         """Declare an obligation the character has taken on."""
@@ -75,6 +100,7 @@ class Engine:
         now_t = request.situation.clock if request.situation else None
         for c in self.commitments.sweep_expired(now_t):
             await self._convert(c, now_t)
+        self._age_relationship(now_t)  # drift feelings toward baseline over any elapsed gap (#12-B)
         # The agent's stance toward the player: feelings (#6) AND current aim (#8) both condition
         # what's relevant — a wary, "find out who sent them" character recalls a different past.
         stance = "; ".join(h for h in (self.relationship.get().query_hint(),
@@ -117,6 +143,11 @@ class Engine:
                 self.relationship.update(**rel)
             if intent is not None and not self.intent.readonly:
                 self.intent.update(intent)
+            # Assess this character's emotional persistence ONCE (decay rate), cached (#12-B).
+            if (s.relationship_state and s.relationship_time_decay and not self.relationship.readonly
+                    and self.relationship.get().persistence_half_life <= 0):
+                self.relationship.get().persistence_half_life = await assess_persistence(self.character)
+                self.relationship.save()
         else:
             importance = await score_salience(self.character, user_text, reply)
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
