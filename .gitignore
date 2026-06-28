@@ -38,3 +38,4 @@ server.log
 # stress-test transcripts + run logs (tools/stress_*.py) — generated, not source
 stress_*.md
 stress_*.log
+stress_grounding*.md
