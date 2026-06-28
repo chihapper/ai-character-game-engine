@@ -89,6 +89,18 @@ opt-in), **character-aware** (pleasantries roll off a guarded Corvin; only prove
 move him, slowly — a warm Bri moves more readily). It's RR-core: the stance folds into the
 **arena query**, so a wary character *recalls* a different past (deception/threat) than a fond
 one. Behavioral payoff is visible — low trust → deflect/guard, high trust → engage/help.
+
+**Asymmetry + permanent scars.** Axes update *asymptotically* (saturating), so the extremes are
+hard-won (a warm character no longer pins to 1.00 in five beats) and a betrayal from high trust
+craters harder. Trust is **lost fast, regained slowly** — recovery after real damage is grinding
+and *sacrifice-gated* (validated over ~3 in-game years: words ≈ nothing, favors are met with
+suspicion then grudging, only sustained costly proof rebuilds — the reflection's job, character-
+aware). And a deep betrayal leaves a **permanent scar** (issue #16): the reflection assigns a
+per-axis `scar` (0–1 = fraction of that axis put permanently out of reach) — *the AI chooses which
+axes and how deep from character × betrayal-type, never a formula* (a business double-cross scars a
+schemer's trust but spares his respect; a romantic betrayal scars trust, respect, *and* affection).
+The axis can rebuild only up to its ceiling (`1 − scar`), and a caution note stays in the prompt so
+the wound shapes behavior even once the number climbs back.
 *(Coming, #12: disposition also shifts from world events the game pushes, even indirect ones.)*
 
 ### Evolving intent (issue #8)
