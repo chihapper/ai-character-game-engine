@@ -207,17 +207,30 @@ def render_memories(memories: list[str] | None) -> str:
     )
 
 
+def render_beliefs(beliefs: list[str] | None) -> str:
+    """Render consolidated BELIEFS (issue #9) into their own section — convictions are a different
+    thing from a recalled exchange, so they get a distinct header (issue #14), or "" if none."""
+    if not beliefs:
+        return ""
+    body = "\n".join(f"- {b}" for b in beliefs)
+    return (
+        "# What you've come to believe about this person\n"
+        "Convictions you've formed over time — let them colour how you read and treat them; "
+        "don't recite them.\n" + body
+    )
+
+
 def render_turn_context(
     *, memories: list[str] | None = None, situation: Situation | None = None,
-    commitments: str = "", relationship: str = "", intent: str = "",
+    commitments: str = "", relationship: str = "", intent: str = "", beliefs: list[str] | None = None,
 ) -> str:
-    """The per-turn DYNAMIC half of a character's context: recalled memories, the evolving
-    relationship/feelings toward the player, the character's current short-term intent, OPEN
+    """The per-turn DYNAMIC half of a character's context: recalled memories, the character's
+    formed beliefs, the evolving relationship/feelings, their current short-term intent, OPEN
     commitments (always surfaced), and the live Situation. The full loop injects this as a small
     context *item* each turn (keeping the big static prompt stable + cacheable); the modular
     pipeline folds it into the full prompt. Returns "" when there's nothing dynamic."""
-    parts = [s for s in (render_memories(memories), relationship, intent, commitments,
-                         render_situation(situation)) if s]
+    parts = [s for s in (render_memories(memories), render_beliefs(beliefs), relationship, intent,
+                         commitments, render_situation(situation)) if s]
     return "\n\n".join(parts)
 
 

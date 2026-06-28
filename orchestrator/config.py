@@ -236,6 +236,14 @@ class Settings(BaseSettings):
     reflection_max_inputs: int = 12               # most-recent exchanges fed to a reflection
     reflection_importance: float = 0.85           # beliefs are through-lines -> stored salient
     reflection_model: str = "claude-sonnet-4-6"   # synthesis needs nuance; matches salience_model
+    belief_dedup_threshold: float = 0.85          # a new belief this similar to an existing one
+    #                                               SUPERSEDES it (issue #15) — convictions don't
+    #                                               pile up as reworded variants; lower than the
+    #                                               exact-dup memory threshold since beliefs paraphrase
+    belief_max: int = 6                           # hard cap on stored beliefs; oldest evicted (#15)
+    beliefs_always_surface: int = 2               # top convictions ALWAYS injected, not just when a
+    #                                               query happens to recall them (#14) — beliefs are
+    #                                               durable and should colour every turn
     # Contradiction detection (issue #10), OPT-IN: the always-on knowledge directive makes a
     # character NOTICE contradictions live; this background check additionally RECORDS one (the
     # player's claim vs the established fact) as a salient memory, so a caught lie is carried

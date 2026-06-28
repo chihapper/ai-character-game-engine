@@ -113,12 +113,21 @@ class Engine:
         else:
             query = request.query()
         scored = await self.long_term.retrieve_scored(query, now_t=now_t) if query else {"selected": [], "scored": []}
+        # Split the recalled set: beliefs (#9) render under their own header (#14), episodic
+        # memories under theirs. Fall back to the flat selected list if there's no breakdown.
+        chosen = [b for b in scored.get("scored", []) if b.get("selected")]
+        memories = [b["text"] for b in chosen if b.get("kind") != "belief"] if chosen else scored.get("selected", [])
+        # Beliefs are durable convictions: always surface the top few (#14), plus any extra a query
+        # recalled — so they colour every turn, not only when relevance happens to fish one up.
+        always = self.long_term.beliefs(limit=s.beliefs_always_surface)
+        recalled_b = [b["text"] for b in chosen if b.get("kind") == "belief"]
+        beliefs = always + [t for t in recalled_b if t not in always]
         injected = render_turn_context(
-            memories=scored.get("selected", []), situation=request.situation,
+            memories=memories, beliefs=beliefs, situation=request.situation,
             commitments=render_commitments(self.commitments.open_items()),
             relationship=self.relationship.get().render(), intent=self.intent.get().render(),
         )
-        return injected, {"query": query, "memories": scored.get("selected", []),
+        return injected, {"query": query, "memories": scored.get("selected", []), "beliefs": beliefs,
                           "scored": scored.get("scored", []), "embedder": scored.get("embedder", ""),
                           "intent": self.intent.get().intent}
 
@@ -172,8 +181,8 @@ class Engine:
             return
         recent = self._reflect_buffer[-s.reflection_max_inputs:]
         beliefs = await consolidate_beliefs(self.character, recent, existing=self.long_term.beliefs())
-        for b in beliefs:
-            await self.long_term.remember(b, kind="belief", importance=s.reflection_importance, t=now_t)
+        for b in beliefs:  # add_belief supersedes near-duplicate convictions (#15), no piling up
+            await self.long_term.add_belief(b, importance=s.reflection_importance, t=now_t)
         self._reflect_buffer.clear()
         self._reflect_acc = 0.0
 

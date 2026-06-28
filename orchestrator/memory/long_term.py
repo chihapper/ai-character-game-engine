@@ -238,6 +238,37 @@ class LongTermMemory:
         document = f"User: {user_text}\n{self._speaker}: {assistant_text}"
         await asyncio.to_thread(self._add_sync, document, importance, "exchange", when, t)
 
+    def _add_belief_sync(self, text: str, importance: float, t: float | None, threshold: float) -> None:
+        if self.readonly:
+            return
+        records = self._all()
+        embed, _, _ = _get_embedder()
+        embedding = embed(text)
+        importance = max(0.0, min(1.0, importance))
+        # Supersede near-duplicate BELIEFS (issue #15): a reworded conviction REPLACES the old one
+        # instead of piling up. (Episodic memories use the much higher exact-dup threshold + reinforce.)
+        records = [r for r in records
+                   if not (r.kind == "belief" and cosine(embedding, r.embedding) >= threshold)]
+        index = max((r.index for r in records), default=-1) + 1
+        records.append(MemoryRecord(text=text, embedding=embedding, index=index, importance=importance,
+                                    kind="belief", when="", t=t, last_t=t, reinforcement=0))
+        cap = get_settings().belief_max  # bound the set: evict the oldest beliefs past the cap (#15)
+        belief_recs = [r for r in records if r.kind == "belief"]
+        if len(belief_recs) > cap:
+            drop = {id(r) for r in sorted(belief_recs, key=lambda r: r.index)[: len(belief_recs) - cap]}
+            records = [r for r in records if id(r) not in drop]
+        self._records = records
+        self._rewrite(records)
+
+    async def add_belief(self, text: str, *, importance: float = 0.85, t: float | None = None,
+                         threshold: float | None = None) -> None:
+        """Store a consolidated belief (issue #9), superseding any near-duplicate belief already
+        held so convictions stay a tight, evolving set rather than reworded copies (issue #15)."""
+        if not text.strip():
+            return
+        thr = threshold if threshold is not None else get_settings().belief_dedup_threshold
+        await asyncio.to_thread(self._add_belief_sync, text, importance, t, thr)
+
     async def remember(
         self, fact: str, *, when: str = "", kind: str = "world_event",
         importance: float = 0.7, t: float | None = None
