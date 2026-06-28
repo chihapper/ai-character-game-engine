@@ -35,11 +35,6 @@ ab_out/
 # runtime server log
 server.log
 
-# stress-test transcript + run log (tools/stress_test.py)
-stress_report*.md
-stress_run*.log
-stress_suite*.md
-stress_beliefs*.md
-stress_beliefs*.log
-stress_recovery*.md
-stress_full*.md
+# stress-test transcripts + run logs (tools/stress_*.py) — generated, not source
+stress_*.md
+stress_*.log

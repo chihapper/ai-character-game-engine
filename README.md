@@ -6,8 +6,11 @@ continuity) and owns the **game logic** — character definition and state, memo
 tools/mechanics, and the **world/time seam** between the game and the engine.
 
 You define a character; the game tells the engine what's happening; the engine makes
-that character respond — out loud, in a consistent cloned voice, remembering past
-sessions.
+that character respond — out loud, in a consistent cloned voice, with an **evolving inner
+life**: memory that decays and reinforces, feelings that move and *scar*, beliefs formed
+from experience, and forgiveness that must be earned. See
+**[The character mind (Track E)](#the-character-mind-track-e)** below — it's the heart of
+the project — and [`docs/engine-overview.md`](docs/engine-overview.md) for the full design.
 
 > **Lineage.** This repo was seeded from the provider-agnostic **voice engine**, which
 > lives on as its own portfolio project:
@@ -152,6 +155,48 @@ native build. See [`docs/relevance-scoring.md`](docs/relevance-scoring.md) and i
 
 ---
 
+## The character mind (Track E)
+
+Recall is the foundation; the inner life built on top of it is the heart of the project. One
+runtime-agnostic **`Engine`** core ([`engine.py`](orchestrator/engine.py)) exposes
+`prepare()` → `reflect()` (plus a headless `respond()`), so the *same* mind drives the voice
+loop and any headless game. A single background "reflection" call updates the whole state each
+turn at **~0 added player latency**, and every judgment is **AI-driven and character-aware** —
+the LLM is the relevance realizer, never a hard-coded rule. Each layer is opt-in via config.
+
+- **Relevance-realization recall** with **game-time decay + reinforcement** — trivial moments
+  fade, pivotal ones stay vivid for in-game years; rehearsed memories resist forgetting
+  (issues [#3](https://github.com/chihapper/ai-character-game-engine/issues/3) / #5).
+- **Character-aware salience** — how memorable a moment is depends on *who the character is*.
+- **Evolving relationship** — affection / trust / respect + mood, updated **asymptotically**
+  (extremes are hard-won) and **character-aware** (pleasantries roll off a guarded character) (#6).
+- **Trust is lost fast, regained slowly** — recovery after a betrayal is grinding and
+  **sacrifice-gated**, never bought with words or the mere passage of time.
+- **Permanent, multi-axis betrayal scars** — a betrayal caps an axis; *which* axes and how deep is
+  AI-judged by character × betrayal type (a business double-cross spares respect; a romantic one
+  doesn't). Scars can **heal**, but only by extraordinary, wound-relevant proof — and the *memory*
+  of the betrayal never goes (#16 / #17).
+- **Short-term intent** — the character pursues its own immediate aim, not just reacts (#8).
+- **Commitments** — promises it makes are tracked, honored, and expire into memory (#4).
+- **Beliefs** — it periodically consolidates experience into higher-level convictions that colour
+  every turn — and can act *against* them under pressure, as relevance realization predicts (#9).
+- **Knowledge boundaries + contradiction detection** — it knows only what it has lived, is honestly
+  ignorant beyond that, and catches a player who contradicts established memory (#10).
+- **World events + time** — disposition shifts from events the game pushes (even ones that hit the
+  character indirectly), and feelings drift toward the character's baseline over in-game time —
+  while a scar holds the line (#12).
+
+The full design and rationale live in [`docs/engine-overview.md`](docs/engine-overview.md). Every
+layer is validated by the harnesses in [`tools/`](tools) — multi-arc, multi-timescale, adversarial,
+scale, and a lifetime-spanning integrated saga (to in-game clock 10,000) that asserts hard
+invariants (scars never decrease, no axis exceeds its ceiling, values stay bounded).
+
+> **Roadmap frontier.** The engine is *reactive* — it animates a character on demand. The next
+> horizon is **autonomous agency**: NPCs that deliberate and act *unprompted*, living their own
+> lives between sessions (issues [#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20)).
+
+---
+
 ## Prerequisites
 
 - **Python 3.10+**
@@ -287,8 +332,12 @@ identical regardless of TTS provider. The relevance-realization memory weights
 orchestrator/
   main.py                FastAPI app: UI, character REST API, voice WebSocket
   context.py             RespondRequest / Situation + instruction assembly (engine/game seam)
+  engine.py              runtime-agnostic game-director core: prepare() / reflect() / respond()
   pipeline.py            streaming STT→LLM→sentence-chunk→TTS loop (the overlap) + latency
-  salience.py            character-aware memory-importance scoring (LLM, at write time)
+  salience.py            character-aware salience + the folded per-turn reflection
+                         (relationship / intent / commitment / scar, one background call)
+  consolidation.py       periodic belief formation (generative-agents-style reflection)
+  consistency.py         contradiction detection (player claim vs established memory)
   config.py              settings + env loading
   sentence_chunker.py
   expressivity.py        per-provider performance-tag handling
@@ -304,15 +353,21 @@ orchestrator/
     inworld_session.py   Inworld full-loop runtime (behind VOICE_RUNTIME=inworld_fullloop)
   memory/
     short_term.py        rolling buffer of recent turns
-    long_term.py         per-character JSONL store (fastembed/lexical) + remember()
-    relevance.py         relevance-realization scorer (similarity·recency·importance·diversity)
+    long_term.py         per-character JSONL store (fastembed/lexical) + remember() / beliefs
+    relevance.py         RR scorer (similarity·recency·importance·diversity) + game-time decay
+    relationship.py      evolving affection/trust/respect + mood, betrayal scars, time-decay
+    intent.py            the character's evolving short-term aim (agency seed)
+    commitments.py       promises the character makes (open / resolve / expire → memory)
   characters/            character profiles (YAML)
 web/                     Conversation + Create Character UI, streaming PCM playback, RR debug panel
 tools/clone_voice.py     CLI fallback for cloning
 tools/backfill_salience.py  re-score a character's existing memories
+tools/game_demo.py       headless game-loop demo driving the Engine (no voice)
+tools/stress_*.py        engine validation harnesses (arcs · suite · beliefs · recovery · full saga)
+docs/engine-overview.md      the character mind (Track E): every layer + rationale  ← current state
 docs/architecture-seams.md   the engine/game seam design (Track V + Track E)
 docs/track-v-full-loop-plan.md  the Inworld full-loop migration plan
-docs/relevance-scoring.md    how memory recall is scored + the debug panel
+docs/relevance-scoring.md    how memory recall is scored + decay + the debug panel
 ```
 
 ---
