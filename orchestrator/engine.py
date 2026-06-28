@@ -67,6 +67,8 @@ class Engine:
             a change of heart / transformation that can warm them or even heal a scar (forgiveness
             they reach on their own). This is the seam a game with autonomous NPC lives drives.
         With neither, it's a pure memory write (today's default)."""
+        if player_role and "kind" not in kw:
+            kw["kind"] = "player_event"  # mark player-attributable events so deliberation can ground on them (#22)
         await self.long_term.remember(fact, **kw)
         s = get_settings()
         if not (s.relationship_state and not self.relationship.readonly):
@@ -120,6 +122,8 @@ class Engine:
         controlled / on-rails environment or to minimize cost)."""
         now_t = situation.clock if situation else None
         last_t = self.agency.last_t()
+        self._age_relationship(now_t)  # smooth Δt decay toward baseline over absence (#12); decoupled
+        # from the internal path so player-trust fades evenly instead of jittering (#21).
         # Cheap structural skip: in gated mode, if nothing has happened since the last deliberation,
         # the character simply continues as they are — no LLM call.
         if mode != "free" and last_t is not None and now_t is not None:
@@ -156,10 +160,26 @@ class Engine:
         rel = self.relationship.get().render()
         if rel:
             parts.append(rel)
+        # What the player ACTUALLY did — so the character grounds claims about them in real events
+        # and doesn't invent contact when the player has been absent (#22). Conflating real events is
+        # fine (human); inventing a player who was never there is not.
+        recs = self.long_term._all()
+        player_items = sorted([r for r in recs if r.kind in ("exchange", "player_event")],
+                              key=lambda r: (r.t if r.t is not None else float(r.index)))
+        if player_items:
+            recent = "\n".join(f"- {r.text[:160]}" for r in player_items[-3:])
+            note = ("What the player has ACTUALLY done with you (base anything you say about them on "
+                    "this — interpret it naturally, but invent nothing beyond it):\n" + recent)
+            last_pt = player_items[-1].t
+            if now_t is not None and last_pt is not None and now_t - last_pt > 0:
+                note += f"\n- The player has NOT been present or acted since clock {last_pt} ({now_t - last_pt} ago)."
+            parts.append(note)
+        else:
+            parts.append("The player has not interacted with you at all — invent no contact, words, "
+                         "or actions from them.")
         beliefs = self.long_term.beliefs()
         if beliefs:
             parts.append("Beliefs you've come to hold:\n" + "\n".join(f"- {b}" for b in beliefs))
-        recs = self.long_term._all()
         pool = [r for r in recs if r.t is not None and r.t > last_t] if last_t is not None else recs
         pool = sorted(pool, key=lambda r: (r.importance, r.t or 0), reverse=True)[:8]
         if pool:
