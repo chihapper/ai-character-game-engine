@@ -128,6 +128,7 @@ def build_arena_query(
     max_recent_turns: int = 2,
     include_goals: bool = True,
     relationship_hint: str = "",
+    goals: list[str] | None = None,
 ) -> str:
     """Compose the long-term retrieval query — the *arena* the agent is in, not just the
     last line. Relevance realization: what's relevant is relative to the situation + the
@@ -158,9 +159,11 @@ def build_arena_query(
             if bit:
                 parts.append(bit)
 
-    # The agent's standing concerns — relevance is relative to what THEY want.
-    if include_goals and character.goals:
-        parts.extend(character.goals[:3])
+    # The agent's standing concerns — relevance is relative to what THEY want. Deliberation (#20)
+    # can evolve goals away from the profile; the override takes precedence when given.
+    effective_goals = goals if goals is not None else character.goals
+    if include_goals and effective_goals:
+        parts.extend(effective_goals[:3])
 
     # The agent's current stance toward the player — relevance is relative to their caring, so
     # a wary character recalls a different past than a fond one (issue #6 RR-deepening).
@@ -220,17 +223,31 @@ def render_beliefs(beliefs: list[str] | None) -> str:
     )
 
 
+def render_goals(goals: list[str] | None) -> str:
+    """Render goals the character has EVOLVED through deliberation (#20), so its shifted life
+    direction overrides the static profile goals in-prompt. "" when goals haven't changed."""
+    if not goals:
+        return ""
+    body = "\n".join(f"- {g}" for g in goals)
+    return (
+        "# What you want now\n"
+        "Your aims have shifted from where they began — this is the direction you've come to want.\n"
+        + body
+    )
+
+
 def render_turn_context(
     *, memories: list[str] | None = None, situation: Situation | None = None,
     commitments: str = "", relationship: str = "", intent: str = "", beliefs: list[str] | None = None,
+    goals: list[str] | None = None,
 ) -> str:
     """The per-turn DYNAMIC half of a character's context: recalled memories, the character's
     formed beliefs, the evolving relationship/feelings, their current short-term intent, OPEN
     commitments (always surfaced), and the live Situation. The full loop injects this as a small
     context *item* each turn (keeping the big static prompt stable + cacheable); the modular
     pipeline folds it into the full prompt. Returns "" when there's nothing dynamic."""
-    parts = [s for s in (render_memories(memories), render_beliefs(beliefs), relationship, intent,
-                         commitments, render_situation(situation)) if s]
+    parts = [s for s in (render_memories(memories), render_beliefs(beliefs), render_goals(goals),
+                         relationship, intent, commitments, render_situation(situation)) if s]
     return "\n\n".join(parts)
 
 

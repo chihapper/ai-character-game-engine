@@ -240,6 +240,7 @@ class Settings(BaseSettings):
     #                                               SUPERSEDES it (issue #15) — convictions don't
     #                                               pile up as reworded variants; lower than the
     #                                               exact-dup memory threshold since beliefs paraphrase
+    deliberation_model: str = "claude-sonnet-4-6"  # autonomous-agency deliberation (#20); nuance needed
     belief_max: int = 6                           # hard cap on stored beliefs; oldest evicted (#15)
     beliefs_always_surface: int = 2               # top convictions ALWAYS injected, not just when a
     #                                               query happens to recall them (#14) — beliefs are

@@ -127,8 +127,23 @@ grudge) and can **warm disposition and heal a scar** — forgiveness the charact
 — while a passing mood changes nothing (the same `scar_heal` threshold + gating apply). This is the
 seam a game with **autonomous NPC lives** drives: the game supplies the narrative ("he became a
 monk"), the engine enacts the inner change. It's the *applier* half of NPC autonomy; the *generator*
-half — the character deliberating and *deciding* such changes unprompted — is the next frontier
-(issue #20).
+half — the character deliberating and *deciding* such changes unprompted — is #20 below.
+
+### Autonomous agency — the character decides on its own (issue #20)
+The *generator* half of a living NPC. The **game** calls `Engine.deliberate(situation, mode=…)`
+whenever it wants — **no engine cadence** — and the character, *between scenes with the player
+absent*, decides what (if anything) it does or becomes from **everything that's accumulated**
+(memory, beliefs, relationship + scars, intent, goals, elapsed time). The engine **applies the
+inner half** through the seams already built — a change of heart via the #19 self-change path, an
+updated intent, **evolved standing goals** — and **returns** the Decision so the game can enact any
+`world_action` in its world. Default **`gated`** mode means a real change needs accumulated *cause*
+(most calls return `changed:false` — the character continues as they are, and a cheap structural
+skip avoids the LLM when nothing has happened); **`free`** mode lowers the bar for emergent games.
+The grounding *is* the guardrail: decisions are in-character, never arbitrary. Validated — a weary,
+scarred Corvin, *unprompted*, makes a **cold pragmatic peace** (not a scripted redemption: he keeps
+the scar, *"I won't trust him with my life,"* and his goals shift toward "use the player as a
+watched courier"), and that new direction shapes his later behavior. Together with #19, this is the
+engine's bridge from *animating characters on demand* to **NPCs that live their own lives**.
 
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their

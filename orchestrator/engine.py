@@ -29,10 +29,12 @@ from .memory.intent import IntentStore
 from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
+from .agency import deliberate as _deliberate
 from .consolidation import consolidate_beliefs
 from .consistency import detect_contradiction
+from .memory.agency_store import AgencyStore
 from .salience import (
-    assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
+    _character_summary, assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
 )
 
 
@@ -46,6 +48,7 @@ class Engine:
         self.commitments = CommitmentStore(ns, readonly=readonly)
         self.relationship = RelationshipStore(ns, readonly=readonly)
         self.intent = IntentStore(ns, readonly=readonly)
+        self.agency = AgencyStore(ns, readonly=readonly)  # evolving goals + last-deliberation clock (#20)
         self.short_term = ShortTermMemory(max_turns=s.short_term_turns)
         # Reflection/consolidation (#9): accumulate exchanges + their importance until enough has
         # happened to be worth forming beliefs (process-lifetime; resets on restart).
@@ -105,6 +108,63 @@ class Engine:
             await self._convert(c, t)
         return c
 
+    # ---- autonomous agency: the character decides + acts on its OWN (issue #20) -----------
+    async def deliberate(self, situation=None, *, mode: str = "gated") -> dict:
+        """The GAME calls this whenever it wants (no engine cadence) — between scenes, the character
+        decides on its OWN what it does or how it changes from everything that's accumulated. The
+        engine APPLIES the inner half (a change of heart via the #19 self-change seam, an updated
+        intent, evolved goals) and RETURNS the Decision so the game can enact any `world_action`.
+        `mode`: 'gated' (default — a real change needs accumulated cause) or 'free' (emergence)."""
+        now_t = situation.clock if situation else None
+        last_t = self.agency.last_t()
+        # Cheap structural skip: in gated mode, if nothing has happened since the last deliberation,
+        # the character simply continues as they are — no LLM call.
+        if mode != "free" and last_t is not None and now_t is not None:
+            if not any(r.t is not None and r.t > last_t for r in self.long_term._all()):
+                self.agency.mark_deliberated(now_t)
+                return {"changed": False, "skipped": True, "reflection": "", "internal": "",
+                        "new_intent": "", "new_goals": [], "world_action": ""}
+        decision = await _deliberate(self.character, grounding=self._agency_grounding(situation, now_t, last_t),
+                                     mode=mode)
+        self.agency.mark_deliberated(now_t)
+        if not decision or not decision.get("changed"):
+            return decision or {"changed": False}
+        if decision["internal"]:  # a change of heart toward the player — applied via the #19 seam
+            await self.remember(decision["internal"], actor="self", importance=0.85, t=now_t, kind="self_change")
+        if decision["new_intent"] and not self.intent.readonly:
+            self.intent.update(decision["new_intent"])
+        if decision["new_goals"]:  # their life direction has shifted
+            self.agency.set_goals(decision["new_goals"])
+        turning_point = decision["world_action"] or decision["reflection"]
+        if turning_point and not self.long_term.readonly:  # remember the decision as their own
+            await self.long_term.remember(f"(chose, of their own will) {turning_point}",
+                                          kind="decision", importance=0.8, t=now_t)
+        return decision
+
+    def _agency_grounding(self, situation, now_t, last_t) -> str:
+        """Assemble everything the character deliberates FROM: who they are, current goals + aim,
+        feelings + scars, beliefs, what's happened (esp. since they last took stock), and elapsed time."""
+        goals = self.agency.goals() or self.character.goals
+        parts = [_character_summary(self.character)]
+        if goals:
+            parts.append("Your current goals: " + "; ".join(goals))
+        if self.intent.get().intent:
+            parts.append("Your current near-term aim: " + self.intent.get().intent)
+        rel = self.relationship.get().render()
+        if rel:
+            parts.append(rel)
+        beliefs = self.long_term.beliefs()
+        if beliefs:
+            parts.append("Beliefs you've come to hold:\n" + "\n".join(f"- {b}" for b in beliefs))
+        recs = self.long_term._all()
+        pool = [r for r in recs if r.t is not None and r.t > last_t] if last_t is not None else recs
+        pool = sorted(pool, key=lambda r: (r.importance, r.t or 0), reverse=True)[:8]
+        if pool:
+            parts.append("Notable things weighing on you:\n" + "\n".join(f"- {r.text[:140]}" for r in pool))
+        if now_t is not None and last_t is not None:
+            parts.append(f"Game-time since you last took stock: {now_t - last_t}.")
+        return "\n\n".join(parts)
+
     # ---- one turn, in two halves (so any driver plugs its generation in between) ---------
     async def prepare(self, request: RespondRequest) -> tuple[str, dict]:
         """First half: expire overdue commitments, build the relationship-conditioned arena
@@ -119,10 +179,11 @@ class Engine:
         # what's relevant — a wary, "find out who sent them" character recalls a different past.
         stance = "; ".join(h for h in (self.relationship.get().query_hint(),
                                        self.intent.get().query_hint()) if h)
+        evolved_goals = self.agency.goals()  # deliberation (#20) may have shifted the life direction
         if s.arena_query:
             query = build_arena_query(
                 request, self.character, self.short_term.messages(),
-                max_recent_turns=s.arena_query_recent_turns, relationship_hint=stance,
+                max_recent_turns=s.arena_query_recent_turns, relationship_hint=stance, goals=evolved_goals,
             )
         else:
             query = request.query()
@@ -137,7 +198,7 @@ class Engine:
         recalled_b = [b["text"] for b in chosen if b.get("kind") == "belief"]
         beliefs = always + [t for t in recalled_b if t not in always]
         injected = render_turn_context(
-            memories=memories, beliefs=beliefs, situation=request.situation,
+            memories=memories, beliefs=beliefs, situation=request.situation, goals=evolved_goals,
             commitments=render_commitments(self.commitments.open_items()),
             relationship=self.relationship.get().render(), intent=self.intent.get().render(),
         )
