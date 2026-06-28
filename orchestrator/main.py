@@ -620,8 +620,9 @@ async def _handle_remember(long_term, data: dict, emit_json, *, engine=None) -> 
     kw = dict(when=(data.get("when") or ""), kind=(data.get("kind") or "world_event"),
               importance=importance, t=clock)
     player_role = (data.get("player_role") or "").strip() or None
+    actor = (data.get("actor") or "player").strip() or "player"  # "self" = NPC's own change (#19)
     if engine is not None:
-        await engine.remember(fact, player_role=player_role, **kw)
+        await engine.remember(fact, player_role=player_role, actor=actor, **kw)
     else:
         await long_term.remember(fact, **kw)
     await emit_json({"type": "remembered", "fact": fact})

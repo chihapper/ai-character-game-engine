@@ -53,20 +53,34 @@ class Engine:
         self._reflect_acc = 0.0
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
-    async def remember(self, fact: str, *, player_role: str | None = None, **kw) -> None:
-        """Push a durable world event into the character's memory (direct or indirect). If the event
-        is attributable to the player (`player_role`, e.g. "caused"/"benefited"), it ALSO shifts the
-        character's disposition toward the player — the AI judges the character-aware impact (deltas
-        + possible scar), so e.g. the player's faction burning a warehouse costs real trust (#12-A)."""
+    async def remember(self, fact: str, *, player_role: str | None = None,
+                       actor: str = "player", **kw) -> None:
+        """Push a durable world event into the character's memory (direct or indirect). It ALSO
+        shifts the character's disposition toward the player when attributable — the AI judges the
+        character-aware impact (deltas + a possible scar OR scar_heal):
+          - `player_role` ("caused"/"benefited") — the PLAYER did it (#12-A); the player's faction
+            burning a warehouse costs real trust.
+          - `actor="self"` — the CHARACTER's own internal change with the player doing NOTHING (#19):
+            a change of heart / transformation that can warm them or even heal a scar (forgiveness
+            they reach on their own). This is the seam a game with autonomous NPC lives drives.
+        With neither, it's a pure memory write (today's default)."""
         await self.long_term.remember(fact, **kw)
         s = get_settings()
-        if player_role and s.relationship_state and not self.relationship.readonly:
-            now_t = kw.get("t")
-            self._age_relationship(now_t)  # drift over the gap, then apply the event's shift
-            rel = await assess_event_impact(
-                self.character, fact, player_role=player_role, relationship=self.relationship.get())
-            if rel:
-                self.relationship.update(**rel)
+        if not (s.relationship_state and not self.relationship.readonly):
+            return
+        if actor == "self":
+            attribution = ("the character THEMSELVES underwent this — their own change of heart, "
+                           "decision, or transformation; the player did nothing")
+        elif player_role:
+            attribution = f"the player {player_role} this"
+        else:
+            return  # no attribution -> pure memory, no disposition shift
+        now_t = kw.get("t")
+        self._age_relationship(now_t)  # drift over the gap, then apply the event's shift
+        rel = await assess_event_impact(
+            self.character, fact, attribution=attribution, relationship=self.relationship.get())
+        if rel:
+            self.relationship.update(**rel)
 
     def _age_relationship(self, now_t) -> None:
         """Drift feelings toward baseline over the in-game time since last contact (#12-B), using the

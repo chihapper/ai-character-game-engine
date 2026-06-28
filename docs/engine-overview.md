@@ -120,6 +120,16 @@ from temperament, cached, further resisted by bond depth), and band-gated so it 
 ticking meter. Because baseline = *their disposition*, a warm character fades back to warm, never to
 cold.
 
+**Self-driven change (issue #19).** Disposition can also shift from the character's **own** internal
+change, with the **player doing nothing** — `remember(fact, actor="self")`. The AI judges a *genuine,
+hard-won transformation* (Corvin takes monastic vows and, after years of reflection, lets go of the
+grudge) and can **warm disposition and heal a scar** — forgiveness the character reaches on their own
+— while a passing mood changes nothing (the same `scar_heal` threshold + gating apply). This is the
+seam a game with **autonomous NPC lives** drives: the game supplies the narrative ("he became a
+monk"), the engine enacts the inner change. It's the *applier* half of NPC autonomy; the *generator*
+half — the character deliberating and *deciding* such changes unprompted — is the next frontier
+(issue #20).
+
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their
 POV* ("find out who sent them", "keep them close tonight", "test if they can be trusted with
