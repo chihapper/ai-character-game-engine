@@ -149,6 +149,18 @@ free recognizable 0.95, *"cynicism deepens into methodology; abbey exit is earne
 self"*). Together with #19, this is the engine's bridge from *animating characters on demand* to
 **NPCs that live their own lives**.
 
+*Grounding + sticky trust (issues #21/#22).* The deliberation is grounded in the player's *actual*
+activity — what they really did, plus an explicit note when they've been absent — so it interprets
+real events naturally (human conflation is fine) but doesn't **fabricate** contact that never
+happened. And player-**trust** is *sticky*: it moves only on real player acts (or `player_role` world
+events), or a **coherent, decisive** autonomous reckoning — never on per-tick mood jitter, and decay
+fades it smoothly toward baseline over absence rather than wobbling. How the character reads the
+player's *absence* is left to relevance realization, not a rule: a **promise taken to heart** (or
+warmth the character read *as* a promise — people do that) can sting or wound when the player goes
+silent, while **passing contact** just drifts to neutral — and the character reacts *as they would*,
+not as a fair arbiter would (validated: promises-Bri craters to 0.17 + scars; passing-Bri holds at
+0.50, no scar).
+
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their
 POV* ("find out who sent them", "keep them close tonight", "test if they can be trusted with
