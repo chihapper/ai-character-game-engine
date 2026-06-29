@@ -161,6 +161,18 @@ silent, while **passing contact** just drifts to neutral — and the character r
 not as a fair arbiter would (validated: promises-Bri craters to 0.17 + scars; passing-Bri holds at
 0.50, no scar).
 
+That absence note is **cadence-aware**: it weighs the gap since the player's last act against the
+*rhythm* of real contact, not against zero. A within-rhythm gap reads as **presence**; only a gap
+that outruns the established cadence reads as pulling-away; and a single establishing contact with
+nothing since is genuine, growing absence. Without this, a *loyal, frequently-polled* player was
+misread as absent on every off-visit tick and saw earned trust collapse — caught by the Opus
+grounding judge over a 6-character / 42-arc variation run (`tools/stress_variation.py`,
+`--quick` for the regression canary). After the fix, a loyal weekly-present player **earns** trust
+(0.08 → 0.92) while real betrayal still craters (player-betrayal → trust 0.0, scar 1.0) and the
+shrug-vs-wound spread on passing contact is unchanged. That same run established the headline result:
+**two uncoached "wildcard" characters** produced the full shrug-vs-wound range from their own
+psychology — the variation is the engine's, not the authoring's.
+
 ### Evolving intent (issue #8)
 The character's **immediate short-term aim** with the player — a concrete agenda *from their
 POV* ("find out who sent them", "keep them close tonight", "test if they can be trusted with

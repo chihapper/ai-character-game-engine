@@ -39,3 +39,5 @@ server.log
 stress_*.md
 stress_*.log
 stress_grounding*.md
+*_run.log
+grounding_judge.log
