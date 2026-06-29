@@ -329,9 +329,10 @@ class Engine:
         if self.llm is None:
             raise RuntimeError("Engine.respond needs an llm; voice drivers use prepare()/reflect().")
         injected, dbg = await self.prepare(request)
-        system = build_instructions(self.character)
-        if injected:
-            system += "\n\n" + injected
+        # Split into [STABLE character-sheet/instructions, DYNAMIC per-turn context] so the adapter
+        # can cache the stable prefix. Concatenation == the old single string, so output is identical.
+        stable = build_instructions(self.character)
+        system = [stable, "\n\n" + injected] if injected else [stable]
         messages = self.short_term.messages() + [{"role": "user", "content": request.input_text()}]
         reply = await self._generate(system, messages)
         if request.input_text() and reply:
@@ -344,9 +345,10 @@ class Engine:
         return reply
 
     # ---- internals ----------------------------------------------------------------------
-    async def _generate(self, system: str, messages: list[dict]) -> str:
+    async def _generate(self, system, messages: list[dict]) -> str:
         parts: list[str] = []
-        async for delta in self.llm.stream_reply(messages, system):
+        # cache_messages=True: the conversation history repeats every turn, so cache its prefix.
+        async for delta in self.llm.stream_reply(messages, system, cache_messages=True):
             parts.append(delta)
         return "".join(parts).strip()
 

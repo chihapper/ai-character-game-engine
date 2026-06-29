@@ -35,17 +35,58 @@ class AnthropicLLM(LLMAdapter):
         # we pass it explicitly so a non-default key in .env is always honored.
         self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
+    @staticmethod
+    def _system_param(system):
+        """PROMPT CACHING (no behavior change — the model sees the exact same concatenated text).
+        A plain `str` is left uncached (its content may be dynamic, and caching a per-call-changing
+        prefix only wastes cache writes). A `list[str]` is an explicit opt-in: the FIRST segment is
+        the STABLE prefix (e.g. the character sheet / standing instructions) and gets a cache
+        breakpoint; later segments (dynamic per-turn context) stay uncached. Concatenation of the
+        blocks equals the original string, so generation is identical."""
+        if isinstance(system, str):
+            return system
+        blocks = [{"type": "text", "text": s} for s in system if s]
+        if blocks:
+            blocks[0] = {**blocks[0], "cache_control": {"type": "ephemeral"}}
+        return blocks or ""
+
+    @staticmethod
+    def _cache_messages(messages: list[dict]) -> list[dict]:
+        """Mark the conversation-history prefix cacheable (cache_control on the last message) — for
+        the multi-turn reply path where the history repeats every turn. Model input is unchanged."""
+        if not messages:
+            return messages
+        out = [dict(m) for m in messages]
+        content = out[-1].get("content")
+        if isinstance(content, str):
+            out[-1]["content"] = [{"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}]
+        elif isinstance(content, list) and content and isinstance(content[-1], dict):
+            blocks = [dict(b) for b in content]
+            blocks[-1] = {**blocks[-1], "cache_control": {"type": "ephemeral"}}
+            out[-1]["content"] = blocks
+        return out
+
     async def stream_reply(
-        self, messages: list[dict], system: str = ""
+        self, messages: list[dict], system="", *, cache_messages: bool = False
     ) -> AsyncIterator[str]:
-        # haiku (the snappy default) does not use extended thinking; we simply
-        # stream text. The `messages.stream()` helper accumulates state and exposes
-        # a clean `text_stream` of deltas.
+        # `messages.stream()` accumulates state and exposes a clean `text_stream` of deltas.
+        # Prompt caching (system prefix + optionally the message history) is purely a cost/latency
+        # optimization: cache_control is metadata, so the generated text is unaffected.
+        msgs = self._cache_messages(messages) if cache_messages else messages
         async with self._client.messages.stream(
             model=self._model,
             max_tokens=self._max_tokens,
-            system=system,
-            messages=messages,
+            system=self._system_param(system),
+            messages=msgs,
         ) as stream:
             async for text in stream.text_stream:
                 yield text
+            try:  # one-line cache telemetry (never breaks generation)
+                u = (await stream.get_final_message()).usage
+                cr = getattr(u, "cache_read_input_tokens", 0) or 0
+                cc = getattr(u, "cache_creation_input_tokens", 0) or 0
+                if cr or cc:
+                    logger.debug("anthropic cache: read=%d create=%d fresh_input=%d",
+                                 cr, cc, getattr(u, "input_tokens", 0) or 0)
+            except Exception:  # noqa: BLE001
+                pass

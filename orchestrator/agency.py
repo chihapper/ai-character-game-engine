@@ -120,7 +120,9 @@ async def deliberate(
     try:
         llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=1000)
         parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+        # [system] (list) opts the stable deliberation instructions into prompt caching; the grounding
+        # lives in the user message and stays uncached (it's unique each deliberation).
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], [system]):
             parts.append(delta)
         return _parse_decision("".join(parts))
     except Exception:
