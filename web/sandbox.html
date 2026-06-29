@@ -136,7 +136,22 @@
       </div>
 
       <div class="card">
-        <h2>Scenario <span class="hint">(record your steps · save · replay on any character)</span></h2>
+        <h2>Save / Load game <span class="hint">(snapshot the EXACT state of ALL characters — memories, goals, scores, scars, intent — and restore it later)</span></h2>
+        <div class="row wrap">
+          <input id="saveName" placeholder="save name" style="width:160px" />
+          <button id="saveGameBtn" class="primary">💾 Save game</button>
+          <span class="grow"></span>
+          <select id="savesList"><option value="">— load game —</option></select>
+          <button id="loadGameBtn">Load</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="transcriptBtn" class="ghost">⬇ Download transcript</button>
+          <span class="hint">verbatim conversation (both sides), saved durably per turn</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Scenario <span class="hint">(record your input steps · replay them — NPC replies regenerate fresh, stochastic. Replay auto-backs-up first.)</span></h2>
         <div class="row wrap">
           <span class="pill"><span id="stepCount">0</span> steps recorded</span>
           <input id="scenName" placeholder="scenario name" style="width:160px" />

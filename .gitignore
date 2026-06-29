@@ -45,3 +45,4 @@ grounding_judge.log
 # director sandbox runtime (dev tool)
 .sandbox_scenarios/
 sandbox_server.log
+.sandbox_saves/

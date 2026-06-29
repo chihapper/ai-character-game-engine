@@ -10,10 +10,12 @@ Mounted under /api/sandbox/* and the /sandbox page. Scenarios (sequences of step
 """
 from __future__ import annotations
 
+import datetime
 import glob
 import json
 import os
 import pathlib
+import shutil
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -28,6 +30,72 @@ router = APIRouter(prefix="/api/sandbox", tags=["sandbox"])
 
 _engines: dict[str, Engine] = {}
 SCEN_DIR = pathlib.Path(".sandbox_scenarios")
+SAVES_DIR = pathlib.Path(".sandbox_saves")     # save-games: snapshots of ALL characters' state
+MEM_DIR = pathlib.Path(".memory")              # the engine's file-backed stores (per namespace)
+TRANS_DIR = SAVES_DIR / "_transcripts"         # durable per-turn verbatim transcripts (sandbox-layer)
+
+
+def _safe(name: str) -> str:
+    return "".join(c for c in (name or "") if c.isalnum() or c in " -_").strip() or "save"
+
+
+def _state_chars() -> list[str]:
+    """Memory-namespaces that currently have persisted state on disk."""
+    if not MEM_DIR.exists():
+        return []
+    return sorted({p.name.split(".")[0] for p in MEM_DIR.glob("*") if p.is_file()})
+
+
+def _log_turn(slug: str, clock, user: str, reply: str) -> None:
+    """Append a turn to a durable, clean verbatim transcript — independent of the engine's
+    reflection-flush timing, so a crash/restart can never lose the conversation as it was said."""
+    TRANS_DIR.mkdir(parents=True, exist_ok=True)
+    with (TRANS_DIR / f"{slug}.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"clock": clock, "user": user, "reply": reply}) + "\n")
+
+
+def _snapshot(name: str, clock=None) -> dict:
+    """Copy ALL characters' persisted stores (+ transcripts) into a named save-game. Returns the
+    manifest. Pure file copy of the stores the engine already uses — does NOT change the engine."""
+    name = _safe(name)
+    base = SAVES_DIR / name
+    if (base / "memory").exists():
+        shutil.rmtree(base / "memory")
+    (base / "memory").mkdir(parents=True, exist_ok=True)
+    chars = _state_chars()
+    if MEM_DIR.exists():
+        for f in MEM_DIR.glob("*"):
+            if f.is_file():
+                shutil.copy2(f, base / "memory" / f.name)
+    if TRANS_DIR.exists():  # bundle the verbatim transcripts with the save
+        (base / "transcripts").mkdir(exist_ok=True)
+        for f in TRANS_DIR.glob("*.jsonl"):
+            shutil.copy2(f, base / "transcripts" / f.name)
+    manifest = {"name": name, "created": datetime.datetime.now().isoformat(timespec="seconds"),
+                "clock": clock, "characters": chars}
+    (base / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return manifest
+
+
+def _restore(name: str) -> dict:
+    """Restore a save-game: overwrite .memory (+ transcripts) from the snapshot and drop all live
+    engines so they reload from the restored state. Auto-backs up current state first."""
+    base = SAVES_DIR / _safe(name)
+    if not (base / "memory").exists():
+        raise HTTPException(status_code=404, detail=f"no save '{name}'")
+    _snapshot("_autosave_before_load")  # safety net — current state is never silently lost
+    MEM_DIR.mkdir(exist_ok=True)
+    for f in MEM_DIR.glob("*"):         # clear current, then restore the snapshot's set exactly
+        if f.is_file():
+            f.unlink()
+    for f in (base / "memory").glob("*"):
+        shutil.copy2(f, MEM_DIR / f.name)
+    if (base / "transcripts").exists():
+        TRANS_DIR.mkdir(parents=True, exist_ok=True)
+        for f in (base / "transcripts").glob("*.jsonl"):
+            shutil.copy2(f, TRANS_DIR / f.name)
+    _engines.clear()                    # every character reloads from the restored stores
+    return json.loads((base / "manifest.json").read_text(encoding="utf-8"))
 
 
 def _engine(slug: str) -> Engine:
@@ -93,8 +161,9 @@ async def get_state(slug: str):
 @router.post("/{slug}/say")
 async def say(slug: str, body: Say):
     eng = _engine(slug)
-    reply = await eng.respond(RespondRequest(
-        player_input=body.text, situation=Situation(clock=body.clock if body.clock is not None else 0.0)))
+    clk = body.clock if body.clock is not None else 0.0
+    reply = await eng.respond(RespondRequest(player_input=body.text, situation=Situation(clock=clk)))
+    _log_turn(slug, clk, body.text, reply)  # durable verbatim transcript, written per-turn
     return {"reply": reply, "state": _state(eng)}
 
 
@@ -126,6 +195,50 @@ async def reset(slug: str):
     return {"state": _state(_engine(slug))}
 
 
+class SaveReq(BaseModel):
+    name: str
+    clock: float | None = None
+
+
+@router.get("/{slug}/transcript")
+async def get_transcript(slug: str):
+    """The durable verbatim transcript for this character (every say + reply, per-turn)."""
+    p = TRANS_DIR / f"{slug}.jsonl"
+    if not p.exists():
+        return {"turns": []}
+    turns = [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
+    return {"turns": turns}
+
+
+@router.post("/save")
+async def save_game(body: SaveReq):
+    """SAVE-GAME: snapshot the CURRENT state of ALL characters (memories, goals, scores, scars,
+    intent) + transcripts into a named save. Deterministic — load restores exactly this point."""
+    return {"ok": True, **_snapshot(body.name, clock=body.clock)}
+
+
+@router.get("/saves")
+async def list_saves():
+    SAVES_DIR.mkdir(exist_ok=True)
+    out = []
+    for d in sorted(SAVES_DIR.iterdir()):
+        if not d.is_dir() or d.name.startswith("_"):  # hide _transcripts / _autosave_* / _backup_*
+            continue
+        mf = d / "manifest.json"
+        if mf.exists():
+            try:
+                out.append(json.loads(mf.read_text(encoding="utf-8")))
+            except (ValueError, OSError):
+                continue
+    return out
+
+
+@router.post("/load")
+async def load_game(body: SaveReq):
+    """LOAD-GAME: restore a save's exact state for ALL characters (auto-backs up current first)."""
+    return {"ok": True, "manifest": _restore(body.name)}
+
+
 @router.get("/scenarios")
 async def list_scenarios():
     SCEN_DIR.mkdir(exist_ok=True)
@@ -151,11 +264,12 @@ async def save_scenario(body: Scenario):
 async def replay(slug: str, body: Scenario):
     """Run a saved step-sequence against a (freshly reset) engine, returning a transcript. `advance`
     steps move the in-game clock; say/event/deliberate act at the current clock."""
-    _engines.pop(slug, None)
     try:
         ns = load_character(slug).memory_namespace
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
+    _snapshot("_autosave_before_replay")  # replay is destructive — never lose the pre-replay state
+    _engines.pop(slug, None)
     for f in glob.glob(f".memory/{ns}.*"):
         os.remove(f)
     eng = _engine(slug)
@@ -168,6 +282,7 @@ async def replay(slug: str, body: Scenario):
         elif kind == "say":
             reply = await eng.respond(RespondRequest(player_input=step.get("text", ""),
                                                      situation=Situation(clock=clock)))
+            _log_turn(slug, clock, step.get("text", ""), reply)
             transcript.append({"type": "say", "clock": clock, "text": step.get("text", ""), "reply": reply})
         elif kind == "event":
             await eng.remember(step.get("text", ""), player_role=(step.get("player_role") or None),

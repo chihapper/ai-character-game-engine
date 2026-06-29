@@ -197,6 +197,60 @@ async function replayScenario() {
   finally { setBusy(false); }
 }
 
+// ---- save / load game (state snapshot of ALL characters) ----------------
+async function loadSavesList() {
+  try {
+    const saves = await api("/saves");
+    $("savesList").innerHTML = `<option value="">— load game —</option>` +
+      saves.map((s) => `<option value="${esc(s.name)}">${esc(s.name)} · ${esc((s.created || "").replace("T", " "))}</option>`).join("");
+  } catch (e) { console.error(e); }
+}
+async function saveGame() {
+  const name = $("saveName").value.trim();
+  if (!name) return alert("name the save first");
+  setBusy(true);
+  try {
+    const res = await api("/save", "POST", { name, clock: state.clock });
+    $("saveName").value = "";
+    await loadSavesList();
+    feed("advance", `💾 saved game "${esc(res.name)}" — ${(res.characters || []).length} character(s), at day ${state.clock}`);
+  } catch (e) { alert("save failed: " + e.message); }
+  finally { setBusy(false); }
+}
+async function loadGame() {
+  const name = $("savesList").value;
+  if (!name) return alert("pick a save to load");
+  if (!confirm(`Load game "${name}"? This restores ALL characters' state (current state is auto-backed-up first).`)) return;
+  setBusy(true);
+  try {
+    const res = await api("/load", "POST", { name });
+    const m = res.manifest || {};
+    if (m.clock != null) setClock(m.clock);
+    $("feed").innerHTML = ""; feedStarted = true;
+    feed("advance", `📂 loaded game "${esc(name)}" — ${(m.characters || []).length} character(s) restored, resuming at day ${state.clock}`);
+    await refresh();
+  } catch (e) { alert("load failed: " + e.message); }
+  finally { setBusy(false); }
+}
+async function downloadTranscript() {
+  if (!state.slug) return;
+  try {
+    const { turns } = await api(`/${state.slug}/transcript`);
+    if (!turns || !turns.length) return alert("no transcript recorded for this character yet");
+    const lines = [`# Transcript — ${charName()}`, ""];
+    for (const t of turns) {
+      lines.push(`[day ${t.clock}] You: ${t.user}`);
+      lines.push(`[day ${t.clock}] ${charName()}: ${t.reply}`, "");
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${state.slug}-transcript.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) { alert("transcript failed: " + e.message); }
+}
+
 // ---- boot ---------------------------------------------------------------
 function charName() {
   const o = $("char").selectedOptions[0];
@@ -227,8 +281,12 @@ async function boot() {
     (b.onclick = () => advance(parseInt(b.dataset.adv, 10))));
   $("saveScen").onclick = saveScenario;
   $("replayBtn").onclick = replayScenario;
+  $("saveGameBtn").onclick = saveGame;
+  $("loadGameBtn").onclick = loadGame;
+  $("transcriptBtn").onclick = downloadTranscript;
 
   await loadScenarioList();
+  await loadSavesList();
   if (chars.length) { $("char").value = chars[0].slug; await selectChar(chars[0].slug); }
 }
 boot();
