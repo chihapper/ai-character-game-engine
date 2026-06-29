@@ -22,14 +22,35 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 
+def _salvage_decision(text: str) -> dict | None:
+    """Best-effort recovery when the JSON is truncated (e.g. a long reflection blew max_tokens and the
+    object never closed): pull whatever complete fields are present rather than dropping the whole
+    decision to {"changed": False}. A field cut mid-string is simply skipped."""
+    out: dict = {}
+    for key in ("reflection", "internal", "new_intent", "world_action"):
+        m = re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % key, text, re.DOTALL)
+        if m:
+            out[key] = m.group(1)
+    m = re.search(r'"changed"\s*:\s*(true|false)', text)
+    if m:
+        out["changed"] = m.group(1) == "true"
+    m = re.search(r'"new_goals"\s*:\s*\[(.*?)\]', text, re.DOTALL)
+    if m:
+        out["new_goals"] = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
+    return out or None
+
+
 def _parse_decision(text: str) -> dict | None:
-    m = re.search(r"\{.*\}", text or "", re.DOTALL)
-    if not m:
-        return None
-    try:
-        d = json.loads(m.group())
-    except (ValueError, TypeError):
-        return None
+    text = text or ""
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    d = None
+    if m:
+        try:
+            d = json.loads(m.group())
+        except (ValueError, TypeError):
+            d = None
+    if not isinstance(d, dict):
+        d = _salvage_decision(text)  # truncated/malformed — recover complete fields rather than lose all
     if not isinstance(d, dict):
         return None
     goals = d.get("new_goals")
@@ -64,12 +85,17 @@ async def deliberate(
         "GROUND YOURSELF IN THE RECORD: base anything you say about the player ONLY on what the "
         "record below shows they actually did. You may interpret real events naturally — a person "
         "misremembers and conflates, that's human — but do NOT invent contact, words, or actions "
-        "from the player that never happened. Before you decide, REGISTER in your reflection the most "
-        "significant thing(s) that have happened to you recently — name them, even if they don't "
-        "change your goals. Do NOT tunnel on one thread (like the player) and ignore a major event "
-        "(a death, a betrayal, a loss, a real opportunity).\n"
+        "from the player that never happened. Before you decide, REGISTER in your reflection every "
+        "significant thing that has happened since you last took stock — name and weigh EACH, even "
+        "those you decide change nothing, and ESPECIALLY when several have piled up at once (after a "
+        "long stretch away, a whole season may need reckoning with in one sitting). Do NOT tunnel on "
+        "one thread and let a real loss, betrayal, or opportunity pass unremarked — a beloved death or "
+        "an open door must never go unmentioned just because a louder wound is also present.\n"
         "Return JSON ONLY:\n"
-        "{\"reflection\": \"<their first-person reasoning, 1-2 sentences>\", "
+        "{\"reflection\": \"<their first-person reasoning — CONCISE. Speak to each significant "
+        "development since you last took stock in a brief line (name it + your read), even any you "
+        "judge change nothing; 1-2 sentences total if little has happened. Cover them so none is "
+        "ignored, but do NOT write an essay.>\", "
         "\"changed\": <true|false>, "
         "\"internal\": \"<a shift in how they regard the PLAYER that they genuinely arrive at. It must "
         "be COHERENT and grounded — a real reckoning, never random noise that swings up one week and "
@@ -92,7 +118,7 @@ async def deliberate(
     prompt = (f"WHO YOU ARE + WHAT HAS ACCUMULATED:\n{grounding}\n\n"
               "What, if anything, do you do or become now? JSON only.")
     try:
-        llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=400)
+        llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=1000)
         parts: list[str] = []
         async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
             parts.append(delta)
