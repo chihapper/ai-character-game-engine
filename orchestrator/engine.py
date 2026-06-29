@@ -131,7 +131,8 @@ class Engine:
                 self.agency.mark_deliberated(now_t)
                 return {"changed": False, "skipped": True, "reflection": "", "internal": "",
                         "new_intent": "", "new_goals": [], "world_action": ""}
-        decision = await _deliberate(self.character, grounding=self._agency_grounding(situation, now_t, last_t),
+        decision = await _deliberate(self.character,
+                                     grounding=await self._agency_grounding(situation, now_t, last_t),
                                      mode=mode)
         self.agency.mark_deliberated(now_t)
         if not decision or not decision.get("changed"):
@@ -148,7 +149,7 @@ class Engine:
                                           kind="decision", importance=0.8, t=now_t)
         return decision
 
-    def _agency_grounding(self, situation, now_t, last_t) -> str:
+    async def _agency_grounding(self, situation, now_t, last_t) -> str:
         """Assemble everything the character deliberates FROM: who they are, current goals + aim,
         feelings + scars, beliefs, what's happened (esp. since they last took stock), and elapsed time."""
         goals = self.agency.goals() or self.character.goals
@@ -201,12 +202,26 @@ class Engine:
         beliefs = self.long_term.beliefs()
         if beliefs:
             parts.append("Beliefs you've come to hold:\n" + "\n".join(f"- {b}" for b in beliefs))
-        pool = [r for r in recs if r.t is not None and r.t > last_t] if last_t is not None else recs
-        pool = sorted(pool, key=lambda r: (r.importance, r.t or 0), reverse=True)[:8]
-        if pool:
+        # Developments since they last took stock, RR-RANKED by relevance to who they are + want now
+        # (the same scorer the conversational path uses), so a high-event NPC foregrounds what bears on
+        # its becoming — not merely the loudest by static importance — and the rest is acknowledged as
+        # background rather than silently dropped (#24).
+        stance = "; ".join(h for h in (self.relationship.get().query_hint(),
+                                       self.intent.get().query_hint()) if h)
+        delib_query = "  ".join([*goals[:3], stance,
+                                 "taking stock of what has happened and what it means for who I am becoming"]).strip()
+        foreground, tail = await self.long_term.rank_window(
+            delib_query, since_t=last_t, now_t=now_t,
+            exclude_kinds=("exchange", "player_event"))  # already rendered in the player-activity block
+        if foreground:
             label = ("Developments since you last took stock — weigh EACH below, don't let the loudest "
-                     "crowd out the rest:" if len(pool) > 1 else "Notable thing weighing on you:")
-            parts.append(label + "\n" + "\n".join(f"- {r.text[:140]}" for r in pool))
+                     "crowd out the rest:" if len(foreground) > 1 else "Notable thing weighing on you:")
+            parts.append(label + "\n" + "\n".join(f"- {r.text[:140]}" for r in foreground))
+        if tail:
+            shown = "; ".join(r.text[:80] for r in tail[:4])
+            more = f", and {len(tail) - 4} more" if len(tail) > 4 else ""
+            parts.append("Also stirring in the background this same stretch — lesser things, there if "
+                         f"you reach for them, none demanding reckoning on its own: {shown}{more}.")
         if now_t is not None and last_t is not None:
             parts.append(f"Game-time since you last took stock: {now_t - last_t}.")
         return "\n\n".join(parts)
