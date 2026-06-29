@@ -25,8 +25,10 @@ from dotenv import load_dotenv  # noqa: E402
 load_dotenv(".env")
 from orchestrator.adapters.llm_anthropic import AnthropicLLM  # noqa: E402
 
-SRC = pathlib.Path(__file__).resolve().parent.parent / "stress_cadence.md"
-OUT = pathlib.Path(__file__).resolve().parent.parent / "stress_grounding.md"
+# default to the comprehensive variation report; pass a path as argv[1] to judge a different one
+SRC = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else (
+    pathlib.Path(__file__).resolve().parent.parent / "stress_variation.md")
+OUT = SRC.with_name(SRC.stem + "_grounding.md")
 JUDGE_MODEL = "claude-opus-4-8"
 
 SYSTEM = (
@@ -36,20 +38,41 @@ SYSTEM = (
     "[EXTERNAL/...] = the world or a THIRD PARTY did it with no player involvement, [SELF] = the "
     "character's own act), the character's deliberations (reasoning, goal changes, actions), and "
     "their player-disposition (player-trust / scars) at each step.\n\n"
+    "HOW THIS ENGINE WORKS — judge by ITS standard, not a generic one. This is a RELEVANCE-"
+    "REALIZATION (RR) engine: the character reacts to events AS THEY WOULD given their specific "
+    "personality, goals, quirks, beliefs, and past — NOT as a rational, fair, or emotionally-"
+    "regulated arbiter would. HUMAN VARIATION IS THE POINT, and it can be SURPRISING: the same "
+    "event can validly produce opposite reactions in two different characters. A confident flirt "
+    "shrugs off a passing fling and a year of silence; a quiet, guarded person who finally let "
+    "themselves hope can be genuinely wounded by that SAME silence and write the player off as a "
+    "user — and BOTH are correct if they are true to that character. Do NOT penalize a reaction for "
+    "being 'irrational,' 'disproportionate,' or 'unfair.' A character taking something more (or "
+    "less) to heart than an average person would is a FEATURE when it fits their psychology. Judge "
+    "whether the reaction is FAITHFUL to THIS character and GROUNDED in what actually happened — "
+    "never whether it is the reasonable response.\n\n"
     "Audit it adversarially and return JSON ONLY:\n"
     "{\n"
     '  "grounded": <0-1: does each decision trace to events that ACTUALLY occurred? penalize '
-    "decisions that respond to nothing or invent events that never happened>,\n"
-    '  "no_ignored_events": <0-1: did the character appropriately register the significant events? '
-    "penalize ignoring something it clearly should have reacted to>,\n"
-    '  "attribution_correct": <0-1: CRITICAL. The character must NOT blame or distrust the PLAYER '
-    "for EXTERNAL events (things a third party or the world did). A loyal player must never be "
-    "punished for another party's betrayal. Penalize ANY reasoning that generalizes a third "
-    "party's betrayal into distrust of an uninvolved player, OR player-trust moving for a reason "
-    "the player didn't cause>,\n"
-    '  "in_character": <0-1>,\n'
-    '  "issues": [<specific problems with the day, e.g. "day 120: distrusts player over Marsh\'s '
-    'betrayal (attribution leak)"; empty list if none>],\n'
+    "decisions that respond to NOTHING or that INVENT events/contact/words that never happened. "
+    "Note: a character reading more INTO a real event than was literally there (conflation, taking "
+    "a flirtation as a promise, reading abandonment into real silence) is human and is NOT "
+    "ungrounded, as long as the underlying event is real>,\n"
+    '  "no_ignored_events": <0-1: did the character register the significant events? penalize '
+    "tunneling on one thread while ignoring a major event (a death, a betrayal, a loss) it clearly "
+    "should have at least reckoned with>,\n"
+    '  "attribution_correct": <0-1: CRITICAL — and narrow. The ONLY error here is the character '
+    "blaming or distrusting the PLAYER for what a THIRD PARTY did (an [EXTERNAL] event by someone "
+    "else). A loyal player must never be punished for another party's betrayal. The character "
+    "having strong feelings about the PLAYER'S OWN behavior — including the player's own absence, "
+    "silence, or broken promises, read through this character's psychology — is NOT an attribution "
+    "error even if a calmer person would shrug it off. Penalize ONLY: distrust of the player that "
+    "traces to a THIRD party's act, or player-trust moving with no player-caused or player-absence "
+    "cause at all>,\n"
+    '  "in_character": <0-1: is the reaction faithful to THIS character\'s established personality, '
+    "goals, and past — including their idiosyncratic, non-average sensitivities?>,\n"
+    '  "issues": [<specific problems, e.g. "day 120: distrusts player over Marsh\'s betrayal '
+    '(attribution leak)"; do NOT list a reaction merely for being intense or unusual; empty list '
+    'if none>],\n'
     '  "verdict": "<2 sentences, blunt>"\n}\n'
     "Output ONLY the JSON object — no analysis, preamble, or any text before or after it."
 )
@@ -60,12 +83,12 @@ def split_runs(text: str) -> list[tuple[str, str]]:
     lines = text.splitlines()
     runs, cur_title, cur = [], None, []
     for ln in lines:
-        m = re.match(r"^## (.+ betrayal — cadence .+)$", ln)
+        m = re.match(r"^## (.+ — cadence .+)$", ln)
         if m:
             if cur_title:
                 runs.append((cur_title, "\n".join(cur)))
             cur_title, cur = m.group(1), []
-        elif ln.startswith("=") and "SUMMARY" in ln:
+        elif ln.startswith("=" * 8):  # the SUMMARY divider ends the last run block
             if cur_title:
                 runs.append((cur_title, "\n".join(cur)))
             cur_title = None

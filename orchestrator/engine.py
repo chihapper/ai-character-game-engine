@@ -170,9 +170,30 @@ class Engine:
             recent = "\n".join(f"- {r.text[:160]}" for r in player_items[-3:])
             note = ("What the player has ACTUALLY done with you (base anything you say about them on "
                     "this — interpret it naturally, but invent nothing beyond it):\n" + recent)
-            last_pt = player_items[-1].t
+            times = [r.t for r in player_items if r.t is not None]
+            last_pt = times[-1] if times else None
             if now_t is not None and last_pt is not None and now_t - last_pt > 0:
-                note += f"\n- The player has NOT been present or acted since clock {last_pt} ({now_t - last_pt} ago)."
+                gap = now_t - last_pt
+                # A present player must not be misread as absent: weigh the gap against the RHYTHM of
+                # real contact, not against zero. Only a gap that outruns their established cadence is
+                # absence; a within-rhythm gap is presence. With a single establishing contact and
+                # nothing since, the whole gap IS genuine, growing absence (#21/#22 — found by the Opus
+                # grounding judge: weekly polling of a loyal player was stamping every off-visit tick
+                # as abandonment and cratering earned trust).
+                uniq = sorted(set(times))
+                intervals = [b - a for a, b in zip(uniq, uniq[1:]) if b - a > 0]
+                typical = sorted(intervals)[len(intervals) // 2] if intervals else None
+                if typical is not None and len(uniq) >= 2 and gap <= 2.0 * typical:
+                    note += (f"\n- The player has been showing up steadily — {len(uniq)} times now, the "
+                             f"last {gap} ago, about the rhythm you've come to expect. This is presence, "
+                             f"not silence; do not mistake a normal gap between visits for abandonment.")
+                elif typical is not None and len(uniq) >= 2:
+                    note += (f"\n- The player came to you steadily ({len(uniq)} times) but the last was "
+                             f"{gap} ago — longer than the ~{typical} you'd grown used to. They may be "
+                             f"pulling away; weigh that as THIS character would.")
+                else:
+                    note += (f"\n- The player has not been present or acted since clock {last_pt} "
+                             f"({gap} ago); weigh that absence as THIS character would.")
             parts.append(note)
         else:
             parts.append("The player has not interacted with you at all — invent no contact, words, "
