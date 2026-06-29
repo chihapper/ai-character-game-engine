@@ -204,7 +204,9 @@ class Engine:
         pool = [r for r in recs if r.t is not None and r.t > last_t] if last_t is not None else recs
         pool = sorted(pool, key=lambda r: (r.importance, r.t or 0), reverse=True)[:8]
         if pool:
-            parts.append("Notable things weighing on you:\n" + "\n".join(f"- {r.text[:140]}" for r in pool))
+            label = ("Developments since you last took stock — weigh EACH below, don't let the loudest "
+                     "crowd out the rest:" if len(pool) > 1 else "Notable thing weighing on you:")
+            parts.append(label + "\n" + "\n".join(f"- {r.text[:140]}" for r in pool))
         if now_t is not None and last_t is not None:
             parts.append(f"Game-time since you last took stock: {now_t - last_t}.")
         return "\n\n".join(parts)
