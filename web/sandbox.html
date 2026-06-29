@@ -92,6 +92,16 @@
   <main>
     <div class="col left">
       <div class="card">
+        <h2>Models <span class="hint">(cost ⇄ realness — switch live, then A/B by feel)</span></h2>
+        <div class="row wrap">
+          <label class="field">reply <span class="hint">(what they say)</span><select id="mdlReply"></select></label>
+          <label class="field">deliberation <span class="hint">(between scenes)</span><select id="mdlDelib"></select></label>
+          <label class="field">bookkeeping <span class="hint">(memory · affect · beliefs)</span><select id="mdlBook"></select></label>
+        </div>
+        <div class="hint" style="margin-top:7px">Per-M-token: Sonnet $3/$15 · Haiku $1/$5 · Opus $5/$25. <b>Reply</b> is the spoken voice (highest realness stakes); <b>bookkeeping</b> bundles the affect/scar judgment, so a drop there shows up later, not in the immediate line.</div>
+      </div>
+
+      <div class="card">
         <h2>Talk to them</h2>
         <div class="row">
           <input id="sayText" class="grow" placeholder="say something to the character…" />

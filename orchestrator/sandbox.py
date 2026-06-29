@@ -29,6 +29,12 @@ from .engine import Engine
 router = APIRouter(prefix="/api/sandbox", tags=["sandbox"])
 
 _engines: dict[str, Engine] = {}
+# Per-role model choice (dev experiment: feel the cost vs realness tradeoff live). "reply" = the
+# spoken dialogue (Engine.llm); "deliberation" = between-scenes change; "bookkeeping" = salience +
+# reflection + the affect/scar judgment (assess_event_impact) — the last is NOT realness-free, hence
+# the honest label in the UI. Defaults match the validated config (all Sonnet).
+_MODELS = {"reply": "claude-sonnet-4-6", "deliberation": "claude-sonnet-4-6", "bookkeeping": "claude-sonnet-4-6"}
+MODEL_OPTIONS = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-8"]
 SCEN_DIR = pathlib.Path(".sandbox_scenarios")
 SAVES_DIR = pathlib.Path(".sandbox_saves")     # save-games: snapshots of ALL characters' state
 MEM_DIR = pathlib.Path(".memory")              # the engine's file-backed stores (per namespace)
@@ -106,13 +112,23 @@ def _engine(slug: str) -> Engine:
     s.relationship_state = True
     s.reflection_enabled = True
     s.intent_state = True
+    _apply_models()  # honor the UI's per-role model choice
     if slug not in _engines:
         try:
             char = load_character(slug)
         except FileNotFoundError as e:
             raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
-        _engines[slug] = Engine(char, AnthropicLLM(model=s.deliberation_model))
+        _engines[slug] = Engine(char, AnthropicLLM(model=_MODELS["reply"]))
     return _engines[slug]
+
+
+def _apply_models():
+    """Push the per-role model choice onto the global settings (deliberation + bookkeeping). The
+    reply model is applied per-engine via Engine.llm (set at construction / on change)."""
+    s = get_settings()
+    s.deliberation_model = _MODELS["deliberation"]
+    s.salience_model = _MODELS["bookkeeping"]
+    s.reflection_model = _MODELS["bookkeeping"]
 
 
 def _state(eng: Engine) -> dict:
@@ -237,6 +253,29 @@ async def list_saves():
 async def load_game(body: SaveReq):
     """LOAD-GAME: restore a save's exact state for ALL characters (auto-backs up current first)."""
     return {"ok": True, "manifest": _restore(body.name)}
+
+
+class ModelChoice(BaseModel):
+    reply: str | None = None
+    deliberation: str | None = None
+    bookkeeping: str | None = None
+
+
+@router.get("/models")
+async def get_models():
+    return {"choice": dict(_MODELS), "options": MODEL_OPTIONS}
+
+
+@router.post("/models")
+async def set_models(body: ModelChoice):
+    for key, val in (("reply", body.reply), ("deliberation", body.deliberation), ("bookkeeping", body.bookkeeping)):
+        if val:
+            _MODELS[key] = val
+    _apply_models()
+    if body.reply:  # hot-swap the reply model on every live engine
+        for eng in _engines.values():
+            eng.llm = AnthropicLLM(model=body.reply)
+    return {"ok": True, "choice": dict(_MODELS)}
 
 
 @router.get("/scenarios")

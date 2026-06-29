@@ -251,6 +251,32 @@ async function downloadTranscript() {
   } catch (e) { alert("transcript failed: " + e.message); }
 }
 
+// ---- per-role model selector --------------------------------------------
+const MODEL_LABELS = {
+  "claude-sonnet-4-6": "Sonnet 4.6 ($3/$15)",
+  "claude-haiku-4-5": "Haiku 4.5 ($1/$5)",
+  "claude-opus-4-8": "Opus 4.8 ($5/$25)",
+};
+const MODEL_SELECTS = [["mdlReply", "reply"], ["mdlDelib", "deliberation"], ["mdlBook", "bookkeeping"]];
+async function loadModels() {
+  try {
+    const { choice, options } = await api("/models");
+    const opts = options.map((o) => `<option value="${o}">${MODEL_LABELS[o] || o}</option>`).join("");
+    for (const [id, key] of MODEL_SELECTS) {
+      $(id).innerHTML = opts;
+      $(id).value = choice[key];
+      $(id).onchange = setModels;
+    }
+  } catch (e) { console.error(e); }
+}
+async function setModels() {
+  const body = { reply: $("mdlReply").value, deliberation: $("mdlDelib").value, bookkeeping: $("mdlBook").value };
+  try {
+    await api("/models", "POST", body);
+    feed("advance", `⚙ models — reply: ${MODEL_LABELS[body.reply]} · delib: ${MODEL_LABELS[body.deliberation]} · book: ${MODEL_LABELS[body.bookkeeping]}`);
+  } catch (e) { alert("model switch failed: " + e.message); }
+}
+
 // ---- boot ---------------------------------------------------------------
 function charName() {
   const o = $("char").selectedOptions[0];
@@ -285,6 +311,7 @@ async function boot() {
   $("loadGameBtn").onclick = loadGame;
   $("transcriptBtn").onclick = downloadTranscript;
 
+  await loadModels();
   await loadScenarioList();
   await loadSavesList();
   if (chars.length) { $("char").value = chars[0].slug; await selectChar(chars[0].slug); }
