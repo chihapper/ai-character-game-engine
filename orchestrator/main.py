@@ -1208,6 +1208,19 @@ async def index() -> HTMLResponse:
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
+from .sandbox import router as sandbox_router  # noqa: E402
+
+app.include_router(sandbox_router)
+
+
+@app.get("/sandbox")
+async def sandbox_page() -> HTMLResponse:
+    """The director's sandbox — a dev tool to drive an NPC's world by hand (see orchestrator/sandbox.py)."""
+    html = (WEB_DIR / "sandbox.html").read_text(encoding="utf-8")
+    html = html.replace('src="/sandbox.js"', f'src="/sandbox.js?v={_BUILD}"')
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
+
+
 # Mounted last so the API/WS routes above take precedence over the catch-all.
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
 
