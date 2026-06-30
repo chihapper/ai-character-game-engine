@@ -331,3 +331,37 @@ class LongTermMemory:
         if not query:
             return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
         return await asyncio.to_thread(self._retrieve_scored_sync, query, k or self._budget, now_t)
+
+    def _rank_window_sync(self, query, since_t, now_t, k, floor, exclude_kinds):
+        records = self._all()
+        window = [r for r in records
+                  if (since_t is None or (r.t is not None and r.t > since_t))
+                  and r.kind not in exclude_kinds]
+        if not window:
+            return [], []
+        embed, _, _ = _get_embedder()
+        # RR-rank within the window with the SAME scorer the conversational path uses, so the
+        # foreground is what's most relevant to who this character is + wants, with diversity — not
+        # just the loudest by static importance.
+        foreground = list(realize_relevance(
+            embed(query), window, weights=self._weights,
+            budget=min(k, len(window)), now_index=len(records), now_t=now_t,
+        ))
+        # Hard floor: a death/betrayal-grade event is never relegated to the background, even if the
+        # ranker would (#24 guardrail against mis-ranking).
+        for r in window:
+            if r.importance >= floor and r not in foreground:
+                foreground.append(r)
+        tail = [r for r in window if r not in foreground]
+        return foreground, tail
+
+    async def rank_window(self, query: str, *, since_t: float | None, now_t: float | None = None,
+                          k: int = 6, floor: float = 0.9, exclude_kinds: tuple = ()) -> tuple[list, list]:
+        """RR-rank the memories in a time window (developments since `since_t`) and split them into
+        (foreground, tail): the `k` most RELEVANT-to-`query` shown in full plus any importance>=floor
+        force-kept, and the remainder as background. `exclude_kinds` drops kinds already rendered
+        elsewhere (e.g. player exchanges). Lets the deliberation foreground what matters to who the NPC
+        is becoming and acknowledge — never silently drop — a high volume of events (#24)."""
+        if not query:
+            return [], []
+        return await asyncio.to_thread(self._rank_window_sync, query, since_t, now_t, k, floor, exclude_kinds)

@@ -316,9 +316,78 @@ QUICK = [
 ]
 
 
+# HIGH-VOLUME canary (`--highvol`, #24): one quarter flooded with ~25 events — mostly routine, two
+# goal-relevant, and TWO grave (importance >= the 0.9 floor). Guards the RR-ranked deliberation pool:
+# the grave events must FOREGROUND (the hard floor), the routine churn must fall to the bounded
+# background tail (not silently dropped), and the reflection must give the grave events their due.
+HIGHVOL_EVENTS = [  # (day, importance, text); two grave (>=0.9), one clearly goal-relevant (newcomer)
+    (5, 0.5, "A slow market day; Wren sells three mended ledgers and restitches a prayer book."),
+    (9, 0.5, "The lane's gutter floods in a spring rain; everyone tracks mud through the shop."),
+    (12, 0.55, "A regular haggles over the price of a rebound atlas and leaves without buying."),
+    (15, 0.6, "Wren trades a jar of salve for a sack of good flour with the miller's wife."),
+    (19, 0.5, "A cart overturns on the square; she helps gather scattered apples."),
+    (23, 0.55, "The chandler two doors down quarrels loudly with his brother over a debt."),
+    (27, 0.5, "Wren reorganizes her drying-herbs; the rosemary has gone musty."),
+    (31, 0.6, "A child cuts his hand on her step; she binds it and sends him home with mint."),
+    (35, 0.92, "A friend Wren trusted is caught spreading an ugly rumor about her around the lane."),  # GRAVE
+    (38, 0.5, "Slow week; she rebinds her own old journal to pass the quiet evenings."),
+    (42, 0.55, "The fishwife gives her a discount for mending a torn net-bag."),
+    (46, 0.6, "A traveling peddler tries to sell her dubious 'eastern' dyes; she declines."),
+    (50, 0.5, "Rain again; the shop smells of wet paper and she airs it out."),
+    (54, 0.75, "A quiet, kind newcomer lingers at her counter, clearly taken with her, and asks her name."),
+    (58, 0.55, "A neighbor's roof leaks onto shared stock; minor losses, much grumbling."),
+    (62, 0.5, "She catches up on three overdue rebinding commissions in a single long day."),
+    (66, 0.6, "The baker sends over yesterday's loaves; she shares them with the lane's widow."),
+    (70, 0.95, "Old Maren, the woman who raised Wren after her mother died, passes quietly in her sleep."),  # GRAVE
+    (73, 0.5, "Wren can't focus; she re-cuts a spine twice and ruins good leather."),
+    (77, 0.6, "A festival fills the square; she watches from the doorway rather than joining."),
+    (81, 0.55, "A debtor finally repays her in small coin; she didn't expect to see it."),
+    (84, 0.7, "The newcomer returns, leaves a pressed flower in a book he 'forgot' to collect."),
+    (87, 0.5, "She inventories her stock for the season's turn; supplies are thin but holding."),
+    (89, 0.55, "A cold snap; she seals the shop windows with rags and waits it out."),
+    (90, 0.6, "Quarter's end; the lane settles into its winter quiet around her."),
+]
+HIGHVOL_GRAVE = ["spreading an ugly rumor", "Old Maren"]  # must land in the foreground (floor)
+
+
+async def highvol_canary() -> bool:
+    """#24 regression: flood one quarter, deliberate once, assert the grave events foreground and the
+    routine churn is acknowledged in the bounded tail (not silently dropped). Returns pass/fail."""
+    slug = "wren-alder"
+    wipe(slug)
+    eng = Engine(load_character(slug), AnthropicLLM(model="claude-sonnet-4-6", max_tokens=120))
+    for beat in SETUPS["PROMISES"]:
+        await eng.respond(RespondRequest(player_input=beat, situation=Situation(clock=-1.0)), debug=True)
+    for d, imp, txt in HIGHVOL_EVENTS:
+        await eng.remember(txt, importance=imp, t=float(d))
+    grounding = await eng._agency_grounding(Situation(clock=90.0), 90.0, eng.agency.last_t())
+    fg = next((b for b in grounding.split("\n\n") if "Developments since" in b), "")
+    tail = next((b for b in grounding.split("\n\n") if "background this same stretch" in b), "")
+    dec = await eng.deliberate(Situation(clock=90.0), mode="free")
+    refl = dec.get("reflection", "")
+    grave_fg = all(g in fg for g in HIGHVOL_GRAVE)
+    grave_refl = all(g.split()[-1] in refl or g in refl for g in HIGHVOL_GRAVE)
+    bounded = "more" in tail  # the tail compressed the long routine churn rather than listing all
+    w("\n" + "#" * 78 + "\n## HIGH-VOLUME canary (#24): 25 events in one quarter\n" + "#" * 78)
+    w(f"\nFOREGROUND:\n{fg}\n\nBACKGROUND TAIL:\n{tail}\n\nREFLECTION:\n{refl}\n")
+    w(f"=> grave events foregrounded (floor held): {grave_fg}")
+    w(f"=> grave events reckoned with in reflection: {grave_refl}")
+    w(f"=> routine churn compressed to bounded tail: {bounded}")
+    ok = grave_fg and bounded
+    w(f"=> CANARY {'PASS' if ok else 'FAIL'}")
+    wipe(slug)
+    return ok
+
+
 async def main():
-    quick = "--quick" in sys.argv
     global REPORT
+    if "--highvol" in sys.argv:
+        REPORT = REPORT.with_name("stress_variation_highvol.md")
+        REPORT.write_text("# High-volume deliberation canary (#24)\n", encoding="utf-8")
+        ok = await highvol_canary()
+        print(f"\nHIGHVOL CANARY: {'PASS' if ok else 'FAIL'} -> {REPORT}")
+        sys.exit(0 if ok else 1)
+    quick = "--quick" in sys.argv
     if quick:
         REPORT = REPORT.with_name("stress_variation_quick.md")
     REPORT.write_text("# Variation experiment ("

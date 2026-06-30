@@ -108,7 +108,17 @@ async def deliberate(
         "character finally warm and trust them; that trust is earned, not given. People aren't always "
         "rational; judge it as THEY would, not as a fair arbiter would. Often empty.>\", "
         "\"new_intent\": \"<their updated near-term aim, or empty>\", "
-        "\"new_goals\": [<their updated STANDING life-goals if their direction has shifted, or empty>], "
+        "\"new_goals\": [<their standing life-goals, RECONCILED with who they've ACTUALLY become — but a "
+        "life-goal moves only on ACCUMULATED cause that genuinely reorients THIS character, never on "
+        "one good night or a single scene (old habits die hard; a lifelong pattern rarely bends in a "
+        "sitting). Whether a goal yields is CHARACTER-DEPENDENT: a goal core to who they are — an "
+        "identity, a wound, a pleasure they own — can PERSIST even when the player or the situation "
+        "pulls against it, and that unresolved tension is true to life, NOT to be tidied away (it can "
+        "drive future conflict, even betrayal). When they HAVE genuinely transformed over accumulated "
+        "time/cause, revise or drop the goals that no longer fit and add what the change implies. "
+        "Return the FULL updated list (it REPLACES the old goals — include the ones that still hold). "
+        "Leave empty unless the direction has really moved (most deliberations); don't churn for "
+        "change's sake, and don't bend a goal just because the situation wants it to.>], "
         "\"world_action\": \"<an outward action for the GAME to enact, e.g. 'leaves the harbor for the "
         "cliff abbey' — or empty>\"}\n"
         "`internal` is a rare, decisive change of heart toward the player (the engine applies it — it "
@@ -120,9 +130,81 @@ async def deliberate(
     try:
         llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=1000)
         parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+        # [system] (list) opts the stable deliberation instructions into prompt caching; the grounding
+        # lives in the user message and stays uncached (it's unique each deliberation).
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], [system]):
             parts.append(delta)
         return _parse_decision("".join(parts))
     except Exception:
         logger.exception("Deliberation failed; no decision this cycle")
+        return None
+
+
+async def reconcile_goals(
+    character: Character, current_goals: list[str], *, grounding: str, reflection: str = "",
+    proposed: list[str] | None = None, model: str | None = None,
+) -> list[str] | None:
+    """A FOCUSED second pass: reconcile the character's STANDING life-goals with who they've become.
+    Decoupled from deliberate() on purpose (#29) — folded into the big decision JSON, goal-revision
+    competes with reflection/internal/intent and the model defaults it to empty even at full
+    transformation. Given nothing else to produce, a single-purpose call actually examines each goal.
+    Returns the reconciled list (may equal the input if nothing should move) or None on error."""
+    if not current_goals:
+        return None
+    settings = get_settings()
+    system = (
+        "You reconcile a fictional character's STANDING LIFE-GOALS with who they have ACTUALLY become. "
+        "You're given who they are, the state they've accumulated (feelings, beliefs, what's happened), "
+        "their latest reckoning, and their current goals. Go through the goals ONE BY ONE and, for each, "
+        "decide: KEEP it as-is; SOFTEN/reword it to fit who they now are; REPLACE it; or DROP it — and "
+        "ADD any new goal the change now implies.\n"
+        "RR-faithful, NOT deterministic: a life-goal moves only on ACCUMULATED, genuine transformation, "
+        "never on a whim or to please the situation. A goal CORE to who they are — an identity, a wound, "
+        "a pleasure they own — can PERSIST even when a relationship or situation pulls against it; that "
+        "tension is true to life, not to be tidied away (it can drive real conflict, even betrayal — "
+        "leave it). But a goal the transformation has genuinely HOLLOWED OUT — a transactional aim when "
+        "they now want something real, a mask they've shed — should soften or fall away. Be DECISIVE "
+        "about one class in particular: a goal aimed at getting something (a drink, attention, a thrill, "
+        "validation, a good time) from ANYONE / whoever's around / strangers. Once the character has "
+        "found something REAL with a SPECIFIC person and wants it, a 'get-it-from-anyone' goal is hollow "
+        "and should reliably soften — usually toward what they now actually want (it needn't vanish: 'a "
+        "good time with anyone' can become 'this, with them'). Do NOT over-extend this — a trait that is "
+        "genuinely still THEM (a social nature, a love of fun, being charming) persists; only the "
+        "getting-it-from-just-anyone framing is what the bond has hollowed out. Don't churn for change's "
+        "sake: if nothing has truly shifted, return the goals UNCHANGED. Most of who they are persists; "
+        "revise only what the change has actually reached.\n"
+        "ANCHOR ON THE EXISTING WORDING: if a goal already fits who they are, return it VERBATIM — do "
+        "NOT re-articulate, restyle, or 'improve' the phrasing of a goal that's already right. Change a "
+        "goal's wording ONLY when its MEANING has genuinely gone stale or wrong. A goal that keeps "
+        "getting reworded each time you reconcile is a FAILURE — once it fits, it should hold steady "
+        "across deliberations until a real new shift earns a change.\n"
+        "Return JSON ONLY: {\"goals\": [<the FULL reconciled standing-goals list, priority order>], "
+        "\"note\": \"<=20 words: what moved and why, or 'no change'>\"}"
+    )
+    proposed_block = ""
+    if proposed and list(proposed) != list(current_goals):
+        proposed_block = ("Their OWN deliberation just proposed this goal change — it's the character's "
+                          "own reasoning about who they're becoming, so weigh it SERIOUSLY and honor it "
+                          "unless it truly doesn't fit, then make the final call:\n"
+                          + "\n".join(f"- {g}" for g in proposed) + "\n\n")
+    prompt = (f"WHO THEY ARE + WHAT HAS ACCUMULATED:\n{grounding}\n\n"
+              + (f"Their latest reckoning: {reflection}\n\n" if reflection else "")
+              + proposed_block
+              + "CURRENT STANDING GOALS:\n" + "\n".join(f"- {g}" for g in current_goals)
+              + "\n\nReconcile each goal with who they've become. JSON only.")
+    try:
+        llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=500)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], [system]):
+            parts.append(delta)
+        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
+        if not m:
+            return None
+        goals = json.loads(m.group()).get("goals")
+        if isinstance(goals, list):
+            cleaned = [str(g).strip() for g in goals if str(g).strip()]
+            return cleaned or None
+        return None
+    except Exception:
+        logger.exception("Goal reconciliation failed; goals left as-is")
         return None

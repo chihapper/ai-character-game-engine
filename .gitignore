@@ -41,3 +41,10 @@ stress_*.log
 stress_grounding*.md
 *_run.log
 grounding_judge.log
+
+# director sandbox runtime (dev tool)
+.sandbox_scenarios/
+sandbox_server.log
+.sandbox_saves/
+sandbox_server.err
+bri_romance_transcript.md
