@@ -30,6 +30,7 @@ from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
 from .agency import deliberate as _deliberate
+from .agency import reconcile_goals as _reconcile_goals
 from .consolidation import consolidate_beliefs
 from .consistency import detect_contradiction
 from .memory.agency_store import AgencyStore
@@ -131,22 +132,36 @@ class Engine:
                 self.agency.mark_deliberated(now_t)
                 return {"changed": False, "skipped": True, "reflection": "", "internal": "",
                         "new_intent": "", "new_goals": [], "world_action": ""}
-        decision = await _deliberate(self.character,
-                                     grounding=await self._agency_grounding(situation, now_t, last_t),
-                                     mode=mode)
+        grounding = await self._agency_grounding(situation, now_t, last_t)
+        decision = await _deliberate(self.character, grounding=grounding, mode=mode)
         self.agency.mark_deliberated(now_t)
-        if not decision or not decision.get("changed"):
-            return decision or {"changed": False}
-        if decision["internal"]:  # a change of heart toward the player — applied via the #19 seam
+        if not decision:
+            return {"changed": False}
+        changed = bool(decision.get("changed"))
+        if changed and decision["internal"]:  # a change of heart toward the player — via the #19 seam
             await self.remember(decision["internal"], actor="self", importance=0.85, t=now_t, kind="self_change")
-        if decision["new_intent"] and not self.intent.readonly:
+        if changed and decision["new_intent"] and not self.intent.readonly:
             self.intent.update(decision["new_intent"])
-        if decision["new_goals"]:  # their life direction has shifted
-            self.agency.set_goals(decision["new_goals"])
-        turning_point = decision["world_action"] or decision["reflection"]
-        if turning_point and not self.long_term.readonly:  # remember the decision as their own
-            await self.long_term.remember(f"(chose, of their own will) {turning_point}",
-                                          kind="decision", importance=0.8, t=now_t)
+        # Goal reconciliation (#29): runs whenever the character actually TAKES STOCK — not only on
+        # changed=true — because standing goals can be stale relative to ALREADY-accumulated change (a
+        # transformation that completed earlier, or that a prior deliberation captured only in feelings
+        # while leaving the goals frozen). The focused pass is conservative: it returns goals UNCHANGED
+        # unless something genuinely warrants moving. (Cost: a 2nd LLM call per real deliberation —
+        # gate this for production, e.g. only when state moved materially since the last reconcile.)
+        if not self.agency.readonly:
+            current_goals = self.agency.goals() or list(self.character.goals)
+            reconciled = await _reconcile_goals(self.character, current_goals, grounding=grounding,
+                                                reflection=decision.get("reflection", ""))
+            chosen = reconciled if reconciled is not None else (decision["new_goals"] or None)
+            if chosen and chosen != current_goals:
+                self.agency.set_goals(chosen)
+                decision["new_goals"] = chosen
+                changed = decision["changed"] = True  # a goal moved -> the deliberation changed something
+        if changed:
+            turning_point = decision["world_action"] or decision["reflection"]
+            if turning_point and not self.long_term.readonly:  # remember the decision as their own
+                await self.long_term.remember(f"(chose, of their own will) {turning_point}",
+                                              kind="decision", importance=0.8, t=now_t)
         return decision
 
     async def _agency_grounding(self, situation, now_t, last_t) -> str:
