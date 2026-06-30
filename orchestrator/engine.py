@@ -150,13 +150,19 @@ class Engine:
         # gate this for production, e.g. only when state moved materially since the last reconcile.)
         if not self.agency.readonly:
             current_goals = self.agency.goals() or list(self.character.goals)
+            # The reconcile pass is the SINGLE authority on goals; feed it the deliberation's own
+            # proposed new_goals as strong candidates (the character's own reasoning) so the two
+            # writers don't fight. Report what was ACTUALLY stored — never surface a discarded proposal.
             reconciled = await _reconcile_goals(self.character, current_goals, grounding=grounding,
-                                                reflection=decision.get("reflection", ""))
-            chosen = reconciled if reconciled is not None else (decision["new_goals"] or None)
-            if chosen and chosen != current_goals:
-                self.agency.set_goals(chosen)
-                decision["new_goals"] = chosen
+                                                reflection=decision.get("reflection", ""),
+                                                proposed=decision.get("new_goals") or None)
+            new_goals = reconciled if reconciled is not None else (decision.get("new_goals") or [])
+            if new_goals and new_goals != current_goals:
+                self.agency.set_goals(new_goals)
+                decision["new_goals"] = new_goals
                 changed = decision["changed"] = True  # a goal moved -> the deliberation changed something
+            else:
+                decision["new_goals"] = []  # goals held — report nothing, not a rejected proposal
         if changed:
             turning_point = decision["world_action"] or decision["reflection"]
             if turning_point and not self.long_term.readonly:  # remember the decision as their own

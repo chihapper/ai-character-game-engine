@@ -142,7 +142,7 @@ async def deliberate(
 
 async def reconcile_goals(
     character: Character, current_goals: list[str], *, grounding: str, reflection: str = "",
-    model: str | None = None,
+    proposed: list[str] | None = None, model: str | None = None,
 ) -> list[str] | None:
     """A FOCUSED second pass: reconcile the character's STANDING life-goals with who they've become.
     Decoupled from deliberate() on purpose (#29) — folded into the big decision JSON, goal-revision
@@ -181,8 +181,15 @@ async def reconcile_goals(
         "Return JSON ONLY: {\"goals\": [<the FULL reconciled standing-goals list, priority order>], "
         "\"note\": \"<=20 words: what moved and why, or 'no change'>\"}"
     )
+    proposed_block = ""
+    if proposed and list(proposed) != list(current_goals):
+        proposed_block = ("Their OWN deliberation just proposed this goal change — it's the character's "
+                          "own reasoning about who they're becoming, so weigh it SERIOUSLY and honor it "
+                          "unless it truly doesn't fit, then make the final call:\n"
+                          + "\n".join(f"- {g}" for g in proposed) + "\n\n")
     prompt = (f"WHO THEY ARE + WHAT HAS ACCUMULATED:\n{grounding}\n\n"
               + (f"Their latest reckoning: {reflection}\n\n" if reflection else "")
+              + proposed_block
               + "CURRENT STANDING GOALS:\n" + "\n".join(f"- {g}" for g in current_goals)
               + "\n\nReconcile each goal with who they've become. JSON only.")
     try:
