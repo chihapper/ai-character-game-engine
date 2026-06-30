@@ -113,10 +113,15 @@
         <h2>Inject a world event <span class="hint">(happens at the current in-game day)</span></h2>
         <textarea id="evText" placeholder="e.g. The player's faction burned Corvin's warehouse to the ground."></textarea>
         <div class="row wrap" style="margin-top:8px">
-          <label class="field">importance
+          <label class="field" title="When 'let them appraise' is on, this is a COARSE objective-scale hint the NPC weighs; off, it's the importance written verbatim.">
+            <span id="evImpLab">magnitude <span class="hint">(world hint)</span></span>
             <input id="evImp" type="range" min="0" max="1" step="0.05" value="0.6" />
           </label>
           <span id="evImpV" class="pill">0.60</span>
+          <label class="field" title="On (#25): the CHARACTER realizes how much this event matters to THEM (the slider is only a coarse objective hint). Off: the slider IS the stored importance.">
+            appraise
+            <input id="evAppraise" type="checkbox" checked />
+          </label>
           <label class="field">attribution
             <select id="evRole">
               <option value="">world event (no one)</option>

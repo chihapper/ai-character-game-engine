@@ -152,7 +152,8 @@ class Say(BaseModel):
 
 class Event(BaseModel):
     text: str
-    importance: float = 0.6
+    importance: float | None = None  # pin = manual override; None = let the NPC appraise (#25)
+    magnitude: float | None = None   # coarse objective-scale hint fed into NPC appraisal (#25)
     player_role: str | None = None   # "caused" | "benefited" | None (a pure world event)
     actor: str = "player"            # "player" | "self" (the NPC's own internal change)
     clock: float | None = None
@@ -187,7 +188,8 @@ async def say(slug: str, body: Say):
 async def event(slug: str, body: Event):
     eng = _engine(slug)
     await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
-                       importance=body.importance, t=(body.clock if body.clock is not None else 0.0))
+                       importance=body.importance, magnitude=body.magnitude,
+                       t=(body.clock if body.clock is not None else 0.0))
     return {"state": _state(eng)}
 
 
@@ -324,9 +326,11 @@ async def replay(slug: str, body: Scenario):
             _log_turn(slug, clock, step.get("text", ""), reply)
             transcript.append({"type": "say", "clock": clock, "text": step.get("text", ""), "reply": reply})
         elif kind == "event":
+            imp = step.get("importance")  # None on a recorded appraise-step -> NPC realizes it (#25)
             await eng.remember(step.get("text", ""), player_role=(step.get("player_role") or None),
                                actor=step.get("actor", "player"),
-                               importance=float(step.get("importance", 0.6)), t=clock)
+                               importance=(None if imp is None else float(imp)),
+                               magnitude=step.get("magnitude"), t=clock)
             transcript.append({"type": "event", "clock": clock, "text": step.get("text", "")})
         elif kind == "deliberate":
             dec = await eng.deliberate(Situation(clock=clock), mode=step.get("mode", "free"))

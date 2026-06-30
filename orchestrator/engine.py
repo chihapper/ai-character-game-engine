@@ -36,6 +36,7 @@ from .consistency import detect_contradiction
 from .memory.agency_store import AgencyStore
 from .salience import (
     _character_summary, assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
+    score_salience_text,
 )
 
 
@@ -58,7 +59,8 @@ class Engine:
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
     async def remember(self, fact: str, *, player_role: str | None = None,
-                       actor: str = "player", **kw) -> None:
+                       actor: str = "player", importance: float | None = None,
+                       magnitude: float | None = None, **kw) -> None:
         """Push a durable world event into the character's memory (direct or indirect). It ALSO
         shifts the character's disposition toward the player when attributable — the AI judges the
         character-aware impact (deltas + a possible scar OR scar_heal):
@@ -67,9 +69,24 @@ class Engine:
           - `actor="self"` — the CHARACTER's own internal change with the player doing NOTHING (#19):
             a change of heart / transformation that can warm them or even heal a scar (forgiveness
             they reach on their own). This is the seam a game with autonomous NPC lives drives.
-        With neither, it's a pure memory write (today's default)."""
+        With neither, it's a pure memory write (today's default).
+
+        SALIENCE (#25): `importance` is the memory-weight (how reliably this is recalled later).
+          - PIN it (pass a number) and it's honored verbatim — an explicit override (a sandbox test
+            slider, an internal change's authored weight).
+          - OMIT it and the CHARACTER appraises the event's PERSONAL salience for themselves
+            (score_salience_text), optionally informed by a coarse objective `magnitude` hint the
+            world/DM may supply — so a distant war they shrug off and a small kindness that marks
+            them get the weight THEY would give them, not a blind author number.
+        Appraisal is a per-write capability, not an engine assumption: a game with no world events
+        never triggers it, and it's gated behind `salience_scoring` + the omitted-importance case."""
         if player_role and "kind" not in kw:
             kw["kind"] = "player_event"  # mark player-attributable events so deliberation can ground on them (#22)
+        if importance is None and get_settings().salience_scoring:
+            # The NPC realizes how much THIS event matters to them (vs a fixed author weight).
+            importance = await score_salience_text(self.character, fact, magnitude=magnitude)
+        if importance is not None:
+            kw["importance"] = importance  # else: long_term applies its default world-event salience
         await self.long_term.remember(fact, **kw)
         s = get_settings()
         if not (s.relationship_state and not self.relationship.readonly):
