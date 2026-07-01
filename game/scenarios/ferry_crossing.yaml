@@ -37,6 +37,7 @@ secret:
 cast:
   - slug: della-fenwick
     as: "host and ferrywoman; she runs this crossing and misses little"
+    handle: "the ferrywoman"        # how others refer to her until a name is spoken
     knows_secret: false
     here_because: >
       You run this crossing — the skiff, the landing, and the little taproom where travelers wait out
@@ -45,6 +46,7 @@ cast:
       way you read the current.
   - slug: brielle-bri-castellano
     as: "a stranded traveler; charming, transactional, reads a room for what it can give her"
+    handle: "the bright young woman"
     knows_secret: false
     here_because: >
       You were working your way downriver to a new town and a fresh room to charm — the move you make
@@ -53,6 +55,7 @@ cast:
       off to when it goes quiet.
   - slug: edwin-hale
     as: "a stranded performer between towns; he jokes to keep the dark off"
+    handle: "the soaked performer"
     knows_secret: false
     here_because: >
       You're between towns on the circuit, chasing the next booking — and, as ever, scanning every new
@@ -61,6 +64,7 @@ cast:
       room to work, and the silence waiting on the other side of the laughs.
   - slug: corvin-ashgrave-inworld
     as: "the quiet stranger by the fire — a harbor man who ran, lying low"
+    handle: "the watchful man by the fire"
     knows_secret: true
     here_because: >
       The inspections stopped feeling like chance — twice in a week, then a face you knew at the dock.
@@ -76,7 +80,7 @@ beats:
     title: Arrival
     setting: >
       The taproom: rain hammering the shutters, a low peat fire, the smell of wet wool and pitch.
-      Della works the bar; the others drift in shaking off the storm.
+      The ferrywoman works the bar; the others drift in, shaking off the storm.
     events: []
   - id: settling
     title: Settling in

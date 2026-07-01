@@ -52,6 +52,8 @@ class Game:
         # Scenario-specific "why you're here tonight" — reconciles each borrowed character with this
         # setting; injected into their scene context every turn so responses are grounded in it.
         self.here_because = {c["slug"]: (c.get("here_because") or "").strip() for c in self.scenario["cast"]}
+        # How each is referred to before a name is spoken (strangers) — used everywhere names would leak.
+        self.handles = {c["slug"]: (c.get("handle") or "someone here").strip() for c in self.scenario["cast"]}
         self.beat_i = 0
         self.clock = float(self.scenario.get("clock", {}).get("start", 0) or 0)
         self.history: list[dict] = []       # rolling narration/dialogue for DM recap
@@ -64,11 +66,18 @@ class Game:
         # Strip dev-variant suffixes like "(Inworld)"/"(Eleven)" for in-fiction display.
         return re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name).strip()
 
+    def label(self, slug: str) -> str:
+        """Standalone display label — the appearance-handle, capitalized. Names aren't known in-fiction
+        yet (strangers), so people are shown by how they look until a name is spoken in dialogue."""
+        h = self.handles.get(slug) or "someone"
+        return h[:1].upper() + h[1:]
+
     def _resolve(self, ref: str) -> str | None:
-        """Map a player-typed name/slug to a present cast slug."""
+        """Map a player-typed slug / name / appearance-handle to a present cast slug."""
         ref = (ref or "").strip().lower()
         for slug in self.present:
-            if ref == slug or ref and ref in self._name(slug).lower():
+            if ref and (ref == slug or ref in self._name(slug).lower()
+                        or ref in (self.handles.get(slug) or "").lower()):
                 return slug
         return None
 
@@ -82,9 +91,21 @@ class Game:
         book = get_settings().salience_model
         return f"reply={self.reply_model or 'default'} dm={self.dm_model or 'default'} book={book}"
 
-    def _recap(self) -> str:
-        keep = [h for h in self.history if h["kind"] in ("narration", "dialogue", "event")]
-        return " ".join(h["text"][:160] for h in keep[-4:])
+    def _recap(self, n: int = 6) -> str:
+        """A labelled 'story so far' for the DM — recent narration, events, and who said what — so it
+        can advance the scene instead of re-establishing or contradicting it."""
+        keep = [h for h in self.history if h["kind"] in ("narration", "event", "dialogue", "reaction")]
+        out = []
+        for h in keep[-n:]:
+            if h["kind"] == "dialogue":
+                out.append(f'{h.get("who", "")}: {h["text"][:140]}')
+            elif h["kind"] == "event":
+                out.append(f'[event] {h["text"][:140]}')
+            elif h["kind"] == "reaction":
+                out.append(f'{h.get("who", "")} {h["text"][:140]}')
+            else:
+                out.append(h["text"][:140])
+        return "\n".join(out)
 
     def _beat(self) -> dict:
         return self.scenario["beats"][self.beat_i]
@@ -101,8 +122,8 @@ class Game:
         """The perceiving NPC's view of the room right now: the rich-text perception, who's here, any
         lines JUST said in this exchange (so an NPC responding to the room hears the others), and why
         THEY are here tonight (scenario grounding)."""
-        others = [self._name(s) for s in self.present if s != slug]
-        recent = [f'{nm} just said: "{ln}"' for nm, ln in (in_scene or [])]
+        others = [self.handles[s] for s in self.present if s != slug]
+        recent = [f'{self.label(sl)} just said: "{ln}"' for sl, ln in (in_scene or [])]
         extra = {}
         if self.here_because.get(slug):
             extra["Why you're here tonight"] = self.here_because[slug]
@@ -129,9 +150,10 @@ class Game:
 
     async def _enter_beat(self) -> None:
         beat = self._beat()
-        narration = await self.dm.narrate_beat(beat, self._recap())
+        handles = [self.handles[s] for s in self.present]
+        narration = await self.dm.narrate_beat(beat, self._recap(), handles)
         self._log("narration", narration, beat_title=beat["title"])
-        self._perception = await self.dm.scene_perception(beat, [self._name(s) for s in self.present])
+        self._perception = await self.dm.scene_perception(beat, handles, recent=self._recap())
         for ev in beat.get("events", []):
             await self._fire_event(ev)
 
@@ -146,7 +168,7 @@ class Game:
             if ev.get("react") and sal is not None and sal >= threshold:
                 dec = await self.engines[slug].deliberate(Situation(clock=self.clock), mode="free")
                 if dec.get("changed") and dec.get("world_action"):
-                    self._log("reaction", dec["world_action"], slug=slug, who=self._name(slug))
+                    self._log("reaction", dec["world_action"], slug=slug, who=self.label(slug))
 
     async def talk(self, target_ref: str, line: str) -> str:
         slug = self._resolve(target_ref)
@@ -155,33 +177,33 @@ class Game:
         self._log("player", line, to=slug)
         reply = await self.engines[slug].respond(
             RespondRequest(player_input=line, situation=self._situation_for(slug)))
-        self._log("dialogue", reply, slug=slug, who=self._name(slug))
+        self._log("dialogue", reply, slug=slug, who=self.label(slug))
         return reply
 
     async def say_to_room(self, line: str, *, max_speakers: int = 3) -> list[tuple[str, str]]:
         """The player addresses everyone; the DM picks who speaks up and they answer IN SEQUENCE,
         each perceiving the lines said before them this exchange (a group beat / NPC cross-awareness)."""
         self._log("player", line, to="room")
-        names = [self._name(s) for s in self.present]
-        responders = await self.dm.pick_responders(names, line, recent=self._dialogue_recap(),
+        handles = [self.handles[s] for s in self.present]
+        responders = await self.dm.pick_responders(handles, line, recent=self._dialogue_recap(),
                                                     maxn=max_speakers)
         if not responders:
             self._log("narration", "The words settle into the room; no one takes them up just yet.")
             return []
-        said: list[tuple[str, str]] = []
-        for name in responders:
-            slug = self._resolve(name)
+        said: list[tuple[str, str]] = []  # (slug, line) — perceived by later speakers this exchange
+        for handle in responders:
+            slug = self._resolve(handle)
             if not slug:
                 continue
             reply = await self.engines[slug].respond(
                 RespondRequest(player_input=line, situation=self._situation_for(slug, in_scene=said)))
-            self._log("dialogue", reply, slug=slug, who=self._name(slug))
-            said.append((self._name(slug), reply))
-        return said
+            self._log("dialogue", reply, slug=slug, who=self.label(slug))
+            said.append((slug, reply))
+        return [(self.label(s), r) for s, r in said]
 
     async def act(self, action: str) -> str:
         self._log("player_action", action)
-        narration = await self.dm.adjudicate(action, self._perception)
+        narration = await self.dm.adjudicate(action, self._perception, [self.handles[s] for s in self.present])
         self._log("narration", narration)
         return narration
 
@@ -206,4 +228,4 @@ class Game:
     def snapshot(self) -> dict:
         return {"scenario": self.scenario["id"], "beat": self._beat()["id"],
                 "beat_title": self._beat()["title"], "clock": self.clock,
-                "present": [self._name(s) for s in self.present], "run_id": self.run_id}
+                "present": [self.label(s) for s in self.present], "run_id": self.run_id}

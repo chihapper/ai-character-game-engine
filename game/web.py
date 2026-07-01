@@ -49,8 +49,9 @@ def _game(gid: str) -> Game:
 
 
 def _view(g: Game) -> dict:
-    snap = g.snapshot()  # scenario, beat, beat_title, clock, present (names), run_id
-    snap["roster"] = [{"slug": s, "name": g._name(s)} for s in g.present]
+    snap = g.snapshot()  # scenario, beat, beat_title, clock, present (handles), run_id
+    # Chips address people by appearance (strangers) — same as the fiction; the slug does the routing.
+    snap["roster"] = [{"slug": s, "name": g.label(s)} for s in g.present]
     return snap
 
 
