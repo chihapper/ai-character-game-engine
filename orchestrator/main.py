@@ -1221,6 +1221,19 @@ async def sandbox_page() -> HTMLResponse:
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
+from game.web import router as game_router  # noqa: E402
+
+app.include_router(game_router)
+
+
+@app.get("/play")
+async def play_page() -> HTMLResponse:
+    """The player-facing play view for the first game (#26) — see game/web.py + web/play.html."""
+    html = (WEB_DIR / "play.html").read_text(encoding="utf-8")
+    html = html.replace('src="/play.js"', f'src="/play.js?v={_BUILD}"')
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
+
+
 # Mounted last so the API/WS routes above take precedence over the catch-all.
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
 

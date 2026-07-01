@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Ferry's Last Crossing</title>
+  <style>
+    :root {
+      --bg:#0b0e13; --bg2:#0e131b; --panel:#141b26; --line:#243040; --ink:#e8eef6;
+      --dim:#8494a8; --faint:#5d6b7e; --accent:#6ea8fe; --warm:#f0b86e; --you:#7fd1a8;
+      --narr:#b9c2d0; --event:#f0b86e; --react:#c79bf0; --bad:#e0697a;
+    }
+    * { box-sizing:border-box; }
+    html,body { height:100%; }
+    body { margin:0; background:
+        radial-gradient(1200px 600px at 50% -10%, #16202e 0%, var(--bg) 60%);
+      color:var(--ink); font:16px/1.6 Georgia, 'Iowan Old Style', 'Times New Roman', serif; }
+    .wrap { max-width:820px; margin:0 auto; min-height:100%; display:flex; flex-direction:column; }
+    header { padding:16px 20px 10px; border-bottom:1px solid var(--line); position:sticky; top:0;
+      background:linear-gradient(var(--bg), rgba(11,14,19,.86)); backdrop-filter:blur(6px); z-index:5; }
+    header h1 { margin:0; font-size:19px; letter-spacing:.3px; font-weight:600; }
+    .meta { color:var(--dim); font-size:12.5px; margin-top:3px; font-family:ui-sans-serif,system-ui,sans-serif; }
+    .roster { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+    .who { font-size:12px; color:var(--dim); border:1px solid var(--line); border-radius:999px;
+      padding:2px 10px; font-family:ui-sans-serif,system-ui,sans-serif; }
+    /* story feed */
+    #feed { flex:1; padding:22px 20px 8px; display:flex; flex-direction:column; gap:16px; }
+    .ev { max-width:100%; }
+    .narr { color:var(--narr); font-style:italic; }
+    .role { color:var(--narr); font-style:italic; border-left:2px solid var(--line); padding-left:14px; }
+    .event { color:var(--event); font-family:ui-sans-serif,system-ui,sans-serif; font-size:14px;
+      border-left:2px solid var(--event); padding-left:12px; }
+    .react { color:var(--react); font-style:italic; }
+    .react b { font-style:normal; font-family:ui-sans-serif,system-ui,sans-serif; font-size:13px; letter-spacing:.3px; }
+    .say .who-name { color:var(--warm); font-weight:600; font-family:ui-sans-serif,system-ui,sans-serif;
+      font-size:14px; letter-spacing:.3px; display:block; margin-bottom:1px; }
+    .say .line { color:var(--ink); }
+    .you { color:var(--you); font-family:ui-sans-serif,system-ui,sans-serif; font-size:14.5px; }
+    .you .lbl { color:var(--faint); }
+    .thinking { color:var(--faint); font-style:italic; font-family:ui-sans-serif,system-ui,sans-serif; font-size:14px; }
+    /* composer */
+    footer { position:sticky; bottom:0; padding:12px 16px 18px; border-top:1px solid var(--line);
+      background:linear-gradient(rgba(11,14,19,.6), var(--bg) 40%); backdrop-filter:blur(6px);
+      font-family:ui-sans-serif,system-ui,sans-serif; }
+    .targets { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:9px; align-items:center; }
+    .chip { font-size:13px; color:var(--dim); background:var(--panel); border:1px solid var(--line);
+      border-radius:999px; padding:4px 12px; cursor:pointer; user-select:none; }
+    .chip:hover { border-color:#33465f; color:var(--ink); }
+    .chip.sel { background:#22334c; border-color:var(--accent); color:#fff; }
+    .chip.everyone.sel { background:#3a2e18; border-color:var(--warm); }
+    .compose { display:flex; gap:8px; align-items:flex-end; }
+    textarea { flex:1; resize:none; min-height:44px; max-height:140px; color:var(--ink);
+      background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+      font:15px/1.5 Georgia, serif; }
+    textarea:focus { outline:none; border-color:#33465f; }
+    button { font:inherit; font-size:14px; color:var(--ink); background:#22314a;
+      border:1px solid #2f4363; border-radius:10px; padding:10px 16px; cursor:pointer; }
+    button:hover { background:#2a3d5c; }
+    button:disabled { opacity:.45; cursor:default; }
+    button.primary { background:#2b5fd0; border-color:#2b5fd0; }
+    button.ghost { background:transparent; }
+    .modebar { display:flex; gap:8px; align-items:center; margin-bottom:9px; }
+    .seg { display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+    .seg button { border:0; border-radius:0; background:transparent; padding:6px 12px; font-size:13px; color:var(--dim); }
+    .seg button.on { background:#22314a; color:#fff; }
+    .spacer { flex:1; }
+    .hint { color:var(--faint); font-size:12px; }
+    /* start overlay */
+    #start { position:fixed; inset:0; background:radial-gradient(900px 500px at 50% 30%, #16202e, var(--bg) 70%);
+      display:flex; align-items:center; justify-content:center; z-index:20; }
+    .card { max-width:460px; text-align:center; padding:28px; }
+    .card h1 { font-size:26px; margin:0 0 6px; }
+    .card p { color:var(--dim); font-family:ui-sans-serif,system-ui,sans-serif; font-size:14px; }
+    .card .row { display:flex; gap:8px; justify-content:center; align-items:center; margin-top:18px; flex-wrap:wrap;
+      font-family:ui-sans-serif,system-ui,sans-serif; }
+    select { font:inherit; font-size:14px; color:var(--ink); background:var(--panel); border:1px solid var(--line);
+      border-radius:9px; padding:8px 10px; font-family:ui-sans-serif,system-ui,sans-serif; }
+    label.f { color:var(--dim); font-size:13px; display:flex; gap:6px; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="title">The Ferry's Last Crossing</h1>
+      <div class="meta"><span id="beat">—</span> · <span id="clock">—</span></div>
+      <div class="roster" id="roster"></div>
+    </header>
+    <div id="feed"></div>
+    <footer>
+      <div class="targets" id="targets"></div>
+      <div class="modebar">
+        <div class="seg" id="mode">
+          <button data-mode="speak" class="on">💬 Speak</button>
+          <button data-mode="act">✋ Act</button>
+        </div>
+        <span class="spacer"></span>
+        <button id="advanceBtn" class="ghost" title="Let the night move on — the world turns, and everyone takes stock">The night moves on ▸</button>
+      </div>
+      <div class="compose">
+        <textarea id="input" placeholder="say something…" rows="1"></textarea>
+        <button id="sendBtn" class="primary">Send</button>
+      </div>
+      <div class="hint" id="hint" style="margin-top:7px"></div>
+    </footer>
+  </div>
+
+  <div id="start">
+    <div class="card">
+      <h1>The Ferry's Last Crossing</h1>
+      <p>A storm strands you overnight at a ferry-inn. One of them is a hunted smuggler, and the crown's
+        men are on the dawn ferry. What each of them becomes by morning is up to you.</p>
+      <div class="row">
+        <label class="f">voice
+          <select id="replyModel">
+            <option value="claude-haiku-4-5">Haiku — fast</option>
+            <option value="claude-sonnet-4-6" selected>Sonnet — richer</option>
+          </select>
+        </label>
+        <button id="beginBtn" class="primary">Step inside</button>
+      </div>
+      <p class="hint" id="startHint" style="margin-top:14px"></p>
+    </div>
+  </div>
+
+  <script src="/play.js"></script>
+</body>
+</html>
