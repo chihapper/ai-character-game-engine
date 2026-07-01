@@ -49,6 +49,9 @@ class Game:
             self._wipe_memory()
         self.engines = {c["slug"]: Engine(load_character(c["slug"]), AnthropicLLM(model=reply_model))
                         for c in self.scenario["cast"]}
+        # Scenario-specific "why you're here tonight" — reconciles each borrowed character with this
+        # setting; injected into their scene context every turn so responses are grounded in it.
+        self.here_because = {c["slug"]: (c.get("here_because") or "").strip() for c in self.scenario["cast"]}
         self.beat_i = 0
         self.clock = float(self.scenario.get("clock", {}).get("start", 0) or 0)
         self.history: list[dict] = []       # rolling narration/dialogue for DM recap
@@ -95,12 +98,22 @@ class Game:
         return rec
 
     def _situation_for(self, slug: str, *, in_scene: list | None = None) -> Situation:
-        """The perceiving NPC's view of the room right now: the rich-text perception, who's here, and
-        any lines JUST said in this exchange (so an NPC responding to the room hears the others)."""
+        """The perceiving NPC's view of the room right now: the rich-text perception, who's here, any
+        lines JUST said in this exchange (so an NPC responding to the room hears the others), and why
+        THEY are here tonight (scenario grounding)."""
         others = [self._name(s) for s in self.present if s != slug]
         recent = [f'{nm} just said: "{ln}"' for nm, ln in (in_scene or [])]
+        extra = {}
+        if self.here_because.get(slug):
+            extra["Why you're here tonight"] = self.here_because[slug]
         return Situation(location=self._perception, present=others, recent_events=recent,
-                         game_time=self._beat()["title"], clock=self.clock)
+                         extra=extra, game_time=self._beat()["title"], clock=self.clock)
+
+    def _dialogue_recap(self, n: int = 4) -> str:
+        """The last few player/NPC lines, so the responder-picker can read who's being addressed."""
+        keep = [h for h in self.history if h["kind"] in ("player", "dialogue")]
+        return "\n".join(f"{('Player' if h['kind'] == 'player' else h.get('who', ''))}: {h['text'][:160]}"
+                         for h in keep[-n:])
 
     # ---- lifecycle ----------------------------------------------------------
     async def begin(self) -> str:
@@ -145,12 +158,16 @@ class Game:
         self._log("dialogue", reply, slug=slug, who=self._name(slug))
         return reply
 
-    async def say_to_room(self, line: str, *, max_speakers: int = 2) -> list[tuple[str, str]]:
+    async def say_to_room(self, line: str, *, max_speakers: int = 3) -> list[tuple[str, str]]:
         """The player addresses everyone; the DM picks who speaks up and they answer IN SEQUENCE,
         each perceiving the lines said before them this exchange (a group beat / NPC cross-awareness)."""
         self._log("player", line, to="room")
         names = [self._name(s) for s in self.present]
-        responders = await self.dm.pick_responders(names, line, maxn=max_speakers)
+        responders = await self.dm.pick_responders(names, line, recent=self._dialogue_recap(),
+                                                    maxn=max_speakers)
+        if not responders:
+            self._log("narration", "The words settle into the room; no one takes them up just yet.")
+            return []
         said: list[tuple[str, str]] = []
         for name in responders:
             slug = self._resolve(name)

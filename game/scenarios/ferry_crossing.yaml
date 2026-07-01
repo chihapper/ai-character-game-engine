@@ -36,17 +36,37 @@ secret:
 # --- the cast (engine character slugs + scenario framing) -------------------
 cast:
   - slug: della-fenwick
-    as: "host and ferrywoman; she runs this place and misses little"
+    as: "host and ferrywoman; she runs this crossing and misses little"
     knows_secret: false
+    here_because: >
+      You run this crossing — the skiff, the landing, and the little taproom where travelers wait out
+      the water. Tonight the storm shut the channel and stranded a boatload of strangers under your
+      roof; you're keeping the lamps lit and the cups full till it breaks, reading each of them the
+      way you read the current.
   - slug: brielle-bri-castellano
     as: "a stranded traveler; charming, transactional, reads a room for what it can give her"
     knows_secret: false
+    here_because: >
+      You were working your way downriver to a new town and a fresh room to charm — the move you make
+      when a place goes stale and the quiet starts creeping in — when the storm caught the ferry and
+      stranded you here. A night shut in with strangers: a whole room to win over, and nowhere to slip
+      off to when it goes quiet.
   - slug: edwin-hale
-    as: "a failing performer, stranded; he jokes to keep the dark off"
+    as: "a stranded performer between towns; he jokes to keep the dark off"
     knows_secret: false
+    here_because: >
+      You're between towns on the circuit, chasing the next booking — and, as ever, scanning every new
+      face for the one you won't stop hoping to find. Soaked and short on coin, you were trying to
+      reach the far side before the next show when the crossing closed. One more night with a small
+      room to work, and the silence waiting on the other side of the laughs.
   - slug: corvin-ashgrave-inworld
-    as: "the quiet stranger by the fire — the hunted smuggler, lying low"
+    as: "the quiet stranger by the fire — a harbor man who ran, lying low"
     knows_secret: true
+    here_because: >
+      The inspections stopped feeling like chance — twice in a week, then a face you knew at the dock.
+      So you grabbed what you could carry and ran from your harbor, and this crossing is the road out
+      past their reach. The storm trapped you here for the night — and the men who've been circling
+      are due in on the very dawn boat you were counting on.
 
 # --- beats (authored; the DM narrates + adjudicates free play between them) --
 # `events` are world events the runtime pushes via remember() on entering the beat; react: true

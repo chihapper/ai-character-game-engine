@@ -54,21 +54,31 @@ class DM:
         )
         return await self._say(prompt)
 
-    async def pick_responders(self, present_names: list[str], line: str, *, maxn: int = 2) -> list[str]:
-        """When the player addresses the ROOM, decide which present characters would naturally speak
-        up, and in what order (1..maxn — fewer is fine). Returns names from `present_names`."""
+    async def pick_responders(self, present_names: list[str], line: str, *,
+                              recent: str = "", maxn: int = 3) -> list[str]:
+        """Decide who ACTUALLY speaks next when the player addresses the room — reading the recent
+        exchange so a remark that's contextually aimed at one person (even unnamed) draws only them,
+        while an open remark draws the natural few. Returns [] when nothing warrants a reply."""
+        ctx = f"RECENT EXCHANGE (most recent last):\n{recent}\n\n" if recent else ""
         prompt = (
-            f"PRESENT: {', '.join(present_names)}\n"
-            f"The player says, to the room: \"{line}\"\n\n"
-            f"Which present characters would naturally speak up in response, and in what order? Choose "
-            f"1 to {maxn} — only those who would actually react. Reply with ONLY their names exactly as "
-            f"written above, comma-separated, in order. No other text."
+            f"PRESENT: {', '.join(present_names)}\n\n{ctx}"
+            f"The player now says: \"{line}\"\n\n"
+            "Decide who actually speaks next, like a real scene — READ THE CONTEXT:\n"
+            "- If it's aimed at ONE person (named, OR by context — answering them, continuing a thread "
+            "with them, reacting to what they just said), ONLY that person responds.\n"
+            "- If it's an open remark to the room, only those who'd genuinely react speak up — one, "
+            "two, or a few. Don't make everyone pile on.\n"
+            "- If no one would naturally respond, reply exactly: NONE.\n"
+            f"Reply with ONLY names from the list, comma-separated, in speaking order (max {maxn}), or "
+            "NONE. No other text."
         )
-        raw = await self._say(prompt)
+        raw = (await self._say(prompt)).strip()
+        if raw.upper().startswith("NONE"):
+            return []
         picks: list[str] = []
         for part in raw.replace("\n", ",").split(","):
             p = part.strip().strip(".").lower()
-            if not p:
+            if not p or p == "none":
                 continue
             for name in present_names:
                 nl = name.lower()
@@ -77,7 +87,7 @@ class DM:
                     break
             if len(picks) >= maxn:
                 break
-        return picks or present_names[:1]
+        return picks
 
     async def adjudicate(self, action: str, perception: str) -> str:
         """Narrate the world's response to a free-form, non-dialogue player action."""
