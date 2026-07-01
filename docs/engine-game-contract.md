@@ -109,7 +109,25 @@ accumulated and decides what it does or becomes. The **Decision** dict:
 The engine **applies the inner half itself** (the soul — it needs no game architecture) and
 **returns `world_action` for the game to enact.**
 
-### 1.4 Obligations (optional)
+### 1.4 `choose_action` — the embodied-action seam (for games with a world model)
+
+```python
+choice: dict = await eng.choose_action(
+    situation,                    # the perceived scene (a string, or a Situation to render)
+    ["cross to the door", "watch the stranger", "stay where you are"],   # what the world AFFORDS
+)
+# -> {"action": "<exactly one of the options, or None>", "reason": "<short, in-character>"}
+```
+
+For embodied/spatial games: the GAME enumerates the **concrete actions the world currently affords**
+(its own vocabulary — the engine never knows what an action *means*), and the engine picks the one this
+character would take — or none — **hard-bounded to the offered list**, so a character can never act
+outside what the place allows. The choice is grounded in who they've *become* (evolved goals, near-term
+aim, feelings/scars toward the player, formed beliefs), not just the authored sheet. Applied-vs-returned
+holds here too: the engine only returns the choice; **the game executes it** against its world. A text
+game simply never calls this.
+
+### 1.5 Obligations (optional)
 
 ```python
 cid = eng.commit("meet the player at dawn", due=day+1)     # the character took on a promise
@@ -142,6 +160,8 @@ salience = await eng.remember(event, t=now)          # engine: how much does THI
 if game_says_this_interrupts(salience, scene):        # GAME policy: worth breaking the scene for?
     decision = await eng.deliberate(Situation(clock=now), mode="free")
     enact(decision["world_action"])                   # GAME: do it / narrate it / ignore it
+    # embodied variant: instead of enacting prose, offer the afforded options —
+    # choice = await eng.choose_action(percept, afforded_options)   (§1.4)
 # ...the character's NEXT respond() line carries the event + reaction automatically (§4)
 ```
 

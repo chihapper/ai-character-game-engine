@@ -213,21 +213,28 @@ async def reconcile_goals(
 # --- The AGNOSTIC action seam (embodied demo, #30) ------------------------------------------------
 
 async def choose_action(character: Character, situation: str, options: list[str], *,
-                        model: str | None = None) -> dict:
+                        grounding: str = "", model: str | None = None) -> dict:
     """Pick the ONE action a character takes right now — CHOSEN ONLY FROM the concrete options the GAME
     supplies (the things the world currently affords). The engine never knows what an action MEANS; it
     only selects from the offered list, so a character can never do something the world doesn't afford
     (no "slip down the alley to Mother Sael's" when stuck in an inn). Game-agnostic: the vocabulary is
-    the caller's; this is the single embodied-action seam. Returns {"action": <exact option or None>,
+    the caller's; this is the single embodied-action seam.
+
+    `grounding` is who they've BECOME — evolved goals, near-term aim, feelings/scars, beliefs — so the
+    choice is made by the lived character, not the static sheet. Prefer `Engine.choose_action`, which
+    assembles it; calling this bare is for stateless demos. Returns {"action": <exact option or None>,
     "reason": <short, in-character>}."""
-    from .salience import _character_summary  # local import: avoid an import cycle at module load
+    from .salience import _character_summary
     if not options:
         return {"action": None, "reason": ""}
     system = ("You decide what a fictional character DOES at this moment, choosing ONLY from the options "
-              "given — those are the only things the world affords right now. Stay true to who they are; "
-              "pick nothing if they'd simply hold as they are. Reply with JSON ONLY.")
+              "given — those are the only things the world affords right now. Stay true to who they are "
+              "AND to who they have become; pick nothing if they'd simply hold as they are. Reply with "
+              "JSON ONLY.")
     opts = "\n".join(f"- {o}" for o in options)
-    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+    became = f"WHO THEY'VE BECOME (their lived state — weigh it as much as the sheet):\n{grounding}\n\n" \
+        if grounding else ""
+    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n{became}"
               f"WHAT THEY PERCEIVE RIGHT NOW:\n{situation}\n\n"
               f"They may do exactly ONE of these, or nothing:\n{opts}\n\n"
               "Choose the single action THIS character would take now — copy its text EXACTLY, or use "

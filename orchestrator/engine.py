@@ -23,13 +23,14 @@ from .character_store import Character
 from .config import get_settings
 from .context import (
     RespondRequest, build_arena_query, build_instructions, render_recent_happenings,
-    render_turn_context,
+    render_situation, render_turn_context,
 )
 from .memory.commitments import CommitmentStore, render_commitments
 from .memory.intent import IntentStore
 from .memory.long_term import LongTermMemory
 from .memory.relationship import RelationshipStore
 from .memory.short_term import ShortTermMemory
+from .agency import choose_action as _choose_action
 from .agency import deliberate as _deliberate
 from .agency import reconcile_goals as _reconcile_goals
 from .consolidation import consolidate_beliefs
@@ -196,6 +197,33 @@ class Engine:
                 await self.long_term.remember(f"(chose, of their own will) {turning_point}",
                                               kind="decision", importance=0.8, t=now_t)
         return decision
+
+    async def choose_action(self, situation, options: list[str], *, model: str | None = None) -> dict:
+        """The embodied-action seam, ON the engine surface (#30): pick the ONE action this character
+        takes right now, chosen ONLY from the concrete `options` the game supplies (what the world
+        currently affords) — but grounded in everything they've BECOME: evolved goals, near-term aim,
+        feelings toward the player (scars included), and formed beliefs. Corvin chooses as the Corvin
+        the engine knows, not as his static sheet. `situation` is the perceived scene (str or
+        Situation). Returns {"action": <exact option or None>, "reason": <short, in-character>};
+        the GAME executes the choice (applied-vs-returned, per the contract)."""
+        if not options:
+            return {"action": None, "reason": ""}
+        sit = situation if isinstance(situation, str) else render_situation(situation)
+        parts: list[str] = []
+        goals = self.agency.goals() or list(self.character.goals)
+        if goals:
+            parts.append("Your current goals: " + "; ".join(goals[:5]))
+        aim = self.intent.get().intent
+        if aim:
+            parts.append("Your current near-term aim: " + aim)
+        rel = self.relationship.get().render()
+        if rel:
+            parts.append(rel)
+        beliefs = self.long_term.beliefs(limit=get_settings().beliefs_always_surface + 2)
+        if beliefs:
+            parts.append("Beliefs you've come to hold:\n" + "\n".join(f"- {b}" for b in beliefs))
+        return await _choose_action(self.character, sit, options,
+                                    grounding="\n\n".join(parts), model=model)
 
     async def _agency_grounding(self, situation, now_t, last_t) -> str:
         """Assemble everything the character deliberates FROM: who they are, current goals + aim,

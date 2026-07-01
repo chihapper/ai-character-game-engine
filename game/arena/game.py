@@ -15,7 +15,6 @@ from pathlib import Path
 import yaml
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
-from orchestrator.agency import choose_action
 from orchestrator.character_store import load_character
 from orchestrator.config import get_settings
 from orchestrator.context import RespondRequest, Situation
@@ -180,8 +179,9 @@ class ArenaGame:
         for slug in self.cast:
             p = perceive(self.world, slug, clock=self.clock, elapsed=hours, ref_of=self._ref)  # all feel the gap
             acts = available(self.world, slug, ref_of=self._ref)
-            choice = await choose_action(self.engines[slug].character, render_player_view(p),
-                                         [a.label for a in acts])
+            # Grounded choice: the engine folds in evolved goals/intent/feelings/beliefs (#30 review D).
+            choice = await self.engines[slug].choose_action(render_player_view(p),
+                                                            [a.label for a in acts])
             if choice.get("action"):
                 execute(self.world, slug, choice["action"], acts)
                 self._log("npc_act", choice["action"], slug=slug, who=self._label(slug), reason=choice.get("reason", ""))
