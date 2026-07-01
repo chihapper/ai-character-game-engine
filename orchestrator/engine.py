@@ -22,7 +22,8 @@ from __future__ import annotations
 from .character_store import Character
 from .config import get_settings
 from .context import (
-    RespondRequest, build_arena_query, build_instructions, render_turn_context,
+    RespondRequest, build_arena_query, build_instructions, render_recent_happenings,
+    render_turn_context,
 )
 from .memory.commitments import CommitmentStore, render_commitments
 from .memory.intent import IntentStore
@@ -36,6 +37,7 @@ from .consistency import detect_contradiction
 from .memory.agency_store import AgencyStore
 from .salience import (
     _character_summary, assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
+    score_salience_text,
 )
 
 
@@ -58,7 +60,8 @@ class Engine:
 
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
     async def remember(self, fact: str, *, player_role: str | None = None,
-                       actor: str = "player", **kw) -> None:
+                       actor: str = "player", importance: float | None = None,
+                       magnitude: float | None = None, **kw) -> float | None:
         """Push a durable world event into the character's memory (direct or indirect). It ALSO
         shifts the character's disposition toward the player when attributable — the AI judges the
         character-aware impact (deltas + a possible scar OR scar_heal):
@@ -67,26 +70,50 @@ class Engine:
           - `actor="self"` — the CHARACTER's own internal change with the player doing NOTHING (#19):
             a change of heart / transformation that can warm them or even heal a scar (forgiveness
             they reach on their own). This is the seam a game with autonomous NPC lives drives.
-        With neither, it's a pure memory write (today's default)."""
+        With neither, it's a pure memory write (today's default).
+
+        SALIENCE (#25): `importance` is the memory-weight (how reliably this is recalled later).
+          - PIN it (pass a number) and it's honored verbatim — an explicit override (a sandbox test
+            slider, an internal change's authored weight).
+          - OMIT it and the CHARACTER appraises the event's PERSONAL salience for themselves
+            (score_salience_text), optionally informed by a coarse objective `magnitude` hint the
+            world/DM may supply — so a distant war they shrug off and a small kindness that marks
+            them get the weight THEY would give them, not a blind author number.
+        Appraisal is a per-write capability, not an engine assumption: a game with no world events
+        never triggers it, and it's gated behind `salience_scoring` + the omitted-importance case.
+
+        RETURNS the stored salience — the character's own appraised weight for this event. This is
+        the engine's half of the reaction seam (see docs/ENGINE_GAME_CONTRACT.md): the GAME reads it
+        to decide, by its OWN policy, whether the event is worth interrupting the scene for (then
+        calls deliberate()). Returns None only for an empty write, or when salience scoring is off
+        AND `importance` wasn't pinned (a neutral default is stored; the game had no signal to gate on)."""
+        if not (fact or "").strip():
+            return None
         if player_role and "kind" not in kw:
             kw["kind"] = "player_event"  # mark player-attributable events so deliberation can ground on them (#22)
+        if importance is None and get_settings().salience_scoring:
+            # The NPC realizes how much THIS event matters to them (vs a fixed author weight).
+            importance = await score_salience_text(self.character, fact, magnitude=magnitude)
+        if importance is not None:
+            kw["importance"] = importance  # else: long_term applies its default world-event salience
         await self.long_term.remember(fact, **kw)
         s = get_settings()
         if not (s.relationship_state and not self.relationship.readonly):
-            return
+            return importance
         if actor == "self":
             attribution = ("the character THEMSELVES underwent this — their own change of heart, "
                            "decision, or transformation; the player did nothing")
         elif player_role:
             attribution = f"the player {player_role} this"
         else:
-            return  # no attribution -> pure memory, no disposition shift
+            return importance  # no attribution -> pure memory, no disposition shift
         now_t = kw.get("t")
         self._age_relationship(now_t)  # drift over the gap, then apply the event's shift
         rel = await assess_event_impact(
             self.character, fact, attribution=attribution, relationship=self.relationship.get())
         if rel:
             self.relationship.update(**rel)
+        return importance
 
     def _age_relationship(self, now_t) -> None:
         """Drift feelings toward baseline over the in-game time since last contact (#12-B), using the
@@ -247,6 +274,37 @@ class Engine:
             parts.append(f"Game-time since you last took stock: {now_t - last_t}.")
         return "\n\n".join(parts)
 
+    def _recent_happenings(self, now_t, *, exclude_texts: set[str]) -> tuple[list[str], list[str]]:
+        """Working memory (#30): the FRESH, high-salience things the character would still have
+        top-of-mind — events around them (world/player events) and their OWN just-taken autonomous
+        acts (decisions / changes of heart) — within a short recency window of `now_t` and above the
+        RR-appraised salience floor, deduped against what retrieval already surfaced, newest-last,
+        capped. Returns (event_texts, own_act_texts).
+
+        Freshness needs game-time: without a clock we can't tell what 'just' happened, so it no-ops
+        (leaving those memories to ordinary RR). The window makes it TRANSIENT — an item foregrounds
+        for the beat it's live in, then falls back to relevance-retrieval as the scene moves on, so it
+        never accumulates or floods."""
+        s = get_settings()
+        if now_t is None or not s.recent_happenings:
+            return [], []
+        window, floor, cap = (s.recent_happenings_window, s.recent_happenings_salience_floor,
+                              s.recent_happenings_cap)
+        ev, acts = [], []
+        for r in self.long_term._all():
+            if r.t is None or (now_t - r.t) > window or r.importance < floor or r.text in exclude_texts:
+                continue
+            if r.kind in ("world_event", "player_event"):
+                ev.append(r)
+            elif r.kind in ("decision", "self_change"):
+                acts.append(r)
+        key = lambda r: (r.t if r.t is not None else float(r.index))
+        prefix = "(chose, of their own will) "  # stored decision marker -> strip for 1st-person framing
+        ev_txt = [r.text for r in sorted(ev, key=key)[-cap:]]
+        act_txt = [(r.text[len(prefix):] if r.text.startswith(prefix) else r.text)
+                   for r in sorted(acts, key=key)[-cap:]]
+        return ev_txt, act_txt
+
     # ---- one turn, in two halves (so any driver plugs its generation in between) ---------
     async def prepare(self, request: RespondRequest) -> tuple[str, dict]:
         """First half: expire overdue commitments, build the relationship-conditioned arena
@@ -279,10 +337,16 @@ class Engine:
         always = self.long_term.beliefs(limit=s.beliefs_always_surface)
         recalled_b = [b["text"] for b in chosen if b.get("kind") == "belief"]
         beliefs = always + [t for t in recalled_b if t not in always]
+        # Working-memory foregrounding (#30): the few FRESH, high-salience developments the character
+        # would still have top-of-mind — surfaced regardless of whether the query recalled them,
+        # deduped vs what retrieval already returned. ADDITIVE (its own small block; doesn't shrink
+        # the RR top-k or the short-term window) and transient (falls back to RR as the scene ages).
+        fresh_events, fresh_acts = self._recent_happenings(now_t, exclude_texts=set(memories))
         injected = render_turn_context(
             memories=memories, beliefs=beliefs, situation=request.situation, goals=evolved_goals,
             commitments=render_commitments(self.commitments.open_items()),
             relationship=self.relationship.get().render(), intent=self.intent.get().render(),
+            recent_happenings=render_recent_happenings(fresh_events, fresh_acts),
         )
         return injected, {"query": query, "memories": scored.get("selected", []), "beliefs": beliefs,
                           "scored": scored.get("scored", []), "embedder": scored.get("embedder", ""),

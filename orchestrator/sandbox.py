@@ -152,9 +152,11 @@ class Say(BaseModel):
 
 class Event(BaseModel):
     text: str
-    importance: float = 0.6
+    importance: float | None = None  # pin = manual override; None = let the NPC appraise (#25)
+    magnitude: float | None = None   # coarse objective-scale hint fed into NPC appraisal (#25)
     player_role: str | None = None   # "caused" | "benefited" | None (a pure world event)
     actor: str = "player"            # "player" | "self" (the NPC's own internal change)
+    react: bool = False              # 2a: let them react IN THE MOMENT if it lands hard enough (#30)
     clock: float | None = None
 
 
@@ -183,12 +185,28 @@ async def say(slug: str, body: Say):
     return {"reply": reply, "state": _state(eng)}
 
 
+REACT_SALIENCE_FLOOR = 0.7  # 2a: an event interrupts the scene only if the NPC RR-appraises it this high
+
+
 @router.post("/{slug}/event")
 async def event(slug: str, body: Event):
     eng = _engine(slug)
-    await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
-                       importance=body.importance, t=(body.clock if body.clock is not None else 0.0))
-    return {"state": _state(eng)}
+    clk = body.clock if body.clock is not None else 0.0
+    # remember() RETURNS the character's appraised salience — the engine's half of the reaction seam.
+    sal = await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
+                             importance=body.importance, magnitude=body.magnitude, t=clk)
+    out: dict = {"state": _state(eng)}
+    if body.react:
+        # The GAME (here, the sandbox) owns the interrupt policy: only take a beat to react if it
+        # lands hard enough (#30 / 2a). RR — via the appraised salience — decides.
+        out["salience"] = round(sal, 2) if sal is not None else None
+        if sal is not None and sal >= REACT_SALIENCE_FLOOR:
+            out["decision"] = await eng.deliberate(Situation(clock=clk), mode="free")
+            out["reacted"] = True
+            out["state"] = _state(eng)  # refresh after the reaction may have moved state
+        else:
+            out["reacted"] = False
+    return out
 
 
 @router.post("/{slug}/deliberate")
@@ -324,9 +342,11 @@ async def replay(slug: str, body: Scenario):
             _log_turn(slug, clock, step.get("text", ""), reply)
             transcript.append({"type": "say", "clock": clock, "text": step.get("text", ""), "reply": reply})
         elif kind == "event":
+            imp = step.get("importance")  # None on a recorded appraise-step -> NPC realizes it (#25)
             await eng.remember(step.get("text", ""), player_role=(step.get("player_role") or None),
                                actor=step.get("actor", "player"),
-                               importance=float(step.get("importance", 0.6)), t=clock)
+                               importance=(None if imp is None else float(imp)),
+                               magnitude=step.get("magnitude"), t=clock)
             transcript.append({"type": "event", "clock": clock, "text": step.get("text", "")})
         elif kind == "deliberate":
             dec = await eng.deliberate(Situation(clock=clock), mode=step.get("mode", "free"))

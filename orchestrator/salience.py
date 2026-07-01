@@ -76,16 +76,26 @@ def _parse_score(text: str) -> float:
 
 
 async def score_salience_text(
-    character: Character, moment: str, *, model: str | None = None
+    character: Character, moment: str, *, magnitude: float | None = None, model: str | None = None
 ) -> float:
     """Rate, 0–1, how memorable `moment` (any stored memory text) is to `character`.
-    Returns NEUTRAL when scoring is disabled or on error."""
+    `magnitude` is an OPTIONAL coarse objective-scale hint the world/DM may supply (0 = trivial,
+    1 = world-shaking) — the character WEIGHS it but realizes their OWN personal salience, which
+    can diverge from objective scale (a distant war they shrug off; a small kindness that marks
+    them for life). Returns NEUTRAL when scoring is disabled or on error."""
     settings = get_settings()
     if not settings.salience_scoring:
         return NEUTRAL
+    mag_line = ""
+    if magnitude is not None:
+        mag_line = (
+            f"\n\nThe world rates this event's OBJECTIVE scale at {magnitude:.2f} "
+            f"(0 = trivial, 1 = world-shaking). Weigh it, but judge what it means to "
+            f"{character.name} PERSONALLY — objective scale and personal salience can diverge."
+        )
     prompt = (
         f"CHARACTER:\n{_character_summary(character)}\n\n"
-        f"MOMENT:\n{moment}\n\n"
+        f"MOMENT:\n{moment}{mag_line}\n\n"
         f"How reliably would {character.name} RECALL this later? Weigh both personal/"
         f"emotional weight and role relevance — a competent professional recalls facts in "
         f"their domain even when routine. Reply with only a number from 0.00 to 1.00."
