@@ -54,6 +54,10 @@ class Game:
         self.here_because = {c["slug"]: (c.get("here_because") or "").strip() for c in self.scenario["cast"]}
         # How each is referred to before a name is spoken (strangers) — used everywhere names would leak.
         self.handles = {c["slug"]: (c.get("handle") or "someone here").strip() for c in self.scenario["cast"]}
+        self.known_names: dict[str, str] = {}  # slug -> name, once that character has spoken it aloud
+        # Authoritative world-state the stateless DM narrates FROM (so it can't drift the player around).
+        self.player_location = (self.scenario.get("player", {}).get("start_location")
+                                or "in the taproom").strip()
         self.beat_i = 0
         self.clock = float(self.scenario.get("clock", {}).get("start", 0) or 0)
         self.history: list[dict] = []       # rolling narration/dialogue for DM recap
@@ -66,18 +70,36 @@ class Game:
         # Strip dev-variant suffixes like "(Inworld)"/"(Eleven)" for in-fiction display.
         return re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name).strip()
 
+    def _ref(self, slug: str) -> str:
+        """How this person is referred to in-fiction RIGHT NOW: their name once they've spoken it,
+        otherwise their appearance handle (strangers don't know names yet)."""
+        return self.known_names.get(slug) or self.handles.get(slug) or "someone"
+
     def label(self, slug: str) -> str:
-        """Standalone display label — the appearance-handle, capitalized. Names aren't known in-fiction
-        yet (strangers), so people are shown by how they look until a name is spoken in dialogue."""
-        h = self.handles.get(slug) or "someone"
-        return h[:1].upper() + h[1:]
+        """Standalone display label — the current reference, capitalized (handle, or name once learned)."""
+        r = self._ref(slug)
+        return r[:1].upper() + r[1:]
+
+    def _maybe_learn_name(self, slug: str, text: str) -> None:
+        """Name-discovery: if this character speaks any form of their OWN name (first, nickname, or
+        surname) in a reply, the room now knows it — switch from handle to that name from here on.
+        Stores the form they actually used (so 'Bri', 'Pockets', 'Della' — whatever they gave)."""
+        if slug in self.known_names:
+            return
+        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name)  # drop dev suffix
+        candidates = re.findall(r"[A-Za-z]{2,}", raw.replace("'", " ").replace('"', " "))
+        for c in candidates:
+            if re.search(rf"\b{re.escape(c)}\b", text, re.IGNORECASE):
+                self.known_names[slug] = c
+                return
 
     def _resolve(self, ref: str) -> str | None:
         """Map a player-typed slug / name / appearance-handle to a present cast slug."""
         ref = (ref or "").strip().lower()
         for slug in self.present:
             if ref and (ref == slug or ref in self._name(slug).lower()
-                        or ref in (self.handles.get(slug) or "").lower()):
+                        or ref in (self.handles.get(slug) or "").lower()
+                        or ref in (self.known_names.get(slug) or "").lower()):
                 return slug
         return None
 
@@ -122,12 +144,13 @@ class Game:
         """The perceiving NPC's view of the room right now: the rich-text perception, who's here, any
         lines JUST said in this exchange (so an NPC responding to the room hears the others), and why
         THEY are here tonight (scenario grounding)."""
-        others = [self.handles[s] for s in self.present if s != slug]
+        others = [self._ref(s) for s in self.present if s != slug]
         recent = [f'{self.label(sl)} just said: "{ln}"' for sl, ln in (in_scene or [])]
-        extra = {"Performance": (
-            "Speak your words in the first person, in quotes. Write your OWN actions and reactions in "
-            "the THIRD person (e.g. 'she brushes the rain from her hair'), never the second person. "
-            "Do not narrate the player's actions, body, or feelings — that is theirs.")}
+        extra = {"Where the player is": self.player_location,
+                 "Performance": (
+                     "Speak your words in the first person, in quotes. Write your OWN actions and "
+                     "reactions in the THIRD person (e.g. 'she brushes the rain from her hair'), never "
+                     "the second person. Do not narrate the player's actions, body, or feelings.")}
         if self.here_because.get(slug):
             extra["Why you're here tonight"] = self.here_because[slug]
         return Situation(location=self._perception, present=others, recent_events=recent,
@@ -151,12 +174,16 @@ class Game:
         await self._enter_beat()
         return self.run_id
 
+    def _refs(self) -> list[str]:
+        return [self._ref(s) for s in self.present]
+
     async def _enter_beat(self) -> None:
         beat = self._beat()
-        handles = [self.handles[s] for s in self.present]
-        narration = await self.dm.narrate_beat(beat, self._recap(), handles)
+        refs = self._refs()
+        narration = await self.dm.narrate_beat(beat, self._recap(), refs, self.player_location)
         self._log("narration", narration, beat_title=beat["title"])
-        self._perception = await self.dm.scene_perception(beat, handles, recent=self._recap())
+        self._perception = await self.dm.scene_perception(beat, refs, self.player_location,
+                                                          recent=self._recap())
         for ev in beat.get("events", []):
             await self._fire_event(ev)
 
@@ -181,34 +208,40 @@ class Game:
         reply = await self.engines[slug].respond(
             RespondRequest(player_input=line, situation=self._situation_for(slug)))
         self._log("dialogue", reply, slug=slug, who=self.label(slug))
+        self._maybe_learn_name(slug, reply)
         return reply
 
     async def say_to_room(self, line: str, *, max_speakers: int = 3) -> list[tuple[str, str]]:
         """The player addresses everyone; the DM picks who speaks up and they answer IN SEQUENCE,
         each perceiving the lines said before them this exchange (a group beat / NPC cross-awareness)."""
         self._log("player", line, to="room")
-        handles = [self.handles[s] for s in self.present]
-        responders = await self.dm.pick_responders(handles, line, recent=self._dialogue_recap(),
+        responders = await self.dm.pick_responders(self._refs(), line, recent=self._dialogue_recap(),
                                                     maxn=max_speakers)
         if not responders:
             self._log("narration", "The words settle into the room; no one takes them up just yet.")
             return []
         said: list[tuple[str, str]] = []  # (slug, line) — perceived by later speakers this exchange
-        for handle in responders:
-            slug = self._resolve(handle)
+        for ref in responders:
+            slug = self._resolve(ref)
             if not slug:
                 continue
             reply = await self.engines[slug].respond(
                 RespondRequest(player_input=line, situation=self._situation_for(slug, in_scene=said)))
             self._log("dialogue", reply, slug=slug, who=self.label(slug))
+            self._maybe_learn_name(slug, reply)
             said.append((slug, reply))
         return [(self.label(s), r) for s, r in said]
 
     async def act(self, action: str) -> str:
         self._log("player_action", action)
-        narration = await self.dm.adjudicate(action, self._perception, [self.handles[s] for s in self.present])
-        self._log("narration", narration)
-        return narration
+        text = await self.dm.adjudicate(action, self._perception, self._refs(), self.player_location)
+        # The DM appends `LOCATION: ...` ONLY when the action moved the player — apply it, strip it.
+        m = re.search(r"(?im)^\s*LOCATION:\s*(.+?)\s*$", text)
+        if m:
+            self.player_location = m.group(1).strip()
+            text = (text[:m.start()] + text[m.end():]).strip()
+        self._log("narration", text)
+        return text
 
     async def advance(self) -> bool:
         """Advance to the next beat: NPCs deliberate (metabolize the night), clock ticks, next beat

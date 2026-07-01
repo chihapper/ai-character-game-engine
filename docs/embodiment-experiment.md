@@ -64,6 +64,17 @@ would resolve natively — each one a small qualitative data point for the front
 - **Addressing / reference resolution.** In text, "who is this remark aimed at?" must be *inferred* by
   the DM from prose (`game/dm.py::pick_responders`). Under embodiment it's given by the body — gaze,
   orientation, proximity, who you turned toward. Addressing is a chore in text and free when embodied.
+- **Spatial position / grounding (a big one).** The stateless text DM kept *re-inventing* where the
+  player was (at the bar → "survey the room" → suddenly at the door), because prose has no persistent
+  place. The fix is to have the game hold authoritative state (`Game.player_location`) and feed it to
+  the DM every call, which may only move the player on explicit movement (`game/runtime.py`,
+  `game/dm.py`). Under embodiment this is **free**: a body simply *is* somewhere; position, facing,
+  proximity, and "you didn't move" are carried by the world, not tracked in a variable and re-narrated
+  each turn. Spatial coherence is the clearest case so far of what the text medium fights and an
+  embodied arena gives for nothing.
+- **Name-discovery.** Text has to explicitly track which names the player has learned and swap
+  handle↔name (`Game.known_names`); embodiment carries "you've been introduced / you recognize this
+  face" as part of perceiving the person.
 
 ## Run parameters (what defines a run)
 
@@ -81,4 +92,8 @@ judge) · `engine flags` · `seed/notes` · `transcript path`.
 | run_id | started | condition | scenario | characters | models | transcript | outcome | rr_judge | emergence | human_note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | CTRL-TEXT-20260701-002425-233 | 2026-07-01 00:24:25 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=claude-haiku-4-5 book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-002425-233.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-003101-6d4 | 2026-07-01 00:31:01 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=claude-haiku-4-5 book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-003101-6d4.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-003450-24f | 2026-07-01 00:34:50 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-003450-24f.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-003506-ce7 | 2026-07-01 00:35:06 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-003506-ce7.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-005803-c95 | 2026-07-01 00:58:03 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-005803-c95.jsonl | (in progress) | — | — | — |
 <!-- RUNS_TABLE_END -->
