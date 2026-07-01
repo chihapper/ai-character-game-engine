@@ -22,7 +22,8 @@ from __future__ import annotations
 from .character_store import Character
 from .config import get_settings
 from .context import (
-    RespondRequest, build_arena_query, build_instructions, render_turn_context,
+    RespondRequest, build_arena_query, build_instructions, render_recent_happenings,
+    render_turn_context,
 )
 from .memory.commitments import CommitmentStore, render_commitments
 from .memory.intent import IntentStore
@@ -264,6 +265,37 @@ class Engine:
             parts.append(f"Game-time since you last took stock: {now_t - last_t}.")
         return "\n\n".join(parts)
 
+    def _recent_happenings(self, now_t, *, exclude_texts: set[str]) -> tuple[list[str], list[str]]:
+        """Working memory (#30): the FRESH, high-salience things the character would still have
+        top-of-mind — events around them (world/player events) and their OWN just-taken autonomous
+        acts (decisions / changes of heart) — within a short recency window of `now_t` and above the
+        RR-appraised salience floor, deduped against what retrieval already surfaced, newest-last,
+        capped. Returns (event_texts, own_act_texts).
+
+        Freshness needs game-time: without a clock we can't tell what 'just' happened, so it no-ops
+        (leaving those memories to ordinary RR). The window makes it TRANSIENT — an item foregrounds
+        for the beat it's live in, then falls back to relevance-retrieval as the scene moves on, so it
+        never accumulates or floods."""
+        s = get_settings()
+        if now_t is None or not s.recent_happenings:
+            return [], []
+        window, floor, cap = (s.recent_happenings_window, s.recent_happenings_salience_floor,
+                              s.recent_happenings_cap)
+        ev, acts = [], []
+        for r in self.long_term._all():
+            if r.t is None or (now_t - r.t) > window or r.importance < floor or r.text in exclude_texts:
+                continue
+            if r.kind in ("world_event", "player_event"):
+                ev.append(r)
+            elif r.kind in ("decision", "self_change"):
+                acts.append(r)
+        key = lambda r: (r.t if r.t is not None else float(r.index))
+        prefix = "(chose, of their own will) "  # stored decision marker -> strip for 1st-person framing
+        ev_txt = [r.text for r in sorted(ev, key=key)[-cap:]]
+        act_txt = [(r.text[len(prefix):] if r.text.startswith(prefix) else r.text)
+                   for r in sorted(acts, key=key)[-cap:]]
+        return ev_txt, act_txt
+
     # ---- one turn, in two halves (so any driver plugs its generation in between) ---------
     async def prepare(self, request: RespondRequest) -> tuple[str, dict]:
         """First half: expire overdue commitments, build the relationship-conditioned arena
@@ -296,10 +328,16 @@ class Engine:
         always = self.long_term.beliefs(limit=s.beliefs_always_surface)
         recalled_b = [b["text"] for b in chosen if b.get("kind") == "belief"]
         beliefs = always + [t for t in recalled_b if t not in always]
+        # Working-memory foregrounding (#30): the few FRESH, high-salience developments the character
+        # would still have top-of-mind — surfaced regardless of whether the query recalled them,
+        # deduped vs what retrieval already returned. ADDITIVE (its own small block; doesn't shrink
+        # the RR top-k or the short-term window) and transient (falls back to RR as the scene ages).
+        fresh_events, fresh_acts = self._recent_happenings(now_t, exclude_texts=set(memories))
         injected = render_turn_context(
             memories=memories, beliefs=beliefs, situation=request.situation, goals=evolved_goals,
             commitments=render_commitments(self.commitments.open_items()),
             relationship=self.relationship.get().render(), intent=self.intent.get().render(),
+            recent_happenings=render_recent_happenings(fresh_events, fresh_acts),
         )
         return injected, {"query": query, "memories": scored.get("selected", []), "beliefs": beliefs,
                           "scored": scored.get("scored", []), "embedder": scored.get("embedder", ""),

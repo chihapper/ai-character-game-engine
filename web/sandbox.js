@@ -38,8 +38,10 @@ function feed(cls, inner) {
   const el = document.createElement("div");
   el.className = "ev " + cls;
   el.innerHTML = inner;
-  $("feed").appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const box = $("feed");
+  box.insertBefore(el, box.firstChild);      // newest at the very top (full reverse-chronological)
+  box.scrollTop = 0;                          // keep the newest line in view
+  return el;
 }
 const dayTag = (t) => `<span class="meta">day ${t}</span>`;
 
@@ -110,23 +112,29 @@ async function doEvent() {
   const roleSel = $("evRole").value;
   const slider = parseFloat($("evImp").value);
   const appraise = $("evAppraise").checked;
+  const react = $("evReact").checked;
   // #25: appraise on -> NPC realizes salience (slider is just a coarse objective hint);
   //       off -> the slider IS the stored importance (manual override).
   const body = appraise
-    ? { text, importance: null, magnitude: slider, clock: state.clock }
-    : { text, importance: slider, clock: state.clock };
+    ? { text, importance: null, magnitude: slider, react, clock: state.clock }
+    : { text, importance: slider, react, clock: state.clock };
   if (roleSel === "__self") body.actor = "self";
   else if (roleSel) body.player_role = roleSel;
   $("evText").value = "";
   const tag = roleSel === "__self" ? "self-change" : roleSel ? `player ${roleSel}` : "world";
   const salTag = appraise ? `<span class="tag">appraised · hint ${slider.toFixed(2)}</span>` : "";
-  feed("event", `${dayTag(state.clock)}⚡ <b>Event</b> <span class="tag">${tag}</span>${salTag} ${esc(text)}`);
+  const reactTag = react ? `<span class="tag">react now</span>` : "";
+  feed("event", `${dayTag(state.clock)}⚡ <b>Event</b> <span class="tag">${tag}</span>${salTag}${reactTag} ${esc(text)}`);
   setBusy(true);
   try {
     const res = await api(`/${state.slug}/event`, "POST", body);
     renderState(res.state);
+    // 2a: if it landed hard enough, they reacted in the moment — show the deliberation right here.
+    if (res.decision) feedDecision(res.decision, state.clock);
+    else if (react && res.reacted === false)
+      feed("advance", `${dayTag(state.clock)}<span class="empty">${esc(charName())} registered it, but at salience ${res.salience ?? "—"} it didn't rise to an in-the-moment reaction.</span>`);
     recordStep({ type: "event", text, importance: body.importance, magnitude: body.magnitude || null,
-      player_role: body.player_role || null, actor: body.actor || "player" });
+      player_role: body.player_role || null, actor: body.actor || "player", react });
   } catch (e) { feed("event", `<span class="empty">error: ${esc(e.message)}</span>`); }
   finally { setBusy(false); }
 }

@@ -223,6 +223,28 @@ def render_beliefs(beliefs: list[str] | None) -> str:
     )
 
 
+def render_recent_happenings(events: list[str] | None, own_acts: list[str] | None) -> str:
+    """Working memory (#30): the few FRESH, high-salience things that just happened AROUND the
+    character, and what they THEMSELVES just did/decided — surfaced top-of-mind for the current
+    beat so they react in the moment and never have to be reminded of their own recent acts. "" when
+    nothing fresh. Transient by construction (the caller only passes items within the recency
+    window), so it fades back into ordinary retrieval as the scene moves on."""
+    if not events and not own_acts:
+        return ""
+    lines: list[str] = []
+    if events:
+        lines.append("Just happened — right now, or moments ago:")
+        lines += [f"- {e}" for e in events]
+    if own_acts:
+        lines.append("What you yourself just did or decided (you KNOW you did this — no one need remind you):")
+        lines += [f"- {a}" for a in own_acts]
+    return (
+        "# What's happening right now\n"
+        "Fresh in your mind this very moment — react to it as your character naturally would, "
+        "in the moment. You are fully aware of it; don't narrate it back verbatim.\n" + "\n".join(lines)
+    )
+
+
 def render_goals(goals: list[str] | None) -> str:
     """Render goals the character has EVOLVED through deliberation (#20), so its shifted life
     direction overrides the static profile goals in-prompt. "" when goals haven't changed."""
@@ -239,15 +261,17 @@ def render_goals(goals: list[str] | None) -> str:
 def render_turn_context(
     *, memories: list[str] | None = None, situation: Situation | None = None,
     commitments: str = "", relationship: str = "", intent: str = "", beliefs: list[str] | None = None,
-    goals: list[str] | None = None,
+    goals: list[str] | None = None, recent_happenings: str = "",
 ) -> str:
-    """The per-turn DYNAMIC half of a character's context: recalled memories, the character's
-    formed beliefs, the evolving relationship/feelings, their current short-term intent, OPEN
-    commitments (always surfaced), and the live Situation. The full loop injects this as a small
-    context *item* each turn (keeping the big static prompt stable + cacheable); the modular
-    pipeline folds it into the full prompt. Returns "" when there's nothing dynamic."""
-    parts = [s for s in (render_memories(memories), render_beliefs(beliefs), render_goals(goals),
-                         relationship, intent, commitments, render_situation(situation)) if s]
+    """The per-turn DYNAMIC half of a character's context: what's happening RIGHT NOW (fresh
+    events + the character's own just-taken acts, #30), recalled memories, the character's formed
+    beliefs, the evolving relationship/feelings, their current short-term intent, OPEN commitments
+    (always surfaced), and the live Situation. The full loop injects this as a small context *item*
+    each turn (keeping the big static prompt stable + cacheable); the modular pipeline folds it into
+    the full prompt. Returns "" when there's nothing dynamic."""
+    parts = [s for s in (recent_happenings, render_memories(memories), render_beliefs(beliefs),
+                         render_goals(goals), relationship, intent, commitments,
+                         render_situation(situation)) if s]
     return "\n\n".join(parts)
 
 

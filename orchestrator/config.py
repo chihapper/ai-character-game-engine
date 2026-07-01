@@ -245,6 +245,17 @@ class Settings(BaseSettings):
     beliefs_always_surface: int = 2               # top convictions ALWAYS injected, not just when a
     #                                               query happens to recall them (#14) — beliefs are
     #                                               durable and should colour every turn
+    # Working-memory foregrounding (#30): the few FRESH, high-salience things that JUST happened —
+    # events around the character AND their own just-taken autonomous acts — surfaced top-of-mind for
+    # the current beat regardless of whether the query recalls them (RR structurally misses the
+    # just-happened), then left to fade back into ordinary relevance-retrieval as the scene moves on.
+    # Fixes the "doesn't know what it just did" continuity gap + lets the character react in the
+    # moment. ADDITIVE + capped: it does NOT consume the RR top-k or short-term window.
+    recent_happenings: bool = True
+    recent_happenings_window: float = 1.0         # game-time units; an item older than this (now-t)
+    #                                               is no longer "fresh" -> handled by RR alone
+    recent_happenings_salience_floor: float = 0.6  # only items the character RR-appraised this high
+    recent_happenings_cap: int = 3                 # at most this many events + this many own-acts
     # Contradiction detection (issue #10), OPT-IN: the always-on knowledge directive makes a
     # character NOTICE contradictions live; this background check additionally RECORDS one (the
     # player's claim vs the established fact) as a salient memory, so a caught lie is carried

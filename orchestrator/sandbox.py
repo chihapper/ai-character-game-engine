@@ -156,6 +156,7 @@ class Event(BaseModel):
     magnitude: float | None = None   # coarse objective-scale hint fed into NPC appraisal (#25)
     player_role: str | None = None   # "caused" | "benefited" | None (a pure world event)
     actor: str = "player"            # "player" | "self" (the NPC's own internal change)
+    react: bool = False              # 2a: let them react IN THE MOMENT if it lands hard enough (#30)
     clock: float | None = None
 
 
@@ -184,13 +185,30 @@ async def say(slug: str, body: Say):
     return {"reply": reply, "state": _state(eng)}
 
 
+REACT_SALIENCE_FLOOR = 0.7  # 2a: an event interrupts the scene only if the NPC RR-appraises it this high
+
+
 @router.post("/{slug}/event")
 async def event(slug: str, body: Event):
     eng = _engine(slug)
+    clk = body.clock if body.clock is not None else 0.0
     await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
-                       importance=body.importance, magnitude=body.magnitude,
-                       t=(body.clock if body.clock is not None else 0.0))
-    return {"state": _state(eng)}
+                       importance=body.importance, magnitude=body.magnitude, t=clk)
+    out: dict = {"state": _state(eng)}
+    if body.react:
+        # RR decides whether it's worth interrupting for: read back the salience the character just
+        # gave THIS event and only let them take a beat to react if it lands hard (#30 / 2a).
+        recs = eng.long_term._all()
+        sal = next((r.importance for r in reversed(recs) if r.text == body.text.strip()),
+                   recs[-1].importance if recs else 0.0)
+        out["salience"] = round(sal, 2)
+        if sal >= REACT_SALIENCE_FLOOR:
+            out["decision"] = await eng.deliberate(Situation(clock=clk), mode="free")
+            out["reacted"] = True
+        else:
+            out["reacted"] = False
+        out["state"] = _state(eng)  # refresh after the reaction may have moved state
+    return out
 
 
 @router.post("/{slug}/deliberate")
