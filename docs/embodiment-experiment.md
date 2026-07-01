@@ -75,6 +75,15 @@ would resolve natively — each one a small qualitative data point for the front
 - **Name-discovery.** Text has to explicitly track which names the player has learned and swap
   handle↔name (`Game.known_names`); embodiment carries "you've been introduced / you recognize this
   face" as part of perceiving the person.
+- **Action grounded in backstory, not the scene.** Playtest: Corvin's `world_action` had him slip down
+  an "alley" to his fence "Mother Sael's" while *stuck in the inn* — he acted in his imagined
+  backstory-world, not the actual constrained place, because the engine has no world to be bounded by.
+  Structured actions **chosen from the arena's affordances** (you can only do what THIS place allows)
+  fix it by construction — "go to Mother Sael's" isn't an option that exists here.
+- **Temporal grounding.** Playtest: after "the night moves on," an NPC replied as if no time had passed
+  ("a few moments ago…" across a time-skip). Text has no *felt* clock; an embodied arena carries elapsed
+  time as world state the character perceives, so "hours passed" is part of the percept, not a variable
+  to re-narrate.
 
 ## Run parameters (what defines a run)
 
@@ -96,4 +105,8 @@ judge) · `engine flags` · `seed/notes` · `transcript path`.
 | CTRL-TEXT-20260701-003450-24f | 2026-07-01 00:34:50 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-003450-24f.jsonl | (in progress) | — | — | — |
 | CTRL-TEXT-20260701-003506-ce7 | 2026-07-01 00:35:06 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-003506-ce7.jsonl | (in progress) | — | — | — |
 | CTRL-TEXT-20260701-005803-c95 | 2026-07-01 00:58:03 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-005803-c95.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-012235-983 | 2026-07-01 01:22:35 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-012235-983.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-013117-969 | 2026-07-01 01:31:17 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-013117-969.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-015118-c72 | 2026-07-01 01:51:18 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-015118-c72.jsonl | (in progress) | — | — | — |
+| CTRL-TEXT-20260701-111631-cee | 2026-07-01 11:16:31 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=default book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-111631-cee.jsonl | (in progress) | — | — | — |
 <!-- RUNS_TABLE_END -->

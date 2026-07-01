@@ -75,10 +75,12 @@ instead of narrating it. The seam is the same; the world behind it becomes real.
 
 Ground truth, engine-agnostic, renderer-agnostic:
 
-- **Space.** A **zone + position** model (recommended over a grid for a bottle episode): named places
-  ("the bar", "the hearth", "a corner table", "the door", "the window") with adjacency and rough
-  distances. Cheap, legible, enough for social scenes; upgrades to a grid/continuous later without
-  changing the interfaces.
+- **Space.** A **grid (tiles)** under the hood — cells with (x,y) for distance / line-of-sight /
+  pathfinding, a D&D-native and procedural-ready foundation — but **presented as NAMED LOCATIONS**,
+  never raw coordinates. Labelled regions/landmarks ("the hearth", "the bar", "the door") overlay the
+  grid, so perception and narration say *"by the hearth,"* not *"(12,4)."* Grid mechanics, human-legible
+  place. (A small authored inn-map whose regions are its spots is enough to start; the grid earns its
+  keep later for D&D exploration/combat and procedural maps.)
 - **Entities.** Each NPC, the player, and objects have a position, and (for agents) a facing/attention.
 - **Objects & fixtures.** The fire, the bar, the door, the nailed warrant, a cup — with **affordances**
   (what can be done with them: `take`, `open`, `read`, `sit`, `warm-at`).
@@ -123,13 +125,26 @@ changes the arena:
 - That closes **perception → salience → action → consequence → perception** — the embodiment loop, and
   the RR frontier. The character isn't *described* as acting; it *acts*, and the world answers.
 
-**Design fork (needs a decision):** how the intent is produced —
-- **(a)** the engine keeps emitting prose `world_action`; the arena has a small **resolver** (rules +/-
-  a light LLM step) that parses it into a structured action. *No engine change; some parsing risk.*
-- **(b)** extend the engine so `deliberate()`/reactions can emit a **structured action** alongside the
-  prose. *Cleaner execution; a small, contract-respecting engine addition.*
-- Recommendation: start with **(a)** (keeps the engine untouched for the experiment), move to **(b)** if
-  parsing proves lossy.
+**Decision — STRUCTURED actions via an agnostic "action seam" (§5.1).** Prose+resolver is a testing
+shortcut, not product-grade; we go structured from the start (closer to the real product, and it's what
+makes "you can't walk to Mother Sael's — she isn't here" true by construction).
+
+### 5.1 The action seam (keeps the engine game-agnostic)
+
+The worry — "does structured action force a game-specific engine?" — is answered by the **tool-calling
+pattern**: the engine gains a *general* ability to emit a **structured action chosen from a vocabulary
+the GAME supplies**; it never names any game's actions.
+
+- The **game registers its action vocabulary** (a schema: `move(to)`, `give(object, who)`, `hide`, … for
+  a social scene; `attack`, `cast`, … for D&D combat) through a **seam** — the same shape as the
+  existing `register_game_extension(namespace, renderer)` / `game_data` point already in the engine.
+- The **engine** (`deliberate()` / reactions) picks a valid action from what the arena currently
+  affords + the registered schema, and returns it structured.
+- The **game/arena executes it** (per the contract: engine returns, game enacts).
+
+Net: **engine core = untouched + agnostic; one new *agnostic* seam; the vocabulary lives in `game/`.**
+This refines decision #5 from "engine frozen" to "core frozen + one agnostic seam." The text control
+simply doesn't use the seam, so the matched pair stays clean.
 
 ---
 
@@ -218,16 +233,22 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
 
 ---
 
-## 12. Decisions to settle (for our review)
+## 12. Decisions — SETTLED (review 2026-07-02)
 
-1. **Space model:** zone+position (recommended) vs grid vs continuous.
-2. **Action intent:** prose-`world_action` + resolver (5a) vs structured engine action (5b) — start 5a?
-3. **Stakes depth:** situated-only, or add bodily needs (cold/fatigue) now?
-4. **First renderer target:** Phase A (recommended — fastest reference point, real experiment rung) vs
-   jump to a visual phase.
-5. **Engine untouched?** Confirm we keep `orchestrator/` frozen and do all work in `game/` (arena as a
-   new `game/arena/` package).
-6. **Scenario:** reuse the ferry-inn + cast verbatim for the matched pair (recommended).
+1. **Space model → GRID (tiles), presented as NAMED LOCATIONS.** Grid under the hood (D&D-native,
+   procedural-ready); the player only ever sees labelled places ("the hearth"), never coordinates (§3).
+2. **Action intent → STRUCTURED, via an agnostic action seam (§5.1).** No prose+resolver — not
+   product-grade. Structured actions are the priority; they're what the real product needs and what
+   makes "that place isn't reachable from here" true by construction.
+3. **Stakes → situated only for now.** Bodily needs (cold/fatigue) deferred — build on the loop later.
+4. **First renderer → Phase A (text view) for CHEAP VALIDATION ONLY.** Prove the world-model + structured
+   loop kill the grounding bugs; **not** a full play-through. Then move to the visual (a 2D tile map,
+   given the grid).
+5. **Engine agnosticism preserved (refines "frozen").** Mind (`orchestrator/` core) untouched; add
+   exactly ONE new *agnostic* seam — the action seam (§5.1) — same shape as the existing `game_data`
+   extension point. Game-specific vocabulary lives in `game/` (e.g. `game/arena/`).
+6. **Scenario → reuse the ferry-inn + cast** for the matched pair ("seems very real" bar the known text
+   limits). Small AUTHORED map first; procedural later (§14).
 
 ---
 
@@ -240,6 +261,23 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
   enacted loop deepens RR — it can't establish that genuine embodiment is *necessary*.
 - **The visual is not the mind.** Phase B/C are presence; if we ever feel "the 3D made it alive," check
   it against Phase A to separate presence from cognition.
+
+---
+
+## 14. Future directions (logged — not now)
+
+- **Procedural map generation.** A later milestone, once the embodied mind-loop is proven on a fixed
+  *authored* map. The grid foundation is procedural-ready (dungeon generators produce grids). Kept OUT
+  of the #30 experiment — randomised maps would break the matched pair — so it's a *product* feature,
+  not an experiment variable.
+- **Grid-tactical / open-exploration hybrid (BG3-style).** A mode switch: a fine grid for tactical /
+  dungeon play, coarser/open movement for exploration — the *same* world model at two resolutions, which
+  our layered space model can support. (Note: BG3 is hand-authored, not procedural; the pattern we want
+  from it is the grid-combat + open-exploration duality.)
+- **Thread the needle — metamorphosis *and* D&D.** The thesis lives in social/relational depth; a D&D
+  frame adds tactical/exploration. The goal to attempt (not now): procedural *world/dungeons* as the
+  stage **+** persistent, embodied, evolving *authored NPCs* carrying the soul — so the campaign has
+  both. Flagged to watch that tactical/procedural breadth never buries the character depth we're proving.
 
 ---
 
