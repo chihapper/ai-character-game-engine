@@ -93,6 +93,27 @@ class Game:
                 self.known_names[slug] = c
                 return
 
+    def _scrub(self, text: str) -> str:
+        """Belt-and-suspenders: replace any UNLEARNED character's name-forms with their handle, so an
+        unlearned proper name can never reach the player or the DM even if the model slips. Learned
+        names (spoken in dialogue) pass through. NOT applied to character dialogue — that's where names
+        legitimately emerge."""
+        if not text:
+            return text
+        for slug in self.present:
+            if slug in self.known_names:
+                continue
+            handle = self.handles.get(slug) or "someone"
+            raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name)
+            raw = re.sub(r"\s+", " ", raw.replace("'", " ").replace('"', " ")).strip()
+            forms = sorted({raw, *re.findall(r"[A-Za-z]{3,}", raw)}, key=len, reverse=True)
+            for f in forms:
+                if len(f) >= 3:
+                    text = re.sub(rf"\b{re.escape(f)}\b", handle, text, flags=re.IGNORECASE)
+            # a "First Last" leak becomes "handle handle" — collapse the repeat
+            text = re.sub(rf"\b({re.escape(handle)})(\s+\1\b)+", r"\1", text, flags=re.IGNORECASE)
+        return text
+
     def _resolve(self, ref: str) -> str | None:
         """Map a player-typed slug / name / appearance-handle to a present cast slug."""
         ref = (ref or "").strip().lower()
@@ -127,7 +148,7 @@ class Game:
                 out.append(f'{h.get("who", "")} {h["text"][:140]}')
             else:
                 out.append(h["text"][:140])
-        return "\n".join(out)
+        return self._scrub("\n".join(out))
 
     def _beat(self) -> dict:
         return self.scenario["beats"][self.beat_i]
@@ -159,8 +180,9 @@ class Game:
     def _dialogue_recap(self, n: int = 4) -> str:
         """The last few player/NPC lines, so the responder-picker can read who's being addressed."""
         keep = [h for h in self.history if h["kind"] in ("player", "dialogue")]
-        return "\n".join(f"{('Player' if h['kind'] == 'player' else h.get('who', ''))}: {h['text'][:160]}"
-                         for h in keep[-n:])
+        return self._scrub("\n".join(
+            f"{('Player' if h['kind'] == 'player' else h.get('who', ''))}: {h['text'][:160]}"
+            for h in keep[-n:]))
 
     # ---- lifecycle ----------------------------------------------------------
     async def begin(self) -> str:
@@ -180,10 +202,10 @@ class Game:
     async def _enter_beat(self) -> None:
         beat = self._beat()
         refs = self._refs()
-        narration = await self.dm.narrate_beat(beat, self._recap(), refs, self.player_location)
+        narration = self._scrub(await self.dm.narrate_beat(beat, self._recap(), refs, self.player_location))
         self._log("narration", narration, beat_title=beat["title"])
-        self._perception = await self.dm.scene_perception(beat, refs, self.player_location,
-                                                          recent=self._recap())
+        self._perception = self._scrub(await self.dm.scene_perception(beat, refs, self.player_location,
+                                                                     recent=self._recap()))
         for ev in beat.get("events", []):
             await self._fire_event(ev)
 
@@ -198,7 +220,7 @@ class Game:
             if ev.get("react") and sal is not None and sal >= threshold:
                 dec = await self.engines[slug].deliberate(Situation(clock=self.clock), mode="free")
                 if dec.get("changed") and dec.get("world_action"):
-                    self._log("reaction", dec["world_action"], slug=slug, who=self.label(slug))
+                    self._log("reaction", self._scrub(dec["world_action"]), slug=slug, who=self.label(slug))
 
     async def talk(self, target_ref: str, line: str) -> str:
         slug = self._resolve(target_ref)
@@ -240,6 +262,7 @@ class Game:
         if m:
             self.player_location = m.group(1).strip()
             text = (text[:m.start()] + text[m.end():]).strip()
+        text = self._scrub(text)
         self._log("narration", text)
         return text
 

@@ -12,13 +12,15 @@ from __future__ import annotations
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
 
 _SYSTEM = (
-    "You are the game-master (DM) of an intimate, character-driven interactive story — a tense, "
-    "rain-soaked bottle episode. You narrate the world and adjudicate what the PLAYER does. You do "
-    "NOT speak for the characters (they have their own minds), you NEVER reveal a character's private "
-    "feelings, and you NEVER mention rules or 'stats'. Prose is sensory, grounded, and economical. "
-    "You are given authoritative world-state (who is present, how to refer to them, and where the "
-    "player is) — narrate FROM it; never contradict it or invent facts it doesn't give you. Never "
-    "break the fiction."
+    "You are the game-master (DM) — the PLAYER'S EYES AND EARS in an intimate, rain-soaked bottle "
+    "episode. You narrate ONLY what the player could see, hear, and sense from where they stand: "
+    "surfaces, actions, posture, expression, tone. You have NO access to any character's inner "
+    "thoughts, feelings, motives, secrets, or private knowledge, and you NEVER state or even hint at "
+    "them — convey tension only through OBSERVABLE behaviour (a flicked glance, a stilled hand, a "
+    "voice dropping). You do not speak for the characters (they have their own minds), you never "
+    "mention rules or 'stats', and you never break the fiction. Prose is sensory, grounded, and "
+    "economical. You are given authoritative world-state (who is present, how to refer to them, where "
+    "the player is) — narrate FROM it; never contradict it or invent facts it doesn't give you."
 )
 
 
@@ -50,12 +52,13 @@ class DM:
                 "Narrate ONLY what is NEW now — time passing, the room shifting, whatever just happened. "
                 "Do NOT re-describe the setting or repeat anything already established.")
         prompt = (
-            f"SCENARIO: {self.s['title']} — {self.s.get('logline', '')}\n"
+            f"SCENARIO: {self.s['title']}\n"
             f"TONE: {self.s.get('dm', {}).get('tone', '')}\n\n{self._people(refs)}\n\n"
             f"THE PLAYER IS CURRENTLY: {player_location}. Narrate from where they are; do not relocate them.\n\n"
             f"{so_far}\n\nBEAT: {beat['title']}\nWHAT FRAMES THIS MOMENT: {beat.get('setting', '')}\n\n"
             f"Write 2-4 sentences of scene narration to the PLAYER (second person, present tense). {task} "
-            "Do NOT put words in anyone's mouth, and do NOT describe the player's own actions or feelings."
+            "Only what the player could observe — no one's inner state. Do NOT put words in anyone's "
+            "mouth, and do NOT describe the player's own actions or feelings."
         )
         return await self._say(prompt)
 
@@ -70,9 +73,11 @@ class DM:
             f"WHAT FRAMES THIS MOMENT: {beat.get('setting', '')}\n\n{self._people(refs)}\n\n"
             f"THE PLAYER IS: {player_location}.\n\n{hist}PERCEPTION SPEC: {tmpl}\n\n"
             "Write the shared PERCEPTION of the room right now: 3-5 sentences of concrete, sensory "
-            "detail — the space; each person present and their OBSERVABLE state (posture, expression, "
-            "what they're doing — never inner feelings); and what has CHANGED since before. No inner "
-            "states, no stats, no addressing the player."
+            "detail — the space; each person present and their OBSERVABLE state ONLY (posture, "
+            "expression, what they're doing, tone). NEVER their inner feelings, thoughts, motives, "
+            "fears, secrets, or anything only that person would know — a stiffened shoulder, yes; "
+            "'afraid of being caught', no. Note what has CHANGED since before. No stats, no addressing "
+            "the player."
         )
         return await self._say(prompt)
 
