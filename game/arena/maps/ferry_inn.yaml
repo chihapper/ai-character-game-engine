@@ -1,0 +1,42 @@
+# The ferry-inn taproom — a small AUTHORED grid map for the embodied demo (#30 treatment).
+# One room; grid (11x7) under the hood, named regions on top. Perception derives from placements +
+# positions, so the scene is grounded (no drift, no invented alleys). See game/arena/world.py.
+
+size: [11, 7]           # x: 0..10, y: 0..6
+
+# Named regions (inclusive rects) — the only thing the player/characters ever "see" spatially.
+regions:
+  - {name: "the hearth",        rect: [0, 0, 2, 2]}
+  - {name: "the bar",           rect: [8, 0, 10, 3]}
+  - {name: "the middle of the taproom", rect: [3, 2, 7, 4]}
+  - {name: "the door",          rect: [0, 5, 2, 6]}
+  - {name: "a corner table",    rect: [4, 5, 6, 6]}
+  - {name: "the window",        rect: [8, 5, 10, 6]}
+
+# Things with affordances (what a body can do with/at them).
+fixtures:
+  - {name: "the peat fire",       region: "the hearth", affords: ["warm at", "watch"]}
+  - {name: "the bar",             region: "the bar",    affords: ["lean at", "order a drink"]}
+  - {name: "the door",            region: "the door",   affords: ["watch", "slip outside", "bar it"]}
+  - {name: "the shuttered window", region: "the window", affords: ["look out"]}
+  - {name: "a corner table",      region: "a corner table", affords: ["sit at"]}
+  - {name: "a crown warrant nailed inside the door", region: "the door",
+     affords: ["read", "take down"], present: false}   # appears at the 'crack' beat
+
+# Who starts where + their OBSERVABLE stance (authored ground truth, not inner state).
+placements:
+  player:
+    region: "the door"
+    stance: "just in from the storm, dripping"
+  della-fenwick:
+    region: "the bar"
+    stance: "working the bar, wiping glasses"
+  corvin-ashgrave-inworld:
+    region: "the hearth"
+    stance: "sitting with his back to the wall, nursing a cup, his eyes on the door"
+  edwin-hale:
+    region: "the window"
+    stance: "dripping onto the floorboards, watching the storm through the shutters"
+  brielle-bri-castellano:
+    region: "a corner table"
+    stance: "cloak shed, sitting straight, taking in the room"
