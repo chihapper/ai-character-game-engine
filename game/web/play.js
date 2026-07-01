@@ -22,9 +22,14 @@ function add(cls, html) {
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   return d;
 }
-function renderEvents(events) {
+function renderEvents(events, replay = false) {
   for (const e of events || []) {
-    if (e.kind === "player" || e.kind === "player_action") continue; // echoed optimistically
+    if (e.kind === "player" || e.kind === "player_action") {
+      if (!replay) continue; // live: echoed optimistically. replay (resume): render them.
+      const to = e.kind === "player_action" ? "" : e.to === "room" ? " → everyone" : e.to ? ` → ${nameOf(e.to)}` : "";
+      add("you", `<span class="lbl">You${to}</span> ${esc(e.text)}`);
+      continue;
+    }
     if (e.kind === "role" || e.kind === "player_role") add("role", esc(e.text));
     else if (e.kind === "narration") add("narr", esc(e.text));
     else if (e.kind === "event") add("event", "⚡ " + esc(e.text));
@@ -115,6 +120,7 @@ function endNight() {
   $("recordBtn").onclick = async () => {
     $("recordBtn").disabled = true;
     try { const r = await api(`/${S.gid}/finish`, "POST", { outcome: $("outcome").value.trim() });
+      localStorage.removeItem("ferry_gid");
       add("narr", `recorded · ${r.run_id}`); } catch (e) { add("event", "⚠ " + esc(e.message)); }
   };
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -126,12 +132,28 @@ async function begin() {
   try {
     const res = await api("/new", "POST", { reply_model: $("replyModel").value });
     S.gid = res.game_id;
+    localStorage.setItem("ferry_gid", S.gid);  // so a dropped connection can resume on reload
     $("title").textContent = res.title;
     $("start").style.display = "none";
     renderView(res.view);
     renderEvents(res.events);
     $("input").focus();
   } catch (e) { $("startHint").textContent = "couldn't start: " + e.message; $("beginBtn").disabled = false; }
+}
+
+// Resume an in-progress game after a reload / dropped mobile connection.
+async function tryResume() {
+  const gid = localStorage.getItem("ferry_gid");
+  if (!gid) return;
+  try {
+    const res = await api(`/${gid}/state`, "GET");
+    S.gid = gid;
+    $("start").style.display = "none";
+    renderView(res.view);
+    renderEvents(res.history, true);  // replay full history, including your own past lines
+    add("narr", "— resumed —");
+    $("input").focus();
+  } catch (e) { localStorage.removeItem("ferry_gid"); }  // game no longer on the server -> fresh start
 }
 
 // ---- wiring -------------------------------------------------------------
@@ -147,3 +169,5 @@ $("input").addEventListener("keydown", (e) => {
   $("input").placeholder = S.mode === "act" ? "describe what you do…" : "say something…";
   renderTargets();
 });
+
+tryResume();  // if a game is already in progress on the server, pick it back up
