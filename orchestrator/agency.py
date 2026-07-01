@@ -208,3 +208,45 @@ async def reconcile_goals(
     except Exception:
         logger.exception("Goal reconciliation failed; goals left as-is")
         return None
+
+
+# --- The AGNOSTIC action seam (embodied demo, #30) ------------------------------------------------
+
+async def choose_action(character: Character, situation: str, options: list[str], *,
+                        model: str | None = None) -> dict:
+    """Pick the ONE action a character takes right now — CHOSEN ONLY FROM the concrete options the GAME
+    supplies (the things the world currently affords). The engine never knows what an action MEANS; it
+    only selects from the offered list, so a character can never do something the world doesn't afford
+    (no "slip down the alley to Mother Sael's" when stuck in an inn). Game-agnostic: the vocabulary is
+    the caller's; this is the single embodied-action seam. Returns {"action": <exact option or None>,
+    "reason": <short, in-character>}."""
+    from .salience import _character_summary  # local import: avoid an import cycle at module load
+    if not options:
+        return {"action": None, "reason": ""}
+    system = ("You decide what a fictional character DOES at this moment, choosing ONLY from the options "
+              "given — those are the only things the world affords right now. Stay true to who they are; "
+              "pick nothing if they'd simply hold as they are. Reply with JSON ONLY.")
+    opts = "\n".join(f"- {o}" for o in options)
+    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+              f"WHAT THEY PERCEIVE RIGHT NOW:\n{situation}\n\n"
+              f"They may do exactly ONE of these, or nothing:\n{opts}\n\n"
+              "Choose the single action THIS character would take now — copy its text EXACTLY, or use "
+              'null for nothing. Invent nothing outside the list. JSON: {"action": <exact option text '
+              'or null>, "reason": "<short, in their voice>"}')
+    try:
+        llm = AnthropicLLM(model=model or get_settings().salience_model, max_tokens=140)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+            parts.append(delta)
+        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
+        if not m:
+            return {"action": None, "reason": ""}
+        data = json.loads(m.group())
+        chosen = data.get("action")
+        # Bind HARD to the offered set — the world's affordances are the guardrail, not the prompt.
+        if chosen not in options:
+            chosen = next((o for o in options if chosen and str(chosen).strip().lower() in o.lower()), None)
+        return {"action": chosen, "reason": str(data.get("reason") or "")[:200]}
+    except Exception:
+        logger.exception("choose_action failed; no action taken")
+        return {"action": None, "reason": ""}
