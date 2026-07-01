@@ -124,7 +124,10 @@ class Game:
         THEY are here tonight (scenario grounding)."""
         others = [self.handles[s] for s in self.present if s != slug]
         recent = [f'{self.label(sl)} just said: "{ln}"' for sl, ln in (in_scene or [])]
-        extra = {}
+        extra = {"Performance": (
+            "Speak your words in the first person, in quotes. Write your OWN actions and reactions in "
+            "the THIRD person (e.g. 'she brushes the rain from her hair'), never the second person. "
+            "Do not narrate the player's actions, body, or feelings — that is theirs.")}
         if self.here_because.get(slug):
             extra["Why you're here tonight"] = self.here_because[slug]
         return Situation(location=self._perception, present=others, recent_events=recent,

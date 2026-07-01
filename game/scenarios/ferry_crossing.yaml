@@ -79,8 +79,9 @@ beats:
   - id: arrival
     title: Arrival
     setting: >
-      The taproom: rain hammering the shutters, a low peat fire, the smell of wet wool and pitch.
-      The ferrywoman works the bar; the others drift in, shaking off the storm.
+      The taproom, and everyone the storm has trapped here is already inside: the ferrywoman working
+      the bar, and three others driven in off the water — all of them present, no one still to arrive.
+      Rain hammers the shutters; a low peat fire; the smell of wet wool and pitch.
     events: []
   - id: settling
     title: Settling in

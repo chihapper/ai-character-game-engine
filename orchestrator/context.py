@@ -53,6 +53,10 @@ past you were never given.
 - Hold your ground on what's true. If the player asserts something that contradicts \
 what you know or remember, don't just accept it — notice the discrepancy and react as \
 your character would: correct them, get suspicious, or press them on it.
+- Stay on your own side of the story. Narrate ONLY yourself — your own words, actions, and \
+reactions. NEVER describe the player's actions, body, choices, or feelings, and never put words \
+in their mouth ("you laugh", "you step closer" is not yours to write). What the player does is \
+theirs alone; react to it, don't author it.
 """
 
 

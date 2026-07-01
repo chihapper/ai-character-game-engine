@@ -31,10 +31,11 @@ class DM:
 
     def _people(self, handles: list[str]) -> str:
         return (
-            "STRANGERS: everyone here washed in tonight — NO ONE knows anyone's name yet. Refer to "
-            "each person ONLY by appearance, using exactly these handles and nothing else — "
-            + "; ".join(handles) + ". NEVER use a proper name; a name appears only after a character "
-            "has spoken it themselves in dialogue."
+            "PRESENT (exactly these, and ALL already in the room — no one is arriving or absent): "
+            + "; ".join(handles) + ". STRANGERS: everyone washed in tonight, so NO ONE knows anyone's "
+            "name yet — refer to each person ONLY by their appearance handle as written above, and "
+            "NEVER by a proper name (a name appears only after a character speaks it in dialogue). "
+            "Introduce no one who is not on this list."
         )
 
     async def narrate_beat(self, beat: dict, recap: str, present_handles: list[str]) -> str:
