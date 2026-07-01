@@ -22,11 +22,11 @@ class Action:
     cost: int = 1
 
 
-def _adjacent_cell(world: World, target_pos) -> tuple[int, int]:
+def _adjacent_cell(world: World, target_pos, mover: str | None = None) -> tuple[int, int]:
     tx, ty = target_pos
-    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
         x, y = tx + dx, ty + dy
-        if 0 <= x < world.w and 0 <= y < world.h:
+        if 0 <= x < world.w and 0 <= y < world.h and not world.occupied((x, y), exclude=mover):
             return (x, y)
     return (tx, ty)
 
@@ -48,7 +48,7 @@ def available(world: World, agent_id: str, *, ref_of) -> list[Action]:
     for eid, e in world.entities.items():
         if eid != agent_id and world.dist(me.pos, e.pos) > 1:
             acts.append(Action(f"move nearer to {ref_of(eid)}", "approach",
-                               lambda w, a, tid=eid: (w.move(a, _adjacent_cell(w, w.entities[tid].pos)),
+                               lambda w, a, tid=eid: (w.move(a, _adjacent_cell(w, w.entities[tid].pos, a)),
                                                       f"moves nearer to {ref_of(tid)}")[1],
                                type="move"))
 

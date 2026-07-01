@@ -71,6 +71,22 @@ class World:
     def region_names(self) -> list[str]:
         return [r.name for r in self.regions]
 
+    def occupied(self, pos, exclude: str | None = None) -> bool:
+        return any(e.pos == tuple(pos) for eid, e in self.entities.items() if eid != exclude)
+
+    def free_cell_in(self, region_name: str, exclude: str | None = None):
+        """A cell in the region not occupied by another body (so two people share a place, not a cell).
+        Falls back to the region centre if somehow all are taken."""
+        r = self.region(region_name)
+        if not r:
+            return None
+        x0, y0, x1, y1 = r.rect
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if not self.occupied((x, y), exclude=exclude):
+                    return (x, y)
+        return r.center()
+
     # ---- mutation ----
     def place(self, id: str, region_name: str, *, kind: str = "npc", stance: str = "") -> None:
         r = self.region(region_name)
@@ -84,12 +100,12 @@ class World:
             self.entities[id].pos = (int(pos[0]), int(pos[1]))
 
     def move_to_region(self, id: str, region_name: str) -> bool:
-        """Convenience: move to a region's centre (coarse). Still just sets an authoritative `pos`;
-        the region is not stored. Returns False if the region is unknown."""
-        r = self.region(region_name)
-        if not r or id not in self.entities:
+        """Convenience: move into a region — onto a FREE cell in it (two bodies share a place, never a
+        cell, so no marker collides). Still just an authoritative `pos`; the region is not stored."""
+        cell = self.free_cell_in(region_name, exclude=id)
+        if cell is None or id not in self.entities:
             return False
-        self.entities[id].pos = r.center()
+        self.entities[id].pos = cell
         return True
 
 

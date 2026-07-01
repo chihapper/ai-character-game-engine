@@ -22,7 +22,8 @@ function drawGrid(g) {
   // which region each cell belongs to
   const regionAt = (x, y) => g.regions.findIndex((r) => x >= r.rect[0] && y >= r.rect[1] && x <= r.rect[2] && y <= r.rect[3]);
   const entAt = {};
-  g.entities.forEach((e, i) => { entAt[`${e.x},${e.y}`] = { ...e, i }; });
+  // you (@) always win a cell, so your marker can never be hidden under an NPC's
+  g.entities.forEach((e, i) => { const k = `${e.x},${e.y}`; if (!entAt[k] || e.you) entAt[k] = { ...e, i }; });
   let html = "";
   for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
     const ri = regionAt(x, y);
