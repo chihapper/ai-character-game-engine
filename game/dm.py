@@ -58,7 +58,12 @@ class DM:
                               recent: str = "", maxn: int = 3) -> list[str]:
         """Decide who ACTUALLY speaks next when the player addresses the room — reading the recent
         exchange so a remark that's contextually aimed at one person (even unnamed) draws only them,
-        while an open remark draws the natural few. Returns [] when nothing warrants a reply."""
+        while an open remark draws the natural few. Returns [] when nothing warrants a reply.
+
+        NOTE (#30 embodiment): this is a TEXT-MEDIUM WORKAROUND. In an embodied game, "who is this
+        aimed at" is resolved natively by the body — gaze, orientation, proximity, who you turned
+        toward — so no DM has to infer it from prose. That addressing is free under embodiment (and a
+        chore in text) is itself a small data point for the embodiment frontier."""
         ctx = f"RECENT EXCHANGE (most recent last):\n{recent}\n\n" if recent else ""
         prompt = (
             f"PRESENT: {', '.join(present_names)}\n\n{ctx}"

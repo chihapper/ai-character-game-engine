@@ -56,6 +56,15 @@ enacted consequence/stakes loop": if it captures most of the gain, the win was i
 - **A positive result is evidence, not proof** (see "What this is NOT").
 - Judge and human eval are **blind**; runs are **sampled** to control cost.
 
+## Field observations (things text costs that embodiment gives free)
+
+A running list of concrete places where the *text medium* forces a workaround that an *embodied* build
+would resolve natively — each one a small qualitative data point for the frontier.
+
+- **Addressing / reference resolution.** In text, "who is this remark aimed at?" must be *inferred* by
+  the DM from prose (`game/dm.py::pick_responders`). Under embodiment it's given by the body — gaze,
+  orientation, proximity, who you turned toward. Addressing is a chore in text and free when embodied.
+
 ## Run parameters (what defines a run)
 
 `scenario` · `condition` (id above) · `character set` · `models` (reply / deliberation / bookkeeping /
@@ -71,4 +80,5 @@ judge) · `engine flags` · `seed/notes` · `transcript path`.
 <!-- RUNS_TABLE_START -->
 | run_id | started | condition | scenario | characters | models | transcript | outcome | rr_judge | emergence | human_note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CTRL-TEXT-20260701-002425-233 | 2026-07-01 00:24:25 | CTRL-TEXT | ferry-crossing | della-fenwick, brielle-bri-castellano, edwin-hale, corvin-ashgrave-inworld | reply=claude-haiku-4-5 dm=claude-haiku-4-5 book=claude-sonnet-4-6 | .game_runs\CTRL-TEXT-20260701-002425-233.jsonl | (in progress) | — | — | — |
 <!-- RUNS_TABLE_END -->

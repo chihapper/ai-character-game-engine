@@ -37,6 +37,8 @@ server.log
 
 # game runtime transcripts (per-playthrough, generated)
 .game_runs/
+game_server.err
+game_server.out
 
 # stress-test transcripts + run logs (tools/stress_*.py) — generated, not source
 stress_*.md
