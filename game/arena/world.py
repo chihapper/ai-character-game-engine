@@ -45,6 +45,9 @@ class Entity:
 
 @dataclass
 class World:
+    """The grid IS the ground truth. Every entity's `pos` (x, y cell) is the single source of position
+    truth; a "region" is only ever DERIVED from it (`region_of`) for presentation — named places never
+    replace or override the coordinates. Distance, line-of-sight, and (later) tactics all read `pos`."""
     w: int
     h: int
     regions: list[Region] = field(default_factory=list)
@@ -74,8 +77,15 @@ class World:
         pos = r.center() if r else (self.w // 2, self.h // 2)
         self.entities[id] = Entity(id, pos, kind, stance)
 
+    def move(self, id: str, pos) -> None:
+        """Move an entity to an EXACT cell. `pos` (coordinates) is authoritative — this is the precise
+        mechanic; regions are only derived from the result. Use this to preserve grid precision."""
+        if id in self.entities:
+            self.entities[id].pos = (int(pos[0]), int(pos[1]))
+
     def move_to_region(self, id: str, region_name: str) -> bool:
-        """Move an entity to a region's centre. Returns False if the region is unknown."""
+        """Convenience: move to a region's centre (coarse). Still just sets an authoritative `pos`;
+        the region is not stored. Returns False if the region is unknown."""
         r = self.region(region_name)
         if not r or id not in self.entities:
             return False

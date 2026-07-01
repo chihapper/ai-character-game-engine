@@ -281,6 +281,12 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
   frame adds tactical/exploration. The goal to attempt (not now): procedural *world/dungeons* as the
   stage **+** persistent, embodied, evolving *authored NPCs* carrying the soul — so the campaign has
   both. Flagged to watch that tactical/procedural breadth never buries the character depth we're proving.
+- **Action economy (turn budget).** When action becomes tactical (D&D combat especially), agents need an
+  **action economy** — a per-turn budget: e.g. D&D's *action + bonus action + movement + reaction* — so a
+  turn is a bounded set of choices, not unlimited. Not built now (the social ferry demo is free-form), but
+  the **action seam (§5.1) is designed economy-ready**: a structured action can carry a `type`/`cost`
+  (action / bonus / move / reaction), and a future turn-manager spends the budget. Leaving room for it now
+  so we don't repaint the action schema later.
 
 ---
 
