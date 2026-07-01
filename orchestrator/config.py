@@ -5,6 +5,7 @@ directly. Values come from `.env` (via pydantic-settings) with safe defaults.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass, fields
 from functools import lru_cache
 from pathlib import Path
 
@@ -277,3 +278,45 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Cached singleton so we parse `.env` exactly once."""
     return Settings()
+
+
+@dataclass(frozen=True)
+class EngineCaps:
+    """Per-Engine capability snapshot (arch review theme B). The behavior flags an `Engine` consults
+    live HERE, frozen at construction — not on the process-global settings singleton — so:
+      - one surface (a sandbox click) can never silently reconfigure every other engine's mind;
+      - two engines with DIFFERENT capability sets can coexist in one process (the #30 matched
+        pair's control and treatment arms).
+    `get_settings()` supplies the env-derived process DEFAULTS; construct with
+    `EngineCaps.from_settings(get_settings(), relationship_state=True, ...)` to dial a specific
+    engine up or down. Note `salience_scoring` composes with the global flag inside salience.py
+    (caps AND global): caps turn a capability off per-engine; the global is the process kill-switch."""
+
+    relationship_state: bool
+    relationship_time_decay: bool
+    relationship_decay_half_life: float
+    relationship_decay_bond_resist: float
+    reflection_enabled: bool
+    reflection_importance_threshold: float
+    reflection_max_inputs: int
+    reflection_importance: float
+    intent_state: bool
+    salience_scoring: bool
+    commitment_detection: bool
+    contradiction_detection: bool
+    contradiction_importance: float
+    arena_query: bool
+    arena_query_recent_turns: int
+    beliefs_always_surface: int
+    recent_happenings: bool
+    recent_happenings_window: float
+    recent_happenings_salience_floor: float
+    recent_happenings_cap: int
+    short_term_turns: int
+
+    @classmethod
+    def from_settings(cls, settings: Settings | None = None, **overrides) -> "EngineCaps":
+        s = settings or get_settings()
+        values = {f.name: getattr(s, f.name) for f in fields(cls)}
+        values.update(overrides)
+        return cls(**values)

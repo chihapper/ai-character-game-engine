@@ -20,7 +20,7 @@ same unit (a game running on hours tunes it in hours).
 from __future__ import annotations
 
 from .character_store import Character
-from .config import get_settings
+from .config import EngineCaps, get_settings
 from .context import (
     RespondRequest, build_arena_query, build_instructions, render_recent_happenings,
     render_situation, render_turn_context,
@@ -43,8 +43,12 @@ from .salience import (
 
 
 class Engine:
-    def __init__(self, character: Character, llm=None, *, readonly: bool = False) -> None:
-        s = get_settings()
+    def __init__(self, character: Character, llm=None, *, readonly: bool = False,
+                 caps: EngineCaps | None = None) -> None:
+        # Capability snapshot, FROZEN at construction (arch review theme B): this engine's behavior
+        # flags can't be reconfigured out from under it by another surface mutating the global
+        # settings — and two engines with different capability sets can coexist in one process.
+        self.caps = caps or EngineCaps.from_settings(get_settings())
         self.character = character
         self.llm = llm
         ns = character.memory_namespace
@@ -53,7 +57,7 @@ class Engine:
         self.relationship = RelationshipStore(ns, readonly=readonly)
         self.intent = IntentStore(ns, readonly=readonly)
         self.agency = AgencyStore(ns, readonly=readonly)  # evolving goals + last-deliberation clock (#20)
-        self.short_term = ShortTermMemory(max_turns=s.short_term_turns)
+        self.short_term = ShortTermMemory(max_turns=self.caps.short_term_turns)
         # Reflection/consolidation (#9): accumulate exchanges + their importance until enough has
         # happened to be worth forming beliefs (process-lifetime; resets on restart).
         self._reflect_buffer: list[str] = []
@@ -92,14 +96,13 @@ class Engine:
             return None
         if player_role and "kind" not in kw:
             kw["kind"] = "player_event"  # mark player-attributable events so deliberation can ground on them (#22)
-        if importance is None and get_settings().salience_scoring:
+        if importance is None and self.caps.salience_scoring:
             # The NPC realizes how much THIS event matters to them (vs a fixed author weight).
             importance = await score_salience_text(self.character, fact, magnitude=magnitude)
         if importance is not None:
             kw["importance"] = importance  # else: long_term applies its default world-event salience
         await self.long_term.remember(fact, **kw)
-        s = get_settings()
-        if not (s.relationship_state and not self.relationship.readonly):
+        if not (self.caps.relationship_state and not self.relationship.readonly):
             return importance
         if actor == "self":
             attribution = ("the character THEMSELVES underwent this — their own change of heart, "
@@ -120,12 +123,12 @@ class Engine:
         """Drift feelings toward baseline over the in-game time since last contact (#12-B), using the
         character's persistence half-life (per-character if assessed, else the global default) and
         bond-depth resistance. Lazy + cheap (no LLM); a no-op without the feature or a clock."""
-        s = get_settings()
-        if not (s.relationship_state and s.relationship_time_decay) or self.relationship.readonly:
+        c = self.caps
+        if not (c.relationship_state and c.relationship_time_decay) or self.relationship.readonly:
             return
         rel = self.relationship.get()
-        base = rel.persistence_half_life or s.relationship_decay_half_life
-        rel.age(now_t, half_life=base, bond_resist=s.relationship_decay_bond_resist)
+        base = rel.persistence_half_life or c.relationship_decay_half_life
+        rel.age(now_t, half_life=base, bond_resist=c.relationship_decay_bond_resist)
         self.relationship.save()
 
     def commit(self, text: str, **kw):
@@ -219,7 +222,7 @@ class Engine:
         rel = self.relationship.get().render()
         if rel:
             parts.append(rel)
-        beliefs = self.long_term.beliefs(limit=get_settings().beliefs_always_surface + 2)
+        beliefs = self.long_term.beliefs(limit=self.caps.beliefs_always_surface + 2)
         if beliefs:
             parts.append("Beliefs you've come to hold:\n" + "\n".join(f"- {b}" for b in beliefs))
         return await _choose_action(self.character, sit, options,
@@ -313,11 +316,11 @@ class Engine:
         (leaving those memories to ordinary RR). The window makes it TRANSIENT — an item foregrounds
         for the beat it's live in, then falls back to relevance-retrieval as the scene moves on, so it
         never accumulates or floods."""
-        s = get_settings()
-        if now_t is None or not s.recent_happenings:
+        c = self.caps
+        if now_t is None or not c.recent_happenings:
             return [], []
-        window, floor, cap = (s.recent_happenings_window, s.recent_happenings_salience_floor,
-                              s.recent_happenings_cap)
+        window, floor, cap = (c.recent_happenings_window, c.recent_happenings_salience_floor,
+                              c.recent_happenings_cap)
         ev, acts = [], []
         for r in self.long_term._all():
             if r.t is None or (now_t - r.t) > window or r.importance < floor or r.text in exclude_texts:
@@ -338,7 +341,6 @@ class Engine:
         """First half: expire overdue commitments, build the relationship-conditioned arena
         query, retrieve (decay-aware), and render the per-turn dynamic context (memories +
         commitments + relationship + situation) to inject. Returns (injected_context, debug)."""
-        s = get_settings()
         now_t = request.situation.clock if request.situation else None
         for c in self.commitments.sweep_expired(now_t):
             await self._convert(c, now_t)
@@ -348,10 +350,11 @@ class Engine:
         stance = "; ".join(h for h in (self.relationship.get().query_hint(),
                                        self.intent.get().query_hint()) if h)
         evolved_goals = self.agency.goals()  # deliberation (#20) may have shifted the life direction
-        if s.arena_query:
+        if self.caps.arena_query:
             query = build_arena_query(
                 request, self.character, self.short_term.messages(),
-                max_recent_turns=s.arena_query_recent_turns, relationship_hint=stance, goals=evolved_goals,
+                max_recent_turns=self.caps.arena_query_recent_turns,
+                relationship_hint=stance, goals=evolved_goals,
             )
         else:
             query = request.query()
@@ -362,7 +365,7 @@ class Engine:
         memories = [b["text"] for b in chosen if b.get("kind") != "belief"] if chosen else scored.get("selected", [])
         # Beliefs are durable convictions: always surface the top few (#14), plus any extra a query
         # recalled — so they colour every turn, not only when relevance happens to fish one up.
-        always = self.long_term.beliefs(limit=s.beliefs_always_surface)
+        always = self.long_term.beliefs(limit=self.caps.beliefs_always_surface)
         recalled_b = [b["text"] for b in chosen if b.get("kind") == "belief"]
         beliefs = always + [t for t in recalled_b if t not in always]
         # Working-memory foregrounding (#30): the few FRESH, high-salience developments the character
@@ -388,9 +391,9 @@ class Engine:
         ones recalled this turn, used (opt-in) to record a contradiction the player just made."""
         if not user_text or not reply or self.long_term.readonly:
             return
-        s = get_settings()
+        c = self.caps
         now_t = situation.clock if situation else None
-        if s.commitment_detection or s.relationship_state or s.intent_state:
+        if c.commitment_detection or c.relationship_state or c.intent_state:
             importance, detected, rel, intent = await reflect_on_turn(
                 self.character, user_text, reply,
                 relationship=self.relationship.get(), intent=self.intent.get())
@@ -402,20 +405,20 @@ class Engine:
             if intent is not None and not self.intent.readonly:
                 self.intent.update(intent)
             # Assess this character's emotional persistence ONCE (decay rate), cached (#12-B).
-            if (s.relationship_state and s.relationship_time_decay and not self.relationship.readonly
+            if (c.relationship_state and c.relationship_time_decay and not self.relationship.readonly
                     and self.relationship.get().persistence_half_life <= 0):
                 self.relationship.get().persistence_half_life = await assess_persistence(self.character)
                 self.relationship.save()
         else:
             importance = await score_salience(self.character, user_text, reply)
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
-        if s.contradiction_detection and memories:
+        if c.contradiction_detection and memories:
             contra = await detect_contradiction(self.character, user_text, memories)
             if contra:
                 await self.long_term.remember(
                     f"the player claimed {contra['claimed']}, contradicting that {contra['remembered']}",
-                    kind="contradiction", importance=s.contradiction_importance, t=now_t)
-        if s.reflection_enabled:
+                    kind="contradiction", importance=c.contradiction_importance, t=now_t)
+        if c.reflection_enabled:
             await self._maybe_consolidate(user_text, reply, importance, now_t)
 
     async def _maybe_consolidate(self, user_text: str, reply: str, importance: float,
@@ -423,15 +426,15 @@ class Engine:
         """Accumulate the exchange; once enough importance has piled up since the last reflection,
         compress what happened into durable BELIEFS (issue #9) and store them as salient memories
         so they persist and resurface through normal recall."""
-        s = get_settings()
+        c = self.caps
         self._reflect_buffer.append(f"User: {user_text}\nMe: {reply}")
         self._reflect_acc += importance
-        if self._reflect_acc < s.reflection_importance_threshold:
+        if self._reflect_acc < c.reflection_importance_threshold:
             return
-        recent = self._reflect_buffer[-s.reflection_max_inputs:]
+        recent = self._reflect_buffer[-c.reflection_max_inputs:]
         beliefs = await consolidate_beliefs(self.character, recent, existing=self.long_term.beliefs())
         for b in beliefs:  # add_belief supersedes near-duplicate convictions (#15), no piling up
-            await self.long_term.add_belief(b, importance=s.reflection_importance, t=now_t)
+            await self.long_term.add_belief(b, importance=c.reflection_importance, t=now_t)
         self._reflect_buffer.clear()
         self._reflect_acc = 0.0
 

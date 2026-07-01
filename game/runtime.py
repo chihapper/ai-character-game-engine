@@ -15,7 +15,7 @@ import yaml
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
 from orchestrator.character_store import load_character
-from orchestrator.config import ROOT_DIR, get_settings
+from orchestrator.config import ROOT_DIR, EngineCaps, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
@@ -39,16 +39,16 @@ class Game:
         self.dm_model = dm_model
         self.hours_per_beat = hours_per_beat
         self.log_doc = log_doc or experiment_log.DOC_PATH
-        # The whole point of the game is the affect/agency engine — turn it on.
-        s = get_settings()
-        s.relationship_state = True
-        s.reflection_enabled = True
-        s.intent_state = True
+        # The whole point of the game is the affect/agency engine — turn it on PER-ENGINE (never by
+        # mutating the process-global settings; arch review theme B).
+        caps = EngineCaps.from_settings(get_settings(), relationship_state=True,
+                                        reflection_enabled=True, intent_state=True)
         self.dm = DM(self.scenario, model=dm_model)
         self.present = [c["slug"] for c in self.scenario["cast"]]
         if reset:
             self._wipe_memory()
-        self.engines = {c["slug"]: Engine(load_character(c["slug"]), AnthropicLLM(model=reply_model))
+        self.engines = {c["slug"]: Engine(load_character(c["slug"]), AnthropicLLM(model=reply_model),
+                                          caps=caps)
                         for c in self.scenario["cast"]}
         # Scenario-specific "why you're here tonight" — reconciles each borrowed character with this
         # setting; injected into their scene context every turn so responses are grounded in it.

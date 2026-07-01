@@ -16,7 +16,7 @@ import yaml
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
 from orchestrator.character_store import load_character
-from orchestrator.config import ROOT_DIR, get_settings
+from orchestrator.config import ROOT_DIR, EngineCaps, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
@@ -44,10 +44,9 @@ class ArenaGame:
         self.handles = {c["slug"]: (c.get("handle") or "someone").strip() for c in self.scenario["cast"]}
         self.here_because = {c["slug"]: (c.get("here_because") or "").strip() for c in self.scenario["cast"]}
         self.known_names: dict[str, str] = {}
-        s = get_settings()
-        s.relationship_state = True
-        s.reflection_enabled = True
-        s.intent_state = True
+        # Affect/agency ON per-engine (never by mutating global settings; arch review theme B).
+        caps = EngineCaps.from_settings(get_settings(), relationship_state=True,
+                                        reflection_enabled=True, intent_state=True)
         if reset:
             mem_dir = Path(get_settings().memory_dir)
             for slug in self.cast:
@@ -55,7 +54,8 @@ class ArenaGame:
                 for f in glob.glob(str(mem_dir / f"{ns}.*")):
                     os.remove(f)
                 LongTermMemory.invalidate(ns)  # drop any shared cache over the deleted files
-        self.engines = {slug: Engine(load_character(slug), AnthropicLLM(model=reply_model)) for slug in self.cast}
+        self.engines = {slug: Engine(load_character(slug), AnthropicLLM(model=reply_model), caps=caps)
+                        for slug in self.cast}
         self.clock = 0.0
         self.history: list[dict] = []
         self.run_id: str | None = None

@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import load_character
 from .memory.long_term import LongTermMemory
-from .config import ROOT_DIR, get_settings
+from .config import ROOT_DIR, EngineCaps, get_settings
 from .context import RespondRequest, Situation
 from .engine import Engine
 
@@ -110,19 +110,18 @@ def _restore(name: str) -> dict:
 
 def _engine(slug: str) -> Engine:
     """Live Engine per character (created lazily; short-term persists for the session). The affect /
-    metamorphosis features default OFF on the server, so enable them here — the whole point of the
-    sandbox is to exercise the relationship + deliberation engine."""
-    s = get_settings()
-    s.relationship_state = True
-    s.reflection_enabled = True
-    s.intent_state = True
-    _apply_models()  # honor the UI's per-role model choice
+    metamorphosis features default OFF on the server, so enable them here — PER-ENGINE via
+    EngineCaps, never by mutating the process-global settings (which silently reconfigured every
+    other surface's engines — arch review theme B)."""
+    _apply_models()  # honor the UI's per-role model choice (still global; dies with the item-5 LLM factory)
     if slug not in _engines:
         try:
             char = load_character(slug)
         except FileNotFoundError as e:
             raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
-        _engines[slug] = Engine(char, AnthropicLLM(model=_MODELS["reply"]))
+        caps = EngineCaps.from_settings(get_settings(), relationship_state=True,
+                                        reflection_enabled=True, intent_state=True)
+        _engines[slug] = Engine(char, AnthropicLLM(model=_MODELS["reply"]), caps=caps)
     return _engines[slug]
 
 
