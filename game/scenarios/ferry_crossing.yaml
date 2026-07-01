@@ -1,0 +1,123 @@
+# The Ferry's Last Crossing — the first playable scenario (Track E, #26).
+# A vertical slice: a bottle episode where metamorphosis IS the gameplay. The game runtime
+# (game/runtime.py) loads this; the hybrid DM narrates + adjudicates free play between authored
+# beats, and drives each NPC through the engine (respond / remember / deliberate) per the contract
+# in docs/engine-game-contract.md. This playthrough is also the CONTROL arm of the embodiment
+# experiment (docs/embodiment-experiment.md, #30): perception delivered as described text.
+
+id: ferry-crossing
+title: "The Ferry's Last Crossing"
+logline: >
+  A storm strands travelers overnight at a ferry-inn. One of them is a hunted smuggler, and the
+  crown's men are on the dawn ferry. What each of them becomes by morning is up to you.
+
+# --- the player -------------------------------------------------------------
+player:
+  role: "a stranded traveler of no fixed allegiance"
+  opening: >
+    You shoulder in out of the downpour into the taproom of the ferry-inn. The crossing is closed
+    till the storm breaks. For tonight, you're all stuck here together.
+
+# --- time -------------------------------------------------------------------
+# The engine only differences `clock`; the unit is ours. Hours across one long night.
+clock:
+  unit: hours
+  start: 0
+  recent_happenings_window: 6   # foregrounding window in this unit — a beat stays "fresh" a while
+
+# --- the hidden spine (the DM tracks this; it is never shown to the player) --
+secret:
+  summary: >
+    Corvin is the smuggler the crown is hunting; the dawn ferry brings the men after him.
+  at_stake: >
+    If exposed, he's taken at dawn. If protected, warned, or trusted, he may flee, surrender, or
+    throw in with the player — depending on who he has become by then.
+
+# --- the cast (engine character slugs + scenario framing) -------------------
+cast:
+  - slug: della-fenwick
+    as: "host and ferrywoman; she runs this place and misses little"
+    knows_secret: false
+  - slug: brielle-bri-castellano
+    as: "a stranded traveler; charming, transactional, reads a room for what it can give her"
+    knows_secret: false
+  - slug: edwin-hale
+    as: "a failing performer, stranded; he jokes to keep the dark off"
+    knows_secret: false
+  - slug: corvin-ashgrave-inworld
+    as: "the quiet stranger by the fire — the hunted smuggler, lying low"
+    knows_secret: true
+
+# --- beats (authored; the DM narrates + adjudicates free play between them) --
+# `events` are world events the runtime pushes via remember() on entering the beat; react: true
+# lets a high-salience one interrupt the scene (the game's own react policy, per the contract).
+beats:
+  - id: arrival
+    title: Arrival
+    setting: >
+      The taproom: rain hammering the shutters, a low peat fire, the smell of wet wool and pitch.
+      Della works the bar; the others drift in shaking off the storm.
+    events: []
+  - id: settling
+    title: Settling in
+    setting: >
+      The night settles. Cups fill. The storm shows no sign of breaking before dawn.
+    events:
+      - text: "Talk drifts to the crossing — word is the dawn ferry is bringing crown men upriver."
+        to: [corvin-ashgrave-inworld]
+        magnitude: 0.7
+        react: true
+  - id: the_crack
+    title: The crack
+    setting: >
+      Later. The drink has loosened tongues; the room's easy warmth has an edge under it now.
+    events:
+      - text: >
+          A crown warrant is found nailed inside the door — a smuggler's description, close enough
+          to name a man in this room.
+        to: all
+        magnitude: 0.8
+        react: true
+  - id: long_night
+    title: The long night
+    setting: >
+      The fire burns low. Whatever is going to be said between people gets said in these hours.
+    events: []
+  - id: dawn
+    title: Dawn — the crossing
+    setting: >
+      Grey light. The rain thins. Downriver, a shape noses toward the landing.
+    events:
+      - text: "Through the clearing mist, the crown's ferry comes on toward the inn's landing."
+        to: all
+        magnitude: 0.9
+        react: true
+
+# --- how the NPCs take stock (the game's cadence, per the contract) ----------
+deliberation:
+  on_beat_advance: true    # each NPC deliberate()s at each beat transition — metabolizes the night
+  react_threshold: 0.7     # in-the-moment react gate for beat `events`
+
+# --- the litmus (NOT scripted endings — what CAN transform; for eval / #30) --
+# The slice succeeds if at least one is reached genuinely, unscripted, and felt through behavior.
+litmus:
+  corvin-ashgrave-inworld: >
+    From wary fugitive → trusts the player enough to be hidden or warned; OR hardens and runs; OR
+    (if sold out) takes a permanent scar. Any of these, reached on his own, counts.
+  brielle-bri-castellano: >
+    From transactional charm → a genuine bond that costs her something; OR she stays mercenary and
+    trades someone (Corvin?) for her own passage.
+  edwin-hale: >
+    The mask cracks and the player reaches the man under it (a real lift); OR the long night
+    deepens the despair he is hiding.
+
+# --- DM guidance ------------------------------------------------------------
+dm:
+  tone: "tense, intimate, rain-soaked; a bottle episode where small choices carry weight"
+  perception_template: >
+    Each beat, deliver each character's perception as: (1) the setting + sensory detail right now,
+    (2) who is present and their OBSERVABLE state — posture, expression, what they are doing (never
+    their inner state), (3) the affordances in reach (what could be done or said here), (4) what has
+    CHANGED since the last beat. Rich and concrete — this is the character's world, matched in
+    content to what an embodied build would perceive (the #30 control).
+  narration: "sensory and grounded; never voice a character's private feelings; never narrate stats."
