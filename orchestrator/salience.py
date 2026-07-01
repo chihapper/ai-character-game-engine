@@ -15,9 +15,9 @@ from __future__ import annotations
 import logging
 import re
 
-from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import Character
 from .config import get_settings
+from .judgment import complete, judgment
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +101,8 @@ async def score_salience_text(
         f"their domain even when routine. Reply with only a number from 0.00 to 1.00."
     )
     try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=16)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], _SYSTEM):
-            parts.append(delta)
-        return _parse_score("".join(parts))
+        return _parse_score(await complete(_SYSTEM, prompt, role="salience", model=model,
+                                           max_tokens=16))
     except Exception:
         logger.exception("Salience scoring failed; using neutral importance")
         return NEUTRAL
@@ -285,11 +282,8 @@ async def reflect_on_turn(
               f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
               "Return the JSON described.")
     try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=380)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
-            parts.append(delta)
-        return _parse_reflection("".join(parts), want_commit, want_rel, want_intent)
+        text = await complete(system, prompt, role="salience", model=model, max_tokens=380)
+        return _parse_reflection(text, want_commit, want_rel, want_intent)
     except Exception:
         logger.exception("Reflection (salience/detect/relationship/intent) failed; neutral fallback")
         return NEUTRAL, None, None, None
@@ -334,20 +328,9 @@ async def assess_event_impact(
     prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
               f"EVENT ({attribution}):\n{event}\n\n"
               "How does it move how they feel about the player? JSON only.")
-    try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=240)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
-            parts.append(delta)
-        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
-        if not m:
-            return None
-        import json
-        d = json.loads(m.group())
-        return _parse_relationship(d.get("relationship")) if isinstance(d, dict) else None
-    except Exception:
-        logger.exception("World-event impact assessment failed; no disposition shift")
-        return None
+    d = await judgment(system, prompt, role="salience", model=model, max_tokens=240,
+                       what="World-event impact assessment")
+    return _parse_relationship(d.get("relationship")) if isinstance(d, dict) else None
 
 
 async def assess_persistence(character: Character, *, model: str | None = None) -> float:
@@ -365,11 +348,8 @@ async def assess_persistence(character: Character, *, model: str | None = None) 
         "for fast-fading to ~1000 for barely-fading>}.")
     prompt = f"CHARACTER:\n{_character_summary(character)}\n\nHow long do their feelings linger? JSON only."
     try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=40)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
-            parts.append(delta)
-        m = re.search(r"\d+\.?\d*", "".join(parts))
+        text = await complete(system, prompt, role="salience", model=model, max_tokens=40)
+        m = re.search(r"\d+\.?\d*", text)
         return max(5.0, min(5000.0, float(m.group()))) if m else default
     except Exception:
         logger.exception("Persistence assessment failed; using global default")

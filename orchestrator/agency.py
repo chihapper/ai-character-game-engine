@@ -15,29 +15,17 @@ import json
 import logging
 import re
 
-from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import Character
 from .config import get_settings
+from .judgment import complete, judgment, parse_json, salvage_json
 
 logger = logging.getLogger(__name__)
 
 
 def _salvage_decision(text: str) -> dict | None:
     """Best-effort recovery when the JSON is truncated (e.g. a long reflection blew max_tokens and the
-    object never closed): pull whatever complete fields are present rather than dropping the whole
-    decision to {"changed": False}. A field cut mid-string is simply skipped."""
-    out: dict = {}
-    for key in ("reflection", "internal", "new_intent", "world_action"):
-        m = re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % key, text, re.DOTALL)
-        if m:
-            out[key] = m.group(1)
-    m = re.search(r'"changed"\s*:\s*(true|false)', text)
-    if m:
-        out["changed"] = m.group(1) == "true"
-    m = re.search(r'"new_goals"\s*:\s*\[(.*?)\]', text, re.DOTALL)
-    if m:
-        out["new_goals"] = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
-    return out or None
+    object never closed) — delegates to the shared generic salvage (judgment.salvage_json)."""
+    return salvage_json(text)
 
 
 def _parse_decision(text: str) -> dict | None:
@@ -128,13 +116,10 @@ async def deliberate(
     prompt = (f"WHO YOU ARE + WHAT HAS ACCUMULATED:\n{grounding}\n\n"
               "What, if anything, do you do or become now? JSON only.")
     try:
-        llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=1000)
-        parts: list[str] = []
         # [system] (list) opts the stable deliberation instructions into prompt caching; the grounding
         # lives in the user message and stays uncached (it's unique each deliberation).
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], [system]):
-            parts.append(delta)
-        return _parse_decision("".join(parts))
+        text = await complete([system], prompt, role="deliberation", model=model, max_tokens=1000)
+        return _parse_decision(text)
     except Exception:
         logger.exception("Deliberation failed; no decision this cycle")
         return None
@@ -193,14 +178,9 @@ async def reconcile_goals(
               + "CURRENT STANDING GOALS:\n" + "\n".join(f"- {g}" for g in current_goals)
               + "\n\nReconcile each goal with who they've become. JSON only.")
     try:
-        llm = AnthropicLLM(model=model or settings.deliberation_model, max_tokens=500)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], [system]):
-            parts.append(delta)
-        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
-        if not m:
-            return None
-        goals = json.loads(m.group()).get("goals")
+        d = parse_json(await complete([system], prompt, role="deliberation", model=model,
+                                      max_tokens=500))
+        goals = d.get("goals") if isinstance(d, dict) else None
         if isinstance(goals, list):
             cleaned = [str(g).strip() for g in goals if str(g).strip()]
             return cleaned or None
@@ -240,20 +220,12 @@ async def choose_action(character: Character, situation: str, options: list[str]
               "Choose the single action THIS character would take now — copy its text EXACTLY, or use "
               'null for nothing. Invent nothing outside the list. JSON: {"action": <exact option text '
               'or null>, "reason": "<short, in their voice>"}')
-    try:
-        llm = AnthropicLLM(model=model or get_settings().salience_model, max_tokens=140)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
-            parts.append(delta)
-        m = re.search(r"\{.*\}", "".join(parts), re.DOTALL)
-        if not m:
-            return {"action": None, "reason": ""}
-        data = json.loads(m.group())
-        chosen = data.get("action")
-        # Bind HARD to the offered set — the world's affordances are the guardrail, not the prompt.
-        if chosen not in options:
-            chosen = next((o for o in options if chosen and str(chosen).strip().lower() in o.lower()), None)
-        return {"action": chosen, "reason": str(data.get("reason") or "")[:200]}
-    except Exception:
-        logger.exception("choose_action failed; no action taken")
+    data = await judgment(system, prompt, role="salience", model=model, max_tokens=140,
+                          what="choose_action")
+    if not isinstance(data, dict):
         return {"action": None, "reason": ""}
+    chosen = data.get("action")
+    # Bind HARD to the offered set — the world's affordances are the guardrail, not the prompt.
+    if chosen not in options:
+        chosen = next((o for o in options if chosen and str(chosen).strip().lower() in o.lower()), None)
+    return {"action": chosen, "reason": str(data.get("reason") or "")[:200]}

@@ -21,9 +21,9 @@ import json
 import logging
 import re
 
-from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import Character
 from .config import get_settings
+from .judgment import complete
 from .salience import _character_summary
 
 logger = logging.getLogger(__name__)
@@ -76,11 +76,8 @@ async def consolidate_beliefs(
         "\n\nWhat do you now believe? JSON only."
     )
     try:
-        llm = AnthropicLLM(model=model or settings.reflection_model, max_tokens=320)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], _SYSTEM):
-            parts.append(delta)
-        return _parse_beliefs("".join(parts))
+        return _parse_beliefs(await complete(_SYSTEM, prompt, role="reflection", model=model,
+                                             max_tokens=320))
     except Exception:
         logger.exception("Belief consolidation failed; no beliefs formed this cycle")
         return []

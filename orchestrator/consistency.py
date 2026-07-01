@@ -14,9 +14,9 @@ import json
 import logging
 import re
 
-from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import Character
 from .config import get_settings
+from .judgment import complete
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +64,7 @@ async def detect_contradiction(
         f"\n\nPLAYER'S LATEST LINE:\n{user_text}\n\nIs there a contradiction? JSON only."
     )
     try:
-        llm = AnthropicLLM(model=model or settings.salience_model, max_tokens=160)
-        parts: list[str] = []
-        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], _SYSTEM):
-            parts.append(delta)
-        return _parse("".join(parts))
+        return _parse(await complete(_SYSTEM, prompt, role="salience", model=model, max_tokens=160))
     except Exception:
         logger.exception("Contradiction detection failed; skipping")
         return None

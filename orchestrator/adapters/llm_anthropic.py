@@ -19,6 +19,18 @@ from .base import LLMAdapter
 
 logger = logging.getLogger(__name__)
 
+# ONE AsyncAnthropic client (HTTP connection pool) per api key per process. AnthropicLLM is
+# constructed ad hoc throughout the engine (per background judgment, per engine, per DM);
+# each instance building its own client wasted a connection pool per call (arch review theme C).
+_CLIENTS: dict[str, anthropic.AsyncAnthropic] = {}
+
+
+def _shared_client(api_key: str) -> anthropic.AsyncAnthropic:
+    client = _CLIENTS.get(api_key)
+    if client is None:
+        client = _CLIENTS[api_key] = anthropic.AsyncAnthropic(api_key=api_key)
+    return client
+
 
 class AnthropicLLM(LLMAdapter):
     def __init__(self, model: str | None = None, max_tokens: int | None = None) -> None:
@@ -31,9 +43,8 @@ class AnthropicLLM(LLMAdapter):
         # Realtime replies stay short; one-shot authoring (drafting a character)
         # needs more room, so callers can raise the cap.
         self._max_tokens = max_tokens or settings.llm_max_tokens
-        # AsyncAnthropic resolves the key from ANTHROPIC_API_KEY automatically, but
-        # we pass it explicitly so a non-default key in .env is always honored.
-        self._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        # We pass the key explicitly so a non-default key in .env is always honored.
+        self._client = _shared_client(settings.anthropic_api_key)
 
     @staticmethod
     def _system_param(system):
