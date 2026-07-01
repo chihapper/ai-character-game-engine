@@ -69,6 +69,6 @@ judge) · `engine flags` · `seed/notes` · `transcript path`.
 > (`rr_judge`, `emergence`, `human_note`) are filled in post-hoc after evaluation. Newest at the bottom.
 
 <!-- RUNS_TABLE_START -->
-| run_id | started | condition | scenario | characters | models (reply/delib/book) | transcript | outcome | rr_judge | emergence | human_note |
+| run_id | started | condition | scenario | characters | models | transcript | outcome | rr_judge | emergence | human_note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- RUNS_TABLE_END -->

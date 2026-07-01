@@ -54,6 +54,31 @@ class DM:
         )
         return await self._say(prompt)
 
+    async def pick_responders(self, present_names: list[str], line: str, *, maxn: int = 2) -> list[str]:
+        """When the player addresses the ROOM, decide which present characters would naturally speak
+        up, and in what order (1..maxn — fewer is fine). Returns names from `present_names`."""
+        prompt = (
+            f"PRESENT: {', '.join(present_names)}\n"
+            f"The player says, to the room: \"{line}\"\n\n"
+            f"Which present characters would naturally speak up in response, and in what order? Choose "
+            f"1 to {maxn} — only those who would actually react. Reply with ONLY their names exactly as "
+            f"written above, comma-separated, in order. No other text."
+        )
+        raw = await self._say(prompt)
+        picks: list[str] = []
+        for part in raw.replace("\n", ",").split(","):
+            p = part.strip().strip(".").lower()
+            if not p:
+                continue
+            for name in present_names:
+                nl = name.lower()
+                if name not in picks and (p == nl or p in nl or nl.split()[0] == p):
+                    picks.append(name)
+                    break
+            if len(picks) >= maxn:
+                break
+        return picks or present_names[:1]
+
     async def adjudicate(self, action: str, perception: str) -> str:
         """Narrate the world's response to a free-form, non-dialogue player action."""
         prompt = (

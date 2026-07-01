@@ -94,10 +94,12 @@ class Game:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         return rec
 
-    def _situation_for(self, slug: str) -> Situation:
-        """The perceiving NPC's view of the room right now (the rich-text perception + who's here)."""
+    def _situation_for(self, slug: str, *, in_scene: list | None = None) -> Situation:
+        """The perceiving NPC's view of the room right now: the rich-text perception, who's here, and
+        any lines JUST said in this exchange (so an NPC responding to the room hears the others)."""
         others = [self._name(s) for s in self.present if s != slug]
-        return Situation(location=self._perception, present=others,
+        recent = [f'{nm} just said: "{ln}"' for nm, ln in (in_scene or [])]
+        return Situation(location=self._perception, present=others, recent_events=recent,
                          game_time=self._beat()["title"], clock=self.clock)
 
     # ---- lifecycle ----------------------------------------------------------
@@ -142,6 +144,23 @@ class Game:
             RespondRequest(player_input=line, situation=self._situation_for(slug)))
         self._log("dialogue", reply, slug=slug, who=self._name(slug))
         return reply
+
+    async def say_to_room(self, line: str, *, max_speakers: int = 2) -> list[tuple[str, str]]:
+        """The player addresses everyone; the DM picks who speaks up and they answer IN SEQUENCE,
+        each perceiving the lines said before them this exchange (a group beat / NPC cross-awareness)."""
+        self._log("player", line, to="room")
+        names = [self._name(s) for s in self.present]
+        responders = await self.dm.pick_responders(names, line, maxn=max_speakers)
+        said: list[tuple[str, str]] = []
+        for name in responders:
+            slug = self._resolve(name)
+            if not slug:
+                continue
+            reply = await self.engines[slug].respond(
+                RespondRequest(player_input=line, situation=self._situation_for(slug, in_scene=said)))
+            self._log("dialogue", reply, slug=slug, who=self._name(slug))
+            said.append((self._name(slug), reply))
+        return said
 
     async def act(self, action: str) -> str:
         self._log("player_action", action)
