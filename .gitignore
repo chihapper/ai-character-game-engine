@@ -47,4 +47,5 @@ grounding_judge.log
 sandbox_server.log
 .sandbox_saves/
 sandbox_server.err
+sandbox_server.out
 bri_romance_transcript.md
