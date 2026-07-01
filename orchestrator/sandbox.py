@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import load_character
-from .config import get_settings
+from .config import ROOT_DIR, get_settings
 from .context import RespondRequest, Situation
 from .engine import Engine
 
@@ -35,9 +35,11 @@ _engines: dict[str, Engine] = {}
 # the honest label in the UI. Defaults match the validated config (all Sonnet).
 _MODELS = {"reply": "claude-sonnet-4-6", "deliberation": "claude-sonnet-4-6", "bookkeeping": "claude-sonnet-4-6"}
 MODEL_OPTIONS = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-opus-4-8"]
-SCEN_DIR = pathlib.Path(".sandbox_scenarios")
-SAVES_DIR = pathlib.Path(".sandbox_saves")     # save-games: snapshots of ALL characters' state
-MEM_DIR = pathlib.Path(".memory")              # the engine's file-backed stores (per namespace)
+# Anchored to the repo root / settings — NEVER the cwd (a server launched from elsewhere would
+# otherwise reset/save against a different, empty .memory while engines write the real one).
+SCEN_DIR = ROOT_DIR / ".sandbox_scenarios"
+SAVES_DIR = ROOT_DIR / ".sandbox_saves"        # save-games: snapshots of ALL characters' state
+MEM_DIR = pathlib.Path(get_settings().memory_dir)  # the engine's file-backed stores (per namespace)
 TRANS_DIR = SAVES_DIR / "_transcripts"         # durable per-turn verbatim transcripts (sandbox-layer)
 
 
@@ -224,7 +226,7 @@ async def reset(slug: str):
         ns = load_character(slug).memory_namespace
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
-    for f in glob.glob(f".memory/{ns}.*"):
+    for f in glob.glob(str(MEM_DIR / f"{ns}.*")):
         os.remove(f)
     return {"state": _state(_engine(slug))}
 
@@ -327,7 +329,7 @@ async def replay(slug: str, body: Scenario):
         raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
     _snapshot("_autosave_before_replay")  # replay is destructive — never lose the pre-replay state
     _engines.pop(slug, None)
-    for f in glob.glob(f".memory/{ns}.*"):
+    for f in glob.glob(str(MEM_DIR / f"{ns}.*")):
         os.remove(f)
     eng = _engine(slug)
     clock, transcript = 0.0, []

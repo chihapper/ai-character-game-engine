@@ -2,9 +2,11 @@
 # This is enough for the full text -> LLM -> sentence-chunk -> TTS streaming loop
 # (the core demo) and in-app character creation + voice cloning.
 #
-# Voice input (Whisper STT) and cross-session memory (ChromaDB) live in
+# Voice input (Whisper STT) and the optional local embedders (fastembed /
+# sentence-transformers — memory falls back to a lexical embedder without them) live in
 # requirements-optional.txt — they pull heavier, compiled dependencies. The app
-# boots and degrades gracefully without them.
+# boots and degrades gracefully without them. (ChromaDB was retired for per-character
+# JSONL stores; see docs/architecture-seams.md §4.3.)
 
 # --- Web / orchestration ---
 fastapi==0.115.6

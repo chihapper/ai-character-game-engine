@@ -15,14 +15,14 @@ import yaml
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
 from orchestrator.character_store import load_character
-from orchestrator.config import get_settings
+from orchestrator.config import ROOT_DIR, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 
 from . import experiment_log
 from .dm import DM
 
-RUNS_DIR = Path(".game_runs")
+RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
 
 
 class Game:
@@ -127,7 +127,7 @@ class Game:
     def _wipe_memory(self) -> None:
         for c in self.scenario["cast"]:
             ns = load_character(c["slug"]).memory_namespace
-            for f in glob.glob(f".memory/{ns}.*"):
+            for f in glob.glob(str(Path(get_settings().memory_dir) / f"{ns}.*")):
                 os.remove(f)
 
     def _models_str(self) -> str:

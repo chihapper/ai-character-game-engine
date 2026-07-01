@@ -4,6 +4,7 @@ PLAYER surface (no stats panel, per the thesis); the director sandbox is the dev
 call returns the history records it appended, so the client renders the story incrementally."""
 from __future__ import annotations
 
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -13,8 +14,19 @@ from .runtime import Game
 
 router = APIRouter(prefix="/api/game")
 _games: dict[str, Game] = {}
+MAX_LIVE_GAMES = 8  # abandoned tabs would otherwise leak engines forever; oldest evicted
 
-DEFAULT_SCENARIO = "game/scenarios/ferry_crossing.yaml"
+SCENARIOS_DIR = Path(__file__).resolve().parent / "scenarios"
+DEFAULT_SCENARIO = "ferry_crossing.yaml"
+
+
+def _scenario_path(name: str) -> Path:
+    """Allow-list scenarios to game/scenarios/ — the API must never accept an arbitrary filesystem
+    path (it would be an arbitrary-file-read that also wipes cast memory as a side effect)."""
+    p = SCENARIOS_DIR / Path(name or DEFAULT_SCENARIO).name
+    if p.suffix != ".yaml" or not p.is_file():
+        raise HTTPException(status_code=400, detail=f"unknown scenario '{name}'")
+    return p
 
 
 class NewGame(BaseModel):
@@ -57,8 +69,10 @@ def _view(g: Game) -> dict:
 
 @router.post("/new")
 async def new_game(body: NewGame):
-    g = Game(body.scenario, condition=body.condition,
+    g = Game(str(_scenario_path(body.scenario)), condition=body.condition,
              reply_model=body.reply_model, dm_model=body.dm_model)
+    while len(_games) >= MAX_LIVE_GAMES:
+        _games.pop(next(iter(_games)))  # evict oldest
     gid = uuid4().hex[:8]
     _games[gid] = g
     await g.begin()

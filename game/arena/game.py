@@ -16,7 +16,7 @@ import yaml
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
 from orchestrator.character_store import load_character
-from orchestrator.config import get_settings
+from orchestrator.config import ROOT_DIR, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 
@@ -25,7 +25,7 @@ from .actions import available, execute
 from .perception import perceive, render_player_view, to_situation
 from .world import load_world
 
-RUNS_DIR = Path(".game_runs")
+RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
 _PERF = ("Speak your words in the first person, in quotes. Write your OWN actions in the third person "
          "using a PRONOUN (he/she/they) — e.g. 'she brushes the rain off' — never the second person and "
          "NEVER your own name. Never narrate the player's actions, body, or feelings.")
@@ -48,8 +48,9 @@ class ArenaGame:
         s.reflection_enabled = True
         s.intent_state = True
         if reset:
+            mem_dir = Path(get_settings().memory_dir)
             for slug in self.cast:
-                for f in glob.glob(f".memory/{load_character(slug).memory_namespace}.*"):
+                for f in glob.glob(str(mem_dir / f"{load_character(slug).memory_namespace}.*")):
                     os.remove(f)
         self.engines = {slug: Engine(load_character(slug), AnthropicLLM(model=reply_model)) for slug in self.cast}
         self.clock = 0.0

@@ -12,9 +12,13 @@ from .game import ArenaGame
 
 router = APIRouter(prefix="/api/embodied")
 _games: dict[str, ArenaGame] = {}
+MAX_LIVE_GAMES = 8  # abandoned tabs would otherwise leak engines forever; oldest evicted
 
-SCENARIO = "game/scenarios/ferry_crossing.yaml"
-MAP = "game/arena/maps/ferry_inn.yaml"
+from pathlib import Path as _Path
+
+_GAME_DIR = _Path(__file__).resolve().parents[1]
+SCENARIO = str(_GAME_DIR / "scenarios" / "ferry_crossing.yaml")   # repo-anchored, never cwd-relative
+MAP = str(_GAME_DIR / "arena" / "maps" / "ferry_inn.yaml")
 
 
 class NewGame(BaseModel):
@@ -56,6 +60,8 @@ def _view(g: ArenaGame) -> dict:
 @router.post("/new")
 def new_game(body: NewGame):
     g = ArenaGame(SCENARIO, MAP, reply_model=body.reply_model)
+    while len(_games) >= MAX_LIVE_GAMES:
+        _games.pop(next(iter(_games)))  # evict oldest
     gid = uuid4().hex[:8]
     _games[gid] = g
     g.begin()

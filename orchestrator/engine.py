@@ -84,7 +84,7 @@ class Engine:
         never triggers it, and it's gated behind `salience_scoring` + the omitted-importance case.
 
         RETURNS the stored salience — the character's own appraised weight for this event. This is
-        the engine's half of the reaction seam (see docs/ENGINE_GAME_CONTRACT.md): the GAME reads it
+        the engine's half of the reaction seam (see docs/engine-game-contract.md): the GAME reads it
         to decide, by its OWN policy, whether the event is worth interrupting the scene for (then
         calls deliberate()). Returns None only for an empty write, or when salience scoring is off
         AND `importance` wasn't pinned (a neutral default is stored; the game had no signal to gate on)."""

@@ -402,9 +402,10 @@ Two roughly independent tracks.
    Toggle `ARENA_QUERY`.
    - **+ Character-aware salience** (`salience.py`): role/competence-baseline — a competent
      character reliably recalls domain facts even when routine (a bartender a drink order).
-5. ⬜ **Temporal memory decay** ([issue #5](https://github.com/chihapper/ai-character-game-engine/issues/5)):
-   recency by *in-game time* (numeric `when`), modulated by salience + reinforcement, so a
-   one-off fades over years while a pivotal memory persists. Needs a game-supplied clock.
+5. ✅ **DONE — Temporal memory decay** ([issue #5](https://github.com/chihapper/ai-character-game-engine/issues/5)):
+   recency by *in-game time* (numeric `Situation.clock`, differenced only), modulated by salience +
+   recall-reinforcement (`rr_decay_*` in config.py; math in `memory/relevance.py`) — a one-off fades
+   while a pivotal or rehearsed memory persists. Relationship state also time-decays (#12-B).
 6. ⬜ Full-loop per-turn `Situation`/recall injection (§5.6).
 
 Track E lands against whichever runtime is live, because it shapes the instructions and

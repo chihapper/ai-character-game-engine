@@ -221,17 +221,21 @@ hard-code one game's assumptions in the engine, and don't "fix" one by hard-codi
 Behaviors are gated so a minimal game can run lean and a rich one can turn everything on
 ([`config.py`](../orchestrator/config.py)). The heavy ones each cost an extra LLM call:
 
-| flag | what it enables |
-| --- | --- |
-| `relationship_state` | feelings/scars move from events + turns |
-| `relationship_time_decay` | feelings drift toward baseline over absence |
-| `reflection_enabled` | exchanges consolidate into durable beliefs |
-| `intent_state` | a tracked near-term aim |
-| `salience_scoring` | NPC-appraised importance (else a flat default) |
-| `recent_happenings` | the working-memory foregrounding of §4 |
-| `arena_query` | richer retrieval query (trigger + scene + goals) |
+| flag | default | what it enables |
+| --- | --- | --- |
+| `relationship_state` | **off** | feelings/scars move from events + turns |
+| `relationship_time_decay` | on | feelings drift toward baseline over absence |
+| `reflection_enabled` | **off** | exchanges consolidate into durable beliefs |
+| `intent_state` | **off** | a tracked near-term aim |
+| `salience_scoring` | on | NPC-appraised importance (else a flat default) — an LLM call per turn/`remember` |
+| `commitment_detection` | **off** | promises the character makes are extracted + tracked |
+| `contradiction_detection` | **off** | a caught player lie is recorded as a salient memory |
+| `recent_happenings` | on | the working-memory foregrounding of §4 |
+| `arena_query` | on | richer retrieval query (trigger + scene + goals) |
 
-Off by default at the process level; the sandbox and demos turn on the set they need.
+Note the defaults: the *affect/agency* trio (relationship, reflection, intent) defaults **off** and the
+sandbox/games turn it on, but salience scoring, time decay, foregrounding, and the arena query default
+**on** — a game integrator budgeting LLM calls should know `salience_scoring` is already live.
 
 ---
 
