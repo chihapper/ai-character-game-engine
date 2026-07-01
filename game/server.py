@@ -19,13 +19,15 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
+from .arena.web import router as embodied_router  # noqa: E402
 from .web import router as game_router  # noqa: E402
 
 WEB = Path(__file__).resolve().parent / "web"
 _BUILD = str(int(time.time()))
 
 app = FastAPI(title="The Ferry's Last Crossing")
-app.include_router(game_router)
+app.include_router(game_router)       # /play — the TEXT control
+app.include_router(embodied_router)   # /embodied — the ARENA treatment
 
 
 async def _play_page() -> HTMLResponse:
@@ -34,8 +36,15 @@ async def _play_page() -> HTMLResponse:
     return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
 
 
+async def _embodied_page() -> HTMLResponse:
+    html = (WEB / "embodied.html").read_text(encoding="utf-8")
+    html = html.replace('src="/embodied.js"', f'src="/embodied.js?v={_BUILD}"')
+    return HTMLResponse(html, headers={"Cache-Control": "no-store, max-age=0"})
+
+
 app.add_api_route("/", _play_page, methods=["GET"])
 app.add_api_route("/play", _play_page, methods=["GET"])
+app.add_api_route("/embodied", _embodied_page, methods=["GET"])
 
 # Mounted last so /api/game + the page routes above take precedence over the static catch-all.
 app.mount("/", StaticFiles(directory=str(WEB), html=True), name="game-web")

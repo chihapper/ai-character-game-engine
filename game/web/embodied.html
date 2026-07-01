@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Ferry's Last Crossing — embodied</title>
+  <style>
+    :root { --bg:#0b0e13; --panel:#141b26; --line:#243040; --ink:#e8eef6; --dim:#8494a8;
+      --you:#7fd1a8; --warm:#f0b86e; --accent:#6ea8fe; --react:#c79bf0; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink);
+      font:15px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+    .wrap { max-width:900px; margin:0 auto; padding:14px 16px 90px; }
+    header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+    header h1 { font-size:17px; margin:0; font-weight:650; }
+    header .meta { color:var(--dim); font-size:13px; }
+    .row { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+    .card h2 { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--dim); margin:0 0 9px; }
+    /* map */
+    #map { display:grid; gap:2px; }
+    .cell { width:26px; height:26px; border-radius:4px; position:relative; }
+    .cell .ent { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:12px; color:#0b0e13; }
+    .cell.you-here { outline:2px solid var(--you); }
+    .legend { font-size:12px; color:var(--dim); margin-top:8px; line-height:1.7; }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:4px; }
+    /* scene + feed */
+    #scene { white-space:pre-wrap; color:#cdd6e2; font-size:14px; }
+    #feed { display:flex; flex-direction:column; gap:9px; }
+    .ev { font-size:14px; }
+    .ev.scene { color:var(--dim); font-style:italic; white-space:pre-wrap; }
+    .ev.time { color:var(--warm); font-family:ui-sans-serif; font-size:13px; }
+    .ev.you { color:var(--you); }
+    .ev.say .who { color:var(--warm); font-weight:650; }
+    .ev.act { color:var(--react); font-style:italic; }
+    /* composer */
+    footer { position:fixed; bottom:0; left:0; right:0; background:rgba(11,14,19,.94);
+      border-top:1px solid var(--line); padding:10px 16px; }
+    .foot { max-width:900px; margin:0 auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    button { font:inherit; font-size:13px; color:var(--ink); background:#22314a; border:1px solid #2f4363;
+      border-radius:8px; padding:7px 11px; cursor:pointer; }
+    button:hover { background:#2a3d5c; } button:disabled { opacity:.45; cursor:default; }
+    button.primary { background:#2b5fd0; border-color:#2b5fd0; }
+    button.warm { background:#3a2e18; border-color:#5a4626; color:var(--warm); }
+    .chip { border-radius:999px; }
+    .chip.sel { outline:2px solid var(--accent); }
+    input { flex:1; min-width:180px; background:#0e131b; border:1px solid var(--line); border-radius:8px;
+      padding:8px 10px; color:var(--ink); font:inherit; }
+    .grp { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .lbl { color:var(--dim); font-size:12px; margin-right:2px; }
+    #start { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:10; }
+    .startcard { text-align:center; max-width:440px; padding:24px; }
+    select { font:inherit; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 9px; color:var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="title">The Ferry's Last Crossing</h1>
+      <span class="meta">· embodied · <span id="clock">hour 0</span> · you're <span id="where">—</span></span>
+    </header>
+    <div class="row">
+      <div class="card"><h2>The room</h2><div id="map"></div><div class="legend" id="legend"></div></div>
+      <div class="card" style="flex:1; min-width:280px"><h2>What you see</h2><div id="scene">—</div></div>
+    </div>
+    <div class="card"><h2>What's happening</h2><div id="feed"></div></div>
+  </div>
+
+  <footer>
+    <div class="foot">
+      <div class="grp"><span class="lbl">talk to</span><span id="talkChips" class="grp"></span>
+        <input id="line" placeholder="say something…" />
+        <button id="sayBtn" class="primary">Say</button></div>
+    </div>
+    <div class="foot" style="margin-top:8px">
+      <div class="grp"><span class="lbl">move</span><span id="moveBtns" class="grp"></span></div>
+      <div class="grp"><span class="lbl">do</span><span id="doBtns" class="grp"></span></div>
+      <span style="flex:1"></span>
+      <button id="advanceBtn" class="warm">the night moves on ▸</button>
+    </div>
+  </footer>
+
+  <div id="start"><div class="startcard">
+    <h1>The Ferry's Last Crossing</h1>
+    <p style="color:var(--dim)">A storm strands you at a ferry-inn. You have a body in the room — move, watch, speak. See who they become.</p>
+    <p><select id="replyModel">
+      <option value="claude-haiku-4-5">Haiku — fast</option>
+      <option value="claude-sonnet-4-6" selected>Sonnet — richer</option>
+    </select> <button id="beginBtn" class="primary">Step inside</button></p>
+    <p class="lbl" id="startHint"></p>
+  </div></div>
+
+  <script src="/embodied.js"></script>
+</body>
+</html>

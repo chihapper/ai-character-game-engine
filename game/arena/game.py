@@ -135,6 +135,16 @@ class ArenaGame:
         return {"clock": self.clock, "where": self.world.region_of(self.world.entities["player"].pos),
                 "present": self.present(), "run_id": self.run_id}
 
+    def grid(self) -> dict:
+        """Structured map for a renderer to draw: dimensions, named regions (rects), and every body's
+        cell + how they're currently referred to (you / handle / name)."""
+        return {"w": self.world.w, "h": self.world.h,
+                "regions": [{"name": r.name, "rect": list(r.rect)} for r in self.world.regions],
+                "entities": [{"ref": ("you" if e.kind == "player" else self._label(s)),
+                              "x": e.pos[0], "y": e.pos[1], "you": e.kind == "player",
+                              "stance": e.stance}
+                             for s, e in self.world.entities.items()]}
+
     # ---- player moves ----
     def move(self, region: str) -> str:
         if not self.world.move_to_region("player", region):
