@@ -266,14 +266,17 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
 
 ## 14. Future directions (logged — not now)
 
-- **Procedural map generation.** A later milestone, once the embodied mind-loop is proven on a fixed
-  *authored* map. The grid foundation is procedural-ready (dungeon generators produce grids). Kept OUT
-  of the #30 experiment — randomised maps would break the matched pair — so it's a *product* feature,
-  not an experiment variable.
-- **Grid-tactical / open-exploration hybrid (BG3-style).** A mode switch: a fine grid for tactical /
-  dungeon play, coarser/open movement for exploration — the *same* world model at two resolutions, which
-  our layered space model can support. (Note: BG3 is hand-authored, not procedural; the pattern we want
-  from it is the grid-combat + open-exploration duality.)
+- **Procedural dungeons + hand-authored cities (the intended hybrid).** The product design: maps are
+  **procedurally generated for dungeon-crawling** and **hand-authored for city / settlement / social
+  settings.** This is both a variety win (fresh dungeons every run) *and thesis-protective by
+  construction*: the persistent, metamorphosis-carrying NPCs live in the **authored social hubs**
+  (cities), where the character depth is, while procedural generation supplies the tactical / exploration
+  breadth in dungeons where it's cheap and welcome. Kept OUT of the #30 experiment (randomised maps would
+  break the matched pair) — a *product* feature, added once the embodied mind-loop is proven on a fixed
+  authored map. The grid foundation is procedural-ready (dungeon generators produce grids).
+- **Grid-tactical / open-exploration duality (BG3-style).** A resolution switch on the *same* world
+  model: a fine grid for tactical / dungeon play, coarser/open movement for exploration. (BG3 itself is
+  hand-authored; the pattern we want is the combat-grid + open-exploration duality.)
 - **Thread the needle — metamorphosis *and* D&D.** The thesis lives in social/relational depth; a D&D
   frame adds tactical/exploration. The goal to attempt (not now): procedural *world/dungeons* as the
   stage **+** persistent, embodied, evolving *authored NPCs* carrying the soul — so the campaign has
