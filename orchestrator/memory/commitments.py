@@ -18,7 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..config import get_settings
-from .long_term import _safe_name
+from .base_store import atomic_write_text, lock_for
+from .base_store import safe_name as _safe_name
 
 OPEN, FULFILLED, BROKEN, EXPIRED = "open", "fulfilled", "broken", "expired"
 _TERMINAL = {FULFILLED, BROKEN, EXPIRED}
@@ -81,6 +82,7 @@ class CommitmentStore:
         settings = get_settings()
         self.readonly = readonly
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.commitments.jsonl"
+        self._lock = lock_for(self._path)
         self._items: list[Commitment] | None = None
 
     def _all(self) -> list[Commitment]:
@@ -92,6 +94,7 @@ class CommitmentStore:
         if not self._path.exists():
             return []
         out: list[Commitment] = []
+        bad = 0
         for line in self._path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
@@ -99,6 +102,7 @@ class CommitmentStore:
             try:
                 d = json.loads(line)
             except json.JSONDecodeError:
+                bad += 1
                 continue
             if d.get("text") and d.get("id"):
                 out.append(Commitment(
@@ -107,19 +111,23 @@ class CommitmentStore:
                     parties=list(d.get("parties") or []),
                     importance=float(d.get("importance", 0.5)),
                 ))
+        if bad:
+            import logging
+            logging.getLogger(__name__).error(
+                "Commitment store %s: skipped %d corrupt line(s) at load — obligations were lost "
+                "to a past bad write.", self._path.name, bad)
         return out
 
     def _save(self) -> None:
         if self.readonly:
             return
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with self._path.open("w", encoding="utf-8") as f:
-            for c in self._all():
-                f.write(json.dumps({
-                    "text": c.text, "id": c.id, "status": c.status, "made_t": c.made_t,
-                    "due_t": c.due_t, "due": c.due, "parties": c.parties,
-                    "importance": c.importance,
-                }, ensure_ascii=False) + "\n")
+        atomic_write_text(self._path, "".join(
+            json.dumps({
+                "text": c.text, "id": c.id, "status": c.status, "made_t": c.made_t,
+                "due_t": c.due_t, "due": c.due, "parties": c.parties,
+                "importance": c.importance,
+            }, ensure_ascii=False) + "\n"
+            for c in self._all()))
 
     # --- writes (game-owned) ---
 
@@ -129,39 +137,43 @@ class CommitmentStore:
         text = (text or "").strip()
         if not text or self.readonly:
             return None
-        c = Commitment(text=text, id=uuid.uuid4().hex[:12], made_t=made_t, due_t=due_t,
-                       due=(due or "").strip(), parties=parties or [],
-                       importance=max(0.0, min(1.0, importance)))
-        self._all().append(c)
-        self._save()
-        return c
+        with self._lock:
+            c = Commitment(text=text, id=uuid.uuid4().hex[:12], made_t=made_t, due_t=due_t,
+                           due=(due or "").strip(), parties=parties or [],
+                           importance=max(0.0, min(1.0, importance)))
+            self._all().append(c)
+            self._save()
+            return c
 
     def resolve(self, commitment_id: str, status: str) -> Commitment | None:
         """Close a commitment (fulfilled/broken). Returns it so the engine can convert it
         into an ordinary memory; returns None if it's unknown or already closed."""
-        if status not in (FULFILLED, BROKEN):
+        if status not in (FULFILLED, BROKEN) or self.readonly:  # frozen under readonly
             return None
-        for c in self._all():
-            if c.id == commitment_id and c.status == OPEN:
-                c.status = status
-                self._save()
-                return c
-        return None
+        with self._lock:
+            for c in self._all():
+                if c.id == commitment_id and c.status == OPEN:
+                    c.status = status
+                    self._save()
+                    return c
+            return None
 
     def sweep_expired(self, now_t: float | None) -> list[Commitment]:
         """Mark open commitments whose due clock has PASSED as EXPIRED. Strictly past
         (now_t > due_t), so a commitment 'due by day 2' stays open *during* day 2 and only
         lapses once the clock moves beyond it — the actor gets the whole due window. Returns
-        the expired ones so the engine can convert each to a memory. No-op without a clock."""
-        if now_t is None:
+        the expired ones so the engine can convert each to a memory. No-op without a clock
+        and FROZEN under readonly (an eval/replay arm must not flip statuses even in memory)."""
+        if now_t is None or self.readonly:
             return []
-        expired = [c for c in self._all()
-                   if c.status == OPEN and c.due_t is not None and now_t > c.due_t]
-        for c in expired:
-            c.status = EXPIRED
-        if expired:
-            self._save()
-        return expired
+        with self._lock:
+            expired = [c for c in self._all()
+                       if c.status == OPEN and c.due_t is not None and now_t > c.due_t]
+            for c in expired:
+                c.status = EXPIRED
+            if expired:
+                self._save()
+            return expired
 
     # --- reads ---
 

@@ -18,6 +18,7 @@ from orchestrator.character_store import load_character
 from orchestrator.config import ROOT_DIR, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
+from orchestrator.memory.long_term import LongTermMemory
 
 from . import experiment_log
 from .dm import DM
@@ -129,6 +130,7 @@ class Game:
             ns = load_character(c["slug"]).memory_namespace
             for f in glob.glob(str(Path(get_settings().memory_dir) / f"{ns}.*")):
                 os.remove(f)
+            LongTermMemory.invalidate(ns)  # drop any shared cache over the deleted files
 
     def _models_str(self) -> str:
         book = get_settings().salience_model

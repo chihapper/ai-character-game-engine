@@ -22,6 +22,7 @@ from pydantic import BaseModel
 
 from .adapters.llm_anthropic import AnthropicLLM
 from .character_store import load_character
+from .memory.long_term import LongTermMemory
 from .config import ROOT_DIR, get_settings
 from .context import RespondRequest, Situation
 from .engine import Engine
@@ -103,6 +104,7 @@ def _restore(name: str) -> dict:
         for f in (base / "transcripts").glob("*.jsonl"):
             shutil.copy2(f, TRANS_DIR / f.name)
     _engines.clear()                    # every character reloads from the restored stores
+    LongTermMemory.invalidate_all()     # ...including the shared memory caches (files were replaced)
     return json.loads((base / "manifest.json").read_text(encoding="utf-8"))
 
 
@@ -228,6 +230,7 @@ async def reset(slug: str):
         raise HTTPException(status_code=404, detail=f"no character '{slug}'") from e
     for f in glob.glob(str(MEM_DIR / f"{ns}.*")):
         os.remove(f)
+    LongTermMemory.invalidate(ns)  # drop the shared cache so no live store resurrects deleted state
     return {"state": _state(_engine(slug))}
 
 
@@ -331,6 +334,7 @@ async def replay(slug: str, body: Scenario):
     _engines.pop(slug, None)
     for f in glob.glob(str(MEM_DIR / f"{ns}.*")):
         os.remove(f)
+    LongTermMemory.invalidate(ns)
     eng = _engine(slug)
     clock, transcript = 0.0, []
     for step in body.steps:

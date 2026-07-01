@@ -24,14 +24,21 @@ import re
 from pathlib import Path
 
 from ..config import get_settings
+from .base_store import atomic_write_text, lock_for, safe_name
 from .relevance import MemoryRecord, RelevanceWeights, cosine, realize_relevance
 
 logger = logging.getLogger(__name__)
 
 _LEXICAL_DIM = 256
 
-# Shared embedder for the process: (embed_fn, dim, name). Built lazily.
+# Shared embedder for the process: (embed_fn, embed_many_fn, dim, name). Built lazily.
 _embedder = None
+
+# ONE records list per store file, shared by every instance in the process (keyed by path).
+# Two instances over the same namespace (a sandbox engine + a voice session, two tabs) otherwise
+# each cache their own copy and a whole-store rewrite from the staler one erases the other's
+# writes — silent memory loss. Guarded by base_store.lock_for(path).
+_SHARED_RECORDS: dict[str, list[MemoryRecord]] = {}
 
 
 def _lexical_embed(text: str) -> list[float]:
@@ -58,7 +65,9 @@ def _make_embedder():
         )
         # Cast to native floats — fastembed yields numpy float32, which isn't JSON
         # serializable (the debug emit) and is best kept out of the rest of the engine.
-        return (lambda t: [float(x) for x in next(iter(model.embed([t])))], dim, "fastembed")
+        return (lambda t: [float(x) for x in next(iter(model.embed([t])))],
+                lambda ts: [[float(x) for x in v] for v in model.embed(list(ts))],
+                dim, "fastembed")
     except Exception:
         pass
     # Next: sentence-transformers, if installed.
@@ -71,13 +80,16 @@ def _make_embedder():
             "Long-term memory embedder: sentence-transformers '%s' (dim=%d)",
             settings.embedding_model, dim,
         )
-        return (lambda t: model.encode(t).tolist(), dim, "sentence-transformers")
+        return (lambda t: model.encode(t).tolist(),
+                lambda ts: [v.tolist() for v in model.encode(list(ts))],
+                dim, "sentence-transformers")
     except Exception:
         logger.warning(
             "Long-term memory embedder: lexical fallback (install fastembed for semantic "
             "embeddings; recall still works, just coarser)."
         )
-        return (_lexical_embed, _LEXICAL_DIM, "lexical")
+        return (_lexical_embed, lambda ts: [_lexical_embed(t) for t in ts],
+                _LEXICAL_DIM, "lexical")
 
 
 def _get_embedder():
@@ -92,13 +104,12 @@ def warm_embedder() -> str:
     lazily on first embed (~0.5s), which otherwise lands on the player's first turn; call
     this at startup so turn 1 pays the warm price (~ms) like every other turn. Returns the
     embedder name."""
-    embed, _, name = _get_embedder()
+    embed, _, _, name = _get_embedder()
     embed("warm")
     return name
 
 
-def _safe_name(namespace: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9_-]+", "-", namespace).strip("-") or "default"
+_safe_name = safe_name  # canonical impl lives in base_store; alias kept for existing importers
 
 
 class LongTermMemory:
@@ -127,14 +138,40 @@ class LongTermMemory:
         self._dedup_threshold = settings.memory_dedup_threshold
         self._reinforce_on_recall = settings.reinforce_on_recall
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.jsonl"
-        self._records: list[MemoryRecord] | None = None  # lazily loaded + cached
+        self._lock = lock_for(self._path)  # shared by every instance over this store file
 
     # --- store ---
 
     def _all(self) -> list[MemoryRecord]:
-        if self._records is None:
-            self._records = self._load()
-        return self._records
+        """The records list — ONE shared object per store file across all instances, so a rewrite
+        from any instance is always from the current truth (no stale-copy clobbering)."""
+        key = str(self._path)
+        records = _SHARED_RECORDS.get(key)
+        if records is None:
+            with self._lock:
+                records = _SHARED_RECORDS.get(key)
+                if records is None:  # double-checked under the lock
+                    records = _SHARED_RECORDS[key] = self._load()
+        return records
+
+    def _set_records(self, records: list[MemoryRecord]) -> None:
+        """Rebind the shared list (belief supersede/evict rebuilds it) — through the registry, so
+        every instance sees the new truth."""
+        _SHARED_RECORDS[str(self._path)] = records
+
+    @classmethod
+    def invalidate(cls, namespace: str) -> None:
+        """Drop the shared cache for a namespace after its files were deleted/replaced OUTSIDE the
+        store (a sandbox reset, a save-game restore, a game-start wipe) — otherwise a live instance
+        would resurrect the deleted state from memory on its next write."""
+        path = Path(get_settings().memory_dir) / f"{_safe_name(namespace)}.jsonl"
+        with lock_for(path):
+            _SHARED_RECORDS.pop(str(path), None)
+
+    @classmethod
+    def invalidate_all(cls) -> None:
+        """Drop every shared cache — for whole-directory operations (a save-game restore)."""
+        _SHARED_RECORDS.clear()
 
     def beliefs(self, limit: int = 8) -> list[str]:
         """The character's consolidated BELIEFS (issue #9), most recent last — so a reflection
@@ -144,8 +181,9 @@ class LongTermMemory:
     def _load(self) -> list[MemoryRecord]:
         if not self._path.exists():
             return []
-        embed, _, _ = _get_embedder()
-        records: list[MemoryRecord] = []
+        _, embed_many, _, _ = _get_embedder()
+        rows: list[tuple[int, dict]] = []
+        bad = 0
         for i, line in enumerate(self._path.read_text(encoding="utf-8").splitlines()):
             line = line.strip()
             if not line:
@@ -153,24 +191,33 @@ class LongTermMemory:
             try:
                 d = json.loads(line)
             except json.JSONDecodeError:
+                bad += 1
                 continue
-            text = d.get("text") or ""
-            if not text:
-                continue
-            records.append(
-                MemoryRecord(
-                    text=text,
-                    embedding=embed(text),  # derived at load — survives embedder swaps
-                    index=int(d.get("index", i)),
-                    importance=float(d.get("importance", 0.5)),
-                    kind=d.get("kind", "exchange"),
-                    when=d.get("when", ""),
-                    t=d.get("t"),  # game clock at creation (None on legacy records -> index recency)
-                    last_t=d.get("last_t", d.get("t")),
-                    reinforcement=int(d.get("reinforcement", 0)),
-                )
+            if d.get("text"):
+                rows.append((i, d))
+        if bad:
+            # LOUD, not silent: skipped lines mean a past partial/interrupted write. The salvage is
+            # right for an append-format store, but the operator must know memories were lost.
+            logger.error("Memory store %s: skipped %d corrupt line(s) while loading — "
+                         "some of this character's memories were lost to a past bad write.",
+                         self._path.name, bad)
+        # Batch-embed: one model call for the whole store instead of one per record (a full-history
+        # per-record loop made every fresh instance pay seconds of embed time at load).
+        vectors = embed_many([d["text"] for _, d in rows]) if rows else []
+        return [
+            MemoryRecord(
+                text=d["text"],
+                embedding=vec,  # derived at load — survives embedder swaps
+                index=int(d.get("index", i)),
+                importance=float(d.get("importance", 0.5)),
+                kind=d.get("kind", "exchange"),
+                when=d.get("when", ""),
+                t=d.get("t"),  # game clock at creation (None on legacy records -> index recency)
+                last_t=d.get("last_t", d.get("t")),
+                reinforcement=int(d.get("reinforcement", 0)),
             )
-        return records
+            for (i, d), vec in zip(rows, vectors)
+        ]
 
     @staticmethod
     def _to_json(r: MemoryRecord) -> str:
@@ -189,43 +236,42 @@ class LongTermMemory:
     def _rewrite(self, records: list[MemoryRecord]) -> None:
         """Rewrite the whole store (the JSONL is otherwise append-only). Used when an existing
         record is mutated in place — e.g. a reinforcement bump. Per-character stores are small,
-        so a full rewrite on the occasional dedup-hit is cheap."""
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with self._path.open("w", encoding="utf-8") as f:
-            for r in records:
-                f.write(self._to_json(r) + "\n")
+        so a full rewrite on the occasional dedup-hit is cheap. ATOMIC (tmp + fsync + replace):
+        a crash mid-rewrite can no longer truncate the character's memory."""
+        atomic_write_text(self._path, "".join(self._to_json(r) + "\n" for r in records))
 
     def _add_sync(self, text: str, importance: float, kind: str, when: str,
                   t: float | None = None) -> None:
         if self.readonly:
             return
-        records = self._all()
-        embed, _, _ = _get_embedder()
+        embed, _, _, _ = _get_embedder()
         embedding = embed(text)
         importance = max(0.0, min(1.0, importance))
-        # Write-time dedup. A re-encounter of an existing memory (exact or near-duplicate) is
-        # REINFORCEMENT (issue #5), not a no-op: bump the count and refresh 'last seen' so its
-        # decay restarts from now — repetition makes it stick. Keep the higher importance.
-        norm = text.strip().lower()
-        for r in records:
-            if r.text.strip().lower() == norm or cosine(embedding, r.embedding) >= self._dedup_threshold:
-                r.reinforcement += 1
-                if t is not None:
-                    r.last_t = t
-                if importance > r.importance:
-                    r.importance = importance
-                self._rewrite(records)
-                logger.info("Reinforced memory (x%d): %r", r.reinforcement, text[:60])
-                return
-        index = records[-1].index + 1 if records else 0
-        record = MemoryRecord(
-            text=text, embedding=embedding, index=index, importance=importance,
-            kind=kind, when=when, t=t, last_t=t, reinforcement=0,
-        )
-        records.append(record)
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with self._path.open("a", encoding="utf-8") as f:
-            f.write(self._to_json(record) + "\n")
+        with self._lock:
+            records = self._all()
+            # Write-time dedup. A re-encounter of an existing memory (exact or near-duplicate) is
+            # REINFORCEMENT (issue #5), not a no-op: bump the count and refresh 'last seen' so its
+            # decay restarts from now — repetition makes it stick. Keep the higher importance.
+            norm = text.strip().lower()
+            for r in records:
+                if r.text.strip().lower() == norm or cosine(embedding, r.embedding) >= self._dedup_threshold:
+                    r.reinforcement += 1
+                    if t is not None:
+                        r.last_t = t
+                    if importance > r.importance:
+                        r.importance = importance
+                    self._rewrite(records)
+                    logger.info("Reinforced memory (x%d): %r", r.reinforcement, text[:60])
+                    return
+            index = records[-1].index + 1 if records else 0
+            record = MemoryRecord(
+                text=text, embedding=embedding, index=index, importance=importance,
+                kind=kind, when=when, t=t, last_t=t, reinforcement=0,
+            )
+            records.append(record)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            with self._path.open("a", encoding="utf-8") as f:
+                f.write(self._to_json(record) + "\n")
 
     # --- writes ---
 
@@ -241,24 +287,25 @@ class LongTermMemory:
     def _add_belief_sync(self, text: str, importance: float, t: float | None, threshold: float) -> None:
         if self.readonly:
             return
-        records = self._all()
-        embed, _, _ = _get_embedder()
+        embed, _, _, _ = _get_embedder()
         embedding = embed(text)
         importance = max(0.0, min(1.0, importance))
-        # Supersede near-duplicate BELIEFS (issue #15): a reworded conviction REPLACES the old one
-        # instead of piling up. (Episodic memories use the much higher exact-dup threshold + reinforce.)
-        records = [r for r in records
-                   if not (r.kind == "belief" and cosine(embedding, r.embedding) >= threshold)]
-        index = max((r.index for r in records), default=-1) + 1
-        records.append(MemoryRecord(text=text, embedding=embedding, index=index, importance=importance,
-                                    kind="belief", when="", t=t, last_t=t, reinforcement=0))
-        cap = get_settings().belief_max  # bound the set: evict the oldest beliefs past the cap (#15)
-        belief_recs = [r for r in records if r.kind == "belief"]
-        if len(belief_recs) > cap:
-            drop = {id(r) for r in sorted(belief_recs, key=lambda r: r.index)[: len(belief_recs) - cap]}
-            records = [r for r in records if id(r) not in drop]
-        self._records = records
-        self._rewrite(records)
+        with self._lock:
+            records = self._all()
+            # Supersede near-duplicate BELIEFS (issue #15): a reworded conviction REPLACES the old one
+            # instead of piling up. (Episodic memories use the much higher exact-dup threshold + reinforce.)
+            records = [r for r in records
+                       if not (r.kind == "belief" and cosine(embedding, r.embedding) >= threshold)]
+            index = max((r.index for r in records), default=-1) + 1
+            records.append(MemoryRecord(text=text, embedding=embedding, index=index, importance=importance,
+                                        kind="belief", when="", t=t, last_t=t, reinforcement=0))
+            cap = get_settings().belief_max  # bound the set: evict the oldest beliefs past the cap (#15)
+            belief_recs = [r for r in records if r.kind == "belief"]
+            if len(belief_recs) > cap:
+                drop = {id(r) for r in sorted(belief_recs, key=lambda r: r.index)[: len(belief_recs) - cap]}
+                records = [r for r in records if id(r) not in drop]
+            self._set_records(records)  # rebind through the registry — every instance sees the new list
+            self._rewrite(records)
 
     async def add_belief(self, text: str, *, importance: float = 0.85, t: float | None = None,
                          threshold: float | None = None) -> None:
@@ -290,23 +337,26 @@ class LongTermMemory:
         frequently-recalled memory resists decay. No-op when off or read-only."""
         if not self._reinforce_on_recall or self.readonly or not selected:
             return
-        for m in selected:
-            m.reinforcement += 1
-            if now_t is not None:
-                m.last_t = now_t
-        self._rewrite(self._all())
+        with self._lock:
+            for m in selected:
+                m.reinforcement += 1
+                if now_t is not None:
+                    m.last_t = now_t
+            self._rewrite(self._all())
 
     def _retrieve_sync(self, query: str, k: int, now_t: float | None) -> list[str]:
-        records = self._all()
-        if not records:
-            return []
-        embed, _, _ = _get_embedder()
-        selected = realize_relevance(
-            embed(query), records, weights=self._weights, budget=k,
-            now_index=len(records), now_t=now_t,
-        )
-        self._reinforce_recalled(selected, now_t)
-        return [r.text for r in selected]
+        embed, _, _, _ = _get_embedder()
+        qvec = embed(query)
+        with self._lock:  # scan + possible reinforce-rewrite as one unit vs concurrent writers
+            records = self._all()
+            if not records:
+                return []
+            selected = realize_relevance(
+                qvec, records, weights=self._weights, budget=k,
+                now_index=len(records), now_t=now_t,
+            )
+            self._reinforce_recalled(selected, now_t)
+            return [r.text for r in selected]
 
     async def retrieve(self, query: str, k: int | None = None, *, now_t: float | None = None) -> list[str]:
         if not query:
@@ -314,32 +364,35 @@ class LongTermMemory:
         return await asyncio.to_thread(self._retrieve_sync, query, k or self._budget, now_t)
 
     def _retrieve_scored_sync(self, query: str, k: int, now_t: float | None) -> dict:
-        records = self._all()
-        if not records:
-            return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
-        embed, _, name = _get_embedder()
-        selected, breakdown = realize_relevance(
-            embed(query), records, weights=self._weights, budget=k,
-            now_index=len(records), now_t=now_t, return_debug=True,
-        )
-        self._reinforce_recalled(selected, now_t)
-        return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
+        embed, _, _, name = _get_embedder()
+        qvec = embed(query)
+        with self._lock:
+            records = self._all()
+            if not records:
+                return {"selected": [], "scored": [], "embedder": name}
+            selected, breakdown = realize_relevance(
+                qvec, records, weights=self._weights, budget=k,
+                now_index=len(records), now_t=now_t, return_debug=True,
+            )
+            self._reinforce_recalled(selected, now_t)
+            return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
 
     async def retrieve_scored(self, query: str, k: int | None = None, *, now_t: float | None = None) -> dict:
         """Like `retrieve`, but also returns the per-candidate RR score breakdown (for the
         dev memory-debug panel). `{selected: [text], scored: [...], embedder: name}`."""
         if not query:
-            return {"selected": [], "scored": [], "embedder": _get_embedder()[2]}
+            return {"selected": [], "scored": [], "embedder": _get_embedder()[3]}
         return await asyncio.to_thread(self._retrieve_scored_sync, query, k or self._budget, now_t)
 
     def _rank_window_sync(self, query, since_t, now_t, k, floor, exclude_kinds):
-        records = self._all()
+        with self._lock:
+            records = list(self._all())  # stable snapshot for the scan below
         window = [r for r in records
                   if (since_t is None or (r.t is not None and r.t > since_t))
                   and r.kind not in exclude_kinds]
         if not window:
             return [], []
-        embed, _, _ = _get_embedder()
+        embed, _, _, _ = _get_embedder()
         # RR-rank within the window with the SAME scorer the conversational path uses, so the
         # foreground is what's most relevant to who this character is + wants, with diversity — not
         # just the loudest by static importance.

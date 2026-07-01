@@ -19,6 +19,7 @@ from orchestrator.character_store import load_character
 from orchestrator.config import ROOT_DIR, get_settings
 from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
+from orchestrator.memory.long_term import LongTermMemory
 
 from .. import experiment_log
 from .actions import available, execute
@@ -50,8 +51,10 @@ class ArenaGame:
         if reset:
             mem_dir = Path(get_settings().memory_dir)
             for slug in self.cast:
-                for f in glob.glob(str(mem_dir / f"{load_character(slug).memory_namespace}.*")):
+                ns = load_character(slug).memory_namespace
+                for f in glob.glob(str(mem_dir / f"{ns}.*")):
                     os.remove(f)
+                LongTermMemory.invalidate(ns)  # drop any shared cache over the deleted files
         self.engines = {slug: Engine(load_character(slug), AnthropicLLM(model=reply_model)) for slug in self.cast}
         self.clock = 0.0
         self.history: list[dict] = []

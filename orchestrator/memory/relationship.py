@@ -22,7 +22,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import get_settings
-from .long_term import _safe_name
+from .base_store import atomic_write_text, lock_for, quarantine
+from .base_store import safe_name as _safe_name
 
 
 def _word(v: float, low: str, mid: str, high: str) -> str:
@@ -205,6 +206,7 @@ class RelationshipStore:
         settings = get_settings()
         self.readonly = readonly
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.relationship.json"
+        self._lock = lock_for(self._path)
         self._state: RelationshipState | None = None
 
     def get(self) -> RelationshipState:
@@ -227,16 +229,22 @@ class RelationshipStore:
                 last_t=(float(d["last_t"]) if isinstance(d.get("last_t"), (int, float)) else None),
                 persistence_half_life=float(d.get("persistence_half_life", 0.0)),
             )
-        except Exception:
+        except Exception as e:
+            # LOUD, never silent: a corrupt file quietly resetting a relationship (a vanished
+            # betrayal scar!) is invisible amnesia. Quarantine the evidence, tell the operator.
+            quarantine(self._path, f"unreadable relationship state ({type(e).__name__})")
             return RelationshipState()
 
     def save(self) -> None:
         if self.readonly:
             return
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(json.dumps(self.get().to_dict()), encoding="utf-8")
+        with self._lock:
+            atomic_write_text(self._path, json.dumps(self.get().to_dict()))
 
     def update(self, **deltas) -> RelationshipState:
-        self.get().apply(**deltas)
-        self.save()
-        return self._state
+        if self.readonly:  # frozen: readonly state must not evolve even in memory (eval/replay arms)
+            return self.get()
+        with self._lock:
+            self.get().apply(**deltas)
+            self.save()
+            return self._state

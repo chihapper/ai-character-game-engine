@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 
 from ..config import get_settings
-from .long_term import _safe_name
+from .base_store import atomic_write_text, lock_for, quarantine
+from .base_store import safe_name as _safe_name
 
 
 class AgencyStore:
@@ -16,6 +17,7 @@ class AgencyStore:
         s = get_settings()
         self.readonly = readonly
         self._path = Path(s.memory_dir) / f"{_safe_name(namespace)}.agency.json"
+        self._lock = lock_for(self._path)
         self._goals: list[str] | None = None
         self._last_t: float | None = None
         self._loaded = False
@@ -32,8 +34,8 @@ class AgencyStore:
             self._goals = [str(x).strip() for x in g if str(x).strip()] if isinstance(g, list) and g else None
             lt = d.get("last_deliberation_t")
             self._last_t = float(lt) if isinstance(lt, (int, float)) else None
-        except Exception:  # noqa: BLE001 — a corrupt file just means "no agency state yet"
-            pass
+        except Exception as e:  # noqa: BLE001
+            quarantine(self._path, f"unreadable agency state ({type(e).__name__})")  # loud, never silent
 
     def goals(self) -> list[str] | None:
         """The character's CURRENT standing goals if deliberation has evolved them, else None
@@ -46,21 +48,26 @@ class AgencyStore:
         return self._last_t
 
     def set_goals(self, goals: list[str] | None) -> None:
-        self._load()
-        clean = [str(g).strip() for g in (goals or []) if str(g).strip()]
-        if clean:
-            self._goals = clean
-            self._save()
+        if self.readonly:  # frozen: readonly state must not evolve even in memory
+            return
+        with self._lock:
+            self._load()
+            clean = [str(g).strip() for g in (goals or []) if str(g).strip()]
+            if clean:
+                self._goals = clean
+                self._save()
 
     def mark_deliberated(self, t: float | None) -> None:
-        self._load()
-        if t is not None:
-            self._last_t = float(t)
-            self._save()
+        if self.readonly:
+            return
+        with self._lock:
+            self._load()
+            if t is not None:
+                self._last_t = float(t)
+                self._save()
 
     def _save(self) -> None:
         if self.readonly:
             return
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(json.dumps({"goals": self._goals, "last_deliberation_t": self._last_t}),
-                              encoding="utf-8")
+        atomic_write_text(self._path,
+                          json.dumps({"goals": self._goals, "last_deliberation_t": self._last_t}))

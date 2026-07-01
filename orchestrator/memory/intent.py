@@ -15,7 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import get_settings
-from .long_term import _safe_name
+from .base_store import atomic_write_text, lock_for, quarantine
+from .base_store import safe_name as _safe_name
 
 
 @dataclass
@@ -53,6 +54,7 @@ class IntentStore:
         settings = get_settings()
         self.readonly = readonly
         self._path = Path(settings.memory_dir) / f"{_safe_name(namespace)}.intent.json"
+        self._lock = lock_for(self._path)
         self._state: IntentState | None = None
 
     def get(self) -> IntentState:
@@ -66,17 +68,20 @@ class IntentStore:
         try:
             d = json.loads(self._path.read_text(encoding="utf-8"))
             return IntentState(intent=str(d.get("intent", "")), turns=int(d.get("turns", 0)))
-        except Exception:
+        except Exception as e:
+            quarantine(self._path, f"unreadable intent state ({type(e).__name__})")  # loud, never silent
             return IntentState()
 
     def save(self) -> None:
         if self.readonly:
             return
-        s = self.get()
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(json.dumps(s.to_dict()), encoding="utf-8")
+        with self._lock:
+            atomic_write_text(self._path, json.dumps(self.get().to_dict()))
 
     def update(self, intent: str | None) -> IntentState:
-        self.get().set(intent)
-        self.save()
-        return self._state
+        if self.readonly:  # frozen: readonly state must not evolve even in memory
+            return self.get()
+        with self._lock:
+            self.get().set(intent)
+            self.save()
+            return self._state
