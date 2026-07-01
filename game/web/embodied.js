@@ -60,7 +60,7 @@ function renderView(v) {
 }
 
 function feed(events) {
-  const f = $("feed");
+  const f = $("feed"); let n = 0;
   for (const e of events || []) {
     if (e.kind === "scene") continue; // shown live in the scene panel
     let cls = "", html = "";
@@ -70,9 +70,9 @@ function feed(events) {
     else if (e.kind === "dialogue") { cls = "say"; html = `<span class="who">${esc(e.who || "")}:</span> ${esc(e.text)}`; }
     else if (e.kind === "npc_act") { cls = "act"; html = `${esc(e.who || "")} — ${esc(e.text)}${e.reason ? ` · “${esc(e.reason)}”` : ""}`; }
     else html = esc(e.text);
-    const d = document.createElement("div"); d.className = "ev " + cls; d.innerHTML = html; f.appendChild(d);
+    const d = document.createElement("div"); d.className = "ev " + cls; d.innerHTML = html; f.appendChild(d); n++;
   }
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  if (n) window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); // only when something happened
 }
 
 // ---- actions ------------------------------------------------------------

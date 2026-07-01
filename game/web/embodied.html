@@ -10,7 +10,7 @@
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--ink);
       font:15px/1.55 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-    .wrap { max-width:900px; margin:0 auto; padding:14px 16px 90px; }
+    .wrap { max-width:900px; margin:0 auto; padding:14px 16px 8px; }
     header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
     header h1 { font-size:17px; margin:0; font-weight:650; }
     header .meta { color:var(--dim); font-size:13px; }
@@ -35,8 +35,8 @@
     .ev.say .who { color:var(--warm); font-weight:650; }
     .ev.act { color:var(--react); font-style:italic; }
     /* composer */
-    footer { position:fixed; bottom:0; left:0; right:0; background:rgba(11,14,19,.94);
-      border-top:1px solid var(--line); padding:10px 16px; }
+    footer { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+      padding:12px 14px; margin-top:6px; }
     .foot { max-width:900px; margin:0 auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     button { font:inherit; font-size:13px; color:var(--ink); background:#22314a; border:1px solid #2f4363;
       border-radius:8px; padding:7px 11px; cursor:pointer; }
@@ -65,9 +65,8 @@
       <div class="card" style="flex:1; min-width:280px"><h2>What you see</h2><div id="scene">—</div></div>
     </div>
     <div class="card"><h2>What's happening</h2><div id="feed"></div></div>
-  </div>
 
-  <footer>
+    <footer>
     <div class="foot">
       <div class="grp"><span class="lbl">talk to</span><span id="talkChips" class="grp"></span>
         <input id="line" placeholder="say something…" />
@@ -79,7 +78,8 @@
       <span style="flex:1"></span>
       <button id="advanceBtn" class="warm">the night moves on ▸</button>
     </div>
-  </footer>
+    </footer>
+  </div>
 
   <div id="start"><div class="startcard">
     <h1>The Ferry's Last Crossing</h1>
