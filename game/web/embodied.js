@@ -4,6 +4,8 @@ const S = { gid: null, target: null, busy: false };
 const PAL = ["#2b3a52", "#3a2f4d", "#274536", "#4a3a24", "#233f4a", "#42283a", "#2f3a24"];
 const ENTCOL = { you: "#7fd1a8" };
 const ecol = (ref, i) => (ref === "you" ? "#7fd1a8" : ["#f0b86e", "#6ea8fe", "#c79bf0", "#e0697a", "#5ec98a"][i % 5]);
+// marker letter: skip a leading article so handles ("The ferrywoman") don't all become "T"
+const markOf = (e) => e.you ? "@" : ((e.ref.replace(/^(the|a|an)\s+/i, "").trim()[0] || "?").toUpperCase());
 
 async function api(path, method = "POST", body) {
   const r = await fetch("/api/embodied" + path, {
@@ -27,12 +29,12 @@ function drawGrid(g) {
     const tint = ri >= 0 ? PAL[ri % PAL.length] : "#0e131b";
     const e = entAt[`${x},${y}`];
     const you = e && e.you ? " you-here" : "";
-    const mark = e ? `<span class="ent" style="color:${ecol(e.ref, e.i)}" title="${esc(e.ref)}">${e.you ? "@" : esc(e.ref[0].toUpperCase())}</span>` : "";
+    const mark = e ? `<span class="ent" style="color:${ecol(e.ref, e.i)}" title="${esc(e.ref)}">${esc(markOf(e))}</span>` : "";
     html += `<div class="cell${you}" style="background:${tint}">${mark}</div>`;
   }
   map.innerHTML = html;
   $("legend").innerHTML = g.entities.map((e, i) =>
-    `<div><span class="dot" style="background:${ecol(e.ref, i)}"></span>${esc(e.ref)} — ${esc(e.stance || "")}</div>`).join("")
+    `<div><b style="color:${ecol(e.ref, i)}">${esc(markOf(e))}</b> = ${esc(e.ref)} — ${esc(e.stance || "")}</div>`).join("")
     + `<div style="margin-top:6px">${g.regions.map((r, i) => `<span class="dot" style="background:${PAL[i % PAL.length]}"></span>${esc(r.name)}`).join("  ")}</div>`;
 }
 
