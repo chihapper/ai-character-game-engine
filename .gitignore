@@ -35,6 +35,9 @@ ab_out/
 # runtime server log
 server.log
 
+# game runtime transcripts (per-playthrough, generated)
+.game_runs/
+
 # stress-test transcripts + run logs (tools/stress_*.py) — generated, not source
 stress_*.md
 stress_*.log

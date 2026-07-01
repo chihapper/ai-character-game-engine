@@ -72,5 +72,3 @@ judge) · `engine flags` · `seed/notes` · `transcript path`.
 | run_id | started | condition | scenario | characters | models (reply/delib/book) | transcript | outcome | rr_judge | emergence | human_note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 <!-- RUNS_TABLE_END -->
-
-*(no runs yet — the runtime will append the first row when a playthrough begins.)*
