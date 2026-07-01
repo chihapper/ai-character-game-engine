@@ -166,6 +166,11 @@ shape rather than baking game concepts into the engine.
 
 ## 3. The engine/game seam — the core generalization (TARGET)
 
+> 📄 **The concrete contract** a game builds against — real method signatures, what the
+> engine *applies* vs *returns*, the in-the-moment reaction recipe, cadence/time ownership,
+> and capability flags — lives in [`engine-game-contract.md`](engine-game-contract.md). This
+> section is the design rationale; that doc is the interface.
+
 ### 3.1 The problem: `run_turn(user_text)` is chat-shaped
 
 Today the entry point is

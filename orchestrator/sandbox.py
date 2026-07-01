@@ -192,22 +192,20 @@ REACT_SALIENCE_FLOOR = 0.7  # 2a: an event interrupts the scene only if the NPC 
 async def event(slug: str, body: Event):
     eng = _engine(slug)
     clk = body.clock if body.clock is not None else 0.0
-    await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
-                       importance=body.importance, magnitude=body.magnitude, t=clk)
+    # remember() RETURNS the character's appraised salience — the engine's half of the reaction seam.
+    sal = await eng.remember(body.text, player_role=(body.player_role or None), actor=body.actor,
+                             importance=body.importance, magnitude=body.magnitude, t=clk)
     out: dict = {"state": _state(eng)}
     if body.react:
-        # RR decides whether it's worth interrupting for: read back the salience the character just
-        # gave THIS event and only let them take a beat to react if it lands hard (#30 / 2a).
-        recs = eng.long_term._all()
-        sal = next((r.importance for r in reversed(recs) if r.text == body.text.strip()),
-                   recs[-1].importance if recs else 0.0)
-        out["salience"] = round(sal, 2)
-        if sal >= REACT_SALIENCE_FLOOR:
+        # The GAME (here, the sandbox) owns the interrupt policy: only take a beat to react if it
+        # lands hard enough (#30 / 2a). RR — via the appraised salience — decides.
+        out["salience"] = round(sal, 2) if sal is not None else None
+        if sal is not None and sal >= REACT_SALIENCE_FLOOR:
             out["decision"] = await eng.deliberate(Situation(clock=clk), mode="free")
             out["reacted"] = True
+            out["state"] = _state(eng)  # refresh after the reaction may have moved state
         else:
             out["reacted"] = False
-        out["state"] = _state(eng)  # refresh after the reaction may have moved state
     return out
 
 

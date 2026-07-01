@@ -61,7 +61,7 @@ class Engine:
     # ---- the game's world-state seam (what the GAME pushes) ------------------------------
     async def remember(self, fact: str, *, player_role: str | None = None,
                        actor: str = "player", importance: float | None = None,
-                       magnitude: float | None = None, **kw) -> None:
+                       magnitude: float | None = None, **kw) -> float | None:
         """Push a durable world event into the character's memory (direct or indirect). It ALSO
         shifts the character's disposition toward the player when attributable — the AI judges the
         character-aware impact (deltas + a possible scar OR scar_heal):
@@ -80,7 +80,15 @@ class Engine:
             world/DM may supply — so a distant war they shrug off and a small kindness that marks
             them get the weight THEY would give them, not a blind author number.
         Appraisal is a per-write capability, not an engine assumption: a game with no world events
-        never triggers it, and it's gated behind `salience_scoring` + the omitted-importance case."""
+        never triggers it, and it's gated behind `salience_scoring` + the omitted-importance case.
+
+        RETURNS the stored salience — the character's own appraised weight for this event. This is
+        the engine's half of the reaction seam (see docs/ENGINE_GAME_CONTRACT.md): the GAME reads it
+        to decide, by its OWN policy, whether the event is worth interrupting the scene for (then
+        calls deliberate()). Returns None only for an empty write, or when salience scoring is off
+        AND `importance` wasn't pinned (a neutral default is stored; the game had no signal to gate on)."""
+        if not (fact or "").strip():
+            return None
         if player_role and "kind" not in kw:
             kw["kind"] = "player_event"  # mark player-attributable events so deliberation can ground on them (#22)
         if importance is None and get_settings().salience_scoring:
@@ -91,20 +99,21 @@ class Engine:
         await self.long_term.remember(fact, **kw)
         s = get_settings()
         if not (s.relationship_state and not self.relationship.readonly):
-            return
+            return importance
         if actor == "self":
             attribution = ("the character THEMSELVES underwent this — their own change of heart, "
                            "decision, or transformation; the player did nothing")
         elif player_role:
             attribution = f"the player {player_role} this"
         else:
-            return  # no attribution -> pure memory, no disposition shift
+            return importance  # no attribution -> pure memory, no disposition shift
         now_t = kw.get("t")
         self._age_relationship(now_t)  # drift over the gap, then apply the event's shift
         rel = await assess_event_impact(
             self.character, fact, attribution=attribution, relationship=self.relationship.get())
         if rel:
             self.relationship.update(**rel)
+        return importance
 
     def _age_relationship(self, now_t) -> None:
         """Drift feelings toward baseline over the in-game time since last contact (#12-B), using the
