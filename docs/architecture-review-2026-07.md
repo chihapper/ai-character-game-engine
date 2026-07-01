@@ -183,17 +183,20 @@ across ~17 stress scripts — which then doubles as the pytest fixture layer.
 
 ---
 
-## Recommended sequencing
+## Recommended sequencing — ALL SEVEN LANDED (2026-07-02, commits 70ef84d..b680295)
 
-| # | Work | Themes | Size | When |
-|---|------|--------|------|------|
-| 1 | `choose_action` → Engine surface w/ full grounding + contract doc | D | S | now (deepens the live demo) |
-| 2 | Hygiene batch (paths, allow-list, doc fixes, .env.example) | G | S | now (one sitting) |
-| 3 | `NamespaceStore` base: atomic writes + registry/locks + readonly + loud corruption | A | M | before the #30 experiment runs |
-| 4 | Per-Engine capability config (settings → construction snapshot) | B | M | before the #30 experiment runs (needed for in-process matched pair) |
-| 5 | `judgment()` helper + LLM factory | C | M | next engine work window |
-| 6 | Test seam: pytest + the 5 pure modules + tools/_harness | F | M | alongside 3-5 (locks them in) |
-| 7 | main.py decompose-by-fate | E | M | with the Track V cutover |
+| # | Work | Themes | Status |
+|---|------|--------|--------|
+| 1 | `choose_action` → Engine surface w/ full grounding + contract doc | D | ✅ `70ef84d` — Corvin now acts from lived state |
+| 2 | Hygiene batch (paths, allow-list, doc fixes, .env.example) | G | ✅ `b91a033` |
+| 3 | `NamespaceStore`: atomic writes + shared truth/locks + frozen readonly + quarantine | A | ✅ `40e8608` — 13/13 integrity checks |
+| 4 | Per-Engine capability config (EngineCaps snapshot) | B | ✅ `d6d82ba` — in-process matched pair now possible |
+| 5 | `judgment()` layer: shared client + salvage everywhere + role→model table | C | ✅ `74ce139` |
+| 6 | Test seam: pytest, 38 pure unit tests + tools/_harness | F | ✅ `2c8c211` |
+| 7 | main.py decompose-by-fate (full_loop.py keeper / legacy_voice.py quarantine) | E | ✅ `b680295` — 1,236→815 lines, route table byte-identical |
 
-Items 3+4 are the two that protect the **validity of the embodiment experiment** — worth landing before
-formal matched-pair runs. Item 1 is the only one that changes what you feel in the demo today.
+Deliberately NOT done (noted for later): per-engine *model* overrides (sandbox still sets role models
+globally — dies naturally when models move onto EngineCaps or the factory is injected through Engine);
+`_safe_name` hash-suffix (would orphan existing on-disk stores — needs a migration); cross-process
+store convention (two servers, one .memory — run-scoped namespaces when the #30 runs get formal);
+extracting the character/voice REST into routers (keeper code, cohesive — do with the Track V cutover).
