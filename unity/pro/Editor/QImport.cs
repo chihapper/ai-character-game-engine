@@ -11,6 +11,10 @@ public class QImport : AssetPostprocessor
     {
         if (!assetPath.Replace('\\', '/').Contains("/Resources/Q/")) return;
         var mi = (ModelImporter)assetImporter;
+        // THE axis fix: Blender FBX is Z-up; without baking, the -90 compensation lives on
+        // scene transforms where runtime code can lose it (every wall spent three sessions lying
+        // flat). Baking converts the VERTEX DATA — no transform anywhere can break it again.
+        mi.bakeAxisConversion = true;
         bool anims = assetPath.Contains("/Anims");
         bool body = assetPath.Contains("Base Characters");
         if (assetPath.Contains("/Outfits/"))

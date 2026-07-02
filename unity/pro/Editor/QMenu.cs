@@ -31,6 +31,14 @@ public static class QMenu
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
 
+    [MenuItem("Ferry/Reimport Art (axis fix)")]
+    public static void ReimportArt()
+    {
+        AssetDatabase.ImportAsset("Assets/Resources/Q",
+            ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+        Debug.Log("Ferry: art reimported with baked axis conversion — rebuild the world or press Play.");
+    }
+
     [MenuItem("Ferry/Rebake Animator")]
     public static void Rebake() => QBake.Bake();
 
