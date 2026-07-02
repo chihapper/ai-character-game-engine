@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 // ---- DTOs ------------------------------------------------------------------------------------
 [Serializable] public class CastEntry { public string slug; public string handle; public string here_because; }
 [Serializable] public class SessionRes { public string session_id; public string title; public string player_handle; public float react_at; public float speak_at; public CastEntry[] cast; }
-[Serializable] public class SituationDTO { public string location = ""; public string[] present = new string[0]; public float clock; public string performance = ""; }
+[Serializable] public class SituationDTO { public string location = ""; public string[] present = new string[0]; public float clock; public string performance = ""; public string ambient = ""; }
 [Serializable] public class RespondReq { public string line = ""; public string @event = ""; public SituationDTO situation = new SituationDTO(); }
 [Serializable] public class RespondRes { public string reply; public string name_spoken; }
 [Serializable] public class ChooseReq { public string situation = ""; public string[] options = new string[0]; }

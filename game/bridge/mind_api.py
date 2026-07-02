@@ -74,6 +74,8 @@ class MindSession:
         d = {"location": sit.location, "present": sit.present, "clock": sit.clock} if sit else {}
         d["extra"] = {"Performance": sit.performance if sit and sit.performance
                       else policy.PERFORMANCE_RULES}
+        if sit and sit.ambient:
+            d["extra"]["Around you, right now"] = sit.ambient
         frame = (self.scenario.get("world_frame") or "").strip()
         if frame:  # the scenario's world overrides a reused sheet's old life (no Marco here)
             d["extra"]["The world you live in"] = frame
@@ -114,6 +116,7 @@ class SituationDTO(BaseModel):
     present: list[str] = Field(default_factory=list)  # client-composed first-person strings
     clock: float | None = None
     performance: str = ""  # optional override of the default performance rules
+    ambient: str = ""      # what the world is DOING around them (the storm's arc, perceived)
 
 
 class Respond(BaseModel):

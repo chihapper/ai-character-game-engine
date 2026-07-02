@@ -10,6 +10,32 @@ public class StormAudio : MonoBehaviour
     AudioSource rain, thunder;
     readonly System.Random rng = new();
     int sr;
+    static float lastCrack = -999f;
+
+    /// The storm's ARC over the night (0..1): already heavy at the door, peaks mid-night, thins
+    /// toward dawn. This is WORLD STATE — the sound tracks it, and every percept carries it
+    /// (the rain thinning IS the crown men getting closer; a mind that can hear that feels the
+    /// deadline, not just the weather).
+    public static float Intensity
+    {
+        get
+        {
+            float h = WorldClock.Hours;
+            if (h < 4f) return Mathf.Lerp(0.65f, 1f, h / 4f);
+            return Mathf.Lerp(1f, 0.12f, (h - 4f) / 4f);
+        }
+    }
+
+    public static string Describe()
+    {
+        float i = Mathf.Clamp01(Intensity);
+        string sky = i > 0.85f ? "the storm is at full pitch — rain hammering the roof, the channel impassable"
+                   : i > 0.6f ? "hard steady rain on the roof and shutters; the crossing stays shut"
+                   : i > 0.35f ? "the rain is easing off — the worst of the storm has passed"
+                   : "the storm is nearly spent; the rain thin, the water calming — the crossing will open soon";
+        if (Time.time - lastCrack < 12f) sky += "; thunder just rolled through";
+        return sky;
+    }
 
     void Start()
     {
@@ -28,12 +54,15 @@ public class StormAudio : MonoBehaviour
         yield return new WaitForSeconds(4f);  // let the room settle, then the sky opens
         while (true)
         {
-            float closeness = (float)rng.NextDouble();               // 1 = right overhead
+            float i = Intensity;
+            rain.volume = 0.10f + 0.26f * i;                          // the sound TRACKS the arc
+            float closeness = (float)rng.NextDouble() * Mathf.Clamp01(i + 0.25f);
             StartCoroutine(LightningFlash(closeness));
             yield return new WaitForSeconds(Mathf.Lerp(2.4f, 0.2f, closeness));
             thunder.PlayOneShot(MakeThunder(closeness), Mathf.Lerp(0.35f, 0.95f, closeness));
+            lastCrack = Time.time;
             if (StoryDirector.I != null) StoryDirector.I.OnThunder(closeness);  // an overhead CRACK is a world event
-            yield return new WaitForSeconds(Random.Range(12f, 40f));
+            yield return new WaitForSeconds(Random.Range(12f, 40f) / Mathf.Max(i, 0.25f));
         }
     }
 

@@ -59,6 +59,7 @@ public static class PerceptComposer
             location = Regions.NameAt(self.transform.position),
             present = present.ToArray(),
             clock = WorldClock.Hours,
+            ambient = StormAudio.Describe(),  // the storm is perceived world state, not just sound
         };
     }
 
@@ -68,6 +69,7 @@ public static class PerceptComposer
         var s = For(self);
         var lines = new List<string> { $"You're at {s.location}." };
         foreach (var p in s.present) lines.Add("- " + p);
+        if (!string.IsNullOrEmpty(s.ambient)) lines.Add("Around you: " + s.ambient);
         return string.Join("\n", lines);
     }
 }
