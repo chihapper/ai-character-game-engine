@@ -14,7 +14,7 @@ public class Nameplate : MonoBehaviour
     {
         var go = new GameObject("nameplate");
         go.transform.SetParent(transform, false);
-        go.transform.localPosition = new Vector3(0, height, 0);
+        go.transform.localPosition = new Vector3(0, height / Mathf.Max(0.01f, transform.lossyScale.y), 0);  // parent is height-normalized
         tm = go.AddComponent<TextMesh>();
         tm.characterSize = 0.022f;
         tm.fontSize = 64;
