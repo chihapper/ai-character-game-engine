@@ -24,6 +24,8 @@ public class AutoShot : MonoBehaviour
     {
         Directory.CreateDirectory(Dir);
         foreach (var f in Directory.GetFiles(Dir)) File.Delete(f);
+        var curtain = FindFirstObjectByType<CurtainUI>();      // the title card isn't under test
+        if (curtain != null) Destroy(curtain);
         float t0 = Time.time;
         while (NpcAgent.All.Count < 4 && Time.time - t0 < 45f) yield return null;   // session + cast
         yield return new WaitForSeconds(4f);   // outfits, poses, fires settle
