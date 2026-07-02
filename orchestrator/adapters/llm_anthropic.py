@@ -63,18 +63,22 @@ class AnthropicLLM(LLMAdapter):
 
     @staticmethod
     def _cache_messages(messages: list[dict]) -> list[dict]:
-        """Mark the conversation-history prefix cacheable (cache_control on the last message) — for
-        the multi-turn reply path where the history repeats every turn. Model input is unchanged."""
-        if not messages:
-            return messages
+        """Mark the conversation HISTORY prefix cacheable — breakpoint on the last message BEFORE the
+        current turn, not on the final message. The final user turn carries the per-turn dynamic
+        context (unique every request), so a breakpoint there would write a cache entry that is never
+        read; the history prefix, by contrast, is byte-identical and append-only across turns, so it
+        accrues real read hits ("shared prefix, varying suffix" placement). Model input is unchanged
+        (cache_control is metadata)."""
+        if len(messages) < 2:
+            return messages  # first turn: no reusable history yet — a write here would never be read
         out = [dict(m) for m in messages]
-        content = out[-1].get("content")
+        content = out[-2].get("content")
         if isinstance(content, str):
-            out[-1]["content"] = [{"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}]
+            out[-2]["content"] = [{"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}]
         elif isinstance(content, list) and content and isinstance(content[-1], dict):
             blocks = [dict(b) for b in content]
             blocks[-1] = {**blocks[-1], "cache_control": {"type": "ephemeral"}}
-            out[-1]["content"] = blocks
+            out[-2]["content"] = blocks
         return out
 
     async def stream_reply(

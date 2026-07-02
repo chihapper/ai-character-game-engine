@@ -445,12 +445,22 @@ class Engine:
         if self.llm is None:
             raise RuntimeError("Engine.respond needs an llm; voice drivers use prepare()/reflect().")
         injected, dbg = await self.prepare(request)
-        # Split into [STABLE character-sheet/instructions, DYNAMIC per-turn context] so the adapter
-        # can cache the stable prefix. Concatenation == the old single string, so output is identical.
+        # PROMPT-CACHE LAYOUT (stable precedes volatile — prefix-match caching):
+        #   system   = the character sheet ONLY, byte-identical every turn (cached breakpoint).
+        #   messages = history (append-only; the adapter puts a breakpoint at its end) + the current
+        #              user turn carrying the DYNAMIC per-turn context.
+        # The context used to be a second system block, which changed every turn and so invalidated
+        # the entire message-history cache behind it — every turn paid the 1.25x cache-write premium
+        # on the whole history with zero reads. In the turn (after the last breakpoint) it costs
+        # nothing extra and the history finally cache-hits. The context is NOT persisted to
+        # short_term, so history stays lean and byte-stable.
         stable = build_instructions(self.character)
-        system = [stable, "\n\n" + injected] if injected else [stable]
-        messages = self.short_term.messages() + [{"role": "user", "content": request.input_text()}]
-        reply = await self._generate(system, messages)
+        user_text = request.input_text()
+        turn = (f"<context>\n(Current context for you — your memories, state, and the scene. "
+                f"Not spoken by the player.)\n{injected}\n</context>\n\n{user_text}"
+                if injected else user_text)
+        messages = self.short_term.messages() + [{"role": "user", "content": turn}]
+        reply = await self._generate([stable], messages)
         if request.input_text() and reply:
             self.short_term.add_user(request.input_text())
             self.short_term.add_assistant(reply)
