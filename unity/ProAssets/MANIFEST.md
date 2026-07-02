@@ -26,13 +26,18 @@ the UBC humanoid rig via Unity's Humanoid avatar system.
 
 Standard Unity Asset Store EULA accepted at add-time (standard flow, per delegated acquisition).
 
-## Build plan (next session, on this `sandbox` branch)
+## Build status (sandbox branch, unity/pro/ junctioned into the FerryCrossingPro project)
 
-1. New Unity 6 URP project `FerryCrossingPro`; import packs; junction a new Scripts dir.
-2. The inn from MegaKit modules (real walls/windows/beams) + props pass; URP lighting redone
-   (hearth, lamps, lightning through real windows) + post (fog, vignette, grading).
-3. Cast: UBC bases styled per character (hair/build/palette) + UAL animator (locomotion, idles,
-   sit/lean, look-at) replacing capsule stances.
-4. Systems port from unity/Assets/Scripts (percept composer, react recipe, warrant, storm arc,
-   nameplates) — the mind server is unchanged.
-5. Polish: audio mix (keep procedural storm), title beat, the 16-minute night tuned end-to-end.
+ALL FIVE PHASES LANDED (2026-07-02, headless-compiled; awaiting first human playtest):
+1. DONE - project (URP cloned config), packs imported, humanoid pipeline, animator baked from
+   exact UAL clips (Idle/Walk/Sit/Talk/Lean/FoldArms).
+2. DONE - the inn from MegaKit modules + props; runtime NavMesh; URP mood (fog/bloom/vignette,
+   flickering hearth+candles with visible procedural flame); TRANSPARENT windows onto a built
+   exterior: rain sheets tracking the storm arc, the flooded crossing + drowned jetty, marsh
+   silhouettes; lightning through the glass.
+3. DONE - cast on UBC bodies (per-character skin/hair/build/palette), UAL locomotion, seats
+   they actually sit on, head look-at, speech bubbles in space.
+4. DONE - full systems port (percepts, react recipe, warrant-as-parchment, storm-in-percepts,
+   nameplates) + NPC-to-NPC cross-talk (#31 lite: engine-chosen, /observe-heard, loop-safe).
+5. DONE - the arc: title card in; dawn breaks (light warms, door opens, crown men on the
+   threshold, the room appraises it); epilogue card from what ACTUALLY happened; [R] replays.
