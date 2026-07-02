@@ -20,6 +20,7 @@ from fastapi.responses import HTMLResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 from .arena.web import router as embodied_router  # noqa: E402
+from .bridge.mind_api import router as mind_router  # noqa: E402
 from .web import router as game_router  # noqa: E402
 
 WEB = Path(__file__).resolve().parent / "web"
@@ -42,6 +43,7 @@ async def _warm_memory_embedder() -> None:
         logging.getLogger(__name__).warning("Embedder pre-warm skipped: %s", exc)
 app.include_router(game_router)       # /play — the TEXT control
 app.include_router(embodied_router)   # /embodied — the ARENA treatment
+app.include_router(mind_router)        # /api/mind — the MIND SERVER for foreign worlds (Unity, #35)
 
 
 async def _play_page() -> HTMLResponse:

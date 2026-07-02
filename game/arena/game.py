@@ -22,16 +22,13 @@ from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
 
 from .. import experiment_log
+from .. import policy
 from .actions import available, execute
 from .perception import _proximity, perceive, render_player_view, to_situation
 from .world import load_world
 
 RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
-_PERF = ("Speak your words in the first person, in quotes. Write your OWN actions in the third person "
-         "using a PRONOUN (he/she/they) — e.g. 'she brushes the rain off' — never the second person and "
-         "NEVER your own name. Never narrate the player's actions, body, or feelings. The player's "
-         "words are spoken TO YOU — a form of address like 'barkeep' or 'friend' means YOU, not a "
-         "third person.")
+_PERF = policy.PERFORMANCE_RULES
 
 
 class ArenaGame:
@@ -89,12 +86,7 @@ class ArenaGame:
         r = self._ref(eid) if eid != "player" else "you"
         return r[:1].upper() + r[1:]
 
-    @staticmethod
-    def _split_quotes(text: str) -> list[str]:
-        """Split into alternating [narration, quoted, narration, ...] segments — odd indices are
-        quoted speech (straight or smart quotes)."""
-        import re
-        return re.split(r'("[^"]*"|“[^”]*”)', text)
+    _split_quotes = staticmethod(policy.split_quotes)
 
     def _name_forms(self, slug: str) -> list[str]:
         """The name tokens that count as a leak for this character (full name + words >=3 chars),
@@ -127,32 +119,15 @@ class ArenaGame:
                                  flags=re.IGNORECASE)
         return "".join(segs)
 
-    def _learnable_forms(self, slug: str) -> list[str]:
-        """The forms an INTRODUCTION can teach: first name + quoted nickname — how people actually
-        introduce themselves ('Name's Della', 'they call me Pockets'). Surnames are excluded
-        because they double as common words: '\"Hale and hearty!\"' is capitalized at sentence
-        start, so even case-sensitive matching would false-register Edwin \"Pockets\" Hale.
-        Scrubbing still covers ALL name forms; only learning gets this narrower gate."""
-        import re
-        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name).strip()
-        nicknames = re.findall(r'"([A-Za-z]{2,})"', raw)
-        first = re.sub(r'"[^"]*"', " ", raw).split()
-        return ([first[0]] if first else []) + nicknames
-
     def _maybe_learn_name(self, slug: str, text: str) -> None:
         """Learn a name ONLY from QUOTED speech — an actual spoken introduction ('Name's Della'),
-        never a narration slip (those are scrubbed before this runs). Case-sensitive,
-        first-name/nickname forms only."""
-        import re
+        never a narration slip (those are scrubbed before this runs). The what-counts rules live
+        in game/policy.py (shared with the Unity bridge)."""
         if slug in self.known_names:
             return
-        spoken = " ".join(self._split_quotes(text)[1::2])  # quoted segments only
-        if not spoken:
-            return
-        for c in self._learnable_forms(slug):
-            if re.search(rf"\b{re.escape(c)}\b", spoken):
-                self.known_names[slug] = c
-                return
+        name = policy.spoken_name(self.engines[slug].character.name, text)
+        if name:
+            self.known_names[slug] = name
 
     def _resolve(self, ref: str) -> str | None:
         ref = (ref or "").strip().lower()
@@ -226,22 +201,15 @@ class ArenaGame:
     # (~0.72 floor — character-true; recall is what salience measures), so the interrupt bar sits
     # above that floor: crossing the room / ordering a drink pass in silence; being watched spikes
     # only the one it's aimed at (Corvin 0.82); barring the door sets the whole room off (0.72-0.93).
-    REACT_SALIENCE = 0.75
-    SPEAK_SALIENCE = 0.9
+    REACT_SALIENCE = policy.REACT_SALIENCE
+    SPEAK_SALIENCE = policy.SPEAK_SALIENCE
     # The game's coarse OBJECTIVE scale per act kind (the #25 magnitude hint): without it the
     # appraiser rated even crossing the room at 0.7-0.8 for three of four NPCs. The character
     # still realizes their OWN salience around the hint — a low-magnitude move can still spike
     # for the one it threatens.
-    OBJ_MAGNITUDE = {"move": 0.1, "approach": 0.1, "watch": 0.15, "use": 0.25}
+    OBJ_MAGNITUDE = policy.OBJ_MAGNITUDE
 
-    @staticmethod
-    def _as_observed(conseq: str) -> str:
-        """Third-person a consequence phrase for an onlooker ('stoke the peat fire' -> 'stokes
-        the peat fire'); phrases already conjugated ('crosses to the bar') pass through."""
-        w = conseq.split()
-        if w and not w[0].endswith("s"):
-            w[0] += "es" if w[0].endswith(("sh", "ch", "x", "o")) else "s"
-        return " ".join(w)
+    _as_observed = staticmethod(policy.as_observed)
 
     async def _react_to_player(self, conseq: str, *, magnitude: float = 0.1) -> None:
         """Run the reaction recipe (docs/engine-game-contract.md) for everyone who saw the
