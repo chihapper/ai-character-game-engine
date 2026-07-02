@@ -41,8 +41,17 @@ public static class InnBuilder
         var go = Object.Instantiate(prefab, pos,
             Quaternion.Euler(0, yRot, 0) * prefab.transform.rotation, root);
         // scale MULTIPLIES the prefab's own (FBX unit compensation lives there — overwriting it
-        // shrank the cauldron/chandelier/jambs to centimeters)
-        if (scale.HasValue) go.transform.localScale = Vector3.Scale(go.transform.localScale, scale.Value);
+        // shrank the cauldron/chandelier/jambs to centimeters), and is WORLD-axis-semantic:
+        // the prefab root may carry an axis-compensation rotation, so each local axis takes the
+        // world component it actually points along
+        if (scale.HasValue)
+        {
+            var w = scale.Value;
+            float Along(Vector3 dir) => Mathf.Abs(dir.x) > 0.7f ? w.x : (Mathf.Abs(dir.y) > 0.7f ? w.y : w.z);
+            var q = prefab.transform.rotation;
+            var local = new Vector3(Along(q * Vector3.right), Along(q * Vector3.up), Along(q * Vector3.forward));
+            go.transform.localScale = Vector3.Scale(go.transform.localScale, local);
+        }
         QMaterials.Apply(go);
         var b = WorldBounds(go);
         go.transform.position += new Vector3(pos.x - b.center.x, pos.y - b.min.y, pos.z - b.center.z);
@@ -129,12 +138,9 @@ public static class InnBuilder
             // walls must be the solid plaster module
             Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
                   new Vector3(x, 0, D / 2), 0);
-            if (win)
-            {
-                var ww = root.GetChild(root.childCount - 1).gameObject;   // the window wall just spawned
-                var wb = WorldBounds(ww);
-                Pane(new Vector3(wb.center.x, WallHeight * 0.55f, D / 2 - 0.12f), new Vector3(1.7f, 1.2f, 0.05f));
-            }
+            // no glass pane geometry: the module's opening is off its bounds-center, so a placed
+            // quad straddles solid wall and (one-sided shells) reads as a hole to the sky.
+            // Medieval shutters carry it — rain and lightning arrive through the open window.
             bool door = i == nx / 2;
             Spawn(V + (door ? "Wall_Plaster_Door_Round" : "Wall_Plaster_Straight"),
                   new Vector3(x, 0, -D / 2), 180);
@@ -153,12 +159,6 @@ public static class InnBuilder
             bool win = j == nz - 1;
             Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
                   new Vector3(W / 2, 0, z), -90);
-            if (win)
-            {
-                var ww = root.GetChild(root.childCount - 1).gameObject;
-                var wb = WorldBounds(ww);
-                Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, wb.center.z), new Vector3(0.05f, 1.2f, 1.7f));
-            }
             Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_Straight"),
                   new Vector3(-W / 2, 0, z), 90);
         }
@@ -172,16 +172,18 @@ public static class InnBuilder
         // mantel beam, stacked logs; the fire light + flames are Bootstrap's
         var hearthPos = new Vector3(-W / 2 + 0.55f, 0, 0);
         Spawn(V + "Floor_Brick", hearthPos + new Vector3(0.35f, 0.01f, 0));
-        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, 1.05f), 0, new Vector3(0.28f, 0.62f, 1f));
-        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, -1.05f), 0, new Vector3(0.28f, 0.62f, 1f));
+        // full-height brick jambs: the shot read them as a proper chimney breast — keep that
+        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, 1.05f), 0, new Vector3(0.28f, 1f, 0.62f));
+        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, -1.05f), 0, new Vector3(0.28f, 1f, 0.62f));
         var mantel = GameObject.CreatePrimitive(PrimitiveType.Cube);
         mantel.transform.SetParent(root, false);
         mantel.transform.position = hearthPos + new Vector3(0.22f, 2.05f, 0);
         mantel.transform.localScale = new Vector3(0.5f, 0.14f, 2.4f);   // slim + high: heads clear it
-        mantel.GetComponent<Renderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        mantel.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color(0.32f, 0.24f, 0.17f));
-        var logM = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        logM.SetColor("_BaseColor", new Color(0.2f, 0.14f, 0.1f));
+        var mantelM = new Material(QMaterials.Map("wood beam"));   // textured, not flat gray
+        mantelM.SetColor("_BaseColor", new Color(0.5f, 0.38f, 0.26f));
+        mantel.GetComponent<Renderer>().material = mantelM;
+        var logM = new Material(QMaterials.Map("wood"));
+        logM.SetColor("_BaseColor", new Color(0.42f, 0.3f, 0.2f));
         for (int li = 0; li < 3; li++)
         {
             var log = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -290,32 +292,4 @@ public static class InnBuilder
             : $"LAYOUT: {fails} FAILS (see above)");
     }
 
-    /// An emissive pane inside a window opening — the storm made visible, and the surface
-    /// lightning arrives through (StormAudio drives the emission).
-    static void Pane(Vector3 pos, Vector3 size)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        Object.Destroy(go.GetComponent<Collider>());
-        go.name = "windowpane";
-        go.transform.SetParent(root, false);
-        go.transform.position = pos;
-        go.transform.localScale = size;
-        // TRANSPARENT glass: the storm outside is a view now, not a painting — rain, the flooded
-        // crossing, the marsh in the fog. Lightning still spikes the emission (wet-glass glow).
-        var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "Q_pane" };
-        m.SetFloat("_Surface", 1);
-        m.SetOverrideTag("RenderType", "Transparent");
-        m.renderQueue = 3001;
-        m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        m.SetInt("_ZWrite", 0);
-        m.SetColor("_BaseColor", new Color(0.4f, 0.48f, 0.62f, 0.45f));   // visibly wet glass
-        m.SetFloat("_Smoothness", 0.95f);
-        m.SetFloat("_Cull", 0);                                            // seen from BOTH sides
-        m.EnableKeyword("_EMISSION");
-        m.SetColor("_EmissionColor", new Color(0.12f, 0.16f, 0.24f));
-        go.GetComponent<Renderer>().material = m;
-        WindowPanes.Add(go.GetComponent<Renderer>().material);
-    }
 }

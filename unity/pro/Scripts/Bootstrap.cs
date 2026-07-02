@@ -60,6 +60,13 @@ public class Bootstrap : MonoBehaviour
     {
         // cold, wet, dim — the fires are the only warmth (same design as the gray box, real now)
         RenderSettings.skybox = null;   // the DEFAULT skybox is a sunny day — this night is lit by fire
+        // a null skybox still CLEARS to a bright day-gray gradient — through every window the
+        // "night" read as noon. Clear to storm-black instead.
+        if (Camera.main != null)
+        {
+            Camera.main.clearFlags = CameraClearFlags.SolidColor;
+            Camera.main.backgroundColor = new Color(0.015f, 0.02f, 0.035f);
+        }
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.11f, 0.12f, 0.16f);
         RenderSettings.fog = true;

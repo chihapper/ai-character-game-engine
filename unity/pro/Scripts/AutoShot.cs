@@ -63,7 +63,7 @@ public class AutoShot : MonoBehaviour
         yield return Shot("hearth", hearth + new Vector3(2.6f, 1.6f, 0.6f), hearth + Vector3.up * 0.8f);
         yield return Shot("bar", bar + new Vector3(-2.6f, 1.6f, -0.6f), bar + Vector3.up * 1.0f);
         yield return Shot("door_inside", mid + Vector3.up * 1.6f, door + Vector3.up * 1.2f);
-        yield return Shot("room_wide", door + new Vector3(0, 2.0f, 0.6f), mid + Vector3.up * 0.8f);
+        yield return Shot("room_wide", door + new Vector3(0, 1.8f, 0.6f), mid + Vector3.up * 1.5f);
         yield return Shot("window_inside", mid + new Vector3(0, 1.6f, -1f), mid + new Vector3(1.5f, 1.7f, 4f));
         yield return Shot("exterior_north", new Vector3(0, 2.2f, 12f), new Vector3(0, 1.5f, 4f));
         yield return Shot("exterior_door", door + new Vector3(0.5f, 1.7f, -5f), door + Vector3.up * 1.4f);
