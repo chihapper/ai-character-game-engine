@@ -12,6 +12,11 @@ public static class QShots
     [MenuItem("Ferry/Capture Auto Shots")]
     public static void RunCLI()
     {
+        // capture the CURRENT CODE's world: fresh empty scene so Bootstrap builds at runtime
+        // (a saved baked scene would replay old geometry and hide every fix under test)
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(
+            UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects,
+            UnityEditor.SceneManagement.NewSceneMode.Single);
         var root = Path.Combine(Application.dataPath, "..");
         File.Delete(Path.Combine(root, "autoshot.done"));
         File.WriteAllText(Path.Combine(root, "autoshot.flag"), "go");
