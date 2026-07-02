@@ -6,8 +6,9 @@ Everything is runtime-generated — no scene authoring, no prefabs, no packages.
 
 ## One-time setup (~3 minutes)
 
-1. **Unity Hub → New project → 3D (Built-In Render Pipeline)** — name it `FerryCrossing`,
-   any location. (Editor 6000.x is fine; already installed.)
+1. **Unity Hub → New project** — any 3D template works (Built-In or the default Universal 3D/URP);
+   name it `FerryCrossing`. If you used a URP template, set Edit → Project Settings → Player →
+   Active Input Handling to **Both** (the scripts use the classic input API).
 2. Copy this folder's `Assets/Scripts` into the new project's `Assets/`.
    Better (edits stay in the repo): make a junction instead —
    ```

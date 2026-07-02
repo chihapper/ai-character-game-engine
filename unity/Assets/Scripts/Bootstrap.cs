@@ -35,6 +35,12 @@ public class Bootstrap : MonoBehaviour
 
     IEnumerator Start()
     {
+        // The template scene (URP or Built-In) ships its own camera/listener — retire them so the
+        // player's first-person camera is the only eye and ear in the room.
+        foreach (var cam in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+            cam.gameObject.SetActive(false);
+        foreach (var al in FindObjectsByType<AudioListener>(FindObjectsSortMode.None))
+            al.enabled = false;
         BuildInn();
         var mind = gameObject.AddComponent<MindClient>();
         gameObject.AddComponent<DialogueUI>();
