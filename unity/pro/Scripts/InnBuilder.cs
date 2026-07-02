@@ -11,6 +11,7 @@ public static class InnBuilder
     const string P = "Q/Props/Exports/FBX/";
 
     public static readonly List<Material> WindowPanes = new();
+    public static readonly List<(Vector3 pos, Vector3 face)> Seats = new();  // where a body can SIT
     public static Transform WarrantAnchor { get; private set; }
     public static float WallHeight { get; private set; } = 3f;
 
@@ -75,7 +76,11 @@ public static class InnBuilder
             bool win = (i == 1 || i == nx - 2);
             Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_WoodGrid"),
                   new Vector3(x, 0, D / 2), 0);
-            if (win) Pane(new Vector3(x, WallHeight * 0.55f, D / 2 - 0.12f), new Vector3(1.6f, 1.1f, 0.05f));
+            if (win)
+            {
+                Pane(new Vector3(x, WallHeight * 0.55f, D / 2 - 0.12f), new Vector3(1.6f, 1.1f, 0.05f));
+                Spawn(V + "WindowShutters_Wide_Flat_Open", new Vector3(x, 0, D / 2), 0);
+            }
             bool door = i == nx / 2;
             Spawn(V + (door ? "Wall_Plaster_Door_Round" : "Wall_Plaster_Straight"),
                   new Vector3(x, 0, -D / 2), 180);
@@ -93,7 +98,11 @@ public static class InnBuilder
             bool win = j == nz - 1;
             Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
                   new Vector3(W / 2, 0, z), -90);
-            if (win) Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, z), new Vector3(0.05f, 1.1f, 1.6f));
+            if (win)
+            {
+                Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, z), new Vector3(0.05f, 1.1f, 1.6f));
+                Spawn(V + "WindowShutters_Wide_Flat_Open", new Vector3(W / 2, 0, z), -90);
+            }
             Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_WoodGrid"),
                   new Vector3(-W / 2, 0, z), 90);
         }
@@ -123,9 +132,9 @@ public static class InnBuilder
         // A CORNER TABLE (south-west): the long table, stools, dressing
         var tablePos = new Vector3(x0 + 2.2f, 0, z0 + 2.0f);
         Spawn(P + "Table_Large", tablePos, 15);
-        Spawn(P + "Stool", tablePos + new Vector3(0.9f, 0, 0.3f));
-        Spawn(P + "Stool", tablePos + new Vector3(-0.9f, 0, -0.4f));
-        Spawn(P + "Stool", tablePos + new Vector3(0.2f, 0, -0.95f));
+        Seat(tablePos + new Vector3(0.9f, 0, 0.3f), tablePos);
+        Seat(tablePos + new Vector3(-0.9f, 0, -0.4f), tablePos);
+        Seat(tablePos + new Vector3(0.2f, 0, -0.95f), tablePos);
         Spawn(P + "Candle_2", tablePos + new Vector3(0, 0.95f, 0));
         Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0.95f, 0.2f), 40);
         BoxCollider(tablePos + Vector3.up * 0.45f, new Vector3(1.9f, 0.9f, 1.1f));
@@ -133,6 +142,7 @@ public static class InnBuilder
         // THE WINDOW bay (north-east): bench under the window
         var benchPos = new Vector3(W / 2 - 2.2f, 0, D / 2 - 0.8f);
         Spawn(P + "Bench", benchPos, 180);
+        Seats.Add((benchPos, benchPos + Vector3.back * 3f));
 
         // set dressing
         Spawn(P + "Chandelier", new Vector3(0, WallHeight - 0.35f, 0));
@@ -152,6 +162,12 @@ public static class InnBuilder
         Regions.Add("a corner table", tablePos + new Vector3(0.8f, 0, 0.8f));
         Regions.Add("the window", benchPos + new Vector3(-0.5f, 0, -0.9f));
         Regions.Add("the middle of the taproom", new Vector3(0, 0, 0.3f));
+    }
+
+    static void Seat(Vector3 pos, Vector3 faceToward)
+    {
+        Spawn(P + "Stool", pos);
+        Seats.Add((pos, faceToward));
     }
 
     /// An emissive pane inside a window opening — the storm made visible, and the surface

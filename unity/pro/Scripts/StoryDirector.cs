@@ -59,7 +59,13 @@ public class StoryDirector : MonoBehaviour
         warrantObj.name = "the crown warrant";
         warrantObj.transform.position = WarrantPos;
         warrantObj.transform.localScale = new Vector3(0.45f, 0.62f, 0.025f);
-        warrantObj.GetComponent<Renderer>().material.color = new Color(0.9f, 0.85f, 0.7f);
+        var wm = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "warrant" };
+        var page = Resources.Load<Texture2D>("Q/Props/Textures/T_Page_Noise");
+        if (page != null) wm.SetTexture("_BaseMap", page);
+        wm.SetColor("_BaseColor", new Color(0.92f, 0.87f, 0.72f));
+        wm.SetFloat("_Smoothness", 0.05f);
+        warrantObj.GetComponent<Renderer>().material = wm;
+        warrantObj.transform.rotation *= Quaternion.Euler(0, 0, Random.Range(-4f, 4f));  // nailed in a hurry
         WarrantUp = true;
         DialogueUI.I.Feed("—", "Hammering at the door. When it stops, a paper is nailed there, ink running in the wet.");
         // Hearing needs no line of sight: every soul in the room heard the hammering.

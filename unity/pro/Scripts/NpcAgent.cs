@@ -145,6 +145,15 @@ public class NpcAgent : MonoBehaviour
             || action.StartsWith("listen at") || action.StartsWith("watch the storm"))
         {
             stance = action.Replace("your hands", "hands").Replace("your ", "");
+            if (action.StartsWith("sit at") && InnBuilder.Seats.Count > 0)
+            {
+                // a body sits ON something: walk to the nearest seat, settle onto it, face the table
+                var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - transform.position).sqrMagnitude).First();
+                yield return WalkTo(seat.pos);
+                transform.position = seat.pos + Vector3.up * 0.05f;
+                var face = seat.face - transform.position; face.y = 0;
+                if (face.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(face);
+            }
             SetPose(action.StartsWith("sit at") ? "Sit" : action.StartsWith("lean at") ? "Lean" : "Arms");
             if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
             yield break;
@@ -179,15 +188,26 @@ public class NpcAgent : MonoBehaviour
     IEnumerator WalkTo(Vector3 target)
     {
         SetPose("");  // a body that walks away stops sitting/leaning
+        transform.position = new Vector3(transform.position.x, 0, transform.position.z);
         anim?.SetFloat("Speed", walkSpeed);
-        while (Vector3.Distance(transform.position, target) > 0.6f)
+        // Path AROUND the furniture (a straight line walked through the bar): NavMesh corners,
+        // straight-line fallback where no path exists.
+        var corners = new List<Vector3> { target };
+        var path = new UnityEngine.AI.NavMeshPath();
+        if (UnityEngine.AI.NavMesh.CalculatePath(transform.position, target, UnityEngine.AI.NavMesh.AllAreas, path)
+            && path.corners.Length > 1)
+            corners = path.corners.Skip(1).Select(c => new Vector3(c.x, 0, c.z)).ToList();
+        foreach (var corner in corners)
         {
-            var dir = (target - transform.position); dir.y = 0;
-            transform.position += dir.normalized * walkSpeed * Time.deltaTime;
-            if (dir.sqrMagnitude > 0.01f)
-                transform.rotation = Quaternion.Slerp(transform.rotation,
-                    Quaternion.LookRotation(dir), 6f * Time.deltaTime);
-            yield return null;
+            while (Vector3.Distance(transform.position, corner) > 0.45f)
+            {
+                var dir = (corner - transform.position); dir.y = 0;
+                transform.position += dir.normalized * walkSpeed * Time.deltaTime;
+                if (dir.sqrMagnitude > 0.01f)
+                    transform.rotation = Quaternion.Slerp(transform.rotation,
+                        Quaternion.LookRotation(dir), 6f * Time.deltaTime);
+                yield return null;
+            }
         }
         anim?.SetFloat("Speed", 0f);
     }

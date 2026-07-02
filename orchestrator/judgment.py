@@ -84,7 +84,7 @@ def parse_json(text: str) -> dict | None:
     return salvage_json(text or "")
 
 
-async def judgment(system: str, prompt: str, *, role: str = "salience", model: str | None = None,
+async def judgment(system: "str | list", prompt: str, *, role: str = "salience", model: str | None = None,
                    max_tokens: int = 240, what: str = "judgment") -> dict | None:
     """The full pattern: complete -> parse JSON -> salvage on truncation -> None on error (logged).
     `what` names the judgment in the failure log."""

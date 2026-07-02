@@ -141,7 +141,7 @@ _COMMITMENT_BLOCK = (
 )
 
 
-def _relationship_block(rel) -> str:
+def _relationship_block() -> str:
     return (
         "relationship — how THIS exchange moved the character's feelings toward the player, as "
         "signed deltas (range -0.30..0.30). MOST EXCHANGES ARE 0.00 — feelings move rarely. "
@@ -179,14 +179,20 @@ def _relationship_block(rel) -> str:
         "recovery. CHARACTER-AWARE: a forgiving soul's scar can lift toward gone; a guarded grudge-"
         "holder's barely budges (small heal even for huge acts). MOST exchanges: 0 — words, time, "
         "apologies, and ordinary favors lift NOTHING.\n"
-        f"(Current standing, 0.5=baseline — affection {rel.affection:.2f}, trust {rel.trust:.2f}, "
-        f"respect {rel.respect:.2f}; existing scars — affection {rel.scar_affection:.2f}, trust "
-        f"{rel.scar_trust:.2f}, respect {rel.scar_respect:.2f}.)"
+        "(The character's CURRENT standing and scars are given with the exchange below.)"
     )
 
 
-def _intent_block(intent) -> str:
-    cur = f' (their current aim: "{intent.intent}")' if intent and intent.intent else " (none set yet)"
+def _standing_line(rel) -> str:
+    """The LIVE standing — rides with the prompt so the big rubric above stays byte-identical
+    across turns and characters (prompt-cacheable; the review found the floats embedded in the
+    system string defeated that for every judgment call)."""
+    return (f"Current standing, 0.5=baseline — affection {rel.affection:.2f}, trust {rel.trust:.2f}, "
+            f"respect {rel.respect:.2f}; existing scars — affection {rel.scar_affection:.2f}, trust "
+            f"{rel.scar_trust:.2f}, respect {rel.scar_respect:.2f}.")
+
+
+def _intent_block() -> str:
     return (
         "intent — the character's IMMEDIATE short-term aim with the player right now, beyond "
         "their standing profile goals. A concrete agenda from their POV (\"find out who sent "
@@ -194,7 +200,7 @@ def _intent_block(intent) -> str:
         "\"get rid of them\"). It EVOLVES — it may continue, sharpen, or change with the scene "
         "and their feelings. CHARACTER-AWARE: a schemer probes and uses; a lonely flirt wants to "
         "be chosen; a guarded one wants distance until trust is earned. Empty string if they have "
-        "no particular agenda." + cur
+        "no particular agenda. (Their current aim, if any, is given with the exchange below.)"
     )
 
 
@@ -288,17 +294,24 @@ async def reflect_on_turn(
                       '<-0.3..0.3>, "respect_delta": <-0.3..0.3>, "mood": "<1-2 words>", '
                       '"scar": {"affection": <0-1>, "trust": <0-1>, "respect": <0-1>}, '
                       '"scar_heal": {"affection": <0-1>, "trust": <0-1>, "respect": <0-1>}}')
-        blocks.append(_relationship_block(relationship))
+        blocks.append(_relationship_block())
     if want_intent:
         fields.append('"intent": "<short aim from their POV, or empty>"')
-        blocks.append(_intent_block(intent))
+        blocks.append(_intent_block())
     system = ("You analyze one exchange with a fictional character and return JSON ONLY — no "
               "prose.\nReturn: {" + ", ".join(fields) + "}\n\n" + "\n\n".join(blocks))
-    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+    live = ""
+    if want_rel:
+        live += "\n" + _standing_line(relationship)
+    if want_intent and intent and intent.intent:
+        live += "\nTheir current aim: " + intent.intent
+    prompt = (f"CHARACTER:\n{_character_summary(character)}{live}\n\n"
               f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
               "Return the JSON described.")
     try:
-        text = await complete(system, prompt, role="salience", model=model, max_tokens=380)
+        # system rides as a LIST: the rubric is byte-identical across turns AND characters for a
+        # given capability set, so it prompt-caches (the live floats travel with the prompt).
+        text = await complete([system], prompt, role="salience", model=model, max_tokens=380)
         return _parse_reflection(text, want_commit, want_rel, want_intent)
     except Exception:
         logger.exception("Reflection (salience/detect/relationship/intent) failed; neutral fallback")
@@ -333,7 +346,7 @@ async def assess_event_impact(
         "player, else {\"relationship\": {\"affection_delta\": <-0.3..0.3>, \"trust_delta\": "
         "<-0.3..0.3>, \"respect_delta\": <-0.3..0.3>, \"mood\": \"<1-2 words>\", \"scar\": "
         "{\"affection\": <0-1>, \"trust\": <0-1>, \"respect\": <0-1>}, \"scar_heal\": {\"affection\": "
-        "<0-1>, \"trust\": <0-1>, \"respect\": <0-1>}}}.\n\n" + _relationship_block(relationship) +
+        "<0-1>, \"trust\": <0-1>, \"respect\": <0-1>}}}.\n\n" + _relationship_block() +
         "\nINDIRECTNESS: weigh how directly the player is to blame/credit — a fair-minded character "
         "separates the player from their faction or allies; a vengeful or absolutist one does not. A "
         "severe harm can permanently SCAR like a personal betrayal.\n"
@@ -341,10 +354,10 @@ async def assess_event_impact(
         "change of life or faith, years of reflection, finally letting go of a grudge), that can "
         "warm them toward the player AND heal a scar (scar_heal) EVEN THOUGH THE PLAYER DID NOTHING — "
         "forgiveness they arrived at on their own. A passing mood or a whim heals nothing.")
-    prompt = (f"CHARACTER:\n{_character_summary(character)}\n\n"
+    prompt = (f"CHARACTER:\n{_character_summary(character)}\n{_standing_line(relationship)}\n\n"
               f"EVENT ({attribution}):\n{event}\n\n"
               "How does it move how they feel about the player? JSON only.")
-    d = await judgment(system, prompt, role="salience", model=model, max_tokens=240,
+    d = await judgment([system], prompt, role="salience", model=model, max_tokens=240,
                        what="World-event impact assessment")
     return _parse_relationship(d.get("relationship")) if isinstance(d, dict) else None
 

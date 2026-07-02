@@ -167,7 +167,7 @@ def test_reflect_on_turn_honors_caller_wants_over_globals(monkeypatch):
     captured = {}
 
     async def fake_complete(system, prompt, **kw):
-        captured["system"] = system
+        captured["system"] = "".join(system) if isinstance(system, list) else system
         return ('{"importance": 0.7, "relationship": {"affection_delta": 0.1, "trust_delta": 0.1, '
                 '"respect_delta": 0.0, "mood": "warm"}, "intent": "keep them close"}')
 

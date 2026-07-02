@@ -27,6 +27,7 @@ public class Bootstrap : MonoBehaviour
         InnBuilder.Build();
         ExteriorBuilder.Build();   // the storm is a place now, not just a sound
         Fires();
+        BakeNav();                 // paths that go AROUND the furniture
         gameObject.AddComponent<StormAudio>();
         gameObject.AddComponent<StoryDirector>();
         var mind = gameObject.AddComponent<MindClient>();
@@ -81,10 +82,21 @@ public class Bootstrap : MonoBehaviour
         vol.profile = profile;
     }
 
+    void BakeNav()
+    {
+        var go = new GameObject("NavMesh");
+        var surf = go.AddComponent<Unity.AI.Navigation.NavMeshSurface>();
+        surf.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
+        surf.BuildNavMesh();
+    }
+
     void Fires()
     {
-        Fire("hearthfire", Regions.Anchor("the hearth") + new Vector3(-0.7f, 0.55f, 0),
-             new Color(1f, 0.52f, 0.22f), 2.4f, 0.6f, 9f, 2.4f);
+        var hearthFire = Regions.Anchor("the hearth") + new Vector3(-0.7f, 0.55f, 0);
+        Fire("hearthfire", hearthFire, new Color(1f, 0.52f, 0.22f), 2.4f, 0.6f, 9f, 2.4f);
+        FlameFX.Add(hearthFire + Vector3.down * 0.35f, 1.6f);                                  // the fire itself
+        FlameFX.Add(Regions.Anchor("the bar") + new Vector3(1.0f, 1.06f, -0.4f), 0.3f);        // bar candle
+        FlameFX.Add(Regions.Anchor("a corner table") + new Vector3(-0.8f, 1.0f, -0.8f), 0.3f); // table candle
         Fire("chandelier", new Vector3(0, InnBuilder.WallHeight - 0.6f, 0),
              new Color(1f, 0.72f, 0.42f), 1.3f, 0.15f, 8f, 1.0f);
         Fire("candle.bar", Regions.Anchor("the bar") + new Vector3(1.0f, 1.25f, -0.4f),
