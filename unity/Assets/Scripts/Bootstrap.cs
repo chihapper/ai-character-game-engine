@@ -53,13 +53,18 @@ public class Bootstrap : MonoBehaviour
         });
     }
 
+    public static readonly List<Material> WindowPanes = new();  // lightning flashes THROUGH these
+
     void BuildInn()
     {
-        RenderSettings.ambientLight = new Color(0.35f, 0.33f, 0.30f);
-        Sun = new GameObject("Sun").AddComponent<Light>();
+        // DREARY by design: cold dim storm-light from outside; the only warmth in the room is
+        // fire — a breathing hearth and two wavering oil lamps. Lightning spikes the windows.
+        RenderSettings.ambientLight = new Color(0.14f, 0.15f, 0.19f);
+        Sun = new GameObject("StormLight").AddComponent<Light>();
         Sun.type = LightType.Directional;
-        Sun.intensity = 0.7f;
-        Sun.transform.rotation = Quaternion.Euler(55, -30, 0);
+        Sun.intensity = 0.18f;
+        Sun.color = new Color(0.6f, 0.68f, 0.85f);   // cold, wet, moonless
+        Sun.transform.rotation = Quaternion.Euler(60, -25, 0);
         gameObject.AddComponent<StormAudio>();     // the storm the whole scenario shelters from
         gameObject.AddComponent<StoryDirector>();  // the night's spine — warrant, bell, dawn horn
 
@@ -74,6 +79,18 @@ public class Bootstrap : MonoBehaviour
         Box("the hearth (stone)", new Vector3(-5.8f, 0.8f, 3.6f), new Vector3(1.6f, 1.6f, 1.2f), new Color(0.85f, 0.45f, 0.2f));
         Box("a corner table", new Vector3(-4.5f, 0.4f, -3.5f), new Vector3(1.4f, 0.8f, 1.4f), new Color(0.4f, 0.32f, 0.22f));
         Box("the window (shuttered)", new Vector3(6.8f, 1.6f, -3f), new Vector3(0.2f, 1.2f, 1.6f), new Color(0.25f, 0.3f, 0.4f));
+
+        // windows: pale rain-grey panes set into the walls — the storm made visible from inside,
+        // and the surface lightning arrives through
+        WindowPanes.Clear();
+        Window("window.n1", new Vector3(-3.5f, 1.8f, 4.83f), new Vector3(1.5f, 1.1f, 0.06f));
+        Window("window.n2", new Vector3(1.5f, 1.8f, 4.83f), new Vector3(1.5f, 1.1f, 0.06f));
+        Window("window.e (shuttered)", new Vector3(6.83f, 1.7f, -3f), new Vector3(0.06f, 1.1f, 1.6f));
+
+        // the warmth: a breathing hearth fire + two wavering oil lamps
+        FireLight("hearthfire", new Vector3(-5.1f, 1.4f, 3.0f), new Color(1f, 0.55f, 0.25f), 1.7f, 0.4f, 8f);
+        FireLight("lamp.bar", new Vector3(4.5f, 1.9f, 1.2f), new Color(1f, 0.76f, 0.45f), 0.95f, 0.12f, 5f);
+        FireLight("lamp.table", new Vector3(-4.5f, 1.5f, -2.8f), new Color(1f, 0.72f, 0.42f), 0.7f, 0.1f, 4f);
 
         Regions.Add("the door", new Vector3(-1.5f, 0, -4.5f));
         Regions.Add("the bar", new Vector3(4.5f, 0, 1f));
@@ -136,6 +153,26 @@ public class Bootstrap : MonoBehaviour
         go.name = name; go.transform.position = pos; go.transform.localScale = size;
         go.GetComponent<Renderer>().material.color = color;
         return go;
+    }
+
+    static void Window(string name, Vector3 pos, Vector3 size)
+    {
+        var pane = Box(name, pos, size, new Color(0.35f, 0.42f, 0.55f));
+        Destroy(pane.GetComponent<Collider>());  // set into the wall; the wall does the blocking
+        var m = pane.GetComponent<Renderer>().material;
+        m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", new Color(0.16f, 0.20f, 0.28f));  // faint storm-grey glow
+        WindowPanes.Add(m);
+    }
+
+    static void FireLight(string name, Vector3 pos, Color color, float intensity, float flicker, float range)
+    {
+        var go = new GameObject(name);
+        go.transform.position = pos;
+        var lt = go.AddComponent<Light>();
+        lt.type = LightType.Point; lt.color = color; lt.range = range;
+        var f = go.AddComponent<Flicker>();
+        f.baseIntensity = intensity; f.amount = flicker; f.speed = name.StartsWith("hearth") ? 2.2f : 1.1f;
     }
 
 }

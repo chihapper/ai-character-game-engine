@@ -72,14 +72,20 @@ public class StormAudio : MonoBehaviour
         if (sun == null) yield break;
         float baseI = sun.intensity;
         Color baseAmb = RenderSettings.ambientLight;
+        Color baseSun = sun.color;
+        var paneBase = new Color(0.16f, 0.20f, 0.28f);
+        var paneFlash = new Color(0.75f, 0.85f, 1f) * (1.5f + 6f * closeness);  // the windows go WHITE
         int flickers = rng.Next(1, 3);
         for (int i = 0; i < flickers; i++)
         {
-            sun.intensity = baseI + 2.4f * closeness;
-            RenderSettings.ambientLight = baseAmb + Color.white * (0.45f * closeness);
+            sun.intensity = baseI + 2.6f * closeness;
+            sun.color = new Color(0.8f, 0.85f, 1f);
+            RenderSettings.ambientLight = baseAmb + new Color(0.35f, 0.4f, 0.55f) * closeness;
+            foreach (var m in Bootstrap.WindowPanes) m.SetColor("_EmissionColor", paneFlash);
             yield return new WaitForSeconds(0.05f);
-            sun.intensity = baseI;
+            sun.intensity = baseI; sun.color = baseSun;
             RenderSettings.ambientLight = baseAmb;
+            foreach (var m in Bootstrap.WindowPanes) m.SetColor("_EmissionColor", paneBase);
             yield return new WaitForSeconds(0.08f);
         }
     }
