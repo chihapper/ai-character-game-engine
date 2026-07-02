@@ -37,6 +37,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (CurtainUI.GameEnded)
+        { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; return; }
         if (DialogueUI.I != null && DialogueUI.I.IsOpen)
         {
             Cursor.lockState = CursorLockMode.None; Cursor.visible = true;

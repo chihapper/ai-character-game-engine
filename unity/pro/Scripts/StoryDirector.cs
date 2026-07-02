@@ -12,6 +12,7 @@ public class StoryDirector : MonoBehaviour
 {
     public static StoryDirector I;
     public bool WarrantUp { get; private set; }
+    public bool WarrantTorn { get; private set; }
     public Vector3 WarrantPos { get; private set; }
 
     public const string WarrantText =
@@ -42,6 +43,64 @@ public class StoryDirector : MonoBehaviour
         yield return ReportToAll("a horn sounds through the rain — the dawn ferry is coming in, "
                                  + "and with it voices: men in crown colors on the far landing", 0.5f);
         DialogueUI.I.Feed("—", "Dawn. The storm thins. The crossing will open soon.");
+        yield return DawnBreaks();
+    }
+
+    /// The ending, enacted: light warms and lifts over a minute, the door swings open, two of
+    /// the crown's men stand dark on the threshold — the whole room appraises THAT — and then
+    /// the curtain falls on what the night actually was.
+    IEnumerator DawnBreaks()
+    {
+        float t0 = Time.time, dur = 55f;
+        var sun = Bootstrap.Sun;
+        Color coldA = RenderSettings.ambientLight, coldF = RenderSettings.fogColor;
+        var warmA = new Color(0.30f, 0.28f, 0.27f);
+        var warmF = new Color(0.35f, 0.32f, 0.3f);
+        var warmSun = new Color(0.95f, 0.75f, 0.55f);
+        Color coldSun = sun != null ? sun.color : Color.white;
+        float sun0 = sun != null ? sun.intensity : 0.14f;
+        while (Time.time - t0 < dur)
+        {
+            float k = (Time.time - t0) / dur;
+            RenderSettings.ambientLight = Color.Lerp(coldA, warmA, k);
+            RenderSettings.fogColor = Color.Lerp(coldF, warmF, k);
+            RenderSettings.fogDensity = Mathf.Lerp(0.045f, 0.02f, k);
+            if (sun != null)
+            {
+                sun.color = Color.Lerp(coldSun, warmSun, k);
+                sun.intensity = Mathf.Lerp(sun0, 0.55f, k);
+                sun.transform.rotation = Quaternion.Euler(Mathf.Lerp(55, 22, k), -28, 0);
+            }
+            yield return null;
+        }
+        // the door opens; two crown men, dark against the dawn
+        var door = GameObject.Find("Door_1_Round(Clone)");
+        if (door != null)
+        {
+            float d0 = Time.time;
+            var start = door.transform.rotation;
+            var open = start * Quaternion.Euler(0, -100, 0);
+            while (Time.time - d0 < 2.5f)
+            { door.transform.rotation = Quaternion.Slerp(start, open, (Time.time - d0) / 2.5f); yield return null; }
+        }
+        var doorPos = Regions.Anchor("the door");
+        for (int i = 0; i < 2; i++)
+        {
+            var man = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            man.name = "crown man";
+            man.transform.position = doorPos + new Vector3(-0.5f + i * 1.0f, 1.0f, -1.6f - i * 0.5f);
+            man.transform.localScale = new Vector3(0.55f, 1.0f, 0.55f);
+            var mm = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mm.SetColor("_BaseColor", new Color(0.09f, 0.09f, 0.11f));
+            man.GetComponent<Renderer>().material = mm;
+        }
+        fx.PlayOneShot(Hammering(), 0.4f);  // a fist on the open door frame
+        yield return ReportToAll("the door stands open on the grey dawn — two of the crown's men "
+                                 + "on the threshold, water running off their oilskins, eyes moving "
+                                 + "over every face in the room", 0.6f);
+        yield return new WaitForSeconds(25f);  // one last beat of the room reacting
+        if (MindClient.I != null) yield return MindClient.I.Finish();
+        CurtainUI.I?.ShowEpilogue();
     }
 
     IEnumerator Until(float hour)
@@ -109,6 +168,7 @@ public class StoryDirector : MonoBehaviour
     {
         if (!WarrantUp) return;
         WarrantUp = false;
+        WarrantTorn = true;
         Destroy(warrantObj);
         DialogueUI.I.Feed("—", "You tear the warrant down. The wet paper comes apart in your hands.");
         StartCoroutine(PlayerController.I.ReportAct("tears the crown warrant off the door and crumples it", 0.5f));

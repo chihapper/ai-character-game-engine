@@ -18,9 +18,18 @@ public class NpcAgent : MonoBehaviour
 
     public string Reference => string.IsNullOrEmpty(knownName) ? handle : knownName;
     public Transform LookTarget;   // head turns toward this (talking partner, watched thing)
+    // cross-talk guards (#31 lite): a pair doesn't re-open for a while, and the ROOM doesn't
+    // chatter constantly — the option only even appears off cooldown
+    static readonly Dictionary<string, float> pairTalk = new();
+    static float roomTalk = -999f;
     Animator anim;
     Transform headBone;
-    bool busy;
+    public bool busy { get; private set; }
+
+    public void Bubble(string text)
+    {
+        (GetComponent<SpeechBubble>() ?? gameObject.AddComponent<SpeechBubble>()).Say(text, 2.25f);
+    }
 
     void Awake()
     {
@@ -72,6 +81,14 @@ public class NpcAgent : MonoBehaviour
             .Append("stay where you are, watchful").ToList();
         if (StoryDirector.I != null && StoryDirector.I.WarrantUp)
             options.Add("go read the paper nailed to the door");
+        // someone close enough to speak to, and the room is off chatter-cooldown (#31 lite)
+        if (Time.time - roomTalk > 50f)
+            foreach (var o in All)
+                if (o != this && !o.busy
+                    && Vector3.Distance(o.transform.position, transform.position) < 6f
+                    && Time.time - PairKey(o) > 180f
+                    && PerceptComposer.CanSee(transform, o.transform))
+                    options.Add($"say a word to {o.Reference}");
         ChooseRes choice = null;
         yield return MindClient.I.Choose(slug, new ChooseReq { situation = scene, options = options.ToArray() },
                                          c => choice = c);
@@ -86,11 +103,12 @@ public class NpcAgent : MonoBehaviour
     }
 
     /// A spoken reaction beat — the observed moment crossed SPEAK_SALIENCE.
-    public IEnumerator SpeakBeat(string observed)
+    public IEnumerator SpeakBeat(string observed, Transform toward = null)
     {
         busy = true;
         anim?.SetBool("Talk", true);
-        if (PlayerController.I != null) LookTarget = PlayerController.I.transform;
+        LookTarget = toward != null ? toward
+                     : (PlayerController.I != null ? PlayerController.I.transform : null);
         RespondRes res = null;
         yield return MindClient.I.Respond(slug, new RespondReq
         {
@@ -101,6 +119,7 @@ public class NpcAgent : MonoBehaviour
         {
             if (!string.IsNullOrEmpty(res.name_spoken)) knownName = res.name_spoken;
             DialogueUI.I.Feed(Reference, res.reply);
+            Bubble(res.reply);
         }
         anim?.SetBool("Talk", false);
         LookTarget = null;
@@ -130,8 +149,66 @@ public class NpcAgent : MonoBehaviour
                 yield return o.Reference;
     }
 
+    float PairKey(NpcAgent o)
+    {
+        var k = string.CompareOrdinal(slug, o.slug) < 0 ? slug + "|" + o.slug : o.slug + "|" + slug;
+        return pairTalk.TryGetValue(k, out var t) ? t : -999f;
+    }
+
+    void MarkPair(NpcAgent o)
+    {
+        var k = string.CompareOrdinal(slug, o.slug) < 0 ? slug + "|" + o.slug : o.slug + "|" + slug;
+        pairTalk[k] = Time.time;
+        roomTalk = Time.time;
+    }
+
+    /// #31 lite — one line spoken to another PRESENT character, heard by the room. The mind
+    /// server needs nothing new: the line is respond(event=...), the listener HEARS it through
+    /// /observe (their own appraisal decides whether to answer), and any reply is a SpeakBeat —
+    /// which never itself triggers observation, so chatter can't chain into a loop.
+    IEnumerator CrossTalk(NpcAgent other)
+    {
+        MarkPair(other);
+        LookTarget = other.transform;
+        anim?.SetBool("Talk", true);
+        RespondRes res = null;
+        yield return MindClient.I.Respond(slug, new RespondReq
+        {
+            @event = $"Say ONE brief line aloud to {other.Reference} — whatever this exact moment "
+                     + "makes you want to say to them. A sentence or two, in quotes.",
+            situation = PerceptComposer.For(this),
+        }, r => res = r);
+        anim?.SetBool("Talk", false);
+        if (res == null || string.IsNullOrEmpty(res.reply)) { LookTarget = null; yield break; }
+        if (!string.IsNullOrEmpty(res.name_spoken)) knownName = res.name_spoken;
+        DialogueUI.I.Feed(Reference, res.reply);
+        Bubble(res.reply);
+        other.LookTarget = transform;
+        // the listener HEARS it — their appraisal decides if it deserves an answer
+        ObserveRes ores = null;
+        yield return MindClient.I.Observe(new ObserveReq
+        {
+            clock = WorldClock.Hours,
+            magnitude = 0.2f,
+            items = new[] { new ObservedItem { slug = other.slug,
+                observed = $"{Reference} says to you: {res.reply}" } },
+        }, r => ores = r);
+        LookTarget = null;
+        if (ores != null && ores.results.Length > 0 && ores.results[0].react != "")
+            yield return other.SpeakBeat($"{Reference} just spoke to you: {res.reply} — answer them briefly", transform);
+        else
+            other.LookTarget = null;
+    }
+
     IEnumerator Enact(string action, string reason)
     {
+        if (action.StartsWith("say a word to "))
+        {
+            var who = action.Substring("say a word to ".Length);
+            var other = All.FirstOrDefault(a => a != this && a.Reference == who);
+            if (other != null) yield return CrossTalk(other);
+            yield break;
+        }
         if (action == "go read the paper nailed to the door")
         {
             stance = "";

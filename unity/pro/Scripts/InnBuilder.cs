@@ -49,6 +49,8 @@ public static class InnBuilder
 
     public static void Build()
     {
+        WindowPanes.Clear();   // statics survive the [R] scene reload — the registries must not
+        Seats.Clear();
         root = new GameObject("Inn").transform;
         var wall = Size(V + "Wall_Plaster_Straight");
         float U = Mathf.Max(1f, wall.x);          // module unit, measured

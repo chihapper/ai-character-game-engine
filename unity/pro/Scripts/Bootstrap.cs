@@ -32,6 +32,7 @@ public class Bootstrap : MonoBehaviour
         gameObject.AddComponent<StoryDirector>();
         var mind = gameObject.AddComponent<MindClient>();
         gameObject.AddComponent<DialogueUI>();
+        gameObject.AddComponent<CurtainUI>();   // title in, epilogue out
 
         // the player: a body-less first-person presence (CharacterController is the LoS collider)
         var player = new GameObject("Player");
