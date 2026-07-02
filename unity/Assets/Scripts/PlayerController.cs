@@ -16,6 +16,9 @@ public class PlayerController : MonoBehaviour
     Camera cam;
     float pitch;
     string lastRegion = "";
+    AudioSource stepSrc;
+    AudioClip stepClip;
+    float strideAcc;
 
     void Awake()
     {
@@ -28,6 +31,8 @@ public class PlayerController : MonoBehaviour
         cam.transform.localPosition = new Vector3(0, 1.6f, 0);
         cam.gameObject.AddComponent<AudioListener>();
         lastRegion = Regions.NameAt(transform.position);
+        stepSrc = gameObject.AddComponent<AudioSource>();
+        stepClip = MakeStep();
     }
 
     void Update()
@@ -45,6 +50,16 @@ public class PlayerController : MonoBehaviour
 
         var move = transform.right * Input.GetAxis("Horizontal") + transform.forward * Input.GetAxis("Vertical");
         cc.SimpleMove(move.normalized * speed);
+
+        // footsteps: one soft knock on the boards per ~0.75m of actual travel, pitch-jittered
+        var flat = cc.velocity; flat.y = 0;
+        strideAcc += flat.magnitude * Time.deltaTime;
+        if (strideAcc > 0.75f && flat.magnitude > 0.5f)
+        {
+            strideAcc = 0;
+            stepSrc.pitch = Random.Range(0.88f, 1.12f);
+            stepSrc.PlayOneShot(stepClip, Random.Range(0.25f, 0.4f));
+        }
 
         var region = Regions.NameAt(transform.position);
         if (region != lastRegion)
@@ -82,6 +97,28 @@ public class PlayerController : MonoBehaviour
             })
             .OrderBy(a => Vector3.Distance(a.transform.position, transform.position))
             .FirstOrDefault();
+
+    // A bootstep on old floorboards, synthesized (no assets, like the storm): a low knock plus a
+    // brief wood-creak of filtered noise, both decaying fast.
+    static AudioClip MakeStep()
+    {
+        int sr = AudioSettings.outputSampleRate;
+        var rng = new System.Random();
+        var d = new float[sr / 6];
+        float lp = 0;
+        for (int i = 0; i < d.Length; i++)
+        {
+            float t = i / (float)sr;
+            float knock = Mathf.Sin(2 * Mathf.PI * 85 * t) * Mathf.Exp(-t * 40f);
+            float white = (float)(rng.NextDouble() * 2 - 1);
+            lp += 0.25f * (white - lp);
+            float creak = lp * Mathf.Exp(-t * 25f) * 0.5f;
+            d[i] = (knock + creak) * 0.8f;
+        }
+        var c = AudioClip.Create("step", d.Length, 1, sr, false);
+        c.SetData(d, 0);
+        return c;
+    }
 
     /// The react recipe, client half: real witnesses only, each observation from ITS vantage.
     public IEnumerator ReportAct(string conseqThirdPerson, float magnitude)

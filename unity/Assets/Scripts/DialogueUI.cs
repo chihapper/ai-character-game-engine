@@ -13,15 +13,18 @@ public class DialogueUI : MonoBehaviour
     NpcAgent target;
     string input = "";
     bool waiting;
-    readonly List<string> feed = new();
-    GUIStyle label, box, field, button;
+    readonly List<string> feed = new();      // speech + story beats: bottom-left, above the composer
+    readonly List<string> thoughts = new();  // NPC act beats + reasons: their OWN right-side column,
+                                             // so an arriving thought never sits over what you're typing
+    GUIStyle label, box, field, button, thought;
 
     void Awake() { I = this; }
 
     public void Open(NpcAgent npc) { target = npc; input = ""; }
-    public void Feed(string who, string text) { feed.Add($"{who}: {text}"); Trim(); }
-    public void FeedAct(string who, string action, string reason) { feed.Add($"* {who} — {action} · “{reason}”"); Trim(); }
-    void Trim() { while (feed.Count > 6) feed.RemoveAt(0); }
+    public void Feed(string who, string text) { feed.Add($"{who}: {text}"); Trim(feed, 6); }
+    public void FeedAct(string who, string action, string reason)
+    { thoughts.Add($"{who} — {action}\n“{reason}”"); Trim(thoughts, 5); }
+    static void Trim(List<string> l, int keep) { while (l.Count > keep) l.RemoveAt(0); }
 
     void EnsureStyles()
     {
@@ -32,6 +35,9 @@ public class DialogueUI : MonoBehaviour
         box = new GUIStyle(GUI.skin.box) { fontSize = size, alignment = TextAnchor.UpperLeft };
         field = new GUIStyle(GUI.skin.textField) { fontSize = size };
         button = new GUIStyle(GUI.skin.button) { fontSize = size };
+        thought = new GUIStyle(GUI.skin.label)
+        { fontSize = Mathf.RoundToInt(size * 0.85f), wordWrap = true, fontStyle = FontStyle.Italic };
+        thought.normal.textColor = new Color(0.85f, 0.88f, 1f, 0.95f);
     }
 
     void OnGUI()
@@ -76,15 +82,29 @@ public class DialogueUI : MonoBehaviour
             GUI.Label(new Rect((Screen.width - w) / 2 + 12, Screen.height * 0.62f + 3, w, line), msg, label);
         }
 
-        // feed: newest at the bottom, drawn upward, with a dark backdrop so it reads over the floor
+        // SPEECH feed: bottom-LEFT (60% width), newest at the bottom, drawn upward above the composer
+        float feedW = Screen.width * 0.60f;
         float inputPad = IsOpen ? line * 2.6f : 0;
         float y = Screen.height - line - 10 - inputPad;
         for (int i = feed.Count - 1; i >= 0; i--)
         {
-            var h = label.CalcHeight(new GUIContent(feed[i]), Screen.width - 40);
+            var h = label.CalcHeight(new GUIContent(feed[i]), feedW - 30);
             y -= h;
-            GUI.Box(new Rect(10, y - 2, Screen.width - 20, h + 4), GUIContent.none);
-            GUI.Label(new Rect(20, y, Screen.width - 40, h), feed[i], label);
+            GUI.Box(new Rect(10, y - 2, feedW, h + 4), GUIContent.none);
+            GUI.Label(new Rect(20, y, feedW - 30, h), feed[i], label);
+        }
+
+        // THOUGHT column: right side (28% width), top-down, italic + dim — the room's inner life
+        // stays visible while you type without ever covering the composer or the speech feed
+        float tw = Screen.width * 0.28f;
+        float tx = Screen.width - tw - 12;
+        float ty = line * 1.6f;
+        foreach (var t2 in thoughts)
+        {
+            var h = thought.CalcHeight(new GUIContent(t2), tw - 20);
+            GUI.Box(new Rect(tx, ty - 2, tw, h + 6), GUIContent.none);
+            GUI.Label(new Rect(tx + 10, ty + 1, tw - 20, h), t2, thought);
+            ty += h + 10;
         }
     }
 
