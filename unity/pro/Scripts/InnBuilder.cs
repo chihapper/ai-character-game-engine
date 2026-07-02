@@ -217,21 +217,43 @@ public static class InnBuilder
         Spawn(P + "Cauldron", hearthPos + new Vector3(0.5f, 0, 1.35f), 0, Vector3.one * 0.8f);  // beside, not IN it
         BoxCollider(hearthPos + Vector3.up * 0.5f, new Vector3(1.0f, 1.0f, 2.4f));
 
-        // THE BAR (east side, in front of the window bay): two workbenches + bottles behind
+        // THE BAR (east side, in front of the window bay): a three-unit counter RUN with
+        // bottles, mugs, and a keg — it has to READ as a bar from across the room
         var barPos = new Vector3(W / 2 - 1.6f, 0, D / 4);
-        var bench = Spawn(P + "Workbench_Drawers", barPos, -90);
+        var bench = Spawn(P + "Workbench_Drawers", barPos + new Vector3(0, 0, 1.1f), -90);
+        Spawn(P + "Workbench_Drawers", barPos, -90);
         Spawn(P + "Workbench_Drawers", barPos + new Vector3(0, 0, -1.1f), -90);
         Spawn(P + "Shelf_Small_Bottles", new Vector3(W / 2 - 0.15f, 1.5f, D / 4), -90);
-        Spawn(P + "Barrel", new Vector3(W / 2 - 0.6f, 0, D / 4 + 1.4f));
+        Spawn(P + "Shelf_Arch", new Vector3(W / 2 - 0.15f, 1.45f, D / 4 - 1.2f), -90);
+        Spawn(P + "Cabinet", new Vector3(W / 2 - 0.45f, 0, D / 4 + 2.0f), -90);   // back bar
+        Spawn(P + "Barrel_Holder", new Vector3(W / 2 - 0.55f, 0, D / 4 - 1.9f));  // the keg
         float barTop = TopOf(bench);
         BarTop = barTop;
-        Spawn(P + "Mug", barPos + new Vector3(-0.1f, 0, 0.2f), 0).transform.position += Vector3.up * barTop;
-        Spawn(P + "Bottle_1", barPos + new Vector3(0.1f, 0, -0.3f), 0).transform.position += Vector3.up * barTop;
-        Spawn(P + "Candle_1", barPos + new Vector3(0, 0, -0.8f), 0).transform.position += Vector3.up * barTop;
-        BoxCollider(barPos + new Vector3(0, 0.5f, -0.55f), new Vector3(0.9f, 1.1f, 2.3f));
+        Spawn(P + "Mug", barPos + new Vector3(-0.1f, 0, 0.9f), 0).transform.position += Vector3.up * barTop;
+        Spawn(P + "Mug", barPos + new Vector3(0.08f, 0, 0.1f), 35).transform.position += Vector3.up * barTop;
+        Spawn(P + "Bottle_1", barPos + new Vector3(0.1f, 0, -0.4f), 0).transform.position += Vector3.up * barTop;
+        Spawn(P + "Table_Plate", barPos + new Vector3(-0.05f, 0, -0.9f), 0).transform.position += Vector3.up * barTop;
+        Spawn(P + "Candle_1", barPos + new Vector3(0, 0, 1.4f), 0).transform.position += Vector3.up * barTop;
+        BoxCollider(barPos + new Vector3(0, 0.5f, 0), new Vector3(0.9f, 1.1f, 3.4f));
 
-        // A CORNER TABLE (south-west): the long table, stools, dressing
-        var tablePos = new Vector3(x0 + 2.2f, 0, z0 + 2.0f);
+        // THE BACK KITCHEN (south-east, walled off behind the bar): where the stew actually
+        // comes from — prep counter, pots, crates of food, water bucket. Entry gap by the bar.
+        var kitchenWall = Spawn(V + "Wall_Plaster_Straight", new Vector3(W / 2 - 1.0f, 0, -0.5f), 0);
+        if (kitchenWall != null) kitchenWall.name = "kitchen.partition";  // interior wall: not the perimeter audit's business
+        BoxCollider(new Vector3(W / 2 - 1.0f, WallHeight / 2, -0.5f), new Vector3(2.0f, WallHeight, 0.3f));
+        var prep = Spawn(P + "Workbench_Drawers", new Vector3(W / 2 - 0.55f, 0, -1.6f), -90);
+        float prepTop = TopOf(prep);
+        Spawn(P + "Pot_1", new Vector3(W / 2 - 0.55f, 0, -1.4f)).transform.position += Vector3.up * prepTop;
+        Spawn(P + "Table_Knife", new Vector3(W / 2 - 0.5f, 0, -1.9f), 25).transform.position += Vector3.up * prepTop;
+        Spawn(P + "FarmCrate_Carrot", new Vector3(W / 2 - 1.5f, 0, -3.3f), 15);
+        Spawn(P + "FarmCrate_Apple", new Vector3(W / 2 - 0.6f, 0, -3.3f), -10);
+        Spawn(P + "Bucket_Wooden_1", new Vector3(W / 2 - 1.7f, 0, -2.2f));
+        Spawn(P + "Shelf_Simple", new Vector3(W / 2 - 0.15f, 1.6f, -2.6f), -90);
+        Spawn(P + "SmallBottles_1", new Vector3(W / 2 - 0.22f, 1.72f, -2.6f), -90);
+        BoxCollider(new Vector3(W / 2 - 0.55f, 0.5f, -1.6f), new Vector3(0.9f, 1.1f, 1.2f));
+
+        // THE LONG TABLE (middle of the room): the table a stranger gets waved toward
+        var tablePos = new Vector3(-1.2f, 0, -0.5f);
         Spawn(P + "Table_Large", tablePos, 15);
         Seat(tablePos + new Vector3(0.9f, 0, 0.3f), tablePos);
         Seat(tablePos + new Vector3(-0.9f, 0, -0.4f), tablePos);
@@ -239,6 +261,14 @@ public static class InnBuilder
         Spawn(P + "Candle_2", tablePos).transform.position += Vector3.up * 0.92f;
         Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0, 0.2f), 40).transform.position += Vector3.up * 0.92f;
         BoxCollider(tablePos + Vector3.up * 0.45f, new Vector3(1.9f, 0.9f, 1.1f));
+
+        // A SMALL TABLE across from the bar — one seat, one candle: a performer's perch
+        var smallPos = new Vector3(1.7f, 0, 2.1f);
+        Spawn(P + "Table_Large", smallPos, 40, new Vector3(0.62f, 1f, 0.62f));
+        Seat(smallPos + new Vector3(0.85f, 0, -0.35f), smallPos);
+        Spawn(P + "Mug", smallPos + new Vector3(0.1f, 0, 0.1f), 0).transform.position += Vector3.up * 0.9f;
+        Spawn(P + "Candle_1", smallPos + new Vector3(-0.25f, 0, -0.2f), 0).transform.position += Vector3.up * 0.9f;
+        BoxCollider(smallPos + Vector3.up * 0.45f, new Vector3(1.2f, 0.9f, 0.8f));
 
         // THE WINDOW bay (north-east): bench under the window
         var benchPos = new Vector3(W / 2 - 2.2f, 0, D / 2 - 0.8f);
@@ -284,9 +314,11 @@ public static class InnBuilder
         Regions.Add("the door", new Vector3(0, 0, -D / 2 + 1.0f));
         Regions.Add("the bar", barPos + new Vector3(-1.1f, 0, -0.4f));
         Regions.Add("the hearth", hearthPos + new Vector3(1.55f, 0, 0));   // stand CLEAR of the mantel
-        Regions.Add("a corner table", tablePos + new Vector3(0.8f, 0, 0.8f));
+        Regions.Add("the long table", tablePos + new Vector3(0.8f, 0, 0.8f));
+        Regions.Add("a small table", smallPos + new Vector3(0.6f, 0, -0.7f));
+        Regions.Add("the back kitchen", new Vector3(W / 2 - 1.1f, 0, -2.3f));
         Regions.Add("the window", benchPos + new Vector3(-0.5f, 0, -0.9f));
-        Regions.Add("the middle of the taproom", new Vector3(0, 0, 0.3f));
+        Regions.Add("the middle of the taproom", new Vector3(0.8f, 0, 1.0f));   // clear of the relocated long table
     }
 
     static void Seat(Vector3 pos, Vector3 faceToward)

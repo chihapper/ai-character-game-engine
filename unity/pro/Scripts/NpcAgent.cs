@@ -18,6 +18,9 @@ public class NpcAgent : MonoBehaviour
 
     public string Reference => string.IsNullOrEmpty(knownName) ? handle : knownName;
     public Transform LookTarget;   // head turns toward this (talking partner, watched thing)
+    // NPC↔NPC crosstalk is OFF for now: with four minds volleying it read as chaos during
+    // playtests — needs a proper pacing/choreography pass (logged) before it earns its place.
+    public static bool CrossTalkEnabled = false;
     // cross-talk guards (#31 lite): a pair doesn't re-open for a while, and the ROOM doesn't
     // chatter constantly — the option only even appears off cooldown
     static readonly Dictionary<string, float> pairTalk = new();
@@ -82,7 +85,7 @@ public class NpcAgent : MonoBehaviour
         if (StoryDirector.I != null && StoryDirector.I.WarrantUp)
             options.Add("go read the paper nailed to the door");
         // someone close enough to speak to, and the room is off chatter-cooldown (#31 lite)
-        if (Time.time - roomTalk > 50f)
+        if (CrossTalkEnabled && Time.time - roomTalk > 50f)
             foreach (var o in All)
                 if (o != this && !o.busy
                     && Vector3.Distance(o.transform.position, transform.position) < 6f
@@ -135,7 +138,9 @@ public class NpcAgent : MonoBehaviour
         {
             case "the bar": yield return "lean at the bar"; break;
             case "the hearth": yield return "warm your hands at the fire"; break;
-            case "a corner table": yield return "sit at the corner table"; break;
+            case "the long table": yield return "sit at the long table"; break;
+            case "a small table": yield return "sit at the small table"; break;
+            case "the back kitchen": yield return "see to the pots in the back"; break;
             case "the window": yield return "watch the storm through the shutters"; break;
             case "the door": yield return "listen at the door"; break;
         }
@@ -221,7 +226,7 @@ public class NpcAgent : MonoBehaviour
             yield break;
         }
         if (action.StartsWith("lean at") || action.StartsWith("warm your") || action.StartsWith("sit at")
-            || action.StartsWith("listen at") || action.StartsWith("watch the storm"))
+            || action.StartsWith("listen at") || action.StartsWith("watch the storm") || action.StartsWith("see to the"))
         {
             stance = action.Replace("your hands", "hands").Replace("your ", "");
             if (action.StartsWith("sit at") && InnBuilder.Seats.Count > 0)
