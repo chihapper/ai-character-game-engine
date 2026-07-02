@@ -75,10 +75,13 @@ would resolve natively — each one a small qualitative data point for the front
 - **Name-discovery.** Text has to explicitly track which names the player has learned and swap
   handle↔name (`Game.known_names`); embodiment carries "you've been introduced / you recognize this
   face" as part of perceiving the person. The OVERHEARING case sharpens this (user-surfaced): when a
-  third party speaks a name ("Corvin, another round?"), whether the listener can BIND the name to the
-  right face is, in text, a heuristic (any present character's spoken name teaches it — safe at this
-  cast size) or an LLM judgment; under embodiment the binding is carried by the scene itself — who the
-  speaker looked at, who answered.
+  third party speaks a name ("Corvin, another round?"), the listener still has to BIND the name to the
+  right face. In text that binding is either a heuristic (only situationally consistent — fine at a
+  cast of four, wrong with two plausible Corvins or a name spoken about someone absent) or a per-mention
+  LLM judgment. A heuristic fix was tried and REVERTED (76b9ddf → #34, much later): a visual game
+  dissolves the problem — the player sees who the speaker looked at and who answered, and what remains
+  is nameplate-reveal polish, not cognition. Strongest single example yet of a whole bug CLASS that
+  exists only because the surface is text.
 - **Action grounded in backstory, not the scene.** Playtest: Corvin's `world_action` had him slip down
   an "alley" to his fence "Mother Sael's" while *stuck in the inn* — he acted in his imagined
   backstory-world, not the actual constrained place, because the engine has no world to be bounded by.

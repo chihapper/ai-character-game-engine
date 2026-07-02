@@ -115,38 +115,19 @@ class ArenaGame:
                                  flags=re.IGNORECASE)
         return "".join(segs)
 
-    def _learnable_forms(self, slug: str) -> list[str]:
-        """The forms a name can be LEARNED from: the first name + any quoted nickname — how people
-        are actually addressed aloud. Surnames are excluded because they double as common words
-        ('Hale and hearty!' must not teach Edwin \"Pockets\" Hale's name). Scrubbing still covers
-        ALL forms; this narrower set gates only the learning."""
-        import re
-        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name).strip()
-        nicknames = re.findall(r'"([A-Za-z]{2,})"', raw)
-        first = re.sub(r'"[^"]*"', " ", raw).split()
-        return ([first[0]] if first else []) + nicknames
-
     def _maybe_learn_name(self, slug: str, text: str) -> None:
-        """Learn a name ONLY from QUOTED speech — spoken aloud in the room — never from a narration
-        slip (those are scrubbed before this runs). Case-sensitive, first-name/nickname only."""
+        """Learn a name ONLY from QUOTED speech — an actual spoken introduction ('Name's Della'),
+        never a narration slip (those are scrubbed before this runs)."""
         import re
         if slug in self.known_names:
             return
         spoken = " ".join(self._split_quotes(text)[1::2])  # quoted segments only
         if not spoken:
             return
-        for c in self._learnable_forms(slug):
-            if re.search(rf"\b{re.escape(c)}\b", spoken):
-                self.known_names[slug] = c
+        for c in self._name_forms(slug):
+            if re.search(rf"\b{re.escape(c)}\b", spoken, re.IGNORECASE):
+                self.known_names[slug] = c.split()[0] if " " in c else c
                 return
-
-    def _learn_spoken_names(self, text: str) -> None:
-        """Names travel by OVERHEARING: any present character's name spoken aloud by ANYONE becomes
-        known — Della saying 'Corvin, another round?' teaches Corvin's name, not just her own.
-        (The name→face binding is assumed clear at this cast size; the fully-general version is an
-        LLM judgment — or free under embodiment, where who-she-looked-at carries the binding.)"""
-        for slug in self.cast:
-            self._maybe_learn_name(slug, text)
 
     def _resolve(self, ref: str) -> str | None:
         ref = (ref or "").strip().lower()
@@ -235,11 +216,10 @@ class ArenaGame:
         reply = await self.engines[slug].respond(
             RespondRequest(player_input=line, situation=self._situation_for(slug)))
         # Scrub narration-leaked names to handles FIRST ("Della nods" -> "the ferrywoman nods"),
-        # THEN learn — only names surviving in QUOTED speech (actually spoken in the room) flip
-        # labels, and an overheard mention teaches the MENTIONED character's name too.
+        # THEN learn — so only a name surviving in QUOTED speech (a real introduction) flips the label.
         reply = self._scrub_names(reply)
         self._log("dialogue", reply, slug=slug, who=self._label(slug))
-        self._learn_spoken_names(reply)
+        self._maybe_learn_name(slug, reply)
         return reply
 
     # ---- the world turns (time passes; NPCs perceive + act) ----
