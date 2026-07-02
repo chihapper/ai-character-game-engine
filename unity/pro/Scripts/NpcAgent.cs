@@ -145,6 +145,7 @@ public class NpcAgent : MonoBehaviour
             || action.StartsWith("listen at") || action.StartsWith("watch the storm"))
         {
             stance = action.Replace("your hands", "hands").Replace("your ", "");
+            SetPose(action.StartsWith("sit at") ? "Sit" : action.StartsWith("lean at") ? "Lean" : "Arms");
             if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
             yield break;
         }
@@ -157,6 +158,7 @@ public class NpcAgent : MonoBehaviour
         {
             var who = action.Substring(6);
             stance = $"watching {who}";
+            SetPose("Arms");
             var t = who == Bootstrap.PlayerHandle ? PlayerController.I.transform
                     : All.FirstOrDefault(a => a.Reference == who)?.transform;
             if (t != null)
@@ -168,8 +170,15 @@ public class NpcAgent : MonoBehaviour
         if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
     }
 
+    void SetPose(string flag)
+    {
+        if (anim == null) return;
+        foreach (var b in new[] { "Sit", "Lean", "Arms" }) anim.SetBool(b, b == flag);
+    }
+
     IEnumerator WalkTo(Vector3 target)
     {
+        SetPose("");  // a body that walks away stops sitting/leaning
         anim?.SetFloat("Speed", walkSpeed);
         while (Vector3.Distance(transform.position, target) > 0.6f)
         {

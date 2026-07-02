@@ -17,20 +17,20 @@ public static class QBake
             .ToList();
         Debug.Log($"QBAKE CLIP INVENTORY ({clips.Count}):\n" + string.Join("\n", clips.Select(c => c.name)));
 
-        AnimationClip Find(params string[] keys) =>
-            keys.Select(k => clips.FirstOrDefault(c => c.name.ToLower().Contains(k.ToLower())))
-                .FirstOrDefault(c => c != null);
+        AnimationClip Exact(string key) => clips.FirstOrDefault(c => c.name == "Armature|" + key);
 
-        var idle = Find("Idle_A", "Idle");
-        var walk = Find("Walking_A", "Walk_A", "Walk");
-        var sit = Find("Sit_Chair_Idle", "Sit_Floor_Idle", "Sitting", "Sit");
-        var talk = Find("Talking", "Talk", "Interact");
-        Debug.Log($"QBAKE MAP idle={idle?.name} walk={walk?.name} sit={sit?.name} talk={talk?.name}");
+        var idle = Exact("Idle_Loop");
+        var walk = Exact("Walk_Loop");
+        var sit = Exact("Sitting_Idle_Loop");
+        var talk = Exact("Idle_Talking_Loop");
+        var lean = Exact("Idle_Rail_Loop");      // the bar-lean
+        var arms = Exact("Idle_FoldArms_Loop");  // watchful, arms crossed
+        Debug.Log($"QBAKE MAP idle={idle?.name} walk={walk?.name} sit={sit?.name} talk={talk?.name} lean={lean?.name} arms={arms?.name}");
 
         var ctrl = AnimatorController.CreateAnimatorControllerAtPath("Assets/Resources/Q/NPCAnim.controller");
         ctrl.AddParameter("Speed", AnimatorControllerParameterType.Float);
-        ctrl.AddParameter("Sit", AnimatorControllerParameterType.Bool);
-        ctrl.AddParameter("Talk", AnimatorControllerParameterType.Bool);
+        foreach (var b in new[] { "Sit", "Talk", "Lean", "Arms" })
+            ctrl.AddParameter(b, AnimatorControllerParameterType.Bool);
         var sm = ctrl.layers[0].stateMachine;
 
         var move = sm.AddState("Move");
@@ -41,18 +41,17 @@ public static class QBake
         move.motion = tree;
         sm.defaultState = move;
 
-        if (sit != null)
+        void BoolState(string flag, AnimationClip clip)
         {
-            var s = sm.AddState("Sit"); s.motion = sit;
-            var to = move.AddTransition(s); to.AddCondition(AnimatorConditionMode.If, 0, "Sit"); to.hasExitTime = false; to.duration = 0.25f;
-            var back = s.AddTransition(move); back.AddCondition(AnimatorConditionMode.IfNot, 0, "Sit"); back.hasExitTime = false; back.duration = 0.25f;
+            if (clip == null) return;
+            var st = sm.AddState(flag); st.motion = clip;
+            var to = move.AddTransition(st); to.AddCondition(AnimatorConditionMode.If, 0, flag); to.hasExitTime = false; to.duration = 0.3f;
+            var back = st.AddTransition(move); back.AddCondition(AnimatorConditionMode.IfNot, 0, flag); back.hasExitTime = false; back.duration = 0.3f;
         }
-        if (talk != null)
-        {
-            var t = sm.AddState("Talk"); t.motion = talk;
-            var to = move.AddTransition(t); to.AddCondition(AnimatorConditionMode.If, 0, "Talk"); to.AddCondition(AnimatorConditionMode.Less, 0.1f, "Speed"); to.hasExitTime = false; to.duration = 0.3f;
-            var back = t.AddTransition(move); back.AddCondition(AnimatorConditionMode.IfNot, 0, "Talk"); back.hasExitTime = false; back.duration = 0.3f;
-        }
+        BoolState("Sit", sit);
+        BoolState("Talk", talk);
+        BoolState("Lean", lean);
+        BoolState("Arms", arms);
         AssetDatabase.SaveAssets();
         Debug.Log("QBAKE controller saved");
 

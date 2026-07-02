@@ -128,8 +128,8 @@ public class Bootstrap : MonoBehaviour
         };
         foreach (var c in s.cast)
         {
-            var cfg = looks.TryGetValue(c.slug, out var v) ? v
-                      : ("the middle of the taproom", "", new CastLook { height = 1f, hair = "Hair_Short" });
+            (string region, string stance, CastLook look) cfg = looks.TryGetValue(c.slug, out var v) ? v
+                : ("the middle of the taproom", "", new CastLook { height = 1f, hair = "Hair_SimpleParted" });
             var body = CastBuilder.Build(c.handle, Regions.Anchor(cfg.region) + new Vector3(0.4f, 0, 0.2f), cfg.look);
             var agent = body.AddComponent<NpcAgent>();
             agent.slug = c.slug; agent.handle = c.handle; agent.stance = cfg.stance;
