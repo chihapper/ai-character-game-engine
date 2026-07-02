@@ -57,8 +57,23 @@ public class NpcAgent : MonoBehaviour
         headBone.rotation = Quaternion.Slerp(headBone.rotation, target, 0.5f);
     }
 
-    void OnEnable() { All.Add(this); StartCoroutine(Life()); }
+    void OnEnable() { All.Add(this); StartCoroutine(Life()); StartCoroutine(SmallLife()); }
     void OnDisable() { All.Remove(this); }
+
+    /// Idle-scale body language, no mind call needed: someone nursing a cup SIPS it now and
+    /// then; someone seated shifts a drink. Pure ambience — the deliberate gestures (nods)
+    /// stay mind-chosen.
+    IEnumerator SmallLife()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(Random.Range(18f, 42f));
+            if (busy || anim == null) continue;
+            bool cupInHand = stance.Contains("cup") || stance.Contains("drink") || stance.Contains("mug")
+                             || stance.Contains("ale") || anim.GetBool("Sit");
+            if (cupInHand) anim.SetTrigger("Sip");
+        }
+    }
 
     IEnumerator Life()
     {
@@ -80,6 +95,7 @@ public class NpcAgent : MonoBehaviour
         var here = Regions.NameAt(transform.position);
         var options = Regions.Names.Where(n => n != here).Select(n => $"cross to {n}")
             .Concat(VisibleRefs().Select(r => $"watch {r}"))
+            .Concat(NearRefs(5.5f).Select(r => $"nod to {r}"))   // a wordless acknowledgment
             .Concat(IdleHere(here))
             .Append("stay where you are, watchful").ToList();
         if (StoryDirector.I != null && StoryDirector.I.WarrantUp)
@@ -155,6 +171,18 @@ public class NpcAgent : MonoBehaviour
                 yield return o.Reference;
     }
 
+    IEnumerable<string> NearRefs(float within)
+    {
+        if (PlayerController.I != null
+            && Vector3.Distance(PlayerController.I.transform.position, transform.position) < within
+            && PerceptComposer.CanSee(transform, PlayerController.I.transform))
+            yield return Bootstrap.PlayerHandle;
+        foreach (var o in All)
+            if (o != this && Vector3.Distance(o.transform.position, transform.position) < within
+                && PerceptComposer.CanSee(transform, o.transform))
+                yield return o.Reference;
+    }
+
     float PairKey(NpcAgent o)
     {
         var k = string.CompareOrdinal(slug, o.slug) < 0 ? slug + "|" + o.slug : o.slug + "|" + slug;
@@ -209,6 +237,24 @@ public class NpcAgent : MonoBehaviour
 
     IEnumerator Enact(string action, string reason)
     {
+        if (action.StartsWith("nod to "))
+        {
+            var who = action.Substring(7);
+            var t = who == Bootstrap.PlayerHandle ? PlayerController.I?.transform
+                    : All.FirstOrDefault(a => a != this && a.Reference == who)?.transform;
+            if (t != null)
+            {
+                LookTarget = t;   // the head finds them; the body only turns if it's standing
+                if (anim != null && !anim.GetBool("Sit") && !anim.GetBool("Lean"))
+                {
+                    var dir = t.position - transform.position; dir.y = 0;
+                    if (dir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(dir);
+                }
+            }
+            anim?.SetTrigger("Nod");
+            if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
+            yield break;
+        }
         if (action.StartsWith("say a word to "))
         {
             var who = action.Substring("say a word to ".Length);
@@ -273,7 +319,10 @@ public class NpcAgent : MonoBehaviour
     {
         SetPose("");  // a body that walks away stops sitting/leaning
         transform.position = new Vector3(transform.position.x, 0, transform.position.z);
-        anim?.SetFloat("Speed", 1f);
+        // a long crossing reads urgent — jog it (Speed 2 in the blend tree), stroll the short ones
+        bool jog = Vector3.Distance(transform.position, target) > 7f;
+        anim?.SetFloat("Speed", jog ? 2f : 1f);
+        float moveSpeed = jog ? walkSpeed * 1.9f : walkSpeed;
         // Path AROUND the furniture (a straight line walked through the bar): NavMesh corners,
         // straight-line fallback where no path exists.
         var corners = new List<Vector3> { target };
@@ -286,7 +335,7 @@ public class NpcAgent : MonoBehaviour
             while (Vector3.Distance(transform.position, corner) > 0.45f)
             {
                 var dir = (corner - transform.position); dir.y = 0;
-                transform.position += dir.normalized * walkSpeed * Time.deltaTime;
+                transform.position += dir.normalized * moveSpeed * Time.deltaTime;
                 if (dir.sqrMagnitude > 0.01f)
                     transform.rotation = Quaternion.Slerp(transform.rotation,
                         Quaternion.LookRotation(dir), 6f * Time.deltaTime);
