@@ -44,7 +44,10 @@ public class VoiceClient : MonoBehaviour
             samples[i] = BitConverter.ToInt16(pcm, i * 2) / 32768f;
         var clip = AudioClip.Create("line", samples.Length, 1, rate, false);
         clip.SetData(samples, 0);
-        var src = npc.GetComponent<AudioSource>() ?? npc.gameObject.AddComponent<AudioSource>();
+        // NOT `?? AddComponent`: a missing component is Unity's FAKE null, which ?? keeps —
+        // then Play() throws MissingComponentException and the character is mute
+        var src = npc.GetComponent<AudioSource>();
+        if (src == null) src = npc.gameObject.AddComponent<AudioSource>();
         src.spatialBlend = 1f;
         src.minDistance = 1.6f;
         src.maxDistance = 18f;

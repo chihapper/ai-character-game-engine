@@ -71,7 +71,9 @@ public class Bootstrap : MonoBehaviour
         RenderSettings.ambientLight = new Color(0.11f, 0.12f, 0.16f);
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Exponential;
-        RenderSettings.fogColor = new Color(0.10f, 0.11f, 0.15f);
+        // fog must fade to NIGHT, not day-gray — a light fogColor painted a glowing horizon
+        // band across every window and washed the marsh silhouettes pale
+        RenderSettings.fogColor = new Color(0.025f, 0.03f, 0.045f);
         RenderSettings.fogDensity = 0.045f;
 
         Sun = new GameObject("StormLight").AddComponent<Light>();

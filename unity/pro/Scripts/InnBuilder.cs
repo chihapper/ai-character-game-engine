@@ -226,7 +226,19 @@ public static class InnBuilder
         Seats.Add((benchPos, benchPos + Vector3.back * 3f));
 
         // set dressing
-        Hang(Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f), WallHeight - 0.05f);
+        var chand = Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f);
+        Hang(chand, WallHeight - 0.05f);
+        if (chand != null)
+        {
+            // its candles carry the middle of the room — without this the taproom floor is a pit
+            var cl = new GameObject("chandelight").AddComponent<Light>();
+            cl.transform.SetParent(chand.transform, false);
+            cl.transform.position = WorldBounds(chand).center + Vector3.down * 0.15f;
+            cl.type = LightType.Point;
+            cl.range = 7.5f;
+            cl.intensity = 1.15f;
+            cl.color = new Color(1f, 0.75f, 0.45f);
+        }
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);
         Spawn(P + "Lantern_Wall", new Vector3(1.9f, 1.9f, -D / 2 + 0.15f), 0);  // clear of the door arch
         Spawn(P + "Banner_1", new Vector3(-1.6f, 2.1f, -D / 2 + 0.12f), 0);
