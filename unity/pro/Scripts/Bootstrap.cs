@@ -1,0 +1,139 @@
+// FerryCrossingPro bootstrap — an empty URP scene plus these scripts is the whole game.
+// Real inn (MegaKit), real bodies (UBC + UAL), URP mood lighting + post, and the same mind
+// server driving the same unchanged engine.
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
+
+public class Bootstrap : MonoBehaviour
+{
+    public static string PlayerHandle = "the stranger just in from the storm";
+    public static Light Sun;                                  // StormAudio flickers it for lightning
+    public static List<Material> WindowPanes => InnBuilder.WindowPanes;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void SelfSpawn() => new GameObject("Bootstrap").AddComponent<Bootstrap>();
+
+    IEnumerator Start()
+    {
+        foreach (var cam in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+            cam.gameObject.SetActive(false);
+        foreach (var al in FindObjectsByType<AudioListener>(FindObjectsSortMode.None))
+            al.enabled = false;
+
+        Mood();
+        InnBuilder.Build();
+        Fires();
+        gameObject.AddComponent<StormAudio>();
+        gameObject.AddComponent<StoryDirector>();
+        var mind = gameObject.AddComponent<MindClient>();
+        gameObject.AddComponent<DialogueUI>();
+
+        // the player: a body-less first-person presence (CharacterController is the LoS collider)
+        var player = new GameObject("Player");
+        player.transform.position = Regions.Anchor("the door") + new Vector3(0, 0.02f, 0.4f);
+        player.AddComponent<PlayerController>();
+
+        yield return mind.CreateSession(s =>
+        {
+            PlayerHandle = string.IsNullOrEmpty(s.player_handle) ? PlayerHandle : s.player_handle;
+            SpawnCast(s);
+            DialogueUI.I.Feed("—", $"{s.title} · the storm closes in. Find the bar.");
+        });
+    }
+
+    void Mood()
+    {
+        // cold, wet, dim — the fires are the only warmth (same design as the gray box, real now)
+        RenderSettings.ambientMode = AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(0.11f, 0.12f, 0.16f);
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.Exponential;
+        RenderSettings.fogColor = new Color(0.10f, 0.11f, 0.15f);
+        RenderSettings.fogDensity = 0.045f;
+
+        Sun = new GameObject("StormLight").AddComponent<Light>();
+        Sun.type = LightType.Directional;
+        Sun.intensity = 0.14f;
+        Sun.color = new Color(0.55f, 0.63f, 0.8f);
+        Sun.transform.rotation = Quaternion.Euler(55, -28, 0);
+        Sun.shadows = LightShadows.Soft;
+
+        // global post volume, created in code: gentle bloom for the flames, cool grade, vignette
+        var vgo = new GameObject("PostVolume");
+        var vol = vgo.AddComponent<Volume>();
+        vol.isGlobal = true;
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        var bloom = profile.Add<Bloom>();
+        bloom.intensity.Override(0.9f);
+        bloom.threshold.Override(1.05f);
+        var grade = profile.Add<ColorAdjustments>();
+        grade.postExposure.Override(0.15f);
+        grade.contrast.Override(12f);
+        grade.colorFilter.Override(new Color(0.92f, 0.95f, 1.05f));
+        grade.saturation.Override(-8f);
+        var vig = profile.Add<Vignette>();
+        vig.intensity.Override(0.28f);
+        vig.smoothness.Override(0.45f);
+        vol.profile = profile;
+    }
+
+    void Fires()
+    {
+        Fire("hearthfire", Regions.Anchor("the hearth") + new Vector3(-0.7f, 0.55f, 0),
+             new Color(1f, 0.52f, 0.22f), 2.4f, 0.6f, 9f, 2.4f);
+        Fire("chandelier", new Vector3(0, InnBuilder.WallHeight - 0.6f, 0),
+             new Color(1f, 0.72f, 0.42f), 1.3f, 0.15f, 8f, 1.0f);
+        Fire("candle.bar", Regions.Anchor("the bar") + new Vector3(1.0f, 1.25f, -0.4f),
+             new Color(1f, 0.7f, 0.4f), 0.8f, 0.15f, 4.5f, 1.4f);
+        Fire("candle.table", Regions.Anchor("a corner table") + new Vector3(-0.8f, 1.2f, -0.8f),
+             new Color(1f, 0.68f, 0.38f), 0.7f, 0.12f, 4f, 1.4f);
+        Fire("lantern.door", Regions.Anchor("the door") + new Vector3(0.9f, 1.95f, -0.5f),
+             new Color(1f, 0.75f, 0.45f), 0.8f, 0.1f, 5f, 0.9f);
+    }
+
+    static void Fire(string name, Vector3 pos, Color c, float intensity, float flicker, float range, float speed)
+    {
+        var go = new GameObject(name);
+        go.transform.position = pos;
+        var lt = go.AddComponent<Light>();
+        lt.type = LightType.Point; lt.color = c; lt.range = range;
+        lt.shadows = name == "hearthfire" ? LightShadows.Soft : LightShadows.None;
+        var f = go.AddComponent<Flicker>();
+        f.baseIntensity = intensity; f.amount = flicker; f.speed = speed;
+    }
+
+    void SpawnCast(SessionRes s)
+    {
+        var looks = new Dictionary<string, (string region, string stance, CastLook look)>
+        {
+            { "della-fenwick", ("the bar", "working the bar, wiping glasses", new CastLook {
+                feminine = true, height = 0.98f, darkSkin = false, hair = "Hair_Buns",
+                hairColor = new Color(0.32f, 0.2f, 0.11f),
+                top = new Color(0.55f, 0.48f, 0.4f), bottom = new Color(0.35f, 0.28f, 0.22f) }) },
+            { "corvin-ashgrave-inworld", ("the hearth", "back to the wall, nursing a cup, eyes on the door", new CastLook {
+                feminine = false, height = 1.04f, darkSkin = true, hair = "Hair_Buzzed", beard = true,
+                hairColor = new Color(0.09f, 0.09f, 0.1f),
+                top = new Color(0.2f, 0.22f, 0.26f), bottom = new Color(0.14f, 0.15f, 0.18f) }) },
+            { "edwin-hale", ("the window", "dripping, watching the storm through the shutters", new CastLook {
+                feminine = false, height = 0.99f, darkSkin = false, hair = "Hair_SimpleParted",
+                hairColor = new Color(0.72f, 0.45f, 0.2f),
+                top = new Color(0.6f, 0.28f, 0.5f), bottom = new Color(0.25f, 0.32f, 0.5f) }) },
+            { "brielle-bri-castellano", ("a corner table", "cloak shed, sitting straight, taking in the room", new CastLook {
+                feminine = true, height = 0.93f, darkSkin = true, hair = "Hair_Long",
+                hairColor = new Color(0.1f, 0.08f, 0.08f),
+                top = new Color(0.85f, 0.75f, 0.58f), bottom = new Color(0.35f, 0.4f, 0.5f) }) },
+        };
+        foreach (var c in s.cast)
+        {
+            var cfg = looks.TryGetValue(c.slug, out var v) ? v
+                      : ("the middle of the taproom", "", new CastLook { height = 1f, hair = "Hair_Short" });
+            var body = CastBuilder.Build(c.handle, Regions.Anchor(cfg.region) + new Vector3(0.4f, 0, 0.2f), cfg.look);
+            var agent = body.AddComponent<NpcAgent>();
+            agent.slug = c.slug; agent.handle = c.handle; agent.stance = cfg.stance;
+            body.AddComponent<Nameplate>().text = () => agent.Reference;
+        }
+    }
+}
