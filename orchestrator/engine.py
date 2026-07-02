@@ -456,13 +456,20 @@ class Engine:
         # short_term, so history stays lean and byte-stable.
         stable = build_instructions(self.character)
         user_text = request.input_text()
+        # A SPOKEN player line is framed as explicit address. Unframed, a line like
+        # "Barkeep: a warm meal" reads as a script speaker-label ("someone called Barkeep says...")
+        # and characters answer a phantom third person — seen in playtests; a prompt rule alone
+        # didn't hold. Framing removes the ambiguity by construction. Game EVENT triggers
+        # (request.event) are not speech and stay unframed.
+        spoken = bool(request.player_input and request.player_input.strip())
+        line = f'The player says to you: "{user_text}"' if spoken else user_text
         turn = (f"<context>\n(Current context for you — your memories, state, and the scene. "
-                f"Not spoken by the player.)\n{injected}\n</context>\n\n{user_text}"
-                if injected else user_text)
+                f"Not spoken by the player.)\n{injected}\n</context>\n\n{line}"
+                if injected else line)
         messages = self.short_term.messages() + [{"role": "user", "content": turn}]
         reply = await self._generate([stable], messages)
         if request.input_text() and reply:
-            self.short_term.add_user(request.input_text())
+            self.short_term.add_user(line)  # the framed form — history stays unambiguous on re-reads
             self.short_term.add_assistant(reply)
         await self.reflect(request.input_text(), reply, request.situation, memories=dbg["memories"])
         if debug:

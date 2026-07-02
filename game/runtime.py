@@ -110,7 +110,9 @@ class Game:
             forms = sorted({raw, *re.findall(r"[A-Za-z]{3,}", raw)}, key=len, reverse=True)
             for f in forms:
                 if len(f) >= 3:
-                    text = re.sub(rf"\b{re.escape(f)}\b", handle, text, flags=re.IGNORECASE)
+                    # case-SENSITIVE: names in prose are capitalized; matching 'pockets' the verb
+                    # because of Edwin "Pockets" Hale would mangle ordinary sentences.
+                    text = re.sub(rf"\b{re.escape(f)}\b", handle, text)
             # a "First Last" leak becomes "handle handle" — collapse the repeat
             text = re.sub(rf"\b({re.escape(handle)})(\s+\1\b)+", r"\1", text, flags=re.IGNORECASE)
         return text

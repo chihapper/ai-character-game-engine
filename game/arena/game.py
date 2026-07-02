@@ -29,7 +29,9 @@ from .world import load_world
 RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
 _PERF = ("Speak your words in the first person, in quotes. Write your OWN actions in the third person "
          "using a PRONOUN (he/she/they) — e.g. 'she brushes the rain off' — never the second person and "
-         "NEVER your own name. Never narrate the player's actions, body, or feelings.")
+         "NEVER your own name. Never narrate the player's actions, body, or feelings. The player's "
+         "words are spoken TO YOU — a form of address like 'barkeep' or 'friend' means YOU, not a "
+         "third person.")
 
 
 class ArenaGame:
@@ -75,14 +77,56 @@ class ArenaGame:
         r = self._ref(eid) if eid != "player" else "you"
         return r[:1].upper() + r[1:]
 
+    @staticmethod
+    def _split_quotes(text: str) -> list[str]:
+        """Split into alternating [narration, quoted, narration, ...] segments — odd indices are
+        quoted speech (straight or smart quotes)."""
+        import re
+        return re.split(r'("[^"]*"|“[^”]*”)', text)
+
+    def _name_forms(self, slug: str) -> list[str]:
+        """The name tokens that count as a leak for this character (full name + words >=3 chars),
+        longest first so 'Della Fenwick' rewrites before 'Della'."""
+        import re
+        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name)
+        raw = re.sub(r"\s+", " ", raw.replace("'", " ").replace('"', " ")).strip()
+        return sorted({raw, *re.findall(r"[A-Za-z]{3,}", raw)}, key=len, reverse=True)
+
+    def _scrub_names(self, text: str) -> str:
+        """Names may emerge ONLY as spoken introductions. In the NARRATION segments (outside quoted
+        speech — stage directions like 'Della nods'), replace any UNLEARNED character's name-forms
+        with their handle; quoted speech is left untouched, so a character saying their own name
+        aloud still introduces them (and _maybe_learn_name then makes it official)."""
+        import re
+        if not text:
+            return text
+        segs = self._split_quotes(text)
+        for slug in self.cast:
+            if slug in self.known_names:
+                continue
+            handle = self.handles.get(slug) or "someone"
+            for i in range(0, len(segs), 2):  # narration segments only
+                for f in self._name_forms(slug):
+                    # case-SENSITIVE: names in prose are capitalized; matching 'pockets' the verb
+                    # because of Edwin "Pockets" Hale would mangle ordinary sentences.
+                    segs[i] = re.sub(rf"\b{re.escape(f)}\b", handle, segs[i])
+                # a "First Last" leak becomes "handle handle" — collapse
+                segs[i] = re.sub(rf"\b({re.escape(handle)})(\s+\1\b)+", r"\1", segs[i],
+                                 flags=re.IGNORECASE)
+        return "".join(segs)
+
     def _maybe_learn_name(self, slug: str, text: str) -> None:
+        """Learn a name ONLY from QUOTED speech — an actual spoken introduction ('Name's Della'),
+        never a narration slip (those are scrubbed before this runs)."""
         import re
         if slug in self.known_names:
             return
-        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name)
-        for c in re.findall(r"[A-Za-z]{2,}", raw.replace("'", " ").replace('"', " ")):
-            if re.search(rf"\b{re.escape(c)}\b", text, re.IGNORECASE):
-                self.known_names[slug] = c
+        spoken = " ".join(self._split_quotes(text)[1::2])  # quoted segments only
+        if not spoken:
+            return
+        for c in self._name_forms(slug):
+            if re.search(rf"\b{re.escape(c)}\b", spoken, re.IGNORECASE):
+                self.known_names[slug] = c.split()[0] if " " in c else c
                 return
 
     def _resolve(self, ref: str) -> str | None:
@@ -171,6 +215,9 @@ class ArenaGame:
         self._log("player", line, to=slug)
         reply = await self.engines[slug].respond(
             RespondRequest(player_input=line, situation=self._situation_for(slug)))
+        # Scrub narration-leaked names to handles FIRST ("Della nods" -> "the ferrywoman nods"),
+        # THEN learn — so only a name surviving in QUOTED speech (a real introduction) flips the label.
+        reply = self._scrub_names(reply)
         self._log("dialogue", reply, slug=slug, who=self._label(slug))
         self._maybe_learn_name(slug, reply)
         return reply
@@ -188,7 +235,8 @@ class ArenaGame:
                                                             [a.label for a in acts])
             if choice.get("action"):
                 execute(self.world, slug, choice["action"], acts)
-                self._log("npc_act", choice["action"], slug=slug, who=self._label(slug), reason=choice.get("reason", ""))
+                self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
+                          reason=self._scrub_names(choice.get("reason", "")))
         self._log("scene", self.look())
         return self.history[before:]
 

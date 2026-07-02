@@ -37,11 +37,15 @@ def available(world: World, agent_id: str, *, ref_of) -> list[Action]:
     here = world.region_of(me.pos)
     acts: list[Action] = []
 
-    # cross to another named place (movement)
+    # cross to another named place (movement). Moving CLEARS the stance — a body that walks away
+    # from the door stops being "just in from the storm, dripping"; a stale stance was anchoring
+    # NPCs to the placement image ("the dripping stranger by the door") after the player had moved.
     for r in world.regions:
         if r.name != here:
             acts.append(Action(f"cross to {r.name}", "move",
-                               lambda w, a, rn=r.name: (w.move_to_region(a, rn), f"crosses to {rn}")[1],
+                               lambda w, a, rn=r.name: (w.move_to_region(a, rn),
+                                                        _set_stance(w, a, ""),
+                                                        f"crosses to {rn}")[2],
                                type="move"))
 
     # move nearer to a present person you're not already beside (movement)
@@ -49,7 +53,8 @@ def available(world: World, agent_id: str, *, ref_of) -> list[Action]:
         if eid != agent_id and world.dist(me.pos, e.pos) > 1:
             acts.append(Action(f"move nearer to {ref_of(eid)}", "approach",
                                lambda w, a, tid=eid: (w.move(a, _adjacent_cell(w, w.entities[tid].pos, a)),
-                                                      f"moves nearer to {ref_of(tid)}")[1],
+                                                      _set_stance(w, a, ""),
+                                                      f"moves nearer to {ref_of(tid)}")[2],
                                type="move"))
 
     # use a fixture you can actually reach (same region) — physical affordances
