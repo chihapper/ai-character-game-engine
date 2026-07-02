@@ -23,6 +23,7 @@ public class PlayerController : MonoBehaviour
         cc = gameObject.AddComponent<CharacterController>();
         cc.height = 1.8f; cc.center = new Vector3(0, 0.9f, 0);
         cam = new GameObject("PlayerCam").AddComponent<Camera>();
+        cam.tag = "MainCamera";  // nameplates billboard toward Camera.main
         cam.transform.SetParent(transform, false);
         cam.transform.localPosition = new Vector3(0, 1.6f, 0);
         cam.gameObject.AddComponent<AudioListener>();

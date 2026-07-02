@@ -84,23 +84,49 @@ public class Bootstrap : MonoBehaviour
 
     void SpawnBodies(SessionRes s)
     {
-        var spawns = new Dictionary<string, (string region, string stance, Color color)>
+        // Bodies that read as WHO they are (gender, build, hair, clothes, a signature prop) —
+        // still pure primitives. Skin/hair/palette are authored per character, not per template.
+        Color skinW = new(0.87f, 0.72f, 0.6f), skinT = new(0.7f, 0.53f, 0.4f);
+        var spawns = new Dictionary<string, (string region, string stance, RigSpec rig)>
         {
-            { "della-fenwick", ("the bar", "working the bar, wiping glasses", new Color(0.95f, 0.75f, 0.35f)) },
-            { "corvin-ashgrave-inworld", ("the hearth", "back to the wall, nursing a cup, eyes on the door", new Color(0.45f, 0.6f, 0.95f)) },
-            { "edwin-hale", ("the window", "dripping, watching the storm through the shutters", new Color(0.8f, 0.55f, 0.9f)) },
-            { "brielle-bri-castellano", ("a corner table", "cloak shed, sitting straight, taking in the room", new Color(0.9f, 0.45f, 0.5f)) },
+            { "della-fenwick", ("the bar", "working the bar, wiping glasses", new RigSpec {
+                feminine = true, height = 1.68f, skin = skinW, hair = Hair.Bun,
+                hairC = new Color(0.35f, 0.22f, 0.12f), top = new Color(0.35f, 0.3f, 0.25f),
+                bottom = new Color(0.25f, 0.2f, 0.16f), prop = Prop.Apron,
+                propC = new Color(0.75f, 0.7f, 0.6f) }) },
+            { "corvin-ashgrave-inworld", ("the hearth", "back to the wall, nursing a cup, eyes on the door", new RigSpec {
+                feminine = false, height = 1.8f, skin = skinT, hair = Hair.Hooded,
+                hairC = Color.black, top = new Color(0.2f, 0.22f, 0.24f),
+                bottom = new Color(0.15f, 0.16f, 0.18f), prop = Prop.Hood,
+                propC = new Color(0.13f, 0.14f, 0.17f) }) },
+            { "edwin-hale", ("the window", "dripping, watching the storm through the shutters", new RigSpec {
+                feminine = false, height = 1.72f, skin = skinW, hair = Hair.Short,
+                hairC = new Color(0.8f, 0.55f, 0.25f), top = new Color(0.55f, 0.25f, 0.45f),
+                bottom = new Color(0.2f, 0.3f, 0.45f), prop = Prop.Hat,
+                propC = new Color(0.45f, 0.2f, 0.35f) }) },
+            { "brielle-bri-castellano", ("a corner table", "cloak shed, sitting straight, taking in the room", new RigSpec {
+                feminine = true, height = 1.62f, skin = skinT, hair = Hair.Ponytail,
+                hairC = new Color(0.12f, 0.1f, 0.1f), top = new Color(0.75f, 0.68f, 0.55f),
+                bottom = new Color(0.3f, 0.28f, 0.24f), prop = Prop.Cloak,
+                propC = new Color(0.35f, 0.4f, 0.5f) }) },
         };
         foreach (var c in s.cast)
         {
             var cfg = spawns.TryGetValue(c.slug, out var v) ? v
-                      : ("the middle of the taproom", "", Color.white);
-            var body = Capsule(c.handle, Regions.Anchor(cfg.Item1) + new Vector3(0.6f, 1, 0), cfg.Item3);
+                      : ("the middle of the taproom", "",
+                         new RigSpec { height = 1.7f, skin = skinW, top = Color.gray,
+                                       bottom = Color.gray, hair = Hair.Short, hairC = Color.black });
+            var body = CharacterRig.Build(c.handle, Regions.Anchor(cfg.Item1) + new Vector3(0.6f, 0, 0), cfg.Item3);
             var agent = body.AddComponent<NpcAgent>();
             agent.slug = c.slug; agent.handle = c.handle; agent.stance = cfg.Item2;
+            body.AddComponent<Nameplate>().text = () => agent.Reference;  // handle until a name is SPOKEN
         }
-        var player = Capsule("Player", Regions.Anchor("the door") + Vector3.up, new Color(0.5f, 0.85f, 0.65f));
-        Destroy(player.GetComponent<Collider>());  // CharacterController replaces it
+        var player = CharacterRig.Build("Player", Regions.Anchor("the door"), new RigSpec {
+            feminine = false, height = 1.75f, skin = skinW, hair = Hair.Short,
+            hairC = new Color(0.2f, 0.15f, 0.1f), top = new Color(0.3f, 0.45f, 0.35f),
+            bottom = new Color(0.22f, 0.25f, 0.22f), prop = Prop.Cloak,
+            propC = new Color(0.25f, 0.35f, 0.3f) });
+        Destroy(player.GetComponent<Collider>());  // CharacterController replaces the LoS capsule
         player.AddComponent<PlayerController>();
     }
 
@@ -112,11 +138,4 @@ public class Bootstrap : MonoBehaviour
         return go;
     }
 
-    static GameObject Capsule(string name, Vector3 pos, Color color)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        go.name = name; go.transform.position = pos;
-        go.GetComponent<Renderer>().material.color = color;
-        return go;
-    }
 }
