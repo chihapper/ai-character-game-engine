@@ -1,13 +1,22 @@
 // Editor-side driver for the autonomous visual loop: -executeMethod QShots.RunCLI (windowed, NOT
 // batchmode — it must render). Writes the flag, enters play mode, waits for AutoShot's done
 // marker, exits Unity. The build agent launches this, then reads the screenshots itself.
+//
+// The watcher must survive the domain reload that entering play mode triggers (a plain
+// `EditorApplication.update += Watch` is wiped by it — the first rig run hung forever on that):
+// [InitializeOnLoadMethod] re-arms it whenever the flag file exists, and the deadline derives
+// from the flag file's mtime instead of editor-session state.
 using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 public static class QShots
 {
-    static double deadline;
+    const double DeadlineSecs = 300;
+
+    static string Root => Path.Combine(Application.dataPath, "..");
+    static string Flag => Path.Combine(Root, "autoshot.flag");
+    static string Done => Path.Combine(Root, "autoshot.done");
 
     [MenuItem("Ferry/Capture Auto Shots")]
     public static void RunCLI()
@@ -17,21 +26,33 @@ public static class QShots
         UnityEditor.SceneManagement.EditorSceneManager.NewScene(
             UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects,
             UnityEditor.SceneManagement.NewSceneMode.Single);
-        var root = Path.Combine(Application.dataPath, "..");
-        File.Delete(Path.Combine(root, "autoshot.done"));
-        File.WriteAllText(Path.Combine(root, "autoshot.flag"), "go");
-        deadline = EditorApplication.timeSinceStartup + 240;
-        EditorApplication.update += Watch;
+        File.Delete(Done);
+        File.WriteAllText(Flag, "go");
+        Arm();
         EditorApplication.EnterPlaymode();
+    }
+
+    [InitializeOnLoadMethod]
+    static void Rearm()
+    {
+        if (File.Exists(Flag)) Arm();
+    }
+
+    static void Arm()
+    {
+        EditorApplication.update -= Watch;   // never doubled
+        EditorApplication.update += Watch;
     }
 
     static void Watch()
     {
-        var root = Path.Combine(Application.dataPath, "..");
-        bool done = File.Exists(Path.Combine(root, "autoshot.done"));
-        if (!done && EditorApplication.timeSinceStartup < deadline) return;
+        bool done = File.Exists(Done);
+        double age = File.Exists(Flag)
+            ? (System.DateTime.Now - File.GetLastWriteTime(Flag)).TotalSeconds
+            : DeadlineSecs;
+        if (!done && age < DeadlineSecs) return;
         EditorApplication.update -= Watch;
-        File.Delete(Path.Combine(root, "autoshot.flag"));
+        File.Delete(Flag);
         if (Application.isBatchMode || System.Environment.CommandLine.Contains("QShots.RunCLI"))
             EditorApplication.Exit(done ? 0 : 2);
         else

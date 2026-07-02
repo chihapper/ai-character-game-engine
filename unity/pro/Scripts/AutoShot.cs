@@ -24,16 +24,22 @@ public class AutoShot : MonoBehaviour
     {
         Directory.CreateDirectory(Dir);
         foreach (var f in Directory.GetFiles(Dir)) File.Delete(f);
-        var curtain = FindFirstObjectByType<CurtainUI>();      // the title card isn't under test
-        if (curtain != null) Destroy(curtain);
         float t0 = Time.time;
         while (NpcAgent.All.Count < 4 && Time.time - t0 < 45f) yield return null;   // session + cast
         yield return new WaitForSeconds(4f);   // outfits, poses, fires settle
+        var curtain = FindFirstObjectByType<CurtainUI>();      // late sweep: CurtainUI.Awake also
+        if (curtain != null) DestroyImmediate(curtain);        // self-skips under the flag
 
         var cam = Camera.main;
         var pc = PlayerController.I;
         if (pc != null) pc.enabled = false;
         cam.transform.SetParent(null);
+        // inspection fill light: the game scene is deliberately dark — captures need to be
+        // READABLE for review; rig-only, never part of the game
+        var fill = new GameObject("autoshot.fill").AddComponent<Light>();
+        fill.transform.SetParent(cam.transform, false);
+        fill.type = LightType.Point; fill.range = 14f; fill.intensity = 1.4f;
+        fill.color = new Color(1f, 0.96f, 0.9f);
 
         IEnumerator Shot(string name, Vector3 pos, Vector3 lookAt)
         {

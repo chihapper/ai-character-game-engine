@@ -16,7 +16,15 @@ public class CurtainUI : MonoBehaviour
     string epilogueBody = "";
     GUIStyle title, sub, body;
 
-    void Awake() { I = this; born = Time.time; GameEnded = false; }
+    void Awake()
+    {
+        I = this; born = Time.time; GameEnded = false;
+        // under the autoshot rig the title card would blanket every capture — skip it entirely
+        // (self-destruct here is ordering-proof: AutoShot can't reliably find this component
+        // because Bootstrap adds it later in its own coroutine)
+        if (System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath, "..", "autoshot.flag")))
+            Destroy(this);
+    }
 
     public void ShowEpilogue()
     {

@@ -20,10 +20,11 @@ public class QImport : AssetPostprocessor
         mi.bakeAxisConversion = !skinned;
         bool anims = assetPath.Contains("/Anims");
         bool body = assetPath.Contains("Base Characters");
-        if (assetPath.Contains("/Outfits/"))
+        if (assetPath.Contains("/Outfits/") || assetPath.Contains("Hairstyles"))
         {
-            // skinned outfit meshes for the UBC rig: Generic keeps the skeleton; the runtime
-            // remaps their bones onto the wearer's by NAME
+            // skinned meshes for the UBC rig (outfits: full skeleton; hair: one head bone):
+            // Generic keeps the skeleton; the runtime remaps their bones onto the wearer's.
+            // Rig=None here strips the skinning and hair lands as a static mesh at the feet.
             mi.animationType = ModelImporterAnimationType.Generic;
             mi.importAnimation = false;
             mi.isReadable = false;

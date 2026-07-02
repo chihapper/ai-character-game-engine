@@ -40,7 +40,9 @@ public static class InnBuilder
         // 'wall vertical span 0.0..0.4'). Compose our yaw WITH the prefab's own rotation.
         var go = Object.Instantiate(prefab, pos,
             Quaternion.Euler(0, yRot, 0) * prefab.transform.rotation, root);
-        if (scale.HasValue) go.transform.localScale = scale.Value;
+        // scale MULTIPLIES the prefab's own (FBX unit compensation lives there — overwriting it
+        // shrank the cauldron/chandelier/jambs to centimeters)
+        if (scale.HasValue) go.transform.localScale = Vector3.Scale(go.transform.localScale, scale.Value);
         QMaterials.Apply(go);
         var b = WorldBounds(go);
         go.transform.position += new Vector3(pos.x - b.center.x, pos.y - b.min.y, pos.z - b.center.z);
@@ -123,7 +125,9 @@ public static class InnBuilder
         {
             float x = x0 + U * (i + 0.5f);
             bool win = (i == 1 || i == nx - 2);
-            Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_WoodGrid"),
+            // Wall_Plaster_WoodGrid is an OPEN timber lattice (sky pours through it) — perimeter
+            // walls must be the solid plaster module
+            Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
                   new Vector3(x, 0, D / 2), 0);
             if (win)
             {
@@ -155,7 +159,7 @@ public static class InnBuilder
                 var wb = WorldBounds(ww);
                 Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, wb.center.z), new Vector3(0.05f, 1.2f, 1.7f));
             }
-            Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_WoodGrid"),
+            Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_Straight"),
                   new Vector3(-W / 2, 0, z), 90);
         }
         // wall colliders (thin boxes, full height)

@@ -73,7 +73,8 @@ public static class CastBuilder
             // rigged-to-head-bone hair: a skinned mesh bound to ONE bone — retarget that bone
             // to THIS body's head and it follows every nod for free
             var hp = Resources.Load<GameObject>(HAIR + fbx);
-            if (hp == null || head == null) return;
+            if (hp == null || head == null)
+            { Debug.LogWarning($"CastBuilder: hair attach failed {fbx} (prefab={(hp != null)} head={(head != null)})"); return; }
             var h = Object.Instantiate(hp, body.transform, false);
             h.transform.localPosition = Vector3.zero;
             h.transform.localRotation = hp.transform.rotation;   // keep the FBX axis compensation
@@ -154,7 +155,7 @@ public static class CastBuilder
 
         if (!string.IsNullOrEmpty(look.hair)) Attach(look.hair);
         if (look.beard) Attach("Hair_Beard");
-        Attach(look.feminine ? "Eyebrows_Female" : "Eyebrows_Regular");
+        // no eyebrow attach: the base body ships its own Eyebrows/Eyes meshes
 
         // one capsule collider on the root carries line of sight
         var col = body.AddComponent<CapsuleCollider>();
