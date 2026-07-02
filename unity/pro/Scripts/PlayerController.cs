@@ -81,6 +81,14 @@ public class PlayerController : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.E) && Talkable != null)
             DialogueUI.I.Open(Talkable);
 
+        if (Input.GetKeyDown(KeyCode.V)) VoiceClient.I?.BeginTalk();          // hold V: speak
+        if (Input.GetKeyUp(KeyCode.V)) VoiceClient.I?.EndTalk(Talkable);
+        if (Input.GetKeyDown(KeyCode.B))                                       // B: voices on/off
+        {
+            VoiceClient.Enabled = !VoiceClient.Enabled;
+            DialogueUI.I?.Feed("—", VoiceClient.Enabled ? "voices on" : "voices off");
+        }
+
         if (Input.GetKeyDown(KeyCode.P))   // one-press jank capture for the build feedback loop
         {
             var dir = System.IO.Path.Combine(Application.dataPath, "..", "Screenshots");

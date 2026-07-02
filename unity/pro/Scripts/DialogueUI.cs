@@ -74,7 +74,7 @@ public class DialogueUI : MonoBehaviour
         }
 
         GUI.Label(new Rect(14, 8, Screen.width - 28, line),
-                  "[WASD] move  [E] talk  [Esc] close talk", label);
+                  "[WASD] move  [E] talk  [hold V] speak  [B] voices  [Esc] close", label);
         // the game clock, top-right and unmissable (2 real minutes = 1 game hour; dawn = hour 8)
         var clockMsg = $"hour {WorldClock.Hours:0.0} · night";
         var cw = label.CalcSize(new GUIContent(clockMsg)).x + 26;
@@ -122,6 +122,14 @@ public class DialogueUI : MonoBehaviour
         }
     }
 
+    /// Push-to-talk lands here: the transcribed words become your line to `npc`.
+    public void VoiceSay(NpcAgent npc, string line)
+    {
+        target = npc;
+        if (PlayerController.I != null) npc.LookTarget = PlayerController.I.transform;
+        StartCoroutine(Say(line));
+    }
+
     IEnumerator Say(string line)
     {
         waiting = true; input = "";
@@ -134,6 +142,8 @@ public class DialogueUI : MonoBehaviour
         {
             if (!string.IsNullOrEmpty(res.name_spoken)) npc.knownName = res.name_spoken;
             Feed(npc.Reference, res.reply);
+            npc.Bubble(res.reply);
+            VoiceClient.I?.Speak(npc, res.reply);
         }
         waiting = false;
     }

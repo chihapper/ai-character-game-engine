@@ -51,6 +51,7 @@ secret:
 cast:
   - slug: della-fenwick
     as: "host and ferrywoman; she runs this crossing and misses little"
+    voice: Matilda   # ElevenLabs voice NAME — the bridge resolves it against the account library
     handle: "the ferrywoman"        # how others refer to her until a name is spoken
     knows_secret: false
     here_because: >
@@ -75,6 +76,7 @@ cast:
       stranded you here. A night shut in with strangers: a whole room to win over, and nowhere to slip
       off to when it goes quiet.
   - slug: edwin-hale
+    voice: Charlie
     as: "a stranded performer between towns; he jokes to keep the dark off"
     adapt:   # his sheet says theaters and Mercer Street — same circuit, this world's venues
       role: Traveling player and jester ("Pockets") — market fairs, feast days, taproom nights
@@ -91,6 +93,7 @@ cast:
       reach the far side before the next show when the crossing closed. One more night with a small
       room to work, and the silence waiting on the other side of the laughs.
   - slug: corvin-ashgrave-inworld
+    voice: Callum
     as: "the quiet stranger by the fire — a harbor man who ran, lying low"
     handle: "the watchful man by the fire"
     knows_secret: true

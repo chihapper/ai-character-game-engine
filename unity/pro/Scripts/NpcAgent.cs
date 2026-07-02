@@ -120,6 +120,7 @@ public class NpcAgent : MonoBehaviour
             if (!string.IsNullOrEmpty(res.name_spoken)) knownName = res.name_spoken;
             DialogueUI.I.Feed(Reference, res.reply);
             Bubble(res.reply);
+            VoiceClient.I?.Speak(this, res.reply);
         }
         anim?.SetBool("Talk", false);
         LookTarget = null;
@@ -183,6 +184,7 @@ public class NpcAgent : MonoBehaviour
         if (!string.IsNullOrEmpty(res.name_spoken)) knownName = res.name_spoken;
         DialogueUI.I.Feed(Reference, res.reply);
         Bubble(res.reply);
+        VoiceClient.I?.Speak(this, res.reply);
         other.LookTarget = transform;
         // the listener HEARS it — their appraisal decides if it deserves an answer
         ObserveRes ores = null;

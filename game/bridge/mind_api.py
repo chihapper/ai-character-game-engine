@@ -16,7 +16,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import yaml
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from orchestrator.adapters.llm_anthropic import AnthropicLLM
@@ -27,6 +27,14 @@ from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
 
 from .. import casting, experiment_log, policy
+
+def _tts():
+    from orchestrator.adapters.tts_elevenlabs import ElevenLabsTTS
+    return ElevenLabsTTS()
+
+def _stt():
+    from orchestrator.adapters.stt_assemblyai import AssemblyAISTT
+    return AssemblyAISTT()
 
 router = APIRouter(prefix="/api/mind")
 
@@ -59,6 +67,11 @@ class MindSession:
         self.engines = {slug: Engine(casting.situate(load_character(slug), self.scenario, by_slug.get(slug)),
                                      AnthropicLLM(model=reply_model), caps=caps)
                         for slug in self.cast}
+        # voice casting: profile ElevenLabs voice_id wins; else the scenario's authored voice
+        # NAME resolved against the account's library at first use (game data end to end)
+        self.voice_names = {c["slug"]: (c.get("voice") or "").strip() for c in self.scenario["cast"]}
+        self.voice_ids: dict = {}
+        self.voice_ready = bool(get_settings().elevenlabs_api_key)
         book = get_settings().salience_model
         self.run_id = experiment_log.start_run(
             condition="TREAT-EMBODIED-3D", scenario=self.scenario["id"], characters=self.cast,
@@ -82,6 +95,24 @@ class MindSession:
         if self.here_because.get(slug):
             d["extra"]["Why you're here tonight"] = self.here_because[slug]
         return Situation.from_dict(d)
+
+    async def voice_for(self, slug: str) -> str | None:
+        if not self.voice_ready:
+            return None
+        if slug in self.voice_ids:
+            return self.voice_ids[slug]
+        char = self.engine(slug).character
+        vid = (char.voice_id or "").strip() if getattr(char, "tts_provider", "") == "elevenlabs" else ""
+        if not vid:
+            try:
+                voices = await _tts().list_voices()
+                want = self.voice_names.get(slug, "").lower()
+                match = next((v for v in voices if want and want in (v["name"] or "").lower()), None)
+                vid = (match or (voices[0] if voices else {})).get("id") or ""
+            except Exception:
+                vid = ""
+        self.voice_ids[slug] = vid or None
+        return self.voice_ids[slug]
 
     async def finish(self, outcome: str) -> None:
         for eng in self.engines.values():
@@ -172,6 +203,7 @@ async def new_session(body: NewSession):
     sid = uuid4().hex[:8]
     _sessions[sid] = s
     return {"session_id": sid, "title": s.scenario["title"], "player_handle": s.player_handle,
+            "voice": s.voice_ready,
             "react_at": policy.REACT_SALIENCE, "speak_at": policy.SPEAK_SALIENCE,
             "cast": [{"slug": c, "handle": s.handles[c], "here_because": s.here_because[c]}
                      for c in s.cast]}
@@ -233,6 +265,40 @@ async def acted(sid: str, slug: str, body: Acted):
     async with _lock(sid):
         await eng.remember(text, kind="decision", importance=0.65, t=body.clock)
     return {"ok": True}
+
+
+class Speak(BaseModel):
+    text: str
+
+
+@router.post("/{sid}/{slug}/speak")
+async def speak(sid: str, slug: str, body: Speak):
+    """The character's line as AUDIO in their own voice — raw PCM s16le mono (rate in header),
+    played by the client at the speaker's position. Stateless: no session lock held."""
+    s = _s(sid)
+    vid = await s.voice_for(slug)
+    if not vid or not body.text.strip():
+        raise HTTPException(status_code=404, detail="no voice available")
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    chunks = []
+    async for chunk in _tts().stream_speech(body.text, vid):
+        chunks.append(chunk)
+    if not chunks:
+        raise HTTPException(status_code=404, detail="nothing speakable")
+    return Response(content=b"".join(chunks), media_type="application/octet-stream",
+                    headers={"X-Sample-Rate": str(AUDIO_SAMPLE_RATE)})
+
+
+@router.post("/{sid}/stt")
+async def stt(sid: str, request: Request):
+    """Push-to-talk: a WAV clip in, the player's words out (AssemblyAI batch — short clips
+    resolve in a few seconds)."""
+    _s(sid)
+    audio = await request.body()
+    if not audio or len(audio) < 1000:
+        raise HTTPException(status_code=400, detail="empty clip")
+    text = await _stt().transcribe(audio)
+    return {"text": (text or "").strip()}
 
 
 @router.post("/{sid}/finish")

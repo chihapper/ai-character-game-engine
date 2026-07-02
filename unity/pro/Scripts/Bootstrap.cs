@@ -33,6 +33,7 @@ public class Bootstrap : MonoBehaviour
         var mind = gameObject.AddComponent<MindClient>();
         gameObject.AddComponent<DialogueUI>();
         gameObject.AddComponent<CurtainUI>();   // title in, epilogue out
+        gameObject.AddComponent<VoiceClient>(); // their voices out, your voice in
 
         // the player: a body-less first-person presence (CharacterController is the LoS collider)
         var player = new GameObject("Player");
@@ -42,6 +43,7 @@ public class Bootstrap : MonoBehaviour
         yield return mind.CreateSession(s =>
         {
             PlayerHandle = string.IsNullOrEmpty(s.player_handle) ? PlayerHandle : s.player_handle;
+            VoiceClient.ServerHasVoice = s.voice;
             SpawnCast(s);
             DialogueUI.I.Feed("—", $"{s.title} · the storm closes in. Find the bar.");
         });
