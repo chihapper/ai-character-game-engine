@@ -40,6 +40,7 @@ public class Bootstrap : MonoBehaviour
         gameObject.AddComponent<DialogueUI>();
         gameObject.AddComponent<CurtainUI>();   // title in, epilogue out
         gameObject.AddComponent<VoiceClient>(); // their voices out, your voice in
+        gameObject.AddComponent<AutoShot>();    // self-photographing test rig (inert without flag)
 
         // the player: a body-less first-person presence (CharacterController is the LoS collider)
         var player = new GameObject("Player");
