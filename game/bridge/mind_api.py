@@ -133,6 +133,12 @@ class Observe(BaseModel):
     items: list[ObservedItem] = Field(default_factory=list)
 
 
+class Acted(BaseModel):
+    action: str
+    reason: str = ""
+    clock: float | None = None
+
+
 class Finish(BaseModel):
     outcome: str = ""
 
@@ -201,6 +207,20 @@ async def observe(sid: str, body: Observe):
             return {"slug": item.slug, "salience": sal or 0.0,
                     "react": policy.react_verdict(sal or 0.0)}
         return {"results": await asyncio.gather(*(appraise(i) for i in body.items))}
+
+
+@router.post("/{sid}/{slug}/acted")
+async def acted(sid: str, slug: str, body: Acted):
+    """The game ENACTED a chosen action — write it into the character's memory as their OWN act.
+    Without this the body moves but the mind never learns it did ('why did you come over?' →
+    confabulation — the sandbox continuity bug, rediscovered live on the Unity arm). The stored
+    form + pinned salience put it in the #30 working-memory foreground for the next few beats."""
+    s = _s(sid)
+    eng = s.engine(slug)
+    text = f"(chose, of their own will) {body.action}" + (f" — {body.reason}" if body.reason else "")
+    async with _lock(sid):
+        await eng.remember(text, kind="decision", importance=0.65, t=body.clock)
+    return {"ok": True}
 
 
 @router.post("/{sid}/finish")

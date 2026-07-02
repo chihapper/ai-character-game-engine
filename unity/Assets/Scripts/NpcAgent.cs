@@ -50,7 +50,12 @@ public class NpcAgent : MonoBehaviour
         yield return MindClient.I.Choose(slug, new ChooseReq { situation = scene, options = options.ToArray() },
                                          c => choice = c);
         if (choice != null && !string.IsNullOrEmpty(choice.action))
+        {
             yield return Enact(choice.action, choice.reason);
+            // the mind must KNOW the body did it — else "why did you come over?" gets confabulation
+            if (!choice.action.StartsWith("stay where"))
+                yield return MindClient.I.Acted(slug, choice.action, choice.reason);
+        }
         busy = false;
     }
 

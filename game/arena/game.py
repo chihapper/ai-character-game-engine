@@ -259,6 +259,7 @@ class ArenaGame:
                 execute(self.world, slug, choice["action"], acts)
                 self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
                           reason=self._scrub_names(choice.get("reason", "")))
+                await self._remember_own_act(slug, choice)
 
     # ---- player moves ----
     async def move(self, region: str) -> str:
@@ -326,8 +327,20 @@ class ArenaGame:
                 execute(self.world, slug, choice["action"], acts)
                 self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
                           reason=self._scrub_names(choice.get("reason", "")))
+                await self._remember_own_act(slug, choice)
         self._log("scene", self.look())
         return self.history[before:]
+
+    async def _remember_own_act(self, slug: str, choice: dict) -> None:
+        """The body just did the chosen thing — write it into the MIND as their own act, or the
+        next conversation gets confabulation ('why did you come over?'). Pinned salience puts it
+        in the #30 working-memory foreground; the (chose...) prefix renders it first-person."""
+        act = choice["action"]
+        if act.startswith("stay where"):
+            return
+        reason = (choice.get("reason") or "").strip()
+        text = f"(chose, of their own will) {act}" + (f" — {reason}" if reason else "")
+        await self.engines[slug].remember(text, kind="decision", importance=0.65, t=self.clock)
 
     async def finish(self, outcome: str = "") -> None:
         for eng in self.engines.values():  # land in-flight background reflects before closing the book

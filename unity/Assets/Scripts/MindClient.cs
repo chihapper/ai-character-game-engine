@@ -19,6 +19,7 @@ using UnityEngine.Networking;
 [Serializable] public class ObserveReq { public float clock; public float magnitude = 0.1f; public ObservedItem[] items = new ObservedItem[0]; }
 [Serializable] public class ObserveResult { public string slug; public float salience; public string react; }
 [Serializable] public class ObserveRes { public ObserveResult[] results; }
+[Serializable] public class ActedReq { public string action; public string reason = ""; public float clock; }
 [Serializable] class SessionReq { public string scenario = "ferry_crossing.yaml"; public string reply_model = "claude-haiku-4-5"; }
 
 public class MindClient : MonoBehaviour
@@ -51,6 +52,12 @@ public class MindClient : MonoBehaviour
     public IEnumerator Observe(ObserveReq req, Action<ObserveRes> done) =>
         Post($"/{SessionId}/observe", JsonUtility.ToJson(req),
              json => done?.Invoke(JsonUtility.FromJson<ObserveRes>(json)));
+
+    /// The body just DID the chosen thing — tell the mind, or it won't know it moved.
+    public IEnumerator Acted(string slug, string action, string reason) =>
+        Post($"/{SessionId}/{slug}/acted",
+             JsonUtility.ToJson(new ActedReq { action = action, reason = reason, clock = WorldClock.Hours }),
+             _ => { });
 
     public IEnumerator Finish() =>
         Post($"/{SessionId}/finish", "{\"outcome\":\"\"}", _ => { });

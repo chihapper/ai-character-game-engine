@@ -127,7 +127,7 @@ def test_reaction_routing_by_appraised_salience():
 
     def stub(slug):
         async def remember(fact, **kw):
-            calls["remember"].append((slug, kw.get("magnitude")))
+            calls["remember"].append((slug, kw.get("magnitude"), kw.get("kind")))
             return sal[slug]
         async def respond(req, **kw):
             calls["respond"].append(slug)
@@ -144,7 +144,11 @@ def test_reaction_routing_by_appraised_salience():
 
     asyncio.run(g._react_to_player("crosses to the bar", magnitude=0.1))
 
-    assert len(calls["remember"]) == 4 and all(m == 0.1 for _, m in calls["remember"])
+    appraisals = [c for c in calls["remember"] if c[2] == "player_event"]
+    own_acts = [c for c in calls["remember"] if c[2] == "decision"]
+    assert len(appraisals) == 4 and all(m == 0.1 for _, m, _ in appraisals)
+    # the mover ENACTED a choice -> the mind is told it did (the anti-confabulation write)
+    assert [s for s, _, _ in own_acts] == ["mover"]
     assert calls["respond"] == ["speaker"]          # >= SPEAK_SALIENCE -> words
     assert calls["choose"] == ["mover"]             # REACT..SPEAK -> a grounded action beat
     kinds = [e["kind"] for e in g.history]
