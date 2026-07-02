@@ -102,6 +102,63 @@ public class AutoShot : MonoBehaviour
         yield return Shot("exterior_north", new Vector3(0, 2.2f, 12f), new Vector3(0, 1.5f, 4f));
         yield return Shot("exterior_door", door + new Vector3(0.5f, 1.7f, -5f), door + Vector3.up * 1.4f);
 
+        // PLAYER-POV WALKTHROUGH — the shots above are MY canonical angles; these are the
+        // player's actual eyes: their camera, their height, nameplates and UI included.
+        // Door → room → bar (Della) → small table (Edwin) → long table (Bri) → hearth (Corvin) → kitchen.
+        if (pc != null)
+        {
+            var ccc = pc.GetComponent<CharacterController>();
+            if (ccc != null) ccc.enabled = false;      // scripted moves, not physics
+            cam.transform.SetParent(pc.transform, false);
+            cam.transform.localPosition = new Vector3(0, 1.6f, 0);
+            cam.transform.localRotation = Quaternion.identity;
+
+            IEnumerator Walk(Vector3 to)
+            {
+                to.y = 0;
+                float guard = Time.time + 12f;
+                while (Vector3.Distance(pc.transform.position, to) > 0.35f && Time.time < guard)
+                {
+                    var dir = to - pc.transform.position; dir.y = 0;
+                    pc.transform.position += dir.normalized * 2.2f * Time.deltaTime;
+                    pc.transform.rotation = Quaternion.Slerp(pc.transform.rotation,
+                        Quaternion.LookRotation(dir), 8f * Time.deltaTime);
+                    yield return null;
+                }
+            }
+            IEnumerator Pov(string name, Vector3 lookAt)
+            {
+                var flat = lookAt - pc.transform.position; flat.y = 0;
+                if (flat.sqrMagnitude > 0.01f) pc.transform.rotation = Quaternion.LookRotation(flat);
+                cam.transform.localEulerAngles = new Vector3(
+                    -Mathf.Rad2Deg * Mathf.Atan2(lookAt.y - 1.6f, Mathf.Max(0.1f, flat.magnitude)), 0, 0);
+                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForEndOfFrame();
+                ScreenCapture.CaptureScreenshot(Path.Combine(Dir, name + ".png"));
+                yield return new WaitForSeconds(0.35f);
+            }
+            Vector3 NpcHead(string slugPrefix)
+            {
+                var n = NpcAgent.All.FirstOrDefault(a => a.slug.StartsWith(slugPrefix));
+                return n != null ? n.transform.position + Vector3.up * 1.4f : mid + Vector3.up * 1.3f;
+            }
+
+            pc.transform.position = door + new Vector3(0, 0, 0.8f);
+            yield return Pov("pov_1_from_door", mid + Vector3.up * 1.3f);
+            yield return Walk(mid + new Vector3(0.4f, 0, 0));
+            yield return Pov("pov_2_toward_bar", bar + Vector3.up * 1.1f);
+            yield return Walk(bar + new Vector3(-0.7f, 0, 0.2f));
+            yield return Pov("pov_3_della_at_bar", NpcHead("della"));
+            yield return Pov("pov_4_edwin_small_table", NpcHead("edwin"));
+            yield return Walk(Regions.Anchor("the long table") + new Vector3(1.3f, 0, 1.2f));
+            yield return Pov("pov_5_bri_long_table", NpcHead("brielle"));
+            yield return Walk(hearth + new Vector3(1.5f, 0, 0.9f));
+            yield return Pov("pov_6_corvin_hearth", NpcHead("corvin"));
+            yield return Walk(new Vector3(3.0f, 0, 0.8f));
+            yield return Walk(new Vector3(4.2f, 0, -0.9f));
+            yield return Pov("pov_7_back_kitchen", new Vector3(5.3f, 0.9f, -2.2f));
+        }
+
         File.WriteAllText(Path.Combine(Dir, "scene_xray.txt"), Xray());
         File.WriteAllText(Path.Combine(Root, "autoshot.done"), "ok");
         Debug.Log("AUTOSHOT complete");
