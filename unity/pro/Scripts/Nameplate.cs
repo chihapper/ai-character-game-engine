@@ -16,7 +16,7 @@ public class Nameplate : MonoBehaviour
         go.transform.SetParent(transform, false);
         go.transform.localPosition = new Vector3(0, height / Mathf.Max(0.01f, transform.lossyScale.y), 0);  // parent is height-normalized
         tm = go.AddComponent<TextMesh>();
-        tm.characterSize = 0.022f;
+        tm.characterSize = 0.016f;   // 0.022 filled a third of the screen at conversation range
         tm.fontSize = 64;
         tm.anchor = TextAnchor.LowerCenter;
         tm.alignment = TextAlignment.Center;
@@ -29,7 +29,7 @@ public class Nameplate : MonoBehaviour
         // fade out with distance — far plates overlap into an unreadable jumble and read
         // through walls; near ones are the ones that matter
         float d = Vector3.Distance(tm.transform.position, Camera.main.transform.position);
-        float a = Mathf.InverseLerp(9f, 5.5f, d) * 0.9f;
+        float a = Mathf.InverseLerp(9f, 5.5f, d) * Mathf.Lerp(0.5f, 0.9f, Mathf.InverseLerp(1.6f, 3f, d));  // dim in your face, gone far away
         tm.color = new Color(1f, 0.96f, 0.85f, a);
         if (a <= 0.01f) { tm.text = ""; return; }
         tm.text = text();

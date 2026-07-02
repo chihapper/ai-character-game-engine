@@ -225,7 +225,7 @@ public static class InnBuilder
         Spawn(P + "Workbench_Drawers", barPos + new Vector3(0, 0, -1.1f), -90);
         Spawn(P + "Shelf_Small_Bottles", new Vector3(W / 2 - 0.15f, 1.5f, D / 4), -90);
         Spawn(P + "Shelf_Arch", new Vector3(W / 2 - 0.15f, 1.45f, D / 4 - 1.2f), -90);
-        Spawn(P + "Cabinet", new Vector3(W / 2 - 0.45f, 0, D / 4 + 2.0f), -90);   // back bar
+        Spawn(P + "Cabinet", new Vector3(W / 2 - 0.45f, 0, 0.3f), -90);   // back bar, between counter and kitchen door
         Spawn(P + "Barrel_Holder", new Vector3(W / 2 - 0.55f, 0, D / 4 - 1.9f));  // the keg
         float barTop = TopOf(bench);
         BarTop = barTop;
