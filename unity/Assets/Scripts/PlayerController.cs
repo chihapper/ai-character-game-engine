@@ -52,18 +52,25 @@ public class PlayerController : MonoBehaviour
             StartCoroutine(ReportAct($"crosses to {region}", 0.1f));
         }
 
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            var target = FacingNpc();
-            if (target != null) DialogueUI.I.Open(target);
-        }
+        Talkable = FacingNpc();  // DialogueUI shows "[E] talk to …" whenever this is non-null
+        if (Input.GetKeyDown(KeyCode.E) && Talkable != null)
+            DialogueUI.I.Open(Talkable);
     }
 
+    public NpcAgent Talkable { get; private set; }
+
+    // Forgiving targeting: anyone visible within arm's-reach counts regardless of facing;
+    // farther out (to 4m) requires roughly facing them. Strict cones read as "E does nothing".
     NpcAgent FacingNpc() =>
         NpcAgent.All
-            .Where(a => Vector3.Distance(a.transform.position, transform.position) < 3f
-                        && PerceptComposer.IsLookingAt(transform, a.transform)
-                        && PerceptComposer.CanSee(transform, a.transform))
+            .Where(a => PerceptComposer.CanSee(transform, a.transform))
+            .Where(a =>
+            {
+                var d = Vector3.Distance(a.transform.position, transform.position);
+                if (d < 2f) return true;
+                return d < 4f && Vector3.Angle(transform.forward,
+                    a.transform.position - transform.position) < 45f;
+            })
             .OrderBy(a => Vector3.Distance(a.transform.position, transform.position))
             .FirstOrDefault();
 
