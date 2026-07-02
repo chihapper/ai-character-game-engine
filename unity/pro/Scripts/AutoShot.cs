@@ -43,6 +43,11 @@ public class AutoShot : MonoBehaviour
 
         IEnumerator Shot(string name, Vector3 pos, Vector3 lookAt)
         {
+            // an NPC facing a wall puts "2m in front of them" INSIDE the wall — pull the
+            // camera back along the sight line to just before the first thing it would enter
+            var dir = pos - lookAt;
+            if (Physics.Raycast(lookAt, dir.normalized, out var hit, dir.magnitude + 0.2f))
+                pos = hit.point - dir.normalized * 0.3f;
             cam.transform.position = pos;
             cam.transform.rotation = Quaternion.LookRotation(lookAt - pos);
             yield return new WaitForEndOfFrame();

@@ -67,6 +67,9 @@ public class Bootstrap : MonoBehaviour
             Camera.main.clearFlags = CameraClearFlags.SolidColor;
             Camera.main.backgroundColor = new Color(0.015f, 0.02f, 0.035f);
         }
+        // no skybox → glossy surfaces mirror the DEFAULT pale-gray environment: the flooded
+        // crossing rendered as a glowing band across every north window. Kill env reflections.
+        RenderSettings.reflectionIntensity = 0.12f;
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.11f, 0.12f, 0.16f);
         RenderSettings.fog = true;

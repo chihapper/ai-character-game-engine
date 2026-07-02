@@ -35,7 +35,7 @@ public static class ExteriorBuilder
         water.transform.SetParent(root, false);
         water.transform.localScale = new Vector3(30, 1, 14);
         water.transform.position = new Vector3(0, 0.06f, 78);
-        var wm = M("water", new Color(0.05f, 0.07f, 0.1f), 0.95f, true, new Color(0.02f, 0.03f, 0.05f));
+        var wm = M("water", new Color(0.05f, 0.07f, 0.1f), 0.75f, true, new Color(0.02f, 0.03f, 0.05f));
         water.GetComponent<Renderer>().material = wm;
         water.AddComponent<WaterShimmer>();
 
@@ -128,7 +128,7 @@ public static class ExteriorBuilder
         col.type = ParticleSystemCollisionType.World;
         col.mode = ParticleSystemCollisionMode.Collision3D;
         col.lifetimeLoss = 1f;
-        col.quality = ParticleSystemCollisionQuality.Medium;
+        col.quality = ParticleSystemCollisionQuality.High;
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.renderMode = ParticleSystemRenderMode.Stretch;
         r.lengthScale = 6f;
@@ -166,6 +166,6 @@ public class WaterShimmer : MonoBehaviour
     void Awake() { m = GetComponent<Renderer>().material; }
     void Update()
     {
-        m.SetFloat("_Smoothness", 0.9f + Mathf.PerlinNoise(Time.time * 0.35f, 0.5f) * 0.08f);
+        m.SetFloat("_Smoothness", 0.68f + Mathf.PerlinNoise(Time.time * 0.35f, 0.5f) * 0.08f);
     }
 }

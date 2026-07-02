@@ -128,7 +128,7 @@ public static class InnBuilder
                 Spawn(V + "Floor_WoodLight", new Vector3(x, WallHeight - 0.02f, z));  // ceiling boards
             }
         BoxCollider(new Vector3(0, -0.05f, 0), new Vector3(W, 0.1f, D));
-        BoxCollider(new Vector3(0, WallHeight + 0.05f, 0), new Vector3(W, 0.1f, D));  // rain dies on the roof
+        BoxCollider(new Vector3(0, WallHeight + 0.5f, 0), new Vector3(W, 1f, D));  // rain dies on the roof (thick: fast drops tunnel thin boxes)
 
         // perimeter walls — north gets two windows, south the door, west the hearth's brick run
         for (int i = 0; i < nx; i++)
