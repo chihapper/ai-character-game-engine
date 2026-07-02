@@ -38,7 +38,7 @@ public class AutoShot : MonoBehaviour
         // READABLE for review; rig-only, never part of the game
         var fill = new GameObject("autoshot.fill").AddComponent<Light>();
         fill.transform.SetParent(cam.transform, false);
-        fill.type = LightType.Point; fill.range = 14f; fill.intensity = 1.4f;
+        fill.type = LightType.Point; fill.range = 8f; fill.intensity = 1.2f;   // must not reach past the walls
         fill.color = new Color(1f, 0.96f, 0.9f);
 
         IEnumerator Shot(string name, Vector3 pos, Vector3 lookAt)

@@ -128,6 +128,7 @@ public static class InnBuilder
                 Spawn(V + "Floor_WoodLight", new Vector3(x, WallHeight - 0.02f, z));  // ceiling boards
             }
         BoxCollider(new Vector3(0, -0.05f, 0), new Vector3(W, 0.1f, D));
+        BoxCollider(new Vector3(0, WallHeight + 0.05f, 0), new Vector3(W, 0.1f, D));  // rain dies on the roof
 
         // perimeter walls — north gets two windows, south the door, west the hearth's brick run
         for (int i = 0; i < nx; i++)
@@ -236,7 +237,7 @@ public static class InnBuilder
             cl.transform.position = WorldBounds(chand).center + Vector3.down * 0.15f;
             cl.type = LightType.Point;
             cl.range = 7.5f;
-            cl.intensity = 1.15f;
+            cl.intensity = 2.6f;   // inverse-square: 1.15 arrived at the floor as a whisper
             cl.color = new Color(1f, 0.75f, 0.45f);
         }
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);

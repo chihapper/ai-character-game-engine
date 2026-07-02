@@ -121,6 +121,14 @@ public static class ExteriorBuilder
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-1.6f);   // wind-driven slant
         vel.y = new ParticleSystem.MinMaxCurve(-14f);
+        // the emission box overlaps the inn — without collision the streaks fall THROUGH the
+        // ceiling into the taproom; they die on the roof collider instead
+        var col = ps.collision;
+        col.enabled = true;
+        col.type = ParticleSystemCollisionType.World;
+        col.mode = ParticleSystemCollisionMode.Collision3D;
+        col.lifetimeLoss = 1f;
+        col.quality = ParticleSystemCollisionQuality.Medium;
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.renderMode = ParticleSystemRenderMode.Stretch;
         r.lengthScale = 6f;
