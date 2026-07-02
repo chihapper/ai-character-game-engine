@@ -38,6 +38,31 @@ public class DialogueUI : MonoBehaviour
     {
         EnsureStyles();
         int line = label.fontSize + 8;
+
+        // The INPUT AREA draws FIRST: IMGUI keys a control's edit state to its sequence position,
+        // so any variable-count controls (the feed) drawn before the text field would shift its
+        // identity every time a line arrived — wiping whatever the player was mid-typing.
+        if (IsOpen)
+        {
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            { target = null; return; }
+            bool enter = Event.current.type == EventType.KeyDown
+                         && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter);
+            float ih = line * 2.4f;
+            GUI.Box(new Rect(8, Screen.height - ih - 6, Screen.width - 16, ih),
+                    waiting ? $"{target.Reference} …" : $"speaking to {target.Reference}", box);
+            GUI.SetNextControlName("say");
+            input = GUI.TextField(new Rect(16, Screen.height - line - 14,
+                                           Screen.width - 150 - label.fontSize * 3, line), input, field);
+            if (GUI.GetNameOfFocusedControl() != "say")
+                GUI.FocusControl("say");
+            bool submit = GUI.Button(new Rect(Screen.width - 130 - label.fontSize * 2,
+                                              Screen.height - line - 14, 110 + label.fontSize * 2, line),
+                                     "Say", button) || enter;
+            if (submit && !waiting && input.Trim().Length > 0)
+                StartCoroutine(Say(input.Trim()));
+        }
+
         GUI.Label(new Rect(14, 8, Screen.width - 28, line),
                   $"hour {WorldClock.Hours:0.0}   [WASD] move  [E] talk  [Esc] close talk", label);
         // live talk prompt — targeting must never fail silently
@@ -60,22 +85,6 @@ public class DialogueUI : MonoBehaviour
             GUI.Box(new Rect(10, y - 2, Screen.width - 20, h + 4), GUIContent.none);
             GUI.Label(new Rect(20, y, Screen.width - 40, h), feed[i], label);
         }
-
-        if (!IsOpen) return;
-        if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-        { target = null; return; }
-
-        float ih = line * 2.4f;
-        GUI.Box(new Rect(8, Screen.height - ih - 6, Screen.width - 16, ih),
-                waiting ? $"{target.Reference} …" : $"speaking to {target.Reference}", box);
-        GUI.SetNextControlName("say");
-        input = GUI.TextField(new Rect(16, Screen.height - line - 14, Screen.width - 150 - label.fontSize * 3, line), input, field);
-        GUI.FocusControl("say");
-        bool submit = GUI.Button(new Rect(Screen.width - 130 - label.fontSize * 2, Screen.height - line - 14,
-                                          110 + label.fontSize * 2, line), "Say", button)
-                      || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return);
-        if (submit && !waiting && input.Trim().Length > 0)
-            StartCoroutine(Say(input.Trim()));
     }
 
     IEnumerator Say(string line)
