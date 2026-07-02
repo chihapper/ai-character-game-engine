@@ -27,10 +27,10 @@ player_handle: the stranger just in from the storm
 # coworker named Marco; without this frame she talked about him in a riverlands inn).
 world_frame: >
   This is a riverlands world: ferries and fords, peat fires, oil lamps, coin, crown soldiers on
-  horseback. There are no cities of glass, no clubs, cocktail bars, phones, or electricity — and
-  the people and places of any OTHER life you may half-remember (coworkers, dance halls, modern
-  things) do not exist here and never did. You are the same soul with the same nature, living
-  THIS life in THIS world. Speak only of what exists here.
+  horseback, market fairs and feast days. Anything that would not belong in such a world does not
+  exist here and never has — and any people or places you half-remember from some other life do
+  not exist either; the folk of YOUR life are river folk. You are the same soul with the same
+  nature, living this life in this world. Speak only of what exists here.
 
 # --- time -------------------------------------------------------------------
 # The engine only differences `clock`; the unit is ours. Hours across one long night.
@@ -62,6 +62,13 @@ cast:
     as: "a stranded traveler; charming, transactional, reads a room for what it can give her"
     handle: "the bright young woman"
     knows_secret: false
+    adapt:   # her sheet is a modern cocktail server — swap the furniture, keep the psychology
+      role: Serving girl at a river-town taproom downstream; calls the dances on feast nights
+      drop_relationships: ["Marco the bartender"]
+      add_relationships:
+        Tomas the taproom keeper: Her protective older employer downstream who keeps an eye on her shifts.
+      knows_swap:
+        "Cocktails, bar culture, and nightlife": "Taproom drink and song, and the moods of a night crowd"
     here_because: >
       You were working your way downriver to a new town and a fresh room to charm — the move you make
       when a place goes stale and the quiet starts creeping in — when the storm caught the ferry and
@@ -69,6 +76,13 @@ cast:
       off to when it goes quiet.
   - slug: edwin-hale
     as: "a stranded performer between towns; he jokes to keep the dark off"
+    adapt:   # his sheet says theaters and Mercer Street — same circuit, this world's venues
+      role: Traveling player and jester ("Pockets") — market fairs, feast days, taproom nights
+      backstory_swap:
+        "the little theater on Mercer Street": "the little stage wagon that follows the river fairs"
+        "birthday parties, county fairs": "feast days, market fairs"
+      knows_swap:
+        "The fairground and small-theater circuit, and everyone who works it": "The fair and feast-day circuit along the river, and everyone who works it"
     handle: "the soaked performer"
     knows_secret: false
     here_because: >

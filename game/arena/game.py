@@ -21,8 +21,7 @@ from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
 
-from .. import experiment_log
-from .. import policy
+from .. import casting, experiment_log, policy
 from .actions import available, execute
 from .perception import _proximity, perceive, render_player_view, to_situation
 from .world import load_world
@@ -65,7 +64,9 @@ class ArenaGame:
                 for f in glob.glob(str(mem_dir / f"{ns}.*")):
                     os.remove(f)
                 LongTermMemory.invalidate(ns)  # drop any shared cache over the deleted files
-        self.engines = {slug: Engine(load_character(slug), AnthropicLLM(model=reply_model), caps=caps)
+        by_slug = {c["slug"]: c for c in self.scenario["cast"]}
+        self.engines = {slug: Engine(casting.situate(load_character(slug), self.scenario, by_slug.get(slug)),
+                                     AnthropicLLM(model=reply_model), caps=caps)
                         for slug in self.cast}
         self.clock = 0.0
         self.history: list[dict] = []
