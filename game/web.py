@@ -10,11 +10,18 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from orchestrator.config import ALLOWED_MODEL_IDS
+
 from .runtime import Game
 
 router = APIRouter(prefix="/api/game")
 _games: dict[str, Game] = {}
-MAX_LIVE_GAMES = 8  # abandoned tabs would otherwise leak engines forever; oldest evicted
+_locks: dict[str, "asyncio.Lock"] = {}
+
+
+def _lock(gid: str):
+    import asyncio
+    return _locks.setdefault(gid, asyncio.Lock())
 
 SCENARIOS_DIR = Path(__file__).resolve().parent / "scenarios"
 DEFAULT_SCENARIO = "ferry_crossing.yaml"
@@ -69,10 +76,22 @@ def _view(g: Game) -> dict:
 
 @router.post("/new")
 async def new_game(body: NewGame):
+    for m in (body.reply_model, body.dm_model):
+        if m and m not in ALLOWED_MODEL_IDS:
+            raise HTTPException(status_code=422, detail=f"unknown model {m!r}")
+    # ONE live world per process: all games share the cast's memory namespaces and a new run
+    # resets them — a second "concurrent" game would play against wiped minds. Finalize the old
+    # run properly (its experiment-log row closes) before the reset.
+    for old_gid, old in list(_games.items()):
+        async with _lock(old_gid):
+            try:
+                await old.finish("(superseded by a new run)")
+            except Exception:
+                pass
+            _games.pop(old_gid, None)
+            _locks.pop(old_gid, None)
     g = Game(str(_scenario_path(body.scenario)), condition=body.condition,
              reply_model=body.reply_model, dm_model=body.dm_model)
-    while len(_games) >= MAX_LIVE_GAMES:
-        _games.pop(next(iter(_games)))  # evict oldest
     gid = uuid4().hex[:8]
     _games[gid] = g
     await g.begin()
@@ -82,40 +101,46 @@ async def new_game(body: NewGame):
 @router.post("/{gid}/talk")
 async def talk(gid: str, body: Talk):
     g = _game(gid)
-    n = len(g.history)
-    await g.talk(body.target, body.line)
-    return {"events": g.history[n:], "view": _view(g)}
+    async with _lock(gid):
+        n = len(g.history)
+        await g.talk(body.target, body.line)
+        return {"events": g.history[n:], "view": _view(g)}
 
 
 @router.post("/{gid}/say")
 async def say(gid: str, body: Say):
     g = _game(gid)
-    n = len(g.history)
-    await g.say_to_room(body.line)
-    return {"events": g.history[n:], "view": _view(g)}
+    async with _lock(gid):
+        n = len(g.history)
+        await g.say_to_room(body.line)
+        return {"events": g.history[n:], "view": _view(g)}
 
 
 @router.post("/{gid}/act")
 async def act(gid: str, body: Act):
     g = _game(gid)
-    n = len(g.history)
-    await g.act(body.action)
-    return {"events": g.history[n:], "view": _view(g)}
+    async with _lock(gid):
+        n = len(g.history)
+        await g.act(body.action)
+        return {"events": g.history[n:], "view": _view(g)}
 
 
 @router.post("/{gid}/advance")
 async def advance(gid: str):
     g = _game(gid)
-    n = len(g.history)
-    more = await g.advance()
-    return {"events": g.history[n:], "view": _view(g), "ended": not more}
+    async with _lock(gid):
+        n = len(g.history)
+        more = await g.advance()
+        return {"events": g.history[n:], "view": _view(g), "ended": not more}
 
 
 @router.post("/{gid}/finish")
 async def finish(gid: str, body: Finish):
     g = _game(gid)
-    await g.finish(body.outcome)
+    async with _lock(gid):
+        await g.finish(body.outcome)
     _games.pop(gid, None)
+    _locks.pop(gid, None)
     return {"ok": True, "run_id": g.run_id}
 
 

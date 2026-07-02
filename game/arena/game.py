@@ -46,9 +46,21 @@ class ArenaGame:
         self.handles = {c["slug"]: (c.get("handle") or "someone").strip() for c in self.scenario["cast"]}
         self.here_because = {c["slug"]: (c.get("here_because") or "").strip() for c in self.scenario["cast"]}
         self.known_names: dict[str, str] = {}
+        # The player's in-fiction handle is scenario data, not engine code (any scenario can cast
+        # the player as someone else walking into a different room).
+        self.player_handle = (self.scenario.get("player_handle")
+                              or "the stranger just in from the storm").strip()
         # Affect/agency ON per-engine (never by mutating global settings; arch review theme B).
-        caps = EngineCaps.from_settings(get_settings(), relationship_state=True,
-                                        reflection_enabled=True, intent_state=True)
+        # background_reflection: this is a long-lived server surface — don't tax every reply with
+        # the post-turn affect calls; finish() flushes them. The scenario's authored clock window
+        # (e.g. "a beat stays fresh 6 hours") must actually reach the engine, not sit unread in
+        # the YAML while the engine default silently applies.
+        over = dict(relationship_state=True, reflection_enabled=True, intent_state=True,
+                    background_reflection=True)
+        window = (self.scenario.get("clock") or {}).get("recent_happenings_window")
+        if window:
+            over["recent_happenings_window"] = float(window)
+        caps = EngineCaps.from_settings(get_settings(), **over)
         if reset:
             mem_dir = Path(get_settings().memory_dir)
             for slug in self.cast:
@@ -70,7 +82,7 @@ class ArenaGame:
 
     def _ref(self, eid: str) -> str:
         if eid == "player":
-            return "the stranger just in from the storm"
+            return self.player_handle
         return self.known_names.get(eid) or self.handles.get(eid) or eid
 
     def _label(self, eid: str) -> str:
@@ -115,18 +127,31 @@ class ArenaGame:
                                  flags=re.IGNORECASE)
         return "".join(segs)
 
+    def _learnable_forms(self, slug: str) -> list[str]:
+        """The forms an INTRODUCTION can teach: first name + quoted nickname — how people actually
+        introduce themselves ('Name's Della', 'they call me Pockets'). Surnames are excluded
+        because they double as common words: '\"Hale and hearty!\"' is capitalized at sentence
+        start, so even case-sensitive matching would false-register Edwin \"Pockets\" Hale.
+        Scrubbing still covers ALL name forms; only learning gets this narrower gate."""
+        import re
+        raw = re.sub(r"\s*\([^)]*\)\s*$", "", self.engines[slug].character.name).strip()
+        nicknames = re.findall(r'"([A-Za-z]{2,})"', raw)
+        first = re.sub(r'"[^"]*"', " ", raw).split()
+        return ([first[0]] if first else []) + nicknames
+
     def _maybe_learn_name(self, slug: str, text: str) -> None:
         """Learn a name ONLY from QUOTED speech — an actual spoken introduction ('Name's Della'),
-        never a narration slip (those are scrubbed before this runs)."""
+        never a narration slip (those are scrubbed before this runs). Case-sensitive,
+        first-name/nickname forms only."""
         import re
         if slug in self.known_names:
             return
         spoken = " ".join(self._split_quotes(text)[1::2])  # quoted segments only
         if not spoken:
             return
-        for c in self._name_forms(slug):
-            if re.search(rf"\b{re.escape(c)}\b", spoken, re.IGNORECASE):
-                self.known_names[slug] = c.split()[0] if " " in c else c
+        for c in self._learnable_forms(slug):
+            if re.search(rf"\b{re.escape(c)}\b", spoken):
+                self.known_names[slug] = c
                 return
 
     def _resolve(self, ref: str) -> str | None:
@@ -235,25 +260,37 @@ class ArenaGame:
                                                     magnitude=magnitude)
             return slug, observed, sal or 0.0
 
-        for slug, observed, sal in await asyncio.gather(*(appraise(s) for s in self.cast)):
-            if sal < self.REACT_SALIENCE:
-                continue
-            if sal >= self.SPEAK_SALIENCE:
-                reply = await self.engines[slug].respond(RespondRequest(
-                    event=f"Right now, before your eyes: {observed}. React as feels true to you.",
-                    situation=self._situation_for(slug)))
-                reply = self._scrub_names(reply)
-                self._log("dialogue", reply, slug=slug, who=self._label(slug), reacted_to=observed)
-                self._maybe_learn_name(slug, reply)
-            else:
-                acts = available(self.world, slug, ref_of=self._ref)
-                p = perceive(self.world, slug, clock=self.clock, ref_of=self._ref)
-                choice = await self.engines[slug].choose_action(
-                    f"{render_player_view(p)}\nJust now: {observed}", [a.label for a in acts])
-                if choice.get("action"):
-                    execute(self.world, slug, choice["action"], acts)
-                    self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
-                              reason=self._scrub_names(choice.get("reason", "")))
+        results = await asyncio.gather(*(appraise(s) for s in self.cast))
+        speakers = [(s, o) for s, o, sal in results if sal >= self.SPEAK_SALIENCE]
+        movers = [(s, o) for s, o, sal in results if self.REACT_SALIENCE <= sal < self.SPEAK_SALIENCE]
+
+        # The beats run CONCURRENTLY (independent minds thinking at once — serial awaits stacked
+        # up to 4 LLM round-trips of player-visible latency); everything they decided FROM is the
+        # same world snapshot, and world changes apply afterwards, in cast order, deterministically.
+        async def speech_beat(slug: str, observed: str):
+            reply = await self.engines[slug].respond(RespondRequest(
+                event=f"Right now, before your eyes: {observed}. React as feels true to you.",
+                situation=self._situation_for(slug)))
+            return slug, observed, self._scrub_names(reply)
+
+        async def action_beat(slug: str, observed: str):
+            acts = available(self.world, slug, ref_of=self._ref)
+            p = perceive(self.world, slug, clock=self.clock, ref_of=self._ref)
+            choice = await self.engines[slug].choose_action(
+                f"{render_player_view(p)}\nJust now: {observed}", [a.label for a in acts])
+            return slug, acts, choice
+
+        spoken, acted = await asyncio.gather(
+            asyncio.gather(*(speech_beat(s, o) for s, o in speakers)),
+            asyncio.gather(*(action_beat(s, o) for s, o in movers)))
+        for slug, observed, reply in spoken:
+            self._log("dialogue", reply, slug=slug, who=self._label(slug), reacted_to=observed)
+            self._maybe_learn_name(slug, reply)
+        for slug, acts, choice in acted:
+            if choice.get("action"):
+                execute(self.world, slug, choice["action"], acts)
+                self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
+                          reason=self._scrub_names(choice.get("reason", "")))
 
     # ---- player moves ----
     async def move(self, region: str) -> str:
@@ -269,12 +306,19 @@ class ArenaGame:
         acts = available(self.world, "player", ref_of=self._ref)
         chosen = next((a for a in acts if a.label == label), None)
         conseq = execute(self.world, "player", label, acts)
-        text = f"you {conseq}" if conseq else "(you can't do that here)"
-        self._log("player_act", text)
+        if not conseq or not chosen:
+            return "(you can't do that here)"  # not logged — the API surfaces it as an error
+        # A movement act reads as the act you chose ("you cross to the bar" — the consequence
+        # phrase is third-person and glued to "you" it read broken), and arriving somewhere new
+        # deserves a fresh scene, exactly like move().
+        moved = chosen.kind in ("move", "approach")
+        self._log("player_act", f"you {label}" if moved else f"you {conseq}")
         # holding still isn't an event; anything else, the room gets its chance to notice
-        if conseq and chosen and chosen.kind != "wait":
+        if chosen.kind != "wait":
             await self._react_to_player(conseq, magnitude=self.OBJ_MAGNITUDE.get(chosen.kind, 0.1))
-        return text
+        if moved:
+            self._log("scene", self.look())
+        return f"you {label}" if moved else f"you {conseq}"
 
     async def talk(self, target_ref: str, line: str) -> str:
         slug = self._resolve(target_ref)
@@ -292,15 +336,24 @@ class ArenaGame:
 
     # ---- the world turns (time passes; NPCs perceive + act) ----
     async def advance(self, hours: float = 2.0) -> list[dict]:
+        import asyncio
         before = len(self.history)
         self.clock += hours
         self._log("time", f"— {hours:g} hours pass —")
+        # Everyone perceives the SAME pre-advance world (a true simultaneous beat), chooses
+        # concurrently (serial awaits stacked 4 LLM round-trips of dead time), then the choices
+        # apply in cast order. The elapsed gap rides IN the situation text — perceive() carries
+        # it, but render_player_view doesn't show it, so without the line nobody actually FELT
+        # the hours pass ("all feel the gap" was a comment, not a behavior).
+        snaps = []
         for slug in self.cast:
-            p = perceive(self.world, slug, clock=self.clock, elapsed=hours, ref_of=self._ref)  # all feel the gap
+            p = perceive(self.world, slug, clock=self.clock, elapsed=hours, ref_of=self._ref)
             acts = available(self.world, slug, ref_of=self._ref)
-            # Grounded choice: the engine folds in evolved goals/intent/feelings/beliefs (#30 review D).
-            choice = await self.engines[slug].choose_action(render_player_view(p),
-                                                            [a.label for a in acts])
+            snaps.append((slug, acts, f"{render_player_view(p)}\nTime just passed: {hours:g} hours."))
+        # Grounded choice: the engine folds in evolved goals/intent/feelings/beliefs (#30 review D).
+        choices = await asyncio.gather(*(self.engines[slug].choose_action(sit, [a.label for a in acts])
+                                         for slug, acts, sit in snaps))
+        for (slug, acts, _), choice in zip(snaps, choices):
             if choice.get("action"):
                 execute(self.world, slug, choice["action"], acts)
                 self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
@@ -309,5 +362,7 @@ class ArenaGame:
         return self.history[before:]
 
     async def finish(self, outcome: str = "") -> None:
+        for eng in self.engines.values():  # land in-flight background reflects before closing the book
+            await eng.flush_reflection()
         if self.run_id:
             experiment_log.finalize_run(self.run_id, outcome or "(embodied session)", doc=self.log_doc)

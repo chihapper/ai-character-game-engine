@@ -19,6 +19,9 @@ same unit (a game running on hours tunes it in hours).
 """
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from .character_store import Character
 from .config import EngineCaps, get_settings
 from .context import (
@@ -37,6 +40,7 @@ from .consolidation import consolidate_beliefs
 from .consistency import detect_contradiction
 from .memory.agency_store import AgencyStore
 from .salience import (
+    NEUTRAL as NEUTRAL_SALIENCE,
     _character_summary, assess_event_impact, assess_persistence, reflect_on_turn, score_salience,
     score_salience_text,
 )
@@ -58,6 +62,7 @@ class Engine:
         self.intent = IntentStore(ns, readonly=readonly)
         self.agency = AgencyStore(ns, readonly=readonly)  # evolving goals + last-deliberation clock (#20)
         self.short_term = ShortTermMemory(max_turns=self.caps.short_term_turns)
+        self._bg_tasks: set[asyncio.Task] = set()  # background reflects (strong refs until done)
         # Reflection/consolidation (#9): accumulate exchanges + their importance until enough has
         # happened to be worth forming beliefs (process-lifetime; resets on restart).
         self._reflect_buffer: list[str] = []
@@ -165,9 +170,12 @@ class Engine:
                         "new_intent": "", "new_goals": [], "world_action": ""}
         grounding = await self._agency_grounding(situation, now_t, last_t)
         decision = await _deliberate(self.character, grounding=grounding, mode=mode)
-        self.agency.mark_deliberated(now_t)
         if not decision:
+            # A failed deliberation must NOT advance the taken-stock clock: marking here would let
+            # gated mode's "nothing since last_t" skip swallow the very events this call failed to
+            # consider — they'd never be deliberated on at all.
             return {"changed": False}
+        self.agency.mark_deliberated(now_t)
         changed = bool(decision.get("changed"))
         if changed and decision["internal"]:  # a change of heart toward the player — via the #19 seam
             await self.remember(decision["internal"], actor="self", importance=0.85, t=now_t, kind="self_change")
@@ -244,10 +252,14 @@ class Engine:
         # and doesn't invent contact when the player has been absent (#22). Conflating real events is
         # fine (human); inventing a player who was never there is not.
         recs = self.long_term._all()
-        player_items = sorted([r for r in recs if r.kind in ("exchange", "player_event")],
-                              key=lambda r: (r.t if r.t is not None else float(r.index)))
+        # Insertion order IS arrival order (the store appends); sorting by a key that mixes
+        # game-clock t with insertion index put clockless records on the wrong side of clocked ones
+        # (a count is not a time). rank_window excludes these kinds by design (they render here),
+        # so this window is their ONLY path into deliberation — keep it wide enough that a busy
+        # scene doesn't silently drop what the player actually did.
+        player_items = [r for r in recs if r.kind in ("exchange", "player_event")]
         if player_items:
-            recent = "\n".join(f"- {r.text[:160]}" for r in player_items[-3:])
+            recent = "\n".join(f"- {r.text[:160]}" for r in player_items[-8:])
             note = ("What the player has ACTUALLY done with you (base anything you say about them on "
                     "this — interpret it naturally, but invent nothing beyond it):\n" + recent)
             times = [r.t for r in player_items if r.t is not None]
@@ -394,23 +406,34 @@ class Engine:
         c = self.caps
         now_t = situation.clock if situation else None
         if c.commitment_detection or c.relationship_state or c.intent_state:
+            # The want-flags travel from THIS engine's caps — reflect_on_turn must not re-derive
+            # them from process globals, or per-engine capability config silently dies (the
+            # pre-Unity review found exactly that: dialogue never moved trust on any live surface).
             importance, detected, rel, intent = await reflect_on_turn(
                 self.character, user_text, reply,
-                relationship=self.relationship.get(), intent=self.intent.get())
+                relationship=self.relationship.get(), intent=self.intent.get(),
+                want_commit=c.commitment_detection, want_rel=c.relationship_state,
+                want_intent=c.intent_state, want_salience=c.salience_scoring)
             if detected and not self.commitments.readonly:
                 self.commitments.add(detected["text"], made_t=now_t,
                                      importance=detected["significance"], due=detected["due"])
             if rel and not self.relationship.readonly:
                 self.relationship.update(**rel)
             if intent is not None and not self.intent.readonly:
-                self.intent.update(intent)
+                self.intent.update(intent)  # "" is an explicit CLEAR (the agenda ran its course)
             # Assess this character's emotional persistence ONCE (decay rate), cached (#12-B).
+            # 0.0 = the assessment failed -> leave unassessed so a later turn retries, instead of
+            # pinning the global default forever as if it were this character's nature.
             if (c.relationship_state and c.relationship_time_decay and not self.relationship.readonly
                     and self.relationship.get().persistence_half_life <= 0):
-                self.relationship.get().persistence_half_life = await assess_persistence(self.character)
-                self.relationship.save()
-        else:
+                assessed = await assess_persistence(self.character)
+                if assessed > 0:
+                    self.relationship.get().persistence_half_life = assessed
+                    self.relationship.save()
+        elif c.salience_scoring:
             importance = await score_salience(self.character, user_text, reply)
+        else:
+            importance = NEUTRAL_SALIENCE
         await self.long_term.add_exchange(user_text, reply, importance=importance, t=now_t)
         if c.contradiction_detection and memories:
             contra = await detect_contradiction(self.character, user_text, memories)
@@ -433,6 +456,11 @@ class Engine:
             return
         recent = self._reflect_buffer[-c.reflection_max_inputs:]
         beliefs = await consolidate_beliefs(self.character, recent, existing=self.long_term.beliefs())
+        if beliefs is None:
+            # Transient failure — keep the accumulated window so those exchanges still get their
+            # consolidation; back the accumulator off so we retry after more piles up, not hot-loop.
+            self._reflect_acc = c.reflection_importance_threshold * 0.5
+            return
         for b in beliefs:  # add_belief supersedes near-duplicate convictions (#15), no piling up
             await self.long_term.add_belief(b, importance=c.reflection_importance, t=now_t)
         self._reflect_buffer.clear()
@@ -471,11 +499,35 @@ class Engine:
         if request.input_text() and reply:
             self.short_term.add_user(line)  # the framed form — history stays unambiguous on re-reads
             self.short_term.add_assistant(reply)
-        await self.reflect(request.input_text(), reply, request.situation, memories=dbg["memories"])
+        # Reflection is background work by DESIGN (its docstring says background-safe; the voice
+        # loop already runs it off the reply path) — awaiting it inline taxed every game turn with
+        # 1-3 LLM calls of player-visible dead time. Opt-in (caps) because short-lived callers
+        # would exit before the task lands; debug keeps it inline so the returned state is post-
+        # reflect (the sandbox inspects it).
+        if self.caps.background_reflection and not debug:
+            task = asyncio.create_task(self._reflect_bg(request.input_text(), reply,
+                                                        request.situation, dbg["memories"]))
+            self._bg_tasks.add(task)
+            task.add_done_callback(self._bg_tasks.discard)
+        else:
+            await self.reflect(request.input_text(), reply, request.situation, memories=dbg["memories"])
         if debug:
             return reply, {**dbg, "relationship": self.relationship.get().to_dict(),
                            "commitments": [{"text": c.text, "due": c.due} for c in self.commitments.open_items()]}
         return reply
+
+    async def _reflect_bg(self, user_text: str, reply: str, situation, memories) -> None:
+        try:
+            await self.reflect(user_text, reply, situation, memories=memories)
+        except Exception:
+            logging.getLogger(__name__).exception("background reflect failed (turn state persisted "
+                                                  "without affect updates)")
+
+    async def flush_reflection(self) -> None:
+        """Await any in-flight background reflects — call at scene/run end so the last turn's
+        affect updates and memory writes land before the process (or the run's story) moves on."""
+        if self._bg_tasks:
+            await asyncio.gather(*list(self._bg_tasks), return_exceptions=True)
 
     # ---- internals ----------------------------------------------------------------------
     async def _generate(self, system, messages: list[dict]) -> str:

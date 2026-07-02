@@ -22,8 +22,14 @@ class ShortTermMemory:
         self._trim()
 
     def _trim(self) -> None:
+        # Trim in CHUNKS, not one message at a time: a per-turn slide changes the history PREFIX
+        # every turn, so the prompt-cache breakpoint the LLM adapter writes at the end of history
+        # would never be read back once the buffer fills. Dropping two full turns at once keeps
+        # the prefix byte-stable (cache HITS) between trims, at the cost of the window briefly
+        # running two turns leaner.
         if len(self._messages) > self._max_messages:
-            self._messages = self._messages[-self._max_messages :]
+            keep = max(2, self._max_messages - 4)
+            self._messages = self._messages[-keep:]
 
     def messages(self) -> list[dict]:
         """A copy of the buffered messages, oldest first."""

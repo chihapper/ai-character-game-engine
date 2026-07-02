@@ -98,9 +98,22 @@ class Situation:
             present=[str(p).strip() for p in (data.get("present") or []) if str(p).strip()],
             recent_events=[str(e).strip() for e in (data.get("recent_events") or []) if str(e).strip()],
             extra={k: v for k, v in (data.get("extra") or {}).items()} if isinstance(data.get("extra"), dict) else {},
-            clock=float(raw_clock) if isinstance(raw_clock, (int, float)) else None,
+            # Foreign clients (a Unity bridge serializing floats as strings) must not silently
+            # lose the clock — and a JSON boolean is not a time.
+            clock=_coerce_clock(raw_clock),
         )
         return None if sit.is_empty() else sit
+
+
+def _coerce_clock(v) -> float | None:
+    if v is None or isinstance(v, bool):
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
 
 
 @dataclass

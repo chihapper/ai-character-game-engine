@@ -8,9 +8,14 @@ testable in isolation (pass `doc=` a temp copy). See docs/embodiment-experiment.
 """
 from __future__ import annotations
 
+import threading
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
+
+# One lock for every table edit: start/update are unlocked read-modify-write cycles over a shared
+# markdown file — two concurrent runs (or a run-start racing a finalize) silently dropped rows.
+_IO_LOCK = threading.Lock()
 
 DOC_PATH = Path(__file__).resolve().parents[1] / "docs" / "embodiment-experiment.md"
 _START = "<!-- RUNS_TABLE_START -->"
@@ -79,9 +84,10 @@ def start_run(*, condition: str, scenario: str, characters, models,
     values = {"run_id": run_id, "started": ts.strftime("%Y-%m-%d %H:%M:%S"),
               "condition": condition, "scenario": scenario, "characters": chars,
               "models": mdls, "transcript": transcript, "outcome": "(in progress)"}
-    before, block, after = _split(doc.read_text(encoding="utf-8"))
-    rows = _data_rows(block) + [_row(values)]
-    doc.write_text(before + _START + _block(rows) + _END + after, encoding="utf-8")
+    with _IO_LOCK:
+        before, block, after = _split(doc.read_text(encoding="utf-8"))
+        rows = _data_rows(block) + [_row(values)]
+        doc.write_text(before + _START + _block(rows) + _END + after, encoding="utf-8")
     return run_id
 
 
@@ -89,20 +95,21 @@ def update_run(run_id: str, *, doc: Path | str = DOC_PATH, **fields) -> bool:
     """Set named columns (outcome/rr_judge/emergence/human_note/transcript/...) for `run_id`.
     Returns True if the row was found."""
     doc = Path(doc)
-    before, block, after = _split(doc.read_text(encoding="utf-8"))
-    rows = _data_rows(block)
-    found = False
-    for i, r in enumerate(rows):
-        values = _cells_of(r)
-        if values.get("run_id") == run_id:
-            for k, v in fields.items():
-                if k in COLUMNS:
-                    values[k] = _cell(v)
-            rows[i] = _row(values)
-            found = True
-            break
-    if found:
-        doc.write_text(before + _START + _block(rows) + _END + after, encoding="utf-8")
+    with _IO_LOCK:
+        before, block, after = _split(doc.read_text(encoding="utf-8"))
+        rows = _data_rows(block)
+        found = False
+        for i, r in enumerate(rows):
+            values = _cells_of(r)
+            if values.get("run_id") == run_id:
+                for k, v in fields.items():
+                    if k in COLUMNS:
+                        values[k] = _cell(v)
+                rows[i] = _row(values)
+                found = True
+                break
+        if found:
+            doc.write_text(before + _START + _block(rows) + _END + after, encoding="utf-8")
     return found
 
 

@@ -244,23 +244,39 @@ def _parse_reflection(text: str, want_commit: bool, want_rel: bool, want_intent:
     relationship = _parse_relationship(d.get("relationship")) if want_rel else None
     intent = None
     if want_intent and isinstance(d.get("intent"), str):
-        intent = d["intent"].strip() or None
+        # An explicit empty string IS a signal — the prompt says "empty if no agenda" — so it must
+        # reach the store as a CLEAR, not be conflated with "field absent" (None = no update).
+        intent = d["intent"].strip()
     return importance, commitment, relationship, intent
 
 
 async def reflect_on_turn(
     character: Character, user_text: str, assistant_text: str, *,
     relationship=None, intent=None, model: str | None = None,
+    want_commit: bool | None = None, want_rel: bool | None = None,
+    want_intent: bool | None = None, want_salience: bool | None = None,
 ) -> tuple[float, dict | None, dict | None, str | None]:
     """ONE background LLM call: salience importance, plus — when enabled — any commitment the
     character made (#4-B), how the exchange moved their feelings (#6), and their updated
     short-term intent (#8). Folded into a single call (~0 player latency). Returns (importance,
-    commitment|None, relationship_update|None, intent|None); fallbacks are all-None."""
+    commitment|None, relationship_update|None, intent|None); fallbacks are all-None.
+
+    The want_* flags come from the CALLER (Engine passes its per-engine caps); the process-global
+    settings are only the default when a flag isn't passed. Deriving them here from the globals
+    silently ignored every EngineCaps override — per-turn affect was dead on all caps-enabled
+    surfaces (found by the pre-Unity review)."""
     settings = get_settings()
-    want_commit = settings.commitment_detection
-    want_rel = settings.relationship_state and relationship is not None
-    want_intent = settings.intent_state and intent is not None
-    if not settings.salience_scoring and not want_commit and not want_rel and not want_intent:
+    if want_commit is None:
+        want_commit = settings.commitment_detection
+    if want_rel is None:
+        want_rel = settings.relationship_state
+    if want_intent is None:
+        want_intent = settings.intent_state
+    if want_salience is None:
+        want_salience = settings.salience_scoring
+    want_rel = want_rel and relationship is not None
+    want_intent = want_intent and intent is not None
+    if not want_salience and not want_commit and not want_rel and not want_intent:
         return NEUTRAL, None, None, None
     fields = ['"importance": <0.00-1.00>']
     blocks = [_IMPORTANCE_BLOCK]
@@ -337,9 +353,8 @@ async def assess_persistence(character: Character, *, model: str | None = None) 
     """AI-derived 'emotional persistence' -> a decay half-life (game-clock units) for how long this
     character's player-specific feelings linger before drifting back to baseline with no contact.
     Warm/loyal/devoted/obsessive/grudge-holding -> long; mercurial/fickle/cold/transactional ->
-    short. Falls back to the global default on error."""
-    settings = get_settings()
-    default = settings.relationship_decay_half_life
+    short. Returns 0.0 (= "unassessed") on error or an unparseable reply, so callers retry later
+    instead of permanently pinning the global default as if it were this character's nature."""
     system = (
         "From a character's nature, judge how LONG their feelings toward someone linger before "
         "fading back to baseline when they have NO contact. Warm, loyal, devoted, obsessive, or "
@@ -350,7 +365,7 @@ async def assess_persistence(character: Character, *, model: str | None = None) 
     try:
         text = await complete(system, prompt, role="salience", model=model, max_tokens=40)
         m = re.search(r"\d+\.?\d*", text)
-        return max(5.0, min(5000.0, float(m.group()))) if m else default
+        return max(5.0, min(5000.0, float(m.group()))) if m else 0.0
     except Exception:
-        logger.exception("Persistence assessment failed; using global default")
-        return default
+        logger.exception("Persistence assessment failed; left unassessed (will retry)")
+        return 0.0

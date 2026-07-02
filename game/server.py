@@ -26,6 +26,20 @@ WEB = Path(__file__).resolve().parent / "web"
 _BUILD = str(int(time.time()))
 
 app = FastAPI(title="The Ferry's Last Crossing")
+
+
+@app.on_event("startup")
+async def _warm_memory_embedder() -> None:
+    """Pre-warm the embedder so the ~0.5s fastembed cold-load doesn't land on the player's
+    first turn (same guard orchestrator/main.py has had since it bit there)."""
+    import asyncio
+    import logging
+    from orchestrator.memory.long_term import warm_embedder
+    try:
+        name = await asyncio.to_thread(warm_embedder)
+        logging.getLogger(__name__).info("Embedder pre-warmed: %s", name)
+    except Exception as exc:  # never block startup on a warm failure
+        logging.getLogger(__name__).warning("Embedder pre-warm skipped: %s", exc)
 app.include_router(game_router)       # /play — the TEXT control
 app.include_router(embodied_router)   # /embodied — the ARENA treatment
 

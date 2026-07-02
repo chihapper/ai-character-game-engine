@@ -16,7 +16,6 @@ import logging
 import re
 
 from .character_store import Character
-from .config import get_settings
 from .judgment import complete, judgment, parse_json, salvage_json
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,6 @@ async def deliberate(
 ) -> dict | None:
     """Decide what this character does/becomes on its own. `grounding` is the assembled state the
     engine passes; `mode` is 'gated' (default) or 'free'. Returns a Decision dict or None."""
-    settings = get_settings()
     bar = (
         "Most of the time return changed=false — people don't transform on a whim; a real change "
         "needs accumulated CAUSE (weariness, beliefs that have drifted, an unresolved wound, time)."
@@ -136,7 +134,6 @@ async def reconcile_goals(
     Returns the reconciled list (may equal the input if nothing should move) or None on error."""
     if not current_goals:
         return None
-    settings = get_settings()
     system = (
         "You reconcile a fictional character's STANDING LIFE-GOALS with who they have ACTUALLY become. "
         "You're given who they are, the state they've accumulated (feelings, beliefs, what's happened), "

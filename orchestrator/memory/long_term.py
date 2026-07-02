@@ -351,9 +351,12 @@ class LongTermMemory:
             records = self._all()
             if not records:
                 return []
+            # now_index anchors clockless recency to the NEWEST index, not len(records):
+            # indexes are monotonic and outgrow the list once supersede/eviction removes
+            # records, which flattened recency ordering across the newest ones.
             selected = realize_relevance(
                 qvec, records, weights=self._weights, budget=k,
-                now_index=len(records), now_t=now_t,
+                now_index=records[-1].index + 1, now_t=now_t,
             )
             self._reinforce_recalled(selected, now_t)
             return [r.text for r in selected]
@@ -372,7 +375,7 @@ class LongTermMemory:
                 return {"selected": [], "scored": [], "embedder": name}
             selected, breakdown = realize_relevance(
                 qvec, records, weights=self._weights, budget=k,
-                now_index=len(records), now_t=now_t, return_debug=True,
+                now_index=records[-1].index + 1, now_t=now_t, return_debug=True,
             )
             self._reinforce_recalled(selected, now_t)
             return {"selected": [r.text for r in selected], "scored": breakdown, "embedder": name}
@@ -398,7 +401,7 @@ class LongTermMemory:
         # just the loudest by static importance.
         foreground = list(realize_relevance(
             embed(query), window, weights=self._weights,
-            budget=min(k, len(window)), now_index=len(records), now_t=now_t,
+            budget=min(k, len(window)), now_index=records[-1].index + 1, now_t=now_t,
         ))
         # Hard floor: a death/betrayal-grade event is never relegated to the background, even if the
         # ranker would (#24 guardrail against mis-ranking).

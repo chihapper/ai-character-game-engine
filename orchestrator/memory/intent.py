@@ -38,9 +38,10 @@ class IntentState:
         return self.intent
 
     def set(self, intent: str | None) -> None:
-        intent = (intent or "").strip()
-        if intent:
-            self.intent = intent
+        """Replace the aim — including with "" (an agenda can RUN ITS COURSE; every prompt tells
+        the model 'empty string if no agenda', so empty must clear, not silently keep the old aim
+        forever). Callers that mean 'no update' don't call set at all (None guards upstream)."""
+        self.intent = (intent or "").strip()
         self.turns += 1
 
     def to_dict(self) -> dict:

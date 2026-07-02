@@ -41,8 +41,12 @@ class Game:
         self.log_doc = log_doc or experiment_log.DOC_PATH
         # The whole point of the game is the affect/agency engine — turn it on PER-ENGINE (never by
         # mutating the process-global settings; arch review theme B).
-        caps = EngineCaps.from_settings(get_settings(), relationship_state=True,
-                                        reflection_enabled=True, intent_state=True)
+        over = dict(relationship_state=True, reflection_enabled=True, intent_state=True,
+                    background_reflection=True)  # long-lived server surface; finish() flushes
+        window = (self.scenario.get("clock") or {}).get("recent_happenings_window")
+        if window:  # the scenario's authored freshness window must reach the engine (it sat unread)
+            over["recent_happenings_window"] = float(window)
+        caps = EngineCaps.from_settings(get_settings(), **over)
         self.dm = DM(self.scenario, model=dm_model)
         self.present = [c["slug"] for c in self.scenario["cast"]]
         if reset:
@@ -284,6 +288,8 @@ class Game:
         return True
 
     async def finish(self, outcome: str = "") -> None:
+        for eng in self.engines.values():  # land in-flight background reflects before closing
+            await eng.flush_reflection()
         if self.run_id:
             experiment_log.finalize_run(self.run_id, outcome or "(completed)", doc=self.log_doc)
 

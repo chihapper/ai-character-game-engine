@@ -61,13 +61,13 @@ def _parse_beliefs(text: str) -> list[str]:
 async def consolidate_beliefs(
     character: Character, recent: list[str], *, existing: list[str] | None = None,
     model: str | None = None,
-) -> list[str]:
+) -> list[str] | None:
     """Synthesize 1-3 durable beliefs from `recent` events (and, if given, the beliefs already
-    held, so convictions can deepen or shift). Returns [] when nothing rises above the noise or
-    on any error — so consolidation never breaks a turn."""
+    held, so convictions can deepen or shift). Returns [] when nothing rises above the noise,
+    None on a transient error — so the caller keeps its accumulated window and retries later
+    instead of silently losing those exchanges. Never raises (must not break a turn)."""
     if not recent:
         return []
-    settings = get_settings()
     prompt = (
         f"WHO YOU ARE:\n{_character_summary(character)}\n\n"
         "RECENT EVENTS (oldest first):\n" + "\n".join(f"- {m}" for m in recent) +
@@ -79,5 +79,5 @@ async def consolidate_beliefs(
         return _parse_beliefs(await complete(_SYSTEM, prompt, role="reflection", model=model,
                                              max_tokens=320))
     except Exception:
-        logger.exception("Belief consolidation failed; no beliefs formed this cycle")
-        return []
+        logger.exception("Belief consolidation failed; window kept for retry")
+        return None

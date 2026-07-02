@@ -90,12 +90,26 @@ async function begin() {
   $("beginBtn").disabled = true; $("startHint").textContent = "the storm closes in…";
   try {
     const res = await api("/new", "POST", { reply_model: $("replyModel").value });
-    S.gid = res.game_id; $("title").textContent = res.title; $("start").style.display = "none";
+    S.gid = res.game_id; localStorage.setItem("embodiedGid", S.gid);
+    $("title").textContent = res.title; $("start").style.display = "none";
     renderView(res.view); feed(res.events);
   } catch (e) { $("startHint").textContent = "couldn't start: " + e.message; $("beginBtn").disabled = false; }
 }
 
+// Resume-on-reload (same lifeline the text view has): a phone tab suspension or an accidental
+// reload must not orphan the live run — replay the recorded history and keep playing.
+async function tryResume() {
+  const gid = localStorage.getItem("embodiedGid");
+  if (!gid) return;
+  try {
+    const res = await api(`/${gid}/state`, "GET");
+    S.gid = gid; $("start").style.display = "none";
+    renderView(res.view); feed(res.history);
+  } catch { localStorage.removeItem("embodiedGid"); } // stale gid (server restarted) — start fresh
+}
+
 $("beginBtn").onclick = begin;
+tryResume();
 $("sayBtn").onclick = say;
 $("line").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); say(); } });
 $("advanceBtn").onclick = () => run(() => api(`/${S.gid}/advance`, "POST", { hours: 2 }));

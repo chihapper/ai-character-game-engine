@@ -268,6 +268,12 @@ class Settings(BaseSettings):
     # resolves referents ("her" -> mom) and thin queries. False = search the last line only.
     arena_query: bool = True
     arena_query_recent_turns: int = 2
+    # Background reflection: run the post-reply reflect() (salience/commitment/relationship/
+    # intent + consolidation) as a fire-and-forget task instead of blocking respond()'s return
+    # on 1-3 LLM calls the player never sees. OPT-IN because short-lived callers (CLI tools,
+    # scripts) would exit before the task lands, losing the writes — long-lived servers (the
+    # game web runtimes) turn it on and flush on shutdown/finish.
+    background_reflection: bool = False
 
     # --- Server ---
     host: str = "127.0.0.1"
@@ -307,6 +313,7 @@ class EngineCaps:
     contradiction_importance: float
     arena_query: bool
     arena_query_recent_turns: int
+    background_reflection: bool
     beliefs_always_surface: int
     recent_happenings: bool
     recent_happenings_window: float

@@ -15,7 +15,6 @@ import logging
 import re
 
 from .character_store import Character
-from .config import get_settings
 from .judgment import complete
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,6 @@ async def detect_contradiction(
     {"claimed", "remembered"} or None (also None when there's nothing to check or on error)."""
     if not user_text or not memories:
         return None
-    settings = get_settings()
     prompt = (
         f"CHARACTER: {character.name}\n\n"
         "WHAT THE CHARACTER HAS ESTABLISHED:\n" + "\n".join(f"- {m}" for m in memories) +

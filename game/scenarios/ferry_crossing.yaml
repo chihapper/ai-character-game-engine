@@ -19,6 +19,9 @@ player:
     You shoulder in out of the downpour into the taproom of the ferry-inn. The crossing is closed
     till the storm breaks. For tonight, you're all stuck here together.
 
+# How the room sees the player before any introduction (the arena reads this; strangers rule).
+player_handle: the stranger just in from the storm
+
 # --- time -------------------------------------------------------------------
 # The engine only differences `clock`; the unit is ours. Hours across one long night.
 clock:

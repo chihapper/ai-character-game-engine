@@ -3,7 +3,9 @@
 > The #30 **treatment arm**: an embodied version of the ferry scenario to sit beside the text game
 > (the control). Written after playtesting exposed that every text bug — names, inner-state,
 > spatial drift, who's-present — is the *same* root problem, and it's the one embodiment removes.
-> Status: **proposal for review**, nothing built yet. Companions: [engine-game-contract.md](engine-game-contract.md),
+> Status: **Phase A BUILT and playable** (`game/arena/`, `/embodied`) — this doc records the
+> settled design; §14 holds the deferred future. Where the build intentionally narrowed a proposal,
+> the section notes it. Companions: [engine-game-contract.md](engine-game-contract.md),
 > [embodiment-experiment.md](embodiment-experiment.md).
 
 ---
@@ -99,7 +101,9 @@ For each agent, the perception system computes a **percept** from the arena + th
 position/senses:
 
 - who & what is **in view/earshot** (not "all cast" — only what your vantage affords → **fixes
-  presence by construction**),
+  presence by construction**). *Phase A narrowing: the ferry inn is ONE room, so everyone present
+  is in view; distance still grades proximity. Vantage-limited presence (occlusion, earshot) is
+  exactly what the continuous-space world model adds.*
 - their **observable** state only — position, posture, action, facing, tone (never inner state →
   **fixes the inner-thought leak by construction**),
 - ambient (storm, firelight, smell),
@@ -107,7 +111,9 @@ position/senses:
 
 This percept becomes the engine's `Situation` (structured, packed into `Situation.extra`/fields). Same
 `respond()`/`deliberate()`; grounded, consistent input. **Names** are a property of *acquaintance*
-(have you been introduced / do you recognize this face), carried by the world — not scrubbed from prose.
+(have you been introduced / do you recognize this face). *Phase A narrowing: acquaintance is tracked
+by the game (`known_names`, learned from spoken introductions) and prose is still scrubbed as a
+safety net — carrying it fully in the world is a visual-build win (see #34's closing analysis).*
 
 The player gets a percept the same way; the renderer draws it.
 
