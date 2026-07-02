@@ -27,7 +27,7 @@ public static class CastBuilder
     {
         var prefab = Resources.Load<GameObject>(BODY + (look.feminine ? "Superhero_Female_FullBody" : "Superhero_Male_FullBody"));
         if (prefab == null) { Debug.LogError("CastBuilder: body prefab missing"); return new GameObject(name); }
-        var body = Object.Instantiate(prefab, pos, Quaternion.identity);
+        var body = Object.Instantiate(prefab, pos, prefab.transform.rotation);
         body.name = name;
         // normalize: the FBX's native height is whatever it is — measure it and scale so this
         // character stands look.height * 1.75m tall (playtest: bodies rendered ~half height and
@@ -76,7 +76,7 @@ public static class CastBuilder
             if (hp == null || head == null) return;
             var h = Object.Instantiate(hp, body.transform, false);
             h.transform.localPosition = Vector3.zero;
-            h.transform.localRotation = Quaternion.identity;
+            h.transform.localRotation = hp.transform.rotation;   // keep the FBX axis compensation
             foreach (var smr in h.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 if (smr.bones.Length >= 1)
@@ -85,6 +85,7 @@ public static class CastBuilder
                     for (int i = 0; i < bones.Length; i++) bones[i] = head;
                     smr.bones = bones;
                     smr.rootBone = head;
+                    smr.updateWhenOffscreen = true;
                 }
                 var m = new Material(QMaterials.Map("hair"));
                 m.SetColor("_BaseColor", look.hairColor);
@@ -107,7 +108,7 @@ public static class CastBuilder
             if (op == null) { Debug.LogWarning("CastBuilder: outfit missing " + fbx); return; }
             var o = Object.Instantiate(op, body.transform, false);
             o.transform.localPosition = Vector3.zero;
-            o.transform.localRotation = Quaternion.identity;
+            o.transform.localRotation = op.transform.rotation;   // keep the FBX axis compensation
             foreach (var smr in o.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 var bones = smr.bones;
@@ -117,6 +118,7 @@ public static class CastBuilder
                 smr.bones = bones;
                 if (smr.rootBone != null && boneMap.TryGetValue(smr.rootBone.name, out var rootM))
                     smr.rootBone = rootM;
+                smr.updateWhenOffscreen = true;   // stale bind-bounds must not cull the clothes
                 var mats = smr.sharedMaterials;
                 for (int i = 0; i < mats.Length; i++)
                 {

@@ -35,7 +35,11 @@ public static class InnBuilder
     {
         var prefab = Resources.Load<GameObject>(path);
         if (prefab == null) { Debug.LogWarning($"InnBuilder: missing prefab {path}"); return null; }
-        var go = Object.Instantiate(prefab, pos, Quaternion.Euler(0, yRot, 0), root);
+        // FBX from Blender bakes a -90X axis-compensation into the prefab ROOT rotation;
+        // Instantiate with an absolute rotation WIPES it and lays every piece flat (the audit's
+        // 'wall vertical span 0.0..0.4'). Compose our yaw WITH the prefab's own rotation.
+        var go = Object.Instantiate(prefab, pos,
+            Quaternion.Euler(0, yRot, 0) * prefab.transform.rotation, root);
         if (scale.HasValue) go.transform.localScale = scale.Value;
         QMaterials.Apply(go);
         var b = WorldBounds(go);
@@ -69,12 +73,15 @@ public static class InnBuilder
 
     static Vector3 Size(string path)
     {
+        // measure a real INSTANCE (with its axis compensation applied) — raw prefab bounds lie
         var prefab = Resources.Load<GameObject>(path);
         if (prefab == null) return Vector3.one * 2;
-        var b = new Bounds(Vector3.zero, Vector3.zero);
+        var probe = Object.Instantiate(prefab, new Vector3(0, -500, 0), prefab.transform.rotation);
+        var b = new Bounds(probe.transform.position, Vector3.zero);
         bool first = true;
-        foreach (var r in prefab.GetComponentsInChildren<MeshRenderer>())
+        foreach (var r in probe.GetComponentsInChildren<Renderer>())
         { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
+        Object.Destroy(probe);
         return b.size;
     }
 
