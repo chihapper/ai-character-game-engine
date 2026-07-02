@@ -11,10 +11,13 @@ public class QImport : AssetPostprocessor
     {
         if (!assetPath.Replace('\\', '/').Contains("/Resources/Q/")) return;
         var mi = (ModelImporter)assetImporter;
-        // THE axis fix: Blender FBX is Z-up; without baking, the -90 compensation lives on
-        // scene transforms where runtime code can lose it (every wall spent three sessions lying
-        // flat). Baking converts the VERTEX DATA — no transform anywhere can break it again.
-        mi.bakeAxisConversion = true;
+        // Axis bake is for STATIC art only (walls/props): baking vertex data on SKINNED meshes
+        // (bodies, anims, hair, outfits) desyncs bind poses from bones — the exploded-marionette
+        // playtest. Static architecture can never lie flat again; skinned things keep their rig
+        // conventions and the runtime preserves their prefab rotations instead.
+        bool skinned = assetPath.Contains("/Anims") || assetPath.Contains("Base Characters")
+                       || assetPath.Contains("Hairstyles") || assetPath.Contains("/Outfits/");
+        mi.bakeAxisConversion = !skinned;
         bool anims = assetPath.Contains("/Anims");
         bool body = assetPath.Contains("Base Characters");
         if (assetPath.Contains("/Outfits/"))

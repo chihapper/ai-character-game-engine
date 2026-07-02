@@ -127,8 +127,9 @@ public static class InnBuilder
                   new Vector3(x, 0, D / 2), 0);
             if (win)
             {
-                Pane(new Vector3(x, WallHeight * 0.55f, D / 2 - 0.12f), new Vector3(1.6f, 1.1f, 0.05f));
-                Spawn(V + "WindowShutters_Wide_Flat_Open", new Vector3(x, 0, D / 2), 0);
+                var ww = root.GetChild(root.childCount - 1).gameObject;   // the window wall just spawned
+                var wb = WorldBounds(ww);
+                Pane(new Vector3(wb.center.x, WallHeight * 0.55f, D / 2 - 0.12f), new Vector3(1.7f, 1.2f, 0.05f));
             }
             bool door = i == nx / 2;
             Spawn(V + (door ? "Wall_Plaster_Door_Round" : "Wall_Plaster_Straight"),
@@ -149,8 +150,9 @@ public static class InnBuilder
                   new Vector3(W / 2, 0, z), -90);
             if (win)
             {
-                Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, z), new Vector3(0.05f, 1.1f, 1.6f));
-                Spawn(V + "WindowShutters_Wide_Flat_Open", new Vector3(W / 2, 0, z), -90);
+                var ww = root.GetChild(root.childCount - 1).gameObject;
+                var wb = WorldBounds(ww);
+                Pane(new Vector3(W / 2 - 0.12f, WallHeight * 0.55f, wb.center.z), new Vector3(0.05f, 1.2f, 1.7f));
             }
             Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_WoodGrid"),
                   new Vector3(-W / 2, 0, z), 90);
@@ -161,11 +163,32 @@ public static class InnBuilder
         BoxCollider(new Vector3(W / 2, WallHeight / 2, 0), new Vector3(0.3f, WallHeight, D));
         BoxCollider(new Vector3(-W / 2, WallHeight / 2, 0), new Vector3(0.3f, WallHeight, D));
 
-        // THE HEARTH (west wall center): brick breast + logs + hanging pot; the light is Bootstrap's
+        // THE HEARTH (west wall center): a real fireplace — brick pad, flanking jambs, a wooden
+        // mantel beam, stacked logs; the fire light + flames are Bootstrap's
         var hearthPos = new Vector3(-W / 2 + 0.55f, 0, 0);
-        Spawn(P + "Anvil_Log", hearthPos + new Vector3(0.1f, 0.05f, 0));
-        Spawn(P + "Cauldron", hearthPos + new Vector3(0.15f, 0.1f, 0.35f));
-        BoxCollider(hearthPos + Vector3.up * 0.5f, new Vector3(1.0f, 1.0f, 1.6f));
+        Spawn(V + "Floor_Brick", hearthPos + new Vector3(0.35f, 0.01f, 0));
+        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, 1.05f), 0, new Vector3(0.28f, 0.62f, 1f));
+        Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, -1.05f), 0, new Vector3(0.28f, 0.62f, 1f));
+        var mantel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mantel.transform.SetParent(root, false);
+        mantel.transform.position = hearthPos + new Vector3(0.3f, 1.95f, 0);
+        mantel.transform.localScale = new Vector3(0.75f, 0.16f, 2.5f);
+        mantel.GetComponent<Renderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        mantel.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color(0.32f, 0.24f, 0.17f));
+        var logM = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        logM.SetColor("_BaseColor", new Color(0.2f, 0.14f, 0.1f));
+        for (int li = 0; li < 3; li++)
+        {
+            var log = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            Object.Destroy(log.GetComponent<Collider>());
+            log.transform.SetParent(root, false);
+            log.transform.position = hearthPos + new Vector3(0.15f + (li == 2 ? 0.08f : 0), 0.12f + li / 2 * 0.16f, -0.25f + li * 0.25f);
+            log.transform.localScale = new Vector3(0.16f, 0.35f, 0.16f);
+            log.transform.rotation = Quaternion.Euler(90, li * 25f, 0);
+            log.GetComponent<Renderer>().material = logM;
+        }
+        Spawn(P + "Cauldron", hearthPos + new Vector3(0.5f, 0, 1.35f), 0, Vector3.one * 0.8f);  // beside, not IN it
+        BoxCollider(hearthPos + Vector3.up * 0.5f, new Vector3(1.0f, 1.0f, 2.4f));
 
         // THE BAR (east side, in front of the window bay): two workbenches + bottles behind
         var barPos = new Vector3(W / 2 - 1.6f, 0, D / 4);
