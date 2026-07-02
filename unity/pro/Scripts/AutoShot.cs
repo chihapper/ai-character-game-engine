@@ -80,7 +80,13 @@ public class AutoShot : MonoBehaviour
             {
                 var dir = Quaternion.Euler(0, yaw, 0) * npc.transform.forward;
                 float d = ClearDist(head, dir, 2.1f);
-                if (d >= 1.4f) { spot = head + dir * Mathf.Min(2.0f, d - 0.35f) + Vector3.up * 0.1f; break; }
+                if (d < 1.4f) continue;
+                var cand = head + dir * Mathf.Min(2.0f, d - 0.35f) + Vector3.up * 0.1f;
+                // another NPC standing on the sight line photobombs the portrait — Della's
+                // close-up kept showing Edwin's face
+                bool blocked = NpcAgent.All.Any(o => o != npc &&
+                    DistToSegment(o.transform.position + Vector3.up * 1.3f, head, cand) < 0.55f);
+                if (!blocked) { spot = cand; break; }
             }
             yield return Shot("npc_" + npc.slug.Split('-')[0], spot, head);
         }
@@ -131,6 +137,13 @@ public class AutoShot : MonoBehaviour
                     sb.AppendLine($"{t.name} c={b.center:F1} s={b.size:F1}");
                 }
         return sb.ToString();
+    }
+
+    static float DistToSegment(Vector3 p, Vector3 a, Vector3 b)
+    {
+        var ab = b - a;
+        float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / Mathf.Max(1e-5f, ab.sqrMagnitude));
+        return Vector3.Distance(p, a + ab * t);
     }
 
     static Bounds Bounds(GameObject go)
