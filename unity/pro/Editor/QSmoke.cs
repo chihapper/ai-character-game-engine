@@ -70,14 +70,14 @@ public static class QSmoke
             {
                 var pf = Resources.Load<GameObject>(path);
                 if (pf == null) { Debug.Log("QSMOKE BOUNDS " + path + " -> MISSING"); continue; }
-                var inst = Object.Instantiate(pf, Vector3.zero, Quaternion.identity);
+                var inst = UnityEngine.Object.Instantiate(pf, Vector3.zero, Quaternion.identity);
                 var b = new Bounds(Vector3.zero, Vector3.zero); bool first = true;
                 foreach (var r in inst.GetComponentsInChildren<Renderer>())
                 { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
                 var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
                 Debug.Log($"QSMOKE BOUNDS {path.Split('/').Last()} center={b.center:F2} size={b.size:F2}" +
                           (smr != null ? $" skinnedBones={smr.bones.Length} root={(smr.rootBone ? smr.rootBone.name : "null")}" : ""));
-                Object.DestroyImmediate(inst);
+                UnityEngine.Object.DestroyImmediate(inst);
             }
             var ual = Resources.Load<RuntimeAnimatorController>("Q/NPCAnim") as UnityEditor.Animations.AnimatorController;
             if (ual != null)
