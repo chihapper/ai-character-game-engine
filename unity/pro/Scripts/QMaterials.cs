@@ -27,6 +27,7 @@ public static class QMaterials
     }
 
     const string VT = "Q/Village/Textures/";
+    const string OT = "Q/Outfits/Textures/";
     const string PT = "Q/Props/Textures/";
     const string CT = "Q/Characters/Base Characters/Textures/";
 
@@ -38,6 +39,8 @@ public static class QMaterials
         if (s.Contains("male") && !s.Contains("female")) return Make("body_m", CT + "T_Superhero_Male_Ligh", null, null, null, 0.15f);
         if (s.Contains("female")) return Make("body_f", CT + "T_Superhero_Female_Light_BaseColor", null, null, null, 0.15f);
         if (s.Contains("eye")) return Make("eye", CT + "T_Eye_Brown", null, null, null, 0.5f);
+        if (s.Contains("peasant")) return Make("peasant", OT + "Peasant/T_Peasant_BaseColor", OT + "Peasant/T_Peasant_Normal", null, null, 0.1f);
+        if (s.Contains("ranger")) return Make("ranger", OT + "Ranger/T_Ranger_BaseColor", OT + "Ranger/T_Ranger_Normal", null, null, 0.1f);
         if (s.Contains("hair") || s.Contains("beard") || s.Contains("brow"))
             return Make("hair", CT + "T_Hair_1_BaseColor", null, null, null, 0.3f);
         // village architecture

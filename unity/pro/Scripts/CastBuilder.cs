@@ -11,6 +11,9 @@ public struct CastLook
     public bool darkSkin;
     public string hair;       // FBX name under Hairstyles (or "")
     public bool beard;
+    public string outfit;     // full outfit FBX under Q/Outfits (e.g. "Male_Peasant"), or ""
+    public string[] outfitPieces;  // OR individual pieces (e.g. ranger without the hood)
+    public Color outfitTint;
     public Color top, bottom, hairColor;
 }
 
@@ -87,6 +90,44 @@ public static class CastBuilder
                 mr.sharedMaterials = Enumerable.Repeat(m, mr.sharedMaterials.Length).ToArray();
             }
         }
+        // OUTFIT: skinned to the same UBC skeleton — remap every bone by NAME onto this body
+        var boneMap = body.GetComponentsInChildren<Transform>(true)
+                          .GroupBy(t => t.name).ToDictionary(g => g.Key, g => g.First());
+        void Dress(string fbx)
+        {
+            var op = Resources.Load<GameObject>("Q/Outfits/Exports/FBX (Unity)/" + fbx);
+            if (op == null) { Debug.LogWarning("CastBuilder: outfit missing " + fbx); return; }
+            var o = Object.Instantiate(op, body.transform, false);
+            o.transform.localPosition = Vector3.zero;
+            o.transform.localRotation = Quaternion.identity;
+            foreach (var smr in o.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var bones = smr.bones;
+                for (int i = 0; i < bones.Length; i++)
+                    if (bones[i] != null && boneMap.TryGetValue(bones[i].name, out var mapped))
+                        bones[i] = mapped;
+                smr.bones = bones;
+                if (smr.rootBone != null && boneMap.TryGetValue(smr.rootBone.name, out var rootM))
+                    smr.rootBone = rootM;
+                var mats = smr.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var m = new Material(QMaterials.Map(mats[i] ? mats[i].name : ""));
+                    if (look.outfitTint.a > 0f)
+                        m.SetColor("_BaseColor", m.GetColor("_BaseColor") * look.outfitTint);
+                    mats[i] = m;
+                }
+                smr.sharedMaterials = mats;
+            }
+            // strip any duplicate armature transforms the outfit prefab brought along
+            foreach (var t in o.GetComponentsInChildren<Transform>(true).Where(t => t != o.transform).ToArray())
+                if (t != null && t.GetComponent<SkinnedMeshRenderer>() == null && t.childCount == 0
+                    && t.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length == 0)
+                    Object.Destroy(t.gameObject);
+        }
+        if (!string.IsNullOrEmpty(look.outfit)) Dress(look.outfit);
+        if (look.outfitPieces != null) foreach (var piece in look.outfitPieces) Dress(piece);
+
         if (!string.IsNullOrEmpty(look.hair)) Attach(look.hair);
         if (look.beard) Attach("Hair_Beard");
         Attach(look.feminine ? "Eyebrows_Female" : "Eyebrows_Regular");

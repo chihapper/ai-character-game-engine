@@ -134,19 +134,25 @@ public class Bootstrap : MonoBehaviour
         {
             { "della-fenwick", ("the bar", "working the bar, wiping glasses", new CastLook {
                 feminine = true, height = 0.98f, darkSkin = false, hair = "Hair_Buns",
-                hairColor = new Color(0.32f, 0.2f, 0.11f),
+                hairColor = new Color(0.32f, 0.2f, 0.11f), outfit = "Female_Peasant",
+                outfitTint = new Color(0.75f, 0.7f, 0.62f, 1f),
                 top = new Color(0.55f, 0.48f, 0.4f), bottom = new Color(0.35f, 0.28f, 0.22f) }) },
             { "corvin-ashgrave-inworld", ("the hearth", "back to the wall, nursing a cup, eyes on the door", new CastLook {
                 feminine = false, height = 1.04f, darkSkin = true, hair = "Hair_Buzzed", beard = true,
-                hairColor = new Color(0.09f, 0.09f, 0.1f),
+                hairColor = new Color(0.09f, 0.09f, 0.1f), outfit = "Male_Ranger",
+                outfitTint = new Color(0.35f, 0.38f, 0.42f, 1f),   // hooded, storm-dark
                 top = new Color(0.2f, 0.22f, 0.26f), bottom = new Color(0.14f, 0.15f, 0.18f) }) },
             { "edwin-hale", ("the window", "dripping, watching the storm through the shutters", new CastLook {
                 feminine = false, height = 0.99f, darkSkin = false, hair = "Hair_SimpleParted",
-                hairColor = new Color(0.72f, 0.45f, 0.2f),
+                hairColor = new Color(0.72f, 0.45f, 0.2f), outfit = "Male_Peasant",
+                outfitTint = new Color(0.85f, 0.5f, 0.75f, 1f),   // the performer wears it LOUD
                 top = new Color(0.6f, 0.28f, 0.5f), bottom = new Color(0.25f, 0.32f, 0.5f) }) },
             { "brielle-bri-castellano", ("a corner table", "cloak shed, sitting straight, taking in the room", new CastLook {
                 feminine = true, height = 0.93f, darkSkin = true, hair = "Hair_Long",
                 hairColor = new Color(0.1f, 0.08f, 0.08f),
+                outfitPieces = new[] { "Female_Ranger_Body", "Female_Ranger_Arms",
+                                       "Female_Ranger_Legs", "Female_Ranger_Feet" },  // traveler, NO hood
+                outfitTint = new Color(0.9f, 0.82f, 0.65f, 1f),
                 top = new Color(0.85f, 0.75f, 0.58f), bottom = new Color(0.35f, 0.4f, 0.5f) }) },
         };
         foreach (var c in s.cast)

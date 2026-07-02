@@ -13,6 +13,15 @@ public class QImport : AssetPostprocessor
         var mi = (ModelImporter)assetImporter;
         bool anims = assetPath.Contains("/Anims");
         bool body = assetPath.Contains("Base Characters");
+        if (assetPath.Contains("/Outfits/"))
+        {
+            // skinned outfit meshes for the UBC rig: Generic keeps the skeleton; the runtime
+            // remaps their bones onto the wearer's by NAME
+            mi.animationType = ModelImporterAnimationType.Generic;
+            mi.importAnimation = false;
+            mi.isReadable = false;
+            return;
+        }
         if (anims || body)
         {
             mi.animationType = ModelImporterAnimationType.Human;
