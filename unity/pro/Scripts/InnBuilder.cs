@@ -134,13 +134,13 @@ public static class InnBuilder
         float W = nx * U, D = nz * U;
         float x0 = -W / 2, z0 = -D / 2;
 
-        // floor + ceiling from wood floor tiles
-        var ftile = Size(V + "Floor_WoodDark");
+        // FLAGSTONE floor (the reference taprooms all stand on stone), wood-board ceiling
+        var ftile = Size(V + "Floor_UnevenBrick");
         float FU = Mathf.Max(0.5f, ftile.x);
         for (float x = x0 + FU / 2; x < W / 2; x += FU)
             for (float z = z0 + FU / 2; z < D / 2; z += FU)
             {
-                Spawn(V + "Floor_WoodDark", new Vector3(x, 0, z));
+                Spawn(V + "Floor_UnevenBrick", new Vector3(x, 0, z));
                 Spawn(V + "Floor_WoodLight", new Vector3(x, WallHeight - 0.02f, z));  // ceiling boards
             }
         BoxCollider(new Vector3(0, -0.05f, 0), new Vector3(W, 0.1f, D));
@@ -151,15 +151,15 @@ public static class InnBuilder
         {
             float x = x0 + U * (i + 0.5f);
             bool win = (i == 1 || i == nx - 2);
-            // Wall_Plaster_WoodGrid is an OPEN timber lattice (sky pours through it) — perimeter
-            // walls must be the solid plaster module
-            Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
+            // STONE shell (reference: uneven fieldstone with heavy timber) — the lattice
+            // WoodGrid module stays an interior divider only
+            Spawn(V + (win ? "Wall_UnevenBrick_Window_Wide_Flat" : "Wall_UnevenBrick_Straight"),
                   new Vector3(x, 0, D / 2), 0);
             // no glass pane geometry: the module's opening is off its bounds-center, so a placed
             // quad straddles solid wall and (one-sided shells) reads as a hole to the sky.
             // Medieval shutters carry it — rain and lightning arrive through the open window.
             bool door = i == nx / 2;
-            Spawn(V + (door ? "Wall_Plaster_Door_Round" : "Wall_Plaster_Straight"),
+            Spawn(V + (door ? "Wall_UnevenBrick_Door_Round" : "Wall_UnevenBrick_Straight"),
                   new Vector3(x, 0, -D / 2), 180);
             if (door)
             {
@@ -174,11 +174,45 @@ public static class InnBuilder
         {
             float z = z0 + U * (j + 0.5f);
             bool win = j == nz - 1;
-            Spawn(V + (win ? "Wall_Plaster_Window_Wide_Flat" : "Wall_Plaster_Straight"),
+            Spawn(V + (win ? "Wall_UnevenBrick_Window_Wide_Flat" : "Wall_UnevenBrick_Straight"),
                   new Vector3(W / 2, 0, z), -90);
-            Spawn(V + (j == nz / 2 ? "Wall_UnevenBrick_Straight" : "Wall_Plaster_Straight"),
-                  new Vector3(-W / 2, 0, z), 90);
+            Spawn(V + "Wall_UnevenBrick_Straight", new Vector3(-W / 2, 0, z), 90);
         }
+        // THE TIMBER FRAME (reference: heavy posts, cross beams, angled braces against stone).
+        // Kit has no interior post module — textured primitives carry it, same wood as the beams.
+        var beamM = new Material(QMaterials.Map("wood beam"));
+        beamM.SetColor("_BaseColor", new Color(0.5f, 0.38f, 0.27f));
+        GameObject Timber(Vector3 center, Vector3 size, Vector3 euler, bool collide)
+        {
+            var t = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            t.name = "timber";
+            if (!collide) Object.Destroy(t.GetComponent<Collider>());
+            t.transform.SetParent(root, false);
+            t.transform.position = center;
+            t.transform.localScale = size;
+            t.transform.rotation = Quaternion.Euler(euler);
+            t.GetComponent<Renderer>().material = beamM;
+            return t;
+        }
+        // wall posts, inset against the stone
+        foreach (float px in new[] { -4f, -2f, 0f, 2f, 4f })
+            Timber(new Vector3(px, WallHeight / 2, D / 2 - 0.28f), new Vector3(0.24f, WallHeight, 0.24f), Vector3.zero, false);
+        foreach (float px in new[] { -4f, -2f, 3.4f })
+            Timber(new Vector3(px, WallHeight / 2, -D / 2 + 0.28f), new Vector3(0.24f, WallHeight, 0.24f), Vector3.zero, false);
+        foreach (float pz in new[] { -2.6f, 2.6f })
+            Timber(new Vector3(-W / 2 + 0.28f, WallHeight / 2, pz), new Vector3(0.24f, WallHeight, 0.24f), Vector3.zero, false);
+        // two free-standing center posts flanking the long table, braced up into the beams
+        foreach (float px in new[] { -2.5f, 2.5f })
+        {
+            Timber(new Vector3(px, WallHeight / 2, 0.4f), new Vector3(0.3f, WallHeight, 0.3f), Vector3.zero, true);
+            Timber(new Vector3(px + 0.55f, WallHeight - 0.7f, 0.4f), new Vector3(0.16f, 1.1f, 0.16f), new Vector3(0, 0, 40f), false);
+            Timber(new Vector3(px - 0.55f, WallHeight - 0.7f, 0.4f), new Vector3(0.16f, 1.1f, 0.16f), new Vector3(0, 0, -40f), false);
+        }
+        // beam grid under the ceiling
+        foreach (float bx in new[] { -2.5f, 2.5f })
+            Timber(new Vector3(bx, WallHeight - 0.12f, 0), new Vector3(0.28f, 0.22f, D - 0.3f), Vector3.zero, false);
+        Timber(new Vector3(0, WallHeight - 0.3f, 0.4f), new Vector3(W - 0.3f, 0.2f, 0.26f), Vector3.zero, false);
+
         // wall colliders (thin boxes, full height)
         BoxCollider(new Vector3(0, WallHeight / 2, D / 2), new Vector3(W, WallHeight, 0.3f));
         BoxCollider(new Vector3(0, WallHeight / 2, -D / 2), new Vector3(W, WallHeight, 0.3f));
@@ -238,7 +272,9 @@ public static class InnBuilder
 
         // THE BACK KITCHEN (south-east, walled off behind the bar): where the stew actually
         // comes from — prep counter, pots, crates of food, water bucket. Entry gap by the bar.
-        var kitchenWall = Spawn(V + "Wall_Plaster_Straight", new Vector3(W / 2 - 1.0f, 0, -0.5f), 0);
+        // the open WoodGrid lattice finally earns its place: an interior divider you can
+        // glimpse the kitchen through (reference bars use exactly this)
+        var kitchenWall = Spawn(V + "Wall_Plaster_WoodGrid", new Vector3(W / 2 - 1.0f, 0, -0.5f), 0);
         if (kitchenWall != null) kitchenWall.name = "kitchen.partition";  // interior wall: not the perimeter audit's business
         BoxCollider(new Vector3(W / 2 - 1.0f, WallHeight / 2, -0.5f), new Vector3(2.0f, WallHeight, 0.3f));
         var prep = Spawn(P + "Workbench_Drawers", new Vector3(W / 2 - 0.55f, 0, -1.6f), -90);
@@ -261,6 +297,23 @@ public static class InnBuilder
         Spawn(P + "Candle_2", tablePos).transform.position += Vector3.up * 0.92f;
         Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0, 0.2f), 40).transform.position += Vector3.up * 0.92f;
         BoxCollider(tablePos + Vector3.up * 0.45f, new Vector3(1.9f, 0.9f, 1.1f));
+
+        // BARREL TABLES (straight out of the reference): an upright barrel, stools around it
+        void BarrelTable(Vector3 pos, int stools)
+        {
+            var barrel = Spawn(P + "Barrel", pos);
+            float top = TopOf(barrel);
+            Spawn(P + "Mug", pos + new Vector3(0.12f, 0, 0.05f), 30).transform.position += Vector3.up * top;
+            Spawn(P + "Candle_1", pos + new Vector3(-0.14f, 0, -0.1f)).transform.position += Vector3.up * top;
+            for (int s = 0; s < stools; s++)
+            {
+                float ang = (s * 360f / stools + 25f) * Mathf.Deg2Rad;
+                Seat(pos + new Vector3(Mathf.Sin(ang), 0, Mathf.Cos(ang)) * 0.85f, pos);
+            }
+            BoxCollider(pos + Vector3.up * 0.5f, new Vector3(0.8f, 1f, 0.8f));
+        }
+        BarrelTable(new Vector3(-3.6f, 0, 1.9f), 2);
+        BarrelTable(new Vector3(2.6f, 0, -2.1f), 3);
 
         // A SMALL TABLE across from the bar — one seat, one candle: a performer's perch
         var smallPos = new Vector3(1.7f, 0, 2.1f);
@@ -286,19 +339,22 @@ public static class InnBuilder
         roof.GetComponent<Renderer>().material = roofM;
 
         // set dressing
-        var chand = Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f);
-        Hang(chand, WallHeight - 0.05f);
-        if (chand != null)
+        void CandleRing(Vector3 at)
         {
-            // its candles carry the middle of the room — without this the taproom floor is a pit
+            var chand = Spawn(P + "Chandelier", at, 0, Vector3.one * 0.6f);
+            Hang(chand, WallHeight - 0.05f);
+            if (chand == null) return;
+            // its candles carry the room — without this the taproom floor is a pit
             var cl = new GameObject("chandelight").AddComponent<Light>();
             cl.transform.SetParent(chand.transform, false);
             cl.transform.position = WorldBounds(chand).center + Vector3.down * 0.15f;
             cl.type = LightType.Point;
-            cl.range = 7.5f;
-            cl.intensity = 2.6f;   // inverse-square: 1.15 arrived at the floor as a whisper
+            cl.range = 6.5f;
+            cl.intensity = 2.1f;   // two rings now share the job
             cl.color = new Color(1f, 0.75f, 0.45f);
         }
+        CandleRing(new Vector3(1.4f, 0, 1.2f));    // over the taproom middle
+        CandleRing(new Vector3(-1.6f, 0, -0.8f));  // over the long table
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);
         Spawn(P + "Lantern_Wall", new Vector3(1.9f, 1.9f, -D / 2 + 0.15f), 0);  // clear of the door arch
         Spawn(P + "Banner_1", new Vector3(-1.6f, 2.1f, -D / 2 + 0.12f), 0);
