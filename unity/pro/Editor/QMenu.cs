@@ -28,6 +28,10 @@ public static class QMenu
             var go = GameObject.Find(name);
             if (go != null) Object.DestroyImmediate(go);
         }
+        // sweep any measuring probes a previous edit-mode build left below the world
+        foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsSortMode.None))
+            if (t != null && t.parent == null && t.position.y < -100f && t.name.Contains("(Clone)"))
+                Object.DestroyImmediate(t.gameObject);
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
     }
 

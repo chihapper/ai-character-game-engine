@@ -81,7 +81,7 @@ public static class InnBuilder
         bool first = true;
         foreach (var r in probe.GetComponentsInChildren<Renderer>())
         { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
-        Object.Destroy(probe);
+        if (Application.isPlaying) Object.Destroy(probe); else Object.DestroyImmediate(probe);
         return b.size;
     }
 
