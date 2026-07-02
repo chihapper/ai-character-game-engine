@@ -38,7 +38,8 @@ public static class InnBuilder
         var go = Object.Instantiate(prefab, pos, Quaternion.Euler(0, yRot, 0), root);
         if (scale.HasValue) go.transform.localScale = scale.Value;
         QMaterials.Apply(go);
-        Ground(go, pos.y);
+        var b = WorldBounds(go);
+        go.transform.position += new Vector3(pos.x - b.center.x, pos.y - b.min.y, pos.z - b.center.z);
         return go;
     }
 
@@ -199,6 +200,8 @@ public static class InnBuilder
         Spawn(P + "SmallBottles_1", new Vector3(-W / 2 + 0.22f, 1.72f, -2.2f), 90);
 
         // regions over the real furniture
+        VerifyLayout(W, D);
+
         Regions.Add("the door", new Vector3(0, 0, -D / 2 + 1.0f));
         Regions.Add("the bar", barPos + new Vector3(-1.1f, 0, -0.4f));
         Regions.Add("the hearth", hearthPos + new Vector3(1.1f, 0, 0));
@@ -211,6 +214,45 @@ public static class InnBuilder
     {
         Spawn(P + "Stool", pos);
         Seats.Add((pos, faceToward));
+    }
+
+    /// Layout audit — runs every build, writes the measured room into the log. A wall whose
+    /// bounds-center strays from its perimeter line, a floor with holes, a door off its line:
+    /// all reported as LAYOUT FAIL lines (grep-able), never silently trusted.
+    static void VerifyLayout(float W, float D)
+    {
+        int fails = 0;
+        var floorMin = new Vector2(float.MaxValue, float.MaxValue);
+        var floorMax = new Vector2(float.MinValue, float.MinValue);
+        foreach (Transform t in root)
+        {
+            var go = t.gameObject;
+            if (!go.name.Contains("(Clone)")) continue;
+            var b = WorldBounds(go);
+            if (go.name.StartsWith("Floor_") && b.center.y < WallHeight / 2)
+            {
+                floorMin = Vector2.Min(floorMin, new Vector2(b.min.x, b.min.z));
+                floorMax = Vector2.Max(floorMax, new Vector2(b.max.x, b.max.z));
+            }
+            if (go.name.StartsWith("Wall_"))
+            {
+                float dN = Mathf.Abs(b.center.z - D / 2), dS = Mathf.Abs(b.center.z + D / 2);
+                float dE = Mathf.Abs(b.center.x - W / 2), dW = Mathf.Abs(b.center.x + W / 2);
+                float nearest = Mathf.Min(dN, dS, dE, dW);
+                if (nearest > 0.6f)
+                { fails++; Debug.Log($"LAYOUT FAIL wall {go.name} center={b.center:F1} is {nearest:F1}m off every perimeter line"); }
+                if (b.min.y > 0.3f || b.max.y < WallHeight * 0.8f)
+                { fails++; Debug.Log($"LAYOUT FAIL wall {go.name} vertical span {b.min.y:F1}..{b.max.y:F1} (wallH={WallHeight:F1})"); }
+            }
+            if (go.name.StartsWith("Door_1") && Mathf.Abs(b.center.z + D / 2) > 0.8f)
+            { fails++; Debug.Log($"LAYOUT FAIL door center={b.center:F1} not on the south line z={-D / 2:F1}"); }
+        }
+        float gapX = (floorMax.x - floorMin.x) - W, gapZ = (floorMax.y - floorMin.y) - D;
+        if (Mathf.Abs(gapX) > 1.2f || Mathf.Abs(gapZ) > 1.2f)
+        { fails++; Debug.Log($"LAYOUT FAIL floor covers {floorMax.x - floorMin.x:F1}x{floorMax.y - floorMin.y:F1} vs room {W:F1}x{D:F1}"); }
+        Debug.Log(fails == 0
+            ? $"LAYOUT OK room {W:F1}x{D:F1}m wallH={WallHeight:F1} floor {floorMax.x - floorMin.x:F1}x{floorMax.y - floorMin.y:F1}"
+            : $"LAYOUT: {fails} FAILS (see above)");
     }
 
     /// An emissive pane inside a window opening — the storm made visible, and the surface
