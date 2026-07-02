@@ -98,6 +98,11 @@ public static class CastBuilder
                 mr.sharedMaterials = Enumerable.Repeat(m, mr.sharedMaterials.Length).ToArray();
             }
         }
+        // the base body's own mesh, captured BEFORE outfit meshes join the hierarchy
+        var baseBodySmr = body.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+            .Where(r => r.sharedMesh != null)
+            .OrderByDescending(r => r.sharedMesh.vertexCount).FirstOrDefault();
+
         // OUTFIT: skinned to the same UBC skeleton — remap every bone by NAME onto this body
         var boneMap = body.GetComponentsInChildren<Transform>(true)
                           .GroupBy(t => t.name).ToDictionary(g => g.Key, g => g.First());
@@ -135,8 +140,17 @@ public static class CastBuilder
                     && t.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length == 0)
                     Object.Destroy(t.gameObject);
         }
+        bool dressed = !string.IsNullOrEmpty(look.outfit) || (look.outfitPieces != null && look.outfitPieces.Length > 0);
         if (!string.IsNullOrEmpty(look.outfit)) Dress(look.outfit);
         if (look.outfitPieces != null) foreach (var piece in look.outfitPieces) Dress(piece);
+        if (dressed)
+        {
+            // the outfit REPLACES the body (pack readme: full body under clothes = clipping):
+            // swap the base mesh for its baked head-only variant — same skeleton, same materials
+            var headMesh = Resources.Load<Mesh>("Q/" + (look.feminine ? "HeadOnly_Female" : "HeadOnly_Male"));
+            if (headMesh != null && baseBodySmr != null)
+                baseBodySmr.sharedMesh = headMesh;
+        }
 
         if (!string.IsNullOrEmpty(look.hair)) Attach(look.hair);
         if (look.beard) Attach("Hair_Beard");

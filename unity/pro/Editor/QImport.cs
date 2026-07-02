@@ -34,6 +34,7 @@ public class QImport : AssetPostprocessor
             mi.animationType = ModelImporterAnimationType.Human;
             mi.importAnimation = anims;
             if (anims) mi.animationCompression = ModelImporterAnimationCompression.Optimal;
+            if (body) { mi.isReadable = true; return; }  // the head-only bake reads the mesh
         }
         else
         {

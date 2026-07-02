@@ -62,6 +62,52 @@ public static class QBake
             var av = go ? go.GetComponent<Animator>()?.avatar : null;
             Debug.Log($"QBAKE body {p.Split('/').Last()} humanoidAvatar={(av != null && av.isHuman)}");
         }
+        BakeHeadOnly("Assets/Resources/Q/Characters/Base Characters/Unity/Superhero_Male_FullBody.fbx", "HeadOnly_Male");
+        BakeHeadOnly("Assets/Resources/Q/Characters/Base Characters/Unity/Superhero_Female_FullBody.fbx", "HeadOnly_Female");
+        AssetDatabase.SaveAssets();
         Debug.Log("QBAKE DONE");
+    }
+
+    /// The outfit pack's readme: "only the head of the model is required — using the full body
+    /// will result in clipping." The outfits REPLACE the body. This bakes a head-only variant of
+    /// each base mesh (keep triangles fully weighted to head/neck/eye bones, drop the rest;
+    /// vertices/bindposes/submeshes untouched so materials and skinning stay valid).
+    static void BakeHeadOnly(string path, string outName)
+    {
+        var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (go == null) { Debug.Log("QBAKE headonly: missing " + path); return; }
+        var smr = go.GetComponentsInChildren<SkinnedMeshRenderer>(true)
+                    .OrderByDescending(r => r.sharedMesh != null ? r.sharedMesh.vertexCount : 0).First();
+        var mesh = smr.sharedMesh;
+        var keepBone = new System.Collections.Generic.HashSet<int>();
+        for (int i = 0; i < smr.bones.Length; i++)
+        {
+            var n = smr.bones[i] != null ? smr.bones[i].name.ToLower() : "";
+            if (n.Contains("head") || n.Contains("neck") || n.Contains("eye") || n.Contains("jaw"))
+                keepBone.Add(i);
+        }
+        var bw = mesh.boneWeights;
+        float HeadW(int v)
+        {
+            var w = bw[v]; float t = 0;
+            if (keepBone.Contains(w.boneIndex0)) t += w.weight0;
+            if (keepBone.Contains(w.boneIndex1)) t += w.weight1;
+            if (keepBone.Contains(w.boneIndex2)) t += w.weight2;
+            if (keepBone.Contains(w.boneIndex3)) t += w.weight3;
+            return t;
+        }
+        var outMesh = UnityEngine.Object.Instantiate(mesh);
+        outMesh.name = outName;
+        for (int sub = 0; sub < mesh.subMeshCount; sub++)
+        {
+            var tris = mesh.GetTriangles(sub);
+            var kept = new System.Collections.Generic.List<int>(tris.Length);
+            for (int t = 0; t < tris.Length; t += 3)
+                if (HeadW(tris[t]) > 0.35f && HeadW(tris[t + 1]) > 0.35f && HeadW(tris[t + 2]) > 0.35f)
+                { kept.Add(tris[t]); kept.Add(tris[t + 1]); kept.Add(tris[t + 2]); }
+            outMesh.SetTriangles(kept, sub);
+        }
+        AssetDatabase.CreateAsset(outMesh, "Assets/Resources/Q/" + outName + ".asset");
+        Debug.Log($"QBAKE headonly {outName}: {mesh.triangles.Length / 3} -> {outMesh.triangles.Length / 3} tris");
     }
 }

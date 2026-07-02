@@ -6,6 +6,25 @@ public static class FlameFX
 {
     static Material flameMat;
 
+    static Texture2D soft;
+
+    /// A radial-falloff sprite generated in code — particles render as glows, not hard squares.
+    public static Texture2D Soft()
+    {
+        if (soft != null) return soft;
+        const int S = 64;
+        soft = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float r = Vector2.Distance(new Vector2(x, y), new Vector2(S / 2f, S / 2f)) / (S / 2f);
+                float a = Mathf.Clamp01(1f - r);
+                soft.SetPixel(x, y, new Color(1, 1, 1, a * a));
+            }
+        soft.Apply();
+        return soft;
+    }
+
     static Material Mat()
     {
         if (flameMat != null) return flameMat;
@@ -18,6 +37,7 @@ public static class FlameFX
         flameMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         flameMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);  // additive: fire glows
         flameMat.SetInt("_ZWrite", 0);
+        flameMat.SetTexture("_BaseMap", Soft());
         return flameMat;
     }
 

@@ -133,6 +133,7 @@ public static class ExteriorBuilder
         m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         m.SetInt("_ZWrite", 0);
+        m.SetTexture("_BaseMap", FlameFX.Soft());
         r.material = m;
         go.AddComponent<RainIntensity>();
     }

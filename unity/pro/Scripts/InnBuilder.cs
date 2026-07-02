@@ -136,6 +136,7 @@ public static class InnBuilder
                   new Vector3(x, 0, -D / 2), 180);
             if (door)
             {
+                Spawn(V + "DoorFrame_Round_WoodDark", new Vector3(x, 0, -D / 2), 180);  // fills the arch
                 var d = Spawn(V + "Door_1_Round", new Vector3(x + 0.02f, 0, -D / 2), 180);
                 WarrantAnchor = new GameObject("warrant.anchor").transform;
                 WarrantAnchor.SetParent(root, false);
@@ -171,8 +172,8 @@ public static class InnBuilder
         Spawn(V + "Wall_UnevenBrick_Straight", hearthPos + new Vector3(0.05f, 0, -1.05f), 0, new Vector3(0.28f, 0.62f, 1f));
         var mantel = GameObject.CreatePrimitive(PrimitiveType.Cube);
         mantel.transform.SetParent(root, false);
-        mantel.transform.position = hearthPos + new Vector3(0.3f, 1.95f, 0);
-        mantel.transform.localScale = new Vector3(0.75f, 0.16f, 2.5f);
+        mantel.transform.position = hearthPos + new Vector3(0.22f, 2.05f, 0);
+        mantel.transform.localScale = new Vector3(0.5f, 0.14f, 2.4f);   // slim + high: heads clear it
         mantel.GetComponent<Renderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         mantel.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color(0.32f, 0.24f, 0.17f));
         var logM = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -221,7 +222,7 @@ public static class InnBuilder
         // set dressing
         Hang(Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f), WallHeight - 0.05f);
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);
-        Spawn(P + "Lantern_Wall", new Vector3(0.8f, 1.9f, -D / 2 + 0.15f), 0);
+        Spawn(P + "Lantern_Wall", new Vector3(1.9f, 1.9f, -D / 2 + 0.15f), 0);  // clear of the door arch
         Spawn(P + "Banner_1", new Vector3(-1.6f, 2.1f, -D / 2 + 0.12f), 0);
         Spawn(P + "Barrel_Apples", new Vector3(x0 + 0.7f, 0, D / 2 - 0.8f));
         Spawn(P + "Crate_Wooden", new Vector3(x0 + 0.7f, 0, D / 2 - 1.7f), 20);
@@ -234,7 +235,7 @@ public static class InnBuilder
 
         Regions.Add("the door", new Vector3(0, 0, -D / 2 + 1.0f));
         Regions.Add("the bar", barPos + new Vector3(-1.1f, 0, -0.4f));
-        Regions.Add("the hearth", hearthPos + new Vector3(1.1f, 0, 0));
+        Regions.Add("the hearth", hearthPos + new Vector3(1.55f, 0, 0));   // stand CLEAR of the mantel
         Regions.Add("a corner table", tablePos + new Vector3(0.8f, 0, 0.8f));
         Regions.Add("the window", benchPos + new Vector3(-0.5f, 0, -0.9f));
         Regions.Add("the middle of the taproom", new Vector3(0, 0, 0.3f));
@@ -305,10 +306,11 @@ public static class InnBuilder
         m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         m.SetInt("_ZWrite", 0);
-        m.SetColor("_BaseColor", new Color(0.35f, 0.42f, 0.55f, 0.2f));
-        m.SetFloat("_Smoothness", 0.92f);
+        m.SetColor("_BaseColor", new Color(0.4f, 0.48f, 0.62f, 0.45f));   // visibly wet glass
+        m.SetFloat("_Smoothness", 0.95f);
+        m.SetFloat("_Cull", 0);                                            // seen from BOTH sides
         m.EnableKeyword("_EMISSION");
-        m.SetColor("_EmissionColor", new Color(0.05f, 0.07f, 0.1f));
+        m.SetColor("_EmissionColor", new Color(0.12f, 0.16f, 0.24f));
         go.GetComponent<Renderer>().material = m;
         WindowPanes.Add(go.GetComponent<Renderer>().material);
     }
