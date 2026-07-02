@@ -181,7 +181,8 @@ public static class InnBuilder
         // THE TIMBER FRAME (reference: heavy posts, cross beams, angled braces against stone).
         // Kit has no interior post module — textured primitives carry it, same wood as the beams.
         var beamM = new Material(QMaterials.Map("wood beam"));
-        beamM.SetColor("_BaseColor", new Color(0.5f, 0.38f, 0.27f));
+        beamM.SetColor("_BaseColor", new Color(0.66f, 0.52f, 0.38f));
+        beamM.SetTextureScale("_BaseMap", new Vector2(0.5f, 1.6f));   // grain runs ALONG the timber, not smeared across it
         GameObject Timber(Vector3 center, Vector3 size, Vector3 euler, bool collide)
         {
             var t = GameObject.CreatePrimitive(PrimitiveType.Cube);
