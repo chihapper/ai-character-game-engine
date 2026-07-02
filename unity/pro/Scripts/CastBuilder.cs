@@ -29,7 +29,14 @@ public static class CastBuilder
         if (prefab == null) { Debug.LogError("CastBuilder: body prefab missing"); return new GameObject(name); }
         var body = Object.Instantiate(prefab, pos, Quaternion.identity);
         body.name = name;
-        body.transform.localScale = Vector3.one * look.height;
+        // normalize: the FBX's native height is whatever it is — measure it and scale so this
+        // character stands look.height * 1.75m tall (playtest: bodies rendered ~half height and
+        // the inn read as a canyon)
+        var bb = new Bounds(pos, Vector3.zero); bool first = true;
+        foreach (var r0 in body.GetComponentsInChildren<Renderer>())
+        { if (first) { bb = r0.bounds; first = false; } else bb.Encapsulate(r0.bounds); }
+        float measured = Mathf.Max(0.2f, bb.size.y);
+        body.transform.localScale = Vector3.one * (look.height * 1.75f / measured);
 
         // animator: keep the imported humanoid avatar, drive with the baked controller
         var animator = body.GetComponent<Animator>() ?? body.AddComponent<Animator>();
@@ -95,7 +102,8 @@ public static class CastBuilder
                           .GroupBy(t => t.name).ToDictionary(g => g.Key, g => g.First());
         void Dress(string fbx)
         {
-            var op = Resources.Load<GameObject>("Q/Outfits/Exports/FBX (Unity)/" + fbx);
+            var op = Resources.Load<GameObject>("Q/Outfits/Exports/FBX (Unity)/Outfits/" + fbx)
+                  ?? Resources.Load<GameObject>("Q/Outfits/Exports/FBX (Unity)/Modular Parts/" + fbx);
             if (op == null) { Debug.LogWarning("CastBuilder: outfit missing " + fbx); return; }
             var o = Object.Instantiate(op, body.transform, false);
             o.transform.localPosition = Vector3.zero;

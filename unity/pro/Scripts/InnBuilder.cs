@@ -188,7 +188,7 @@ public static class InnBuilder
         Seats.Add((benchPos, benchPos + Vector3.back * 3f));
 
         // set dressing
-        Hang(Spawn(P + "Chandelier", new Vector3(0, 0, 0)), WallHeight - 0.05f);
+        Hang(Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f), WallHeight - 0.05f);
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);
         Spawn(P + "Lantern_Wall", new Vector3(0.8f, 1.9f, -D / 2 + 0.15f), 0);
         Spawn(P + "Banner_1", new Vector3(-1.6f, 2.1f, -D / 2 + 0.12f), 0);
