@@ -104,19 +104,20 @@ public class PlayerController : MonoBehaviour
     public NpcAgent Talkable { get; private set; }
     public bool NearWarrant { get; private set; }
 
-    // Forgiving targeting: anyone visible within arm's-reach counts regardless of facing;
-    // farther out (to 4m) requires roughly facing them. Strict cones read as "E does nothing".
+    // FACING them, always — the old any-direction-within-2m rule offered a talk prompt for
+    // whoever stood behind your shoulder. Close range keeps a wide cone (75°) so it never
+    // reads as "E does nothing"; the pick prefers whoever is most centered in view.
     NpcAgent FacingNpc() =>
         NpcAgent.All
             .Where(a => PerceptComposer.CanSee(transform, a.transform))
             .Where(a =>
             {
                 var d = Vector3.Distance(a.transform.position, transform.position);
-                if (d < 2f) return true;
-                return d < 4f && Vector3.Angle(transform.forward,
-                    a.transform.position - transform.position) < 45f;
+                var ang = Vector3.Angle(transform.forward, a.transform.position - transform.position);
+                return d < 2f ? ang < 75f : d < 4f && ang < 40f;
             })
-            .OrderBy(a => Vector3.Distance(a.transform.position, transform.position))
+            .OrderBy(a => Vector3.Angle(transform.forward, a.transform.position - transform.position)
+                          + Vector3.Distance(a.transform.position, transform.position) * 12f)
             .FirstOrDefault();
 
     // A bootstep on old floorboards, synthesized (no assets, like the storm): a low knock plus a

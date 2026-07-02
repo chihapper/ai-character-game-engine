@@ -298,9 +298,11 @@ public static class InnBuilder
         // THE LONG TABLE (middle of the room): the table a stranger gets waved toward
         var tablePos = new Vector3(-1.2f, 0, -0.5f);
         Spawn(P + "Table_Large", tablePos, 15);
-        Seat(tablePos + new Vector3(0.9f, 0, 0.3f), tablePos);
-        Seat(tablePos + new Vector3(-0.9f, 0, -0.4f), tablePos);
-        Seat(tablePos + new Vector3(0.2f, 0, -0.95f), tablePos);
+        // stools OUTSIDE the tabletop's footprint (half-extents ~1.5 x 0.9) — a seat under the
+        // slab put the sitter ON the table edge
+        Seat(tablePos + new Vector3(1.45f, 0, 0.25f), tablePos);
+        Seat(tablePos + new Vector3(-1.45f, 0, -0.3f), tablePos);
+        Seat(tablePos + new Vector3(0.2f, 0, -1.2f), tablePos);
         Spawn(P + "Candle_2", tablePos).transform.position += Vector3.up * 0.92f;
         Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0, 0.2f), 40).transform.position += Vector3.up * 0.92f;
         BoxCollider(tablePos + Vector3.up * 0.45f, new Vector3(1.9f, 0.9f, 1.1f));
