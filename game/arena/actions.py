@@ -69,15 +69,19 @@ def available(world: World, agent_id: str, *, ref_of) -> list[Action]:
                                    type="action"))
 
     # watch anything/anyone you can see — a gaze, no movement, any distance
+    # stance is the observable state ("watching X"); the consequence phrase is the act itself
+    # ("turn to watch X"), so logs read "you turn to watch X" / observers see "turns to watch X"
     for f in world.fixtures.values():
         if f.present and "watch" in f.affords:
             acts.append(Action(f"watch {f.name}", "watch",
-                               lambda w, a, n=f.name: _set_stance(w, a, f"watching {n}"),
+                               lambda w, a, n=f.name: (_set_stance(w, a, f"watching {n}"),
+                                                       f"turn to watch {n}")[1],
                                type="bonus", cost=0))
     for eid in world.entities:
         if eid != agent_id:
             acts.append(Action(f"watch {ref_of(eid)}", "watch",
-                               lambda w, a, ref=ref_of(eid): _set_stance(w, a, f"watching {ref}"),
+                               lambda w, a, ref=ref_of(eid): (_set_stance(w, a, f"watching {ref}"),
+                                                              f"turn to watch {ref}")[1],
                                type="bonus", cost=0))
 
     # hold where you are

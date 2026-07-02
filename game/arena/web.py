@@ -69,18 +69,18 @@ def new_game(body: NewGame):
 
 
 @router.post("/{gid}/move")
-def move(gid: str, body: Move):
+async def move(gid: str, body: Move):
     g = _g(gid)
     n = len(g.history)
-    g.move(body.region)
+    await g.move(body.region)
     return {"events": g.history[n:], "view": _view(g)}
 
 
 @router.post("/{gid}/act")
-def act(gid: str, body: Act):
+async def act(gid: str, body: Act):
     g = _g(gid)
     n = len(g.history)
-    g.act(body.label)
+    await g.act(body.label)
     return {"events": g.history[n:], "view": _view(g)}
 
 

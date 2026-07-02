@@ -23,7 +23,7 @@ from orchestrator.memory.long_term import LongTermMemory
 
 from .. import experiment_log
 from .actions import available, execute
-from .perception import perceive, render_player_view, to_situation
+from .perception import _proximity, perceive, render_player_view, to_situation
 from .world import load_world
 
 RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
@@ -192,20 +192,88 @@ class ArenaGame:
                               "stance": e.stance}
                              for s, e in self.world.entities.items()]}
 
+    # ---- in-the-moment reactions (the contract's react RECIPE, wired to player acts) ----
+    # Game policy, not engine policy: how salient an observed act must be — by the NPC's OWN
+    # appraisal — before it interrupts what they're doing, and the higher bar where the
+    # reaction earns words instead of just a move. Mundane acts score low and pass in silence;
+    # reacting to everything would be as dead as reacting to nothing.
+    # Calibrated live (2026-07-01): vigilant characters RECALL nearly everything a stranger does
+    # (~0.72 floor — character-true; recall is what salience measures), so the interrupt bar sits
+    # above that floor: crossing the room / ordering a drink pass in silence; being watched spikes
+    # only the one it's aimed at (Corvin 0.82); barring the door sets the whole room off (0.72-0.93).
+    REACT_SALIENCE = 0.75
+    SPEAK_SALIENCE = 0.9
+    # The game's coarse OBJECTIVE scale per act kind (the #25 magnitude hint): without it the
+    # appraiser rated even crossing the room at 0.7-0.8 for three of four NPCs. The character
+    # still realizes their OWN salience around the hint — a low-magnitude move can still spike
+    # for the one it threatens.
+    OBJ_MAGNITUDE = {"move": 0.1, "approach": 0.1, "watch": 0.15, "use": 0.25}
+
+    @staticmethod
+    def _as_observed(conseq: str) -> str:
+        """Third-person a consequence phrase for an onlooker ('stoke the peat fire' -> 'stokes
+        the peat fire'); phrases already conjugated ('crosses to the bar') pass through."""
+        w = conseq.split()
+        if w and not w[0].endswith("s"):
+            w[0] += "es" if w[0].endswith(("sh", "ch", "x", "o")) else "s"
+        return " ".join(w)
+
+    async def _react_to_player(self, conseq: str, *, magnitude: float = 0.1) -> None:
+        """Run the reaction recipe (docs/engine-game-contract.md) for everyone who saw the
+        player's act: remember → the NPC appraises the moment's salience for THEMSELVES →
+        our thresholds decide → a grounded action beat, or words when it truly lands. The
+        world answers 'who saw it' for free (proximity is in the observation, so the same act
+        weighs differently right beside you vs across the room)."""
+        import asyncio
+        seen = self._as_observed(conseq)
+        ppos = self.world.entities["player"].pos
+
+        async def appraise(slug: str):
+            d = self.world.dist(self.world.entities[slug].pos, ppos)
+            observed = f"{self._ref('player')} ({_proximity(d)}) {seen}"
+            sal = await self.engines[slug].remember(observed, kind="player_event", t=self.clock,
+                                                    magnitude=magnitude)
+            return slug, observed, sal or 0.0
+
+        for slug, observed, sal in await asyncio.gather(*(appraise(s) for s in self.cast)):
+            if sal < self.REACT_SALIENCE:
+                continue
+            if sal >= self.SPEAK_SALIENCE:
+                reply = await self.engines[slug].respond(RespondRequest(
+                    event=f"Right now, before your eyes: {observed}. React as feels true to you.",
+                    situation=self._situation_for(slug)))
+                reply = self._scrub_names(reply)
+                self._log("dialogue", reply, slug=slug, who=self._label(slug), reacted_to=observed)
+                self._maybe_learn_name(slug, reply)
+            else:
+                acts = available(self.world, slug, ref_of=self._ref)
+                p = perceive(self.world, slug, clock=self.clock, ref_of=self._ref)
+                choice = await self.engines[slug].choose_action(
+                    f"{render_player_view(p)}\nJust now: {observed}", [a.label for a in acts])
+                if choice.get("action"):
+                    execute(self.world, slug, choice["action"], acts)
+                    self._log("npc_act", choice["action"], slug=slug, who=self._label(slug),
+                              reason=self._scrub_names(choice.get("reason", "")))
+
     # ---- player moves ----
-    def move(self, region: str) -> str:
+    async def move(self, region: str) -> str:
         if not self.world.move_to_region("player", region):
             return f"(there's no {region} to cross to)"
         self._log("player_move", f"you cross to {region}")
+        await self._react_to_player(f"crosses to {region}", magnitude=self.OBJ_MAGNITUDE["move"])
         scene = self.look()
         self._log("scene", scene)
         return scene
 
-    def act(self, label: str) -> str:
+    async def act(self, label: str) -> str:
         acts = available(self.world, "player", ref_of=self._ref)
+        chosen = next((a for a in acts if a.label == label), None)
         conseq = execute(self.world, "player", label, acts)
         text = f"you {conseq}" if conseq else "(you can't do that here)"
         self._log("player_act", text)
+        # holding still isn't an event; anything else, the room gets its chance to notice
+        if conseq and chosen and chosen.kind != "wait":
+            await self._react_to_player(conseq, magnitude=self.OBJ_MAGNITUDE.get(chosen.kind, 0.1))
         return text
 
     async def talk(self, target_ref: str, line: str) -> str:

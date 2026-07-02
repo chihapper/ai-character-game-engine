@@ -16,8 +16,8 @@ regions:
 # Things with affordances (what a body can do with/at them).
 fixtures:
   - {name: "the peat fire",       region: "the hearth", affords: ["warm at", "watch"]}
-  - {name: "the bar",             region: "the bar",    affords: ["lean at", "order a drink"]}
-  - {name: "the door",            region: "the door",   affords: ["watch", "slip outside", "bar it"]}
+  - {name: "the bar",             region: "the bar",    affords: ["lean at", "order a drink at"]}
+  - {name: "the door",            region: "the door",   affords: ["watch", "slip outside", "bar"]}
   - {name: "the shuttered window", region: "the window", affords: ["look out"]}
   - {name: "a corner table",      region: "a corner table", affords: ["sit at"]}
   - {name: "a crown warrant nailed inside the door", region: "the door",
