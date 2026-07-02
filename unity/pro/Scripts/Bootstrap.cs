@@ -178,6 +178,25 @@ public class Bootstrap : MonoBehaviour
         }
     }
 
+    /// VRM face-model pilot: if a traveler.vrm imported, seat her by the window as a silent
+    /// fifth body — a side-by-side the captures can judge (style fit, materials, scale) before
+    /// any cast-swap decision. No mind attached; she is scenery with a pulse.
+    void SpawnVrmPilot()
+    {
+        var prefab = Resources.Load<GameObject>("VRM/traveler");
+        if (prefab == null) return;
+        var pos = Regions.Anchor("the window") + new Vector3(0.2f, 0, 0.4f);
+        var go = Instantiate(prefab, pos, Quaternion.Euler(0, 200, 0));
+        go.name = "vrm.pilot";
+        var anim = go.GetComponent<Animator>();
+        var ctrl = Resources.Load<RuntimeAnimatorController>("Q/NPCAnim");
+        if (anim != null && ctrl != null && anim.avatar != null && anim.avatar.isHuman)
+            anim.runtimeAnimatorController = ctrl;
+        var plate = go.AddComponent<Nameplate>();
+        plate.text = () => "a quiet traveler";
+        Debug.Log($"QVRM pilot spawned: humanoid={(anim != null && anim.avatar != null && anim.avatar.isHuman)}");
+    }
+
     void SpawnCast(SessionRes s)
     {
         var looks = new Dictionary<string, (string region, string stance, CastLook look)>
@@ -216,5 +235,6 @@ public class Bootstrap : MonoBehaviour
             body.AddComponent<BodyLanguage>();   // voice-driven head motion, lean-in, laughs
             OpeningPose(c.slug, body);
         }
+        SpawnVrmPilot();
     }
 }
