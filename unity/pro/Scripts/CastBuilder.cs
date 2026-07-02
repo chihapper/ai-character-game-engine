@@ -61,6 +61,8 @@ public static class CastBuilder
                 { mats[i] = new Material(mats[i]); mats[i].SetColor("_BaseColor", look.top); }
                 else if (nm.Contains("bottomwear"))
                 { mats[i] = new Material(mats[i]); mats[i].SetColor("_BaseColor", look.bottom); }
+                else if (nm.Contains("hair") || nm.Contains("brow"))   // base-body eyebrows: pale texture reads WHITE untinted
+                { mats[i] = new Material(mats[i]); mats[i].SetColor("_BaseColor", look.hairColor * 1.2f); }
             }
             r.sharedMaterials = mats;
         }

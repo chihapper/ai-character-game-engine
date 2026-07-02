@@ -226,6 +226,16 @@ public static class InnBuilder
         Spawn(P + "Bench", benchPos, 180);
         Seats.Add((benchPos, benchPos + Vector3.back * 3f));
 
+        // roof cap: from outside, the open top edge leaked lit ceiling boards over the walls
+        var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        roof.name = "roofcap";
+        roof.transform.SetParent(root, false);
+        roof.transform.position = new Vector3(0, WallHeight + 0.12f, 0);
+        roof.transform.localScale = new Vector3(W + 0.7f, 0.24f, D + 0.7f);
+        var roofM = new Material(QMaterials.Map("wood"));
+        roofM.SetColor("_BaseColor", new Color(0.2f, 0.15f, 0.11f));
+        roof.GetComponent<Renderer>().material = roofM;
+
         // set dressing
         var chand = Spawn(P + "Chandelier", new Vector3(0, 0, 0), 0, Vector3.one * 0.6f);
         Hang(chand, WallHeight - 0.05f);
