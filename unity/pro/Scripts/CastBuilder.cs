@@ -17,7 +17,7 @@ public struct CastLook
 public static class CastBuilder
 {
     const string BODY = "Q/Characters/Base Characters/Unity/";
-    const string HAIR = "Q/Characters/Hairstyles/Origin at 0/FBX (Unity)/";
+    const string HAIR = "Q/Characters/Hairstyles/Rigged to Head Bone/FBX (Unity)/";
     const string CT = "Q/Characters/Base Characters/Textures/";
 
     public static GameObject Build(string name, Vector3 pos, CastLook look)
@@ -60,16 +60,31 @@ public static class CastBuilder
         head ??= body.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name.ToLower().Contains("head"));
         void Attach(string fbx)
         {
+            // rigged-to-head-bone hair: a skinned mesh bound to ONE bone — retarget that bone
+            // to THIS body's head and it follows every nod for free
             var hp = Resources.Load<GameObject>(HAIR + fbx);
             if (hp == null || head == null) return;
-            var h = Object.Instantiate(hp, head, false);
+            var h = Object.Instantiate(hp, body.transform, false);
             h.transform.localPosition = Vector3.zero;
             h.transform.localRotation = Quaternion.identity;
-            foreach (var r in h.GetComponentsInChildren<Renderer>(true))
+            foreach (var smr in h.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.bones.Length >= 1)
+                {
+                    var bones = smr.bones;
+                    for (int i = 0; i < bones.Length; i++) bones[i] = head;
+                    smr.bones = bones;
+                    smr.rootBone = head;
+                }
+                var m = new Material(QMaterials.Map("hair"));
+                m.SetColor("_BaseColor", look.hairColor);
+                smr.sharedMaterials = Enumerable.Repeat(m, smr.sharedMaterials.Length).ToArray();
+            }
+            foreach (var mr in h.GetComponentsInChildren<MeshRenderer>(true))
             {
                 var m = new Material(QMaterials.Map("hair"));
                 m.SetColor("_BaseColor", look.hairColor);
-                r.sharedMaterials = Enumerable.Repeat(m, r.sharedMaterials.Length).ToArray();
+                mr.sharedMaterials = Enumerable.Repeat(m, mr.sharedMaterials.Length).ToArray();
             }
         }
         if (!string.IsNullOrEmpty(look.hair)) Attach(look.hair);

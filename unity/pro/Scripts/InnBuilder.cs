@@ -11,12 +11,26 @@ public static class InnBuilder
     const string P = "Q/Props/Exports/FBX/";
 
     public static readonly List<Material> WindowPanes = new();
+    public static float BarTop { get; private set; } = 1.0f;
     public static readonly List<(Vector3 pos, Vector3 face)> Seats = new();  // where a body can SIT
     public static Transform WarrantAnchor { get; private set; }
     public static float WallHeight { get; private set; } = 3f;
 
     static Transform root;
 
+    /// A world baked in the EDITOR restores its registries here instead of rebuilding.
+    public static void RestoreFromMarker(List<(Vector3 pos, Vector3 face)> seats,
+                                         List<Material> panes, Transform warrant, float wallH)
+    {
+        Seats.Clear(); Seats.AddRange(seats);
+        WindowPanes.Clear(); WindowPanes.AddRange(panes);
+        WarrantAnchor = warrant;
+        WallHeight = wallH;
+    }
+
+    // Pieces have arbitrary pivots (the MegaKit walls pivot at CENTER — placed by pivot they
+    // sink to their waists, which collapsed the whole inn). Every spawn is GROUNDED by its
+    // measured world bounds instead: pos.y becomes where the piece's BASE sits.
     static GameObject Spawn(string path, Vector3 pos, float yRot = 0, Vector3? scale = null)
     {
         var prefab = Resources.Load<GameObject>(path);
@@ -24,8 +38,33 @@ public static class InnBuilder
         var go = Object.Instantiate(prefab, pos, Quaternion.Euler(0, yRot, 0), root);
         if (scale.HasValue) go.transform.localScale = scale.Value;
         QMaterials.Apply(go);
+        Ground(go, pos.y);
         return go;
     }
+
+    static Bounds WorldBounds(GameObject go)
+    {
+        var b = new Bounds(go.transform.position, Vector3.zero); bool first = true;
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+        { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
+        return b;
+    }
+
+    static void Ground(GameObject go, float baseY)
+    {
+        if (go == null) return;
+        var b = WorldBounds(go);
+        go.transform.position += Vector3.up * (baseY - b.min.y);
+    }
+
+    static void Hang(GameObject go, float topY)
+    {
+        if (go == null) return;
+        var b = WorldBounds(go);
+        go.transform.position += Vector3.up * (topY - b.max.y);
+    }
+
+    static float TopOf(GameObject go) => go == null ? 0f : WorldBounds(go).max.y;
 
     static Vector3 Size(string path)
     {
@@ -67,7 +106,7 @@ public static class InnBuilder
             for (float z = z0 + FU / 2; z < D / 2; z += FU)
             {
                 Spawn(V + "Floor_WoodDark", new Vector3(x, 0, z));
-                Spawn(V + "Floor_WoodLight", new Vector3(x, WallHeight, z));  // ceiling boards
+                Spawn(V + "Floor_WoodLight", new Vector3(x, WallHeight - 0.02f, z));  // ceiling boards
             }
         BoxCollider(new Vector3(0, -0.05f, 0), new Vector3(W, 0.1f, D));
 
@@ -122,13 +161,15 @@ public static class InnBuilder
 
         // THE BAR (east side, in front of the window bay): two workbenches + bottles behind
         var barPos = new Vector3(W / 2 - 1.6f, 0, D / 4);
-        Spawn(P + "Workbench_Drawers", barPos, -90);
+        var bench = Spawn(P + "Workbench_Drawers", barPos, -90);
         Spawn(P + "Workbench_Drawers", barPos + new Vector3(0, 0, -1.1f), -90);
         Spawn(P + "Shelf_Small_Bottles", new Vector3(W / 2 - 0.15f, 1.5f, D / 4), -90);
         Spawn(P + "Barrel", new Vector3(W / 2 - 0.6f, 0, D / 4 + 1.4f));
-        Spawn(P + "Mug", barPos + new Vector3(-0.1f, 1.02f, 0.2f));
-        Spawn(P + "Bottle_1", barPos + new Vector3(0.1f, 1.02f, -0.3f));
-        Spawn(P + "Candle_1", barPos + new Vector3(0, 1.02f, -0.8f));
+        float barTop = TopOf(bench);
+        BarTop = barTop;
+        Spawn(P + "Mug", barPos + new Vector3(-0.1f, 0, 0.2f), 0).transform.position += Vector3.up * barTop;
+        Spawn(P + "Bottle_1", barPos + new Vector3(0.1f, 0, -0.3f), 0).transform.position += Vector3.up * barTop;
+        Spawn(P + "Candle_1", barPos + new Vector3(0, 0, -0.8f), 0).transform.position += Vector3.up * barTop;
         BoxCollider(barPos + new Vector3(0, 0.5f, -0.55f), new Vector3(0.9f, 1.1f, 2.3f));
 
         // A CORNER TABLE (south-west): the long table, stools, dressing
@@ -137,8 +178,8 @@ public static class InnBuilder
         Seat(tablePos + new Vector3(0.9f, 0, 0.3f), tablePos);
         Seat(tablePos + new Vector3(-0.9f, 0, -0.4f), tablePos);
         Seat(tablePos + new Vector3(0.2f, 0, -0.95f), tablePos);
-        Spawn(P + "Candle_2", tablePos + new Vector3(0, 0.95f, 0));
-        Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0.95f, 0.2f), 40);
+        Spawn(P + "Candle_2", tablePos).transform.position += Vector3.up * 0.92f;
+        Spawn(P + "Book_5", tablePos + new Vector3(0.35f, 0, 0.2f), 40).transform.position += Vector3.up * 0.92f;
         BoxCollider(tablePos + Vector3.up * 0.45f, new Vector3(1.9f, 0.9f, 1.1f));
 
         // THE WINDOW bay (north-east): bench under the window
@@ -147,7 +188,7 @@ public static class InnBuilder
         Seats.Add((benchPos, benchPos + Vector3.back * 3f));
 
         // set dressing
-        Spawn(P + "Chandelier", new Vector3(0, WallHeight - 0.35f, 0));
+        Hang(Spawn(P + "Chandelier", new Vector3(0, 0, 0)), WallHeight - 0.05f);
         Spawn(P + "Lantern_Wall", new Vector3(x0 + 0.15f, 1.9f, z0 + 2.0f), 90);
         Spawn(P + "Lantern_Wall", new Vector3(0.8f, 1.9f, -D / 2 + 0.15f), 0);
         Spawn(P + "Banner_1", new Vector3(-1.6f, 2.1f, -D / 2 + 0.12f), 0);

@@ -16,7 +16,7 @@ public class Nameplate : MonoBehaviour
         go.transform.SetParent(transform, false);
         go.transform.localPosition = new Vector3(0, height, 0);
         tm = go.AddComponent<TextMesh>();
-        tm.characterSize = 0.045f;
+        tm.characterSize = 0.022f;
         tm.fontSize = 64;
         tm.anchor = TextAnchor.LowerCenter;
         tm.alignment = TextAlignment.Center;

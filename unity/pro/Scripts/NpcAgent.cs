@@ -268,7 +268,7 @@ public class NpcAgent : MonoBehaviour
     {
         SetPose("");  // a body that walks away stops sitting/leaning
         transform.position = new Vector3(transform.position.x, 0, transform.position.z);
-        anim?.SetFloat("Speed", walkSpeed);
+        anim?.SetFloat("Speed", 1f);
         // Path AROUND the furniture (a straight line walked through the bar): NavMesh corners,
         // straight-line fallback where no path exists.
         var corners = new List<Vector3> { target };

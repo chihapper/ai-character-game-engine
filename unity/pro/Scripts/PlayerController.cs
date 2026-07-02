@@ -27,6 +27,8 @@ public class PlayerController : MonoBehaviour
         cc.height = 1.8f; cc.center = new Vector3(0, 0.9f, 0);
         cam = new GameObject("PlayerCam").AddComponent<Camera>();
         cam.tag = "MainCamera";  // nameplates billboard toward Camera.main
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0.03f, 0.035f, 0.05f);   // storm-night, not skybox-day
         cam.transform.SetParent(transform, false);
         cam.transform.localPosition = new Vector3(0, 1.6f, 0);
         cam.gameObject.AddComponent<AudioListener>();

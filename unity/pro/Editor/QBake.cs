@@ -37,7 +37,7 @@ public static class QBake
         var tree = new BlendTree { name = "MoveTree", blendParameter = "Speed", useAutomaticThresholds = false };
         AssetDatabase.AddObjectToAsset(tree, ctrl);
         if (idle != null) tree.AddChild(idle, 0f);
-        if (walk != null) tree.AddChild(walk, 1.6f);
+        if (walk != null) tree.AddChild(walk, 1f);   // Speed is NORMALIZED 0..1 (glide fix)
         move.motion = tree;
         sm.defaultState = move;
 

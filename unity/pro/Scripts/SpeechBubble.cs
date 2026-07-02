@@ -15,7 +15,7 @@ public class SpeechBubble : MonoBehaviour
             go.transform.SetParent(transform, false);
             go.transform.localPosition = new Vector3(0, height, 0);
             tm = go.AddComponent<TextMesh>();
-            tm.characterSize = 0.038f;
+            tm.characterSize = 0.02f;
             tm.fontSize = 64;
             tm.anchor = TextAnchor.LowerCenter;
             tm.alignment = TextAlignment.Center;

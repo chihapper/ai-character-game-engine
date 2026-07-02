@@ -24,8 +24,14 @@ public class Bootstrap : MonoBehaviour
             al.enabled = false;
 
         Mood();
-        InnBuilder.Build();
-        ExteriorBuilder.Build();   // the storm is a place now, not just a sound
+        var baked = FindFirstObjectByType<WorldMarker>();
+        if (baked != null)
+            baked.Restore();       // the world was built (and possibly hand-adjusted) in the editor
+        else
+        {
+            InnBuilder.Build();
+            ExteriorBuilder.Build();   // the storm is a place now, not just a sound
+        }
         Fires();
         BakeNav();                 // paths that go AROUND the furniture
         gameObject.AddComponent<StormAudio>();
@@ -52,6 +58,7 @@ public class Bootstrap : MonoBehaviour
     void Mood()
     {
         // cold, wet, dim — the fires are the only warmth (same design as the gray box, real now)
+        RenderSettings.skybox = null;   // the DEFAULT skybox is a sunny day — this night is lit by fire
         RenderSettings.ambientMode = AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.11f, 0.12f, 0.16f);
         RenderSettings.fog = true;
