@@ -53,11 +53,19 @@ public class PlayerController : MonoBehaviour
         }
 
         Talkable = FacingNpc();  // DialogueUI shows "[E] talk to …" whenever this is non-null
-        if (Input.GetKeyDown(KeyCode.E) && Talkable != null)
+        NearWarrant = StoryDirector.I != null && StoryDirector.I.WarrantUp
+                      && Vector3.Distance(transform.position, StoryDirector.I.WarrantPos) < 2.5f;
+        if (NearWarrant)  // a paper nailed at eye height beats a conversation for the hands
+        {
+            if (Input.GetKeyDown(KeyCode.E)) StoryDirector.I.PlayerReads();
+            if (Input.GetKeyDown(KeyCode.T)) StoryDirector.I.PlayerTears();
+        }
+        else if (Input.GetKeyDown(KeyCode.E) && Talkable != null)
             DialogueUI.I.Open(Talkable);
     }
 
     public NpcAgent Talkable { get; private set; }
+    public bool NearWarrant { get; private set; }
 
     // Forgiving targeting: anyone visible within arm's-reach counts regardless of facing;
     // farther out (to 4m) requires roughly facing them. Strict cones read as "E does nothing".

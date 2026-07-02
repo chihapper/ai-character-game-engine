@@ -60,7 +60,8 @@ public class Bootstrap : MonoBehaviour
         Sun.type = LightType.Directional;
         Sun.intensity = 0.7f;
         Sun.transform.rotation = Quaternion.Euler(55, -30, 0);
-        gameObject.AddComponent<StormAudio>();  // the storm the whole scenario shelters from
+        gameObject.AddComponent<StormAudio>();     // the storm the whole scenario shelters from
+        gameObject.AddComponent<StoryDirector>();  // the night's spine — warrant, bell, dawn horn
 
         Box("floor", new Vector3(0, -0.1f, 0), new Vector3(14, 0.2f, 10), new Color(0.32f, 0.25f, 0.19f));
         // walls (occlusion is what makes line-of-sight REAL)

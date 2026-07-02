@@ -32,6 +32,7 @@ public class StormAudio : MonoBehaviour
             StartCoroutine(LightningFlash(closeness));
             yield return new WaitForSeconds(Mathf.Lerp(2.4f, 0.2f, closeness));
             thunder.PlayOneShot(MakeThunder(closeness), Mathf.Lerp(0.35f, 0.95f, closeness));
+            if (StoryDirector.I != null) StoryDirector.I.OnThunder(closeness);  // an overhead CRACK is a world event
             yield return new WaitForSeconds(Random.Range(12f, 40f));
         }
     }

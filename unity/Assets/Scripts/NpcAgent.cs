@@ -42,9 +42,12 @@ public class NpcAgent : MonoBehaviour
         var here = Regions.NameAt(transform.position);
         var options = Regions.Names.Where(n => n != here).Select(n => $"cross to {n}")
             .Concat(VisibleRefs().Select(r => $"watch {r}"))
-            .Append("stay where you are, watchful").ToArray();
+            .Concat(IdleHere(here))
+            .Append("stay where you are, watchful").ToList();
+        if (StoryDirector.I != null && StoryDirector.I.WarrantUp)
+            options.Add("go read the paper nailed to the door");
         ChooseRes choice = null;
-        yield return MindClient.I.Choose(slug, new ChooseReq { situation = scene, options = options },
+        yield return MindClient.I.Choose(slug, new ChooseReq { situation = scene, options = options.ToArray() },
                                          c => choice = c);
         if (choice != null && !string.IsNullOrEmpty(choice.action))
             yield return Enact(choice.action, choice.reason);
@@ -69,6 +72,20 @@ public class NpcAgent : MonoBehaviour
         busy = false;
     }
 
+    // What a body can DO in the place it's standing — small stance-setting idles per region,
+    // so the room reads lived-in instead of everyone pacing or freezing.
+    static IEnumerable<string> IdleHere(string region)
+    {
+        switch (region)
+        {
+            case "the bar": yield return "lean at the bar"; break;
+            case "the hearth": yield return "warm your hands at the fire"; break;
+            case "a corner table": yield return "sit at the corner table"; break;
+            case "the window": yield return "watch the storm through the shutters"; break;
+            case "the door": yield return "listen at the door"; break;
+        }
+    }
+
     IEnumerable<string> VisibleRefs()
     {
         if (PlayerController.I != null && PerceptComposer.CanSee(transform, PlayerController.I.transform))
@@ -80,19 +97,26 @@ public class NpcAgent : MonoBehaviour
 
     IEnumerator Enact(string action, string reason)
     {
+        if (action == "go read the paper nailed to the door")
+        {
+            stance = "";
+            yield return WalkTo(Regions.Anchor("the door"));
+            stance = "reading the notice on the door";
+            if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
+            yield return StoryDirector.I.NpcReadsWarrant(this);  // the text enters THEIR memory at THEIR appraisal
+            yield break;
+        }
+        if (action.StartsWith("lean at") || action.StartsWith("warm your") || action.StartsWith("sit at")
+            || action.StartsWith("listen at") || action.StartsWith("watch the storm"))
+        {
+            stance = action.Replace("your hands", "hands").Replace("your ", "");
+            if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
+            yield break;
+        }
         if (action.StartsWith("cross to "))
         {
             stance = "";
-            var target = Regions.Anchor(action.Substring(9));
-            while (Vector3.Distance(transform.position, target) > 0.6f)
-            {
-                var dir = (target - transform.position); dir.y = 0;
-                transform.position += dir.normalized * walkSpeed * Time.deltaTime;
-                if (dir.sqrMagnitude > 0.01f)
-                    transform.rotation = Quaternion.Slerp(transform.rotation,
-                        Quaternion.LookRotation(dir), 6f * Time.deltaTime);
-                yield return null;
-            }
+            yield return WalkTo(Regions.Anchor(action.Substring(9)));
         }
         else if (action.StartsWith("watch "))
         {
@@ -107,5 +131,18 @@ public class NpcAgent : MonoBehaviour
             }
         }
         if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
+    }
+
+    IEnumerator WalkTo(Vector3 target)
+    {
+        while (Vector3.Distance(transform.position, target) > 0.6f)
+        {
+            var dir = (target - transform.position); dir.y = 0;
+            transform.position += dir.normalized * walkSpeed * Time.deltaTime;
+            if (dir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.Slerp(transform.rotation,
+                    Quaternion.LookRotation(dir), 6f * Time.deltaTime);
+            yield return null;
+        }
     }
 }

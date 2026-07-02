@@ -65,11 +65,12 @@ public class DialogueUI : MonoBehaviour
 
         GUI.Label(new Rect(14, 8, Screen.width - 28, line),
                   $"hour {WorldClock.Hours:0.0}   [WASD] move  [E] talk  [Esc] close talk", label);
-        // live talk prompt — targeting must never fail silently
+        // live interaction prompt — targeting must never fail silently
         var t = PlayerController.I != null ? PlayerController.I.Talkable : null;
-        if (!IsOpen && t != null)
+        bool warrant = PlayerController.I != null && PlayerController.I.NearWarrant;
+        if (!IsOpen && (t != null || warrant))
         {
-            var msg = $"[E]  talk to {t.Reference}";
+            var msg = warrant ? "[E]  read the warrant    [T]  tear it down" : $"[E]  talk to {t.Reference}";
             var w = label.CalcSize(new GUIContent(msg)).x + 24;
             GUI.Box(new Rect((Screen.width - w) / 2, Screen.height * 0.62f, w, line + 6), GUIContent.none);
             GUI.Label(new Rect((Screen.width - w) / 2 + 12, Screen.height * 0.62f + 3, w, line), msg, label);
