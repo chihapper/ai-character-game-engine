@@ -25,6 +25,7 @@ public class Bootstrap : MonoBehaviour
 
         Mood();
         InnBuilder.Build();
+        ExteriorBuilder.Build();   // the storm is a place now, not just a sound
         Fires();
         gameObject.AddComponent<StormAudio>();
         gameObject.AddComponent<StoryDirector>();

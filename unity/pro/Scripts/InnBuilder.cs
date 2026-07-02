@@ -164,10 +164,20 @@ public static class InnBuilder
         go.transform.SetParent(root, false);
         go.transform.position = pos;
         go.transform.localScale = size;
+        // TRANSPARENT glass: the storm outside is a view now, not a painting — rain, the flooded
+        // crossing, the marsh in the fog. Lightning still spikes the emission (wet-glass glow).
         var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "Q_pane" };
-        m.SetColor("_BaseColor", new Color(0.3f, 0.38f, 0.5f));
+        m.SetFloat("_Surface", 1);
+        m.SetOverrideTag("RenderType", "Transparent");
+        m.renderQueue = 3001;
+        m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetInt("_ZWrite", 0);
+        m.SetColor("_BaseColor", new Color(0.35f, 0.42f, 0.55f, 0.2f));
+        m.SetFloat("_Smoothness", 0.92f);
         m.EnableKeyword("_EMISSION");
-        m.SetColor("_EmissionColor", new Color(0.14f, 0.18f, 0.26f));
+        m.SetColor("_EmissionColor", new Color(0.05f, 0.07f, 0.1f));
         go.GetComponent<Renderer>().material = m;
         WindowPanes.Add(go.GetComponent<Renderer>().material);
     }
