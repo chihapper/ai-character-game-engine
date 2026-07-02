@@ -20,6 +20,7 @@ from orchestrator.config import EngineCaps, Settings
 def bare_game(**engines) -> ArenaGame:
     """An ArenaGame with ONLY the state the name/reaction logic touches — no files, no LLM."""
     g = ArenaGame.__new__(ArenaGame)
+    g.scenario = {}
     g.cast = list(engines)
     g.known_names = {}
     g.handles = {s: f"the {s.split('-')[0]} one" for s in engines}
