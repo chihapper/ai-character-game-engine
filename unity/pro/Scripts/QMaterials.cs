@@ -44,6 +44,7 @@ public static class QMaterials
         if (s.Contains("plaster")) return Make("plaster", VT + "T_Plaster_BaseColor", VT + "T_Plaster_Normal", null, new Color(0.93f, 0.9f, 0.85f), 0.1f);
         if (s.Contains("brick")) return Make("brick", VT + "T_Brick_BaseColor", VT + "Normals Godot-Unity/T_Brick_Normal", null, null, 0.12f);
         if (s.Contains("uneven")) return Make("uneven", VT + "T_UnevenBrick_BaseColor", VT + "T_UnevenBrick_Normal", null, null, 0.1f);
+        if (s.Contains("rock")) return Make("rock", VT + "T_RockTrim_BaseColor", VT + "Normals Godot-Unity/T_RockTrim_Normal", null, null, 0.1f);
         if (s.Contains("roof") || s.Contains("tile")) return Make("roof", VT + "T_RoundTiles_BaseColor", VT + "T_RoundTiles_Normal", null, new Color(0.6f, 0.45f, 0.4f), 0.1f);
         if (s.Contains("topwear")) return Make("topwear", CT + "T_TopWear", null, null, null, 0.12f);
         if (s.Contains("bottomwear")) return Make("bottomwear", CT + "T_BottomWear", null, null, null, 0.12f);

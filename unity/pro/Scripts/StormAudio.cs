@@ -46,8 +46,27 @@ public class StormAudio : MonoBehaviour
         rain.volume = 0.32f;
         rain.Play();
         thunder = gameObject.AddComponent<AudioSource>();
+        // the hearth CRACKLES, in 3D at the fire itself — warmth you can hear across the room
+        var crackleGo = new GameObject("crackle");
+        crackleGo.transform.position = Regions.Anchor("the hearth") + new Vector3(-0.7f, 0.3f, 0);
+        var crackle = crackleGo.AddComponent<AudioSource>();
+        crackle.clip = MakeCrackle(6f);
+        crackle.loop = true;
+        crackle.volume = 0.55f;
+        crackle.spatialBlend = 1f;
+        crackle.minDistance = 1.2f;
+        crackle.maxDistance = 12f;
+        crackle.Play();
+        // wind: slow gusts under the rain, tracking the same arc
+        wind = gameObject.AddComponent<AudioSource>();
+        wind.clip = MakeWind(10f);
+        wind.loop = true;
+        wind.volume = 0.2f;
+        wind.Play();
         StartCoroutine(Storm());
     }
+
+    AudioSource wind;
 
     IEnumerator Storm()
     {
@@ -56,6 +75,7 @@ public class StormAudio : MonoBehaviour
         {
             float i = Intensity;
             rain.volume = 0.10f + 0.26f * i;                          // the sound TRACKS the arc
+            if (wind != null) wind.volume = 0.06f + 0.22f * i;
             float closeness = (float)rng.NextDouble() * Mathf.Clamp01(i + 0.25f);
             StartCoroutine(LightningFlash(closeness));
             yield return new WaitForSeconds(Mathf.Lerp(2.4f, 0.2f, closeness));
@@ -113,6 +133,51 @@ public class StormAudio : MonoBehaviour
         var clip = AudioClip.Create("rain", n, 1, sr, false);
         clip.SetData(d, 0);
         return clip;
+    }
+
+    AudioClip MakeCrackle(float seconds)
+    {
+        int n = (int)(sr * seconds);
+        var d = new float[n];
+        float hush = 0;
+        for (int i = 0; i < n; i++)
+        {
+            float white = (float)(rng.NextDouble() * 2 - 1);
+            hush += 0.03f * (white - hush);
+            d[i] = hush * 0.5f;
+        }
+        for (int k = 0; k < seconds * 9; k++)   // the pops
+        {
+            int at = rng.Next(n - sr / 8);
+            float amp = 0.25f + (float)rng.NextDouble() * 0.55f;
+            int len = sr / 300 + rng.Next(sr / 200);
+            for (int i = 0; i < len; i++)
+                d[at + i] += (float)(rng.NextDouble() * 2 - 1) * amp * Mathf.Exp(-i * 9f / len);
+        }
+        int xf = sr / 5;
+        for (int i = 0; i < xf; i++)
+        { float t = (float)i / xf; d[n - xf + i] = d[n - xf + i] * (1 - t) + d[i] * t; }
+        Normalize(d, 0.8f);
+        var c = AudioClip.Create("crackle", n, 1, sr, false); c.SetData(d, 0); return c;
+    }
+
+    AudioClip MakeWind(float seconds)
+    {
+        int n = (int)(sr * seconds);
+        var d = new float[n];
+        float deep = 0;
+        for (int i = 0; i < n; i++)
+        {
+            float white = (float)(rng.NextDouble() * 2 - 1);
+            deep += 0.008f * (white - deep);   // very low rumble of moving air
+            float gust = 0.45f + 0.55f * Mathf.PerlinNoise(i * 0.9f / sr, 0.3f);
+            d[i] = deep * gust;
+        }
+        int xf = sr / 4;
+        for (int i = 0; i < xf; i++)
+        { float t = (float)i / xf; d[n - xf + i] = d[n - xf + i] * (1 - t) + d[i] * t; }
+        Normalize(d, 0.85f);
+        var c = AudioClip.Create("wind", n, 1, sr, false); c.SetData(d, 0); return c;
     }
 
     AudioClip MakeThunder(float closeness)

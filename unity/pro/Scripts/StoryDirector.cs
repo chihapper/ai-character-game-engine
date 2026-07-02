@@ -27,7 +27,12 @@ public class StoryDirector : MonoBehaviour
 
     void Start()
     {
-        fx = gameObject.AddComponent<AudioSource>();
+        var go = new GameObject("story.fx");
+        go.transform.position = Regions.Anchor("the door") + new Vector3(0, 1.5f, -2f);
+        fx = go.AddComponent<AudioSource>();   // hammering + the dawn arrivals sound AT the door
+        fx.spatialBlend = 0.75f;
+        fx.minDistance = 2.5f;
+        fx.maxDistance = 30f;
         StartCoroutine(Night());
     }
 

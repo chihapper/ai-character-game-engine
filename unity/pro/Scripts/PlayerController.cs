@@ -80,6 +80,15 @@ public class PlayerController : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.E) && Talkable != null)
             DialogueUI.I.Open(Talkable);
+
+        if (Input.GetKeyDown(KeyCode.P))   // one-press jank capture for the build feedback loop
+        {
+            var dir = System.IO.Path.Combine(Application.dataPath, "..", "Screenshots");
+            System.IO.Directory.CreateDirectory(dir);
+            var file = System.IO.Path.Combine(dir, $"shot_{System.DateTime.Now:HHmmss}.png");
+            ScreenCapture.CaptureScreenshot(file);
+            DialogueUI.I?.Feed("—", "screenshot saved");
+        }
     }
 
     public NpcAgent Talkable { get; private set; }
