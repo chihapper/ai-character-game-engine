@@ -43,7 +43,10 @@ public class StormAudio : MonoBehaviour
         rain = gameObject.AddComponent<AudioSource>();
         rain.clip = MakeRain(8f);
         rain.loop = true;
-        rain.volume = 0.14f;   // ambience under the voices, never over them
+        rain.volume = 0.085f;  // ambience under the voices, never over them
+        // heard THROUGH a roof: muffle the highs and the rain stops competing with speech
+        var lp = gameObject.AddComponent<AudioLowPassFilter>();
+        lp.cutoffFrequency = 1100f;
         rain.Play();
         thunder = gameObject.AddComponent<AudioSource>();
         // the hearth CRACKLES, in 3D at the fire itself — warmth you can hear across the room
@@ -61,7 +64,7 @@ public class StormAudio : MonoBehaviour
         wind = gameObject.AddComponent<AudioSource>();
         wind.clip = MakeWind(10f);
         wind.loop = true;
-        wind.volume = 0.1f;
+        wind.volume = 0.06f;
         wind.Play();
         StartCoroutine(Storm());
     }
@@ -79,7 +82,7 @@ public class StormAudio : MonoBehaviour
             float closeness = (float)rng.NextDouble() * Mathf.Clamp01(i + 0.25f);
             StartCoroutine(LightningFlash(closeness));
             yield return new WaitForSeconds(Mathf.Lerp(2.4f, 0.2f, closeness));
-            thunder.PlayOneShot(MakeThunder(closeness), Mathf.Lerp(0.25f, 0.7f, closeness));
+            thunder.PlayOneShot(MakeThunder(closeness), Mathf.Lerp(0.18f, 0.5f, closeness));
             lastCrack = Time.time;
             if (StoryDirector.I != null) StoryDirector.I.OnThunder(closeness);  // an overhead CRACK is a world event
             yield return new WaitForSeconds(Random.Range(12f, 40f) / Mathf.Max(i, 0.25f));

@@ -140,10 +140,21 @@ public class NpcAgent : MonoBehaviour
             DialogueUI.I.Feed(Reference, res.reply);
             Bubble(res.reply);
             VoiceClient.I?.Speak(this, res.reply);
+            EmoteFromText(res.reply);
         }
         anim?.SetBool("Talk", false);
         LookTarget = null;
         busy = false;
+    }
+
+    /// The written line drives the body: a reply that laughs gets a laugh. The mind authors
+    /// the emotion; this just keeps the body from deadpanning through it.
+    void EmoteFromText(string reply)
+    {
+        var t = (reply ?? "").ToLower();
+        if (t.Contains("laugh") || t.Contains("haha") || t.Contains("ha!") || t.Contains("chuckle")
+            || t.Contains("snort") || t.Contains("grin"))
+            GetComponent<BodyLanguage>()?.Chuckle();
     }
 
     // What a body can DO in the place it's standing — small stance-setting idles per region,
@@ -279,8 +290,8 @@ public class NpcAgent : MonoBehaviour
             {
                 // a body sits ON something: walk to the nearest seat, settle onto it, face the table
                 var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - transform.position).sqrMagnitude).First();
-                yield return WalkTo(seat.pos);
-                transform.position = seat.pos + Vector3.up * 0.05f;
+                yield return WalkTo(new Vector3(seat.pos.x, 0, seat.pos.z));
+                transform.position = seat.pos;   // seat.pos carries the stool-top height
                 var face = seat.face - transform.position; face.y = 0;
                 if (face.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(face);
             }

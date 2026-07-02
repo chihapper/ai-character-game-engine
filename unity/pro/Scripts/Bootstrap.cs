@@ -164,7 +164,7 @@ public class Bootstrap : MonoBehaviour
         if (slug.StartsWith("edwin") || slug.StartsWith("brielle"))
         {
             var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - body.transform.position).sqrMagnitude).First();
-            body.transform.position = seat.pos + Vector3.up * 0.05f;
+            body.transform.position = seat.pos;   // seat.pos carries the stool-top height
             var face = seat.face - body.transform.position; face.y = 0;
             if (face.sqrMagnitude > 0.01f) body.transform.rotation = Quaternion.LookRotation(face);
             anim.SetBool("Sit", true);
@@ -213,6 +213,7 @@ public class Bootstrap : MonoBehaviour
             var agent = body.AddComponent<NpcAgent>();
             agent.slug = c.slug; agent.handle = c.handle; agent.stance = cfg.stance;
             body.AddComponent<Nameplate>().text = () => agent.Reference;
+            body.AddComponent<BodyLanguage>();   // voice-driven head motion, lean-in, laughs
             OpeningPose(c.slug, body);
         }
     }

@@ -54,6 +54,18 @@ public class VoiceClient : MonoBehaviour
         src.Stop();
         src.clip = clip;
         src.Play();
+        // loudness envelope (50ms windows) → BodyLanguage moves the head WITH the voice
+        var bl = npc.GetComponent<BodyLanguage>();
+        if (bl != null)
+        {
+            int win = Mathf.Max(1, rate / 20);
+            var env = new float[samples.Length / win + 1];
+            for (int i = 0; i < samples.Length; i++) env[i / win] += Mathf.Abs(samples[i]);
+            float peak = 0.0001f;
+            for (int i = 0; i < env.Length; i++) peak = Mathf.Max(peak, env[i]);
+            for (int i = 0; i < env.Length; i++) env[i] /= peak;
+            bl.SetEnvelope(env, src);
+        }
     }
 
     [Serializable] class SpeakReq { public string text; }

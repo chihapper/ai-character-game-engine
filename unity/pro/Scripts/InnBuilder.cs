@@ -260,7 +260,13 @@ public static class InnBuilder
         Spawn(P + "Workbench_Drawers", barPos + new Vector3(0, 0, -1.1f), -90);
         Spawn(P + "Shelf_Small_Bottles", new Vector3(W / 2 - 0.15f, 1.5f, D / 4), -90);
         Spawn(P + "Shelf_Arch", new Vector3(W / 2 - 0.15f, 1.45f, D / 4 - 1.2f), -90);
-        Spawn(P + "Cabinet", new Vector3(W / 2 - 0.45f, 0, 0.3f), -90);   // back bar, between counter and kitchen door
+        var cab = Spawn(P + "Cabinet", new Vector3(W / 2 - 0.45f, 0, 0.3f), -90);   // back bar, between counter and kitchen door
+        if (cab != null)
+        {
+            float cabTop = TopOf(cab);
+            Spawn(P + "Pot_1", new Vector3(W / 2 - 0.45f, 0, 0.45f)).transform.position += Vector3.up * cabTop;
+            Spawn(P + "Bottle_1", new Vector3(W / 2 - 0.5f, 0, 0.1f)).transform.position += Vector3.up * cabTop;
+        }
         Spawn(P + "Barrel_Holder", new Vector3(W / 2 - 0.55f, 0, D / 4 - 1.9f));  // the keg
         float barTop = TopOf(bench);
         BarTop = barTop;
@@ -339,6 +345,22 @@ public static class InnBuilder
         roofM.SetColor("_BaseColor", new Color(0.2f, 0.15f, 0.11f));
         roof.GetComponent<Renderer>().material = roofM;
 
+        // THE STAIRS (reference photo: steps rising to somewhere else — the inn stops being one
+        // box). They climb the south-west corner to a small landing with a shut door: rooms
+        // upstairs the player never needs, but the building believes in.
+        var stair = Spawn(V + "Stair_Interior_Rails", new Vector3(-3.0f, 0, -3.35f), -90);
+        if (stair != null)
+        {
+            var sb = WorldBounds(stair);
+            float topY = sb.max.y;
+            Timber(new Vector3(-5.1f, topY - 0.09f, -3.3f), new Vector3(1.9f, 0.18f, 1.35f), Vector3.zero, false); // landing
+            var upDoor = Spawn(V + "Door_1_Flat", new Vector3(-5.15f, 0, -3.55f), 180);
+            if (upDoor != null) upDoor.transform.position += Vector3.up * topY;
+            Timber(new Vector3(-4.2f, topY + 0.42f, -2.72f), new Vector3(0.1f, 0.84f, 0.1f), Vector3.zero, false);  // rail post
+            Timber(new Vector3(-5.0f, topY + 0.8f, -2.7f), new Vector3(1.8f, 0.09f, 0.09f), Vector3.zero, false);   // rail
+            BoxCollider(sb.center, sb.size);   // solid to the player
+        }
+
         // set dressing
         void CandleRing(Vector3 at)
         {
@@ -380,7 +402,10 @@ public static class InnBuilder
 
     static void Seat(Vector3 pos, Vector3 faceToward)
     {
-        Spawn(P + "Stool", pos);
+        var stool = Spawn(P + "Stool", pos);
+        // the sit pose carries hips at its root: a seat registered at FLOOR height sat every
+        // body on the ground behind its stool (Bri vanished below the long table)
+        pos.y = stool != null ? TopOf(stool) - 0.03f : 0.42f;
         Seats.Add((pos, faceToward));
     }
 
