@@ -21,6 +21,15 @@ public static class QShots
     [MenuItem("Ferry/Capture Auto Shots")]
     public static void RunCLI()
     {
+        // a compile error means play mode would run STALE assemblies — the shots would pass
+        // or fail on code that isn't the code under test. Refuse loudly instead.
+        if (EditorUtility.scriptCompilationFailed)
+        {
+            Debug.LogError("QSHOTS ABORT: script compilation failed — captures would test stale assemblies");
+            if (Application.isBatchMode || System.Environment.CommandLine.Contains("QShots.RunCLI"))
+                EditorApplication.Exit(3);
+            return;
+        }
         // capture the CURRENT CODE's world: fresh empty scene so Bootstrap builds at runtime
         // (a saved baked scene would replay old geometry and hide every fix under test)
         UnityEditor.SceneManagement.EditorSceneManager.NewScene(

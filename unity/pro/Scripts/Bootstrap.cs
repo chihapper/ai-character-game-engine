@@ -26,6 +26,19 @@ public class Bootstrap : MonoBehaviour
 
         Mood();
         var baked = FindFirstObjectByType<WorldMarker>();
+        if (baked != null && baked.builderVersion != WorldMarker.BuilderVersion)
+        {
+            // the scene was baked by an OLDER builder — trusting it replays stale geometry
+            // (this cost several playtests). Tear it down and let the current code build.
+            Debug.Log($"Bootstrap: baked world v{baked.builderVersion} != builder v{WorldMarker.BuilderVersion} — rebuilding at runtime");
+            foreach (var name in new[] { "Inn", "Exterior" })
+            {
+                var go = GameObject.Find(name);
+                if (go != null) { go.name += ".stale"; Destroy(go); }  // renamed: Destroy is end-of-frame, the rebuild must not collide
+            }
+            Destroy(baked.gameObject);
+            baked = null;
+        }
         if (baked != null)
             baked.Restore();       // the world was built (and possibly hand-adjusted) in the editor
         else

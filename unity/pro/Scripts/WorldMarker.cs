@@ -9,6 +9,12 @@ using UnityEngine;
 
 public class WorldMarker : MonoBehaviour
 {
+    // bump whenever the BUILDERS change layout: a baked scene from an older builder silently
+    // replays old geometry (stale panes, lattice walls, pre-kitchen bar) — Bootstrap detects
+    // the mismatch and rebuilds at runtime instead of trusting the bake
+    public const int BuilderVersion = 2;
+    public int builderVersion;
+
     public List<string> regionNames = new();
     public List<Vector3> regionPositions = new();
     public List<Vector3> seatPositions = new();
@@ -19,6 +25,7 @@ public class WorldMarker : MonoBehaviour
 
     public void Capture()
     {
+        builderVersion = BuilderVersion;
         regionNames = Regions.Names.ToList();
         regionPositions = regionNames.Select(Regions.Anchor).ToList();
         seatPositions = InnBuilder.Seats.Select(s => s.pos).ToList();
