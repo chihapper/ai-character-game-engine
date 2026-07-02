@@ -62,6 +62,8 @@ public class MindClient : MonoBehaviour
     public IEnumerator Finish() =>
         Post($"/{SessionId}/finish", "{\"outcome\":\"\"}", _ => { });
 
+    float lastErrShown = -999f;
+
     IEnumerator Post(string path, string body, Action<string> onOk)
     {
         using var req = new UnityWebRequest(baseUrl + path, "POST");
@@ -71,7 +73,19 @@ public class MindClient : MonoBehaviour
         req.timeout = 90;  // a respond spans an LLM call; v0 has no streaming (#37)
         yield return req.SendWebRequest();
         if (req.result != UnityWebRequest.Result.Success)
+        {
             Debug.LogWarning($"mind {path}: {req.responseCode} {req.downloadHandler.text}");
+            // A dead session must NEVER fail silently: the world just goes mute and it reads as
+            // "the characters stopped caring" (playtest). Say it on screen, throttled.
+            if (DialogueUI.I != null && Time.time - lastErrShown > 10f)
+            {
+                lastErrShown = Time.time;
+                var why = req.responseCode == 404
+                    ? "the mind server was restarted — this session is gone. Stop and press Play again."
+                    : $"mind server error {req.responseCode} — the minds can't answer right now.";
+                DialogueUI.I.Feed("⚠", why);
+            }
+        }
         else
             onOk?.Invoke(req.downloadHandler.text);
     }
