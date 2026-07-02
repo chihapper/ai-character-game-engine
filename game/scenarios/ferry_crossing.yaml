@@ -51,7 +51,8 @@ secret:
 cast:
   - slug: della-fenwick
     as: "host and ferrywoman; she runs this crossing and misses little"
-    voice: Matilda   # ElevenLabs voice NAME — the bridge resolves it against the account library
+    voice: Matilda   # ElevenLabs voice NAME (when GAME_TTS=elevenlabs)
+    voice_inworld: shiny-turtle-0902__design-voice-ce1a536a   # Aria's designed voice, borrowed
     handle: "the ferrywoman"        # how others refer to her until a name is spoken
     knows_secret: false
     here_because: >
@@ -60,6 +61,7 @@ cast:
       roof; you're keeping the lamps lit and the cups full till it breaks, reading each of them the
       way you read the current.
   - slug: brielle-bri-castellano
+    voice_inworld: shiny-turtle-0902__design-voice-f4ce78cb   # her Inworld twin's voice
     as: "a stranded traveler; charming, transactional, reads a room for what it can give her"
     handle: "the bright young woman"
     knows_secret: false
@@ -77,6 +79,7 @@ cast:
       off to when it goes quiet.
   - slug: edwin-hale
     voice: Charlie
+    voice_inworld: shiny-turtle-0902__design-voice-73c63327   # Cornelius's showman voice
     as: "a stranded performer between towns; he jokes to keep the dark off"
     adapt:   # his sheet says theaters and Mercer Street — same circuit, this world's venues
       role: Traveling player and jester ("Pockets") — market fairs, feast days, taproom nights

@@ -28,9 +28,20 @@ from orchestrator.memory.long_term import LongTermMemory
 
 from .. import casting, experiment_log, policy
 
+# TTS provider is a game-level knob (GAME_TTS=inworld|elevenlabs). Inworld is the default —
+# it is the CURRENT Track V setup and the ElevenLabs account is out of credits; the seam means
+# Unity never knows which engine spoke.
+def _tts_provider() -> str:
+    import os
+    return (os.environ.get("GAME_TTS") or "inworld").strip().lower()
+
+
 def _tts():
-    from orchestrator.adapters.tts_elevenlabs import ElevenLabsTTS
-    return ElevenLabsTTS()
+    if _tts_provider() == "elevenlabs":
+        from orchestrator.adapters.tts_elevenlabs import ElevenLabsTTS
+        return ElevenLabsTTS()
+    from orchestrator.adapters.tts_inworld import InworldTTS
+    return InworldTTS()
 
 def _stt():
     from orchestrator.adapters.stt_assemblyai import AssemblyAISTT
@@ -67,11 +78,15 @@ class MindSession:
         self.engines = {slug: Engine(casting.situate(load_character(slug), self.scenario, by_slug.get(slug)),
                                      AnthropicLLM(model=reply_model), caps=caps)
                         for slug in self.cast}
-        # voice casting: profile ElevenLabs voice_id wins; else the scenario's authored voice
-        # NAME resolved against the account's library at first use (game data end to end)
+        # voice casting, per provider: the profile's own voice_id wins when its tts_provider
+        # matches the active engine; else the scenario's authored voice for that provider
+        # (voice_inworld: <id> / voice: <ElevenLabs name>) — game data end to end
         self.voice_names = {c["slug"]: (c.get("voice") or "").strip() for c in self.scenario["cast"]}
+        self.voice_inworld = {c["slug"]: (c.get("voice_inworld") or "").strip() for c in self.scenario["cast"]}
         self.voice_ids: dict = {}
-        self.voice_ready = bool(get_settings().elevenlabs_api_key)
+        st = get_settings()
+        self.voice_ready = bool(st.inworld_api_key if _tts_provider() == "inworld"
+                                else st.elevenlabs_api_key)
         book = get_settings().salience_model
         self.run_id = experiment_log.start_run(
             condition="TREAT-EMBODIED-3D", scenario=self.scenario["id"], characters=self.cast,
@@ -101,10 +116,13 @@ class MindSession:
             return None
         if slug in self.voice_ids:
             return self.voice_ids[slug]
+        provider = _tts_provider()
         char = self.engine(slug).character
-        vid = (char.voice_id or "").strip() if getattr(char, "tts_provider", "") == "elevenlabs" else ""
-        if not vid:
-            try:
+        vid = (char.voice_id or "").strip() if getattr(char, "tts_provider", "") == provider else ""
+        if not vid and provider == "inworld":
+            vid = self.voice_inworld.get(slug, "")
+        if not vid and provider == "elevenlabs":
+            try:  # ElevenLabs voices are cast by NAME against the account library
                 voices = await _tts().list_voices()
                 want = self.voice_names.get(slug, "").lower()
                 match = next((v for v in voices if want and want in (v["name"] or "").lower()), None)
