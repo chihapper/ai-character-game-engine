@@ -17,6 +17,8 @@ reads as "finished product", mixed fidelity reads as asset soup).
 License: CC0 1.0 (verified on quaternius.com per pack). Import notes: use FBX; UAL retargets onto
 the UBC humanoid rig via Unity's Humanoid avatar system.
 
+| KayKit_Adventurers_2.0_FREE.zip | 6 CLOTHED rigged characters (Barbarian/Knight/Mage/Ranger/Rogue/Rogue_Hooded) + animations | the cast's CLOTHES — the UBC Standard bodies are underwear bases; Quaternius clothed packs are Patreon-gated (CC-BY-4.0? see License.txt) |
+
 ## Unity Asset Store (added to the signed-in Unity account; import via Package Manager → My Assets)
 
 | pack | use |
