@@ -63,6 +63,22 @@ public static class InnBuilder
         var b = new Bounds(go.transform.position, Vector3.zero); bool first = true;
         foreach (var r in go.GetComponentsInChildren<Renderer>())
         { if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
+        if (!first && b.size.sqrMagnitude > 1e-6f) return b;
+        // spawn-frame quirk: renderer AABBs lag a localScale write (the jambs audited as
+        // zero-height the frame they were built) — derive from mesh data instead
+        first = true;
+        foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
+        {
+            if (mf.sharedMesh == null) continue;
+            var mb = mf.sharedMesh.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                var c = mb.center + Vector3.Scale(mb.extents,
+                    new Vector3((i & 1) * 2 - 1, ((i >> 1) & 1) * 2 - 1, ((i >> 2) & 1) * 2 - 1));
+                var w = mf.transform.TransformPoint(c);
+                if (first) { b = new Bounds(w, Vector3.zero); first = false; } else b.Encapsulate(w);
+            }
+        }
         return b;
     }
 

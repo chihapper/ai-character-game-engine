@@ -41,13 +41,29 @@ public class AutoShot : MonoBehaviour
         fill.type = LightType.Point; fill.range = 8f; fill.intensity = 1.2f;   // must not reach past the walls
         fill.color = new Color(1f, 0.96f, 0.9f);
 
+        // first STATIC obstruction along a sight line — characters don't block camera spots
+        // (clamping on a capsule parked the camera inside Bri's coat)
+        float ClearDist(Vector3 from, Vector3 dir, float dist)
+        {
+            foreach (var h in Physics.RaycastAll(from, dir.normalized, dist)
+                                     .OrderBy(h => h.distance))
+            {
+                if (h.collider.GetComponentInParent<NpcAgent>() != null) continue;
+                if (h.collider.GetComponentInParent<PlayerController>() != null) continue;
+                return h.distance;
+            }
+            return dist;
+        }
+
         IEnumerator Shot(string name, Vector3 pos, Vector3 lookAt)
         {
             // an NPC facing a wall puts "2m in front of them" INSIDE the wall — pull the
-            // camera back along the sight line to just before the first thing it would enter
+            // camera back along the sight line, but never so close the subject gets near-plane
+            // culled (that vanished Della from her own portrait)
             var dir = pos - lookAt;
-            if (Physics.Raycast(lookAt, dir.normalized, out var hit, dir.magnitude + 0.2f))
-                pos = hit.point - dir.normalized * 0.3f;
+            float d = ClearDist(lookAt, dir, dir.magnitude + 0.2f);
+            if (d < dir.magnitude)
+                pos = lookAt + dir.normalized * Mathf.Max(1.0f, d - 0.35f);
             cam.transform.position = pos;
             cam.transform.rotation = Quaternion.LookRotation(lookAt - pos);
             yield return new WaitForEndOfFrame();
@@ -57,9 +73,16 @@ public class AutoShot : MonoBehaviour
 
         foreach (var npc in NpcAgent.All.ToArray())
         {
+            // portrait spot: in front if the room allows, else swing around until clear
             var head = npc.transform.position + Vector3.up * 1.45f;
-            yield return Shot("npc_" + npc.slug.Split('-')[0],
-                npc.transform.position + npc.transform.forward * 2.0f + Vector3.up * 1.5f, head);
+            Vector3 spot = head + npc.transform.forward * 2.0f + Vector3.up * 0.1f;
+            foreach (var yaw in new[] { 0f, 45f, -45f, 90f, -90f, 180f })
+            {
+                var dir = Quaternion.Euler(0, yaw, 0) * npc.transform.forward;
+                float d = ClearDist(head, dir, 2.1f);
+                if (d >= 1.4f) { spot = head + dir * Mathf.Min(2.0f, d - 0.35f) + Vector3.up * 0.1f; break; }
+            }
+            yield return Shot("npc_" + npc.slug.Split('-')[0], spot, head);
         }
         var hearth = Regions.Anchor("the hearth");
         var bar = Regions.Anchor("the bar");
