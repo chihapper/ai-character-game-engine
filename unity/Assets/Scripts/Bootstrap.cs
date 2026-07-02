@@ -29,6 +29,7 @@ public static class WorldClock
 public class Bootstrap : MonoBehaviour
 {
     public static string PlayerHandle = "the stranger just in from the storm";
+    public static Light Sun;  // StormAudio flickers it for lightning
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void SelfSpawn() => new GameObject("Bootstrap").AddComponent<Bootstrap>();
@@ -55,10 +56,11 @@ public class Bootstrap : MonoBehaviour
     void BuildInn()
     {
         RenderSettings.ambientLight = new Color(0.35f, 0.33f, 0.30f);
-        var sun = new GameObject("Sun").AddComponent<Light>();
-        sun.type = LightType.Directional;
-        sun.intensity = 0.7f;
-        sun.transform.rotation = Quaternion.Euler(55, -30, 0);
+        Sun = new GameObject("Sun").AddComponent<Light>();
+        Sun.type = LightType.Directional;
+        Sun.intensity = 0.7f;
+        Sun.transform.rotation = Quaternion.Euler(55, -30, 0);
+        gameObject.AddComponent<StormAudio>();  // the storm the whole scenario shelters from
 
         Box("floor", new Vector3(0, -0.1f, 0), new Vector3(14, 0.2f, 10), new Color(0.32f, 0.25f, 0.19f));
         // walls (occlusion is what makes line-of-sight REAL)
