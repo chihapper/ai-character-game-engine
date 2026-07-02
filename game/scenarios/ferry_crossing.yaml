@@ -22,6 +22,16 @@ player:
 # How the room sees the player before any introduction (the arena reads this; strangers rule).
 player_handle: the stranger just in from the storm
 
+# The WORLD each character lives in tonight — injected with every percept so a reused character
+# sheet can't bleed its old life through (Bri's profile is a modern cocktail server with a
+# coworker named Marco; without this frame she talked about him in a riverlands inn).
+world_frame: >
+  This is a riverlands world: ferries and fords, peat fires, oil lamps, coin, crown soldiers on
+  horseback. There are no cities of glass, no clubs, cocktail bars, phones, or electricity — and
+  the people and places of any OTHER life you may half-remember (coworkers, dance halls, modern
+  things) do not exist here and never did. You are the same soul with the same nature, living
+  THIS life in THIS world. Speak only of what exists here.
+
 # --- time -------------------------------------------------------------------
 # The engine only differences `clock`; the unit is ours. Hours across one long night.
 clock:

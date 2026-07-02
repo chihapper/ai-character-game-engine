@@ -21,7 +21,7 @@ public class DialogueUI : MonoBehaviour
     void Awake() { I = this; }
 
     public void Open(NpcAgent npc) { target = npc; input = ""; }
-    public void Feed(string who, string text) { feed.Add($"{who}: {text}"); Trim(feed, 6); }
+    public void Feed(string who, string text) { feed.Add($"{who}: {text}"); Trim(feed, 4); }
     public void FeedAct(string who, string action, string reason)
     { thoughts.Add($"{who} — {action}\n“{reason}”"); Trim(thoughts, 5); }
     static void Trim(List<string> l, int keep) { while (l.Count > keep) l.RemoveAt(0); }
@@ -70,7 +70,12 @@ public class DialogueUI : MonoBehaviour
         }
 
         GUI.Label(new Rect(14, 8, Screen.width - 28, line),
-                  $"hour {WorldClock.Hours:0.0}   [WASD] move  [E] talk  [Esc] close talk", label);
+                  "[WASD] move  [E] talk  [Esc] close talk", label);
+        // the game clock, top-right and unmissable (2 real minutes = 1 game hour; dawn = hour 8)
+        var clockMsg = $"hour {WorldClock.Hours:0.0} · night";
+        var cw = label.CalcSize(new GUIContent(clockMsg)).x + 26;
+        GUI.Box(new Rect(Screen.width - cw - 10, 6, cw, line + 8), GUIContent.none);
+        GUI.Label(new Rect(Screen.width - cw + 3, 10, cw - 16, line), clockMsg, label);
         // live interaction prompt — targeting must never fail silently
         var t = PlayerController.I != null ? PlayerController.I.Talkable : null;
         bool warrant = PlayerController.I != null && PlayerController.I.NearWarrant;
@@ -82,13 +87,18 @@ public class DialogueUI : MonoBehaviour
             GUI.Label(new Rect((Screen.width - w) / 2 + 12, Screen.height * 0.62f + 3, w, line), msg, label);
         }
 
-        // SPEECH feed: bottom-LEFT (60% width), newest at the bottom, drawn upward above the composer
+        // SPEECH feed: bottom-LEFT (60% width), newest at the bottom, drawn upward above the
+        // composer — with a hard HEIGHT BUDGET (40% of the screen): older entries beyond it simply
+        // don't draw, so a chatty scene can never wallpaper the view. And the moment the thought
+        // column ages an entry past the cap, it's gone from the list too.
         float feedW = Screen.width * 0.60f;
         float inputPad = IsOpen ? line * 2.6f : 0;
         float y = Screen.height - line - 10 - inputPad;
+        float ceiling = Screen.height * 0.55f;  // feed may use the bottom 45% at most
         for (int i = feed.Count - 1; i >= 0; i--)
         {
             var h = label.CalcHeight(new GUIContent(feed[i]), feedW - 30);
+            if (y - h < ceiling) break;  // out of budget — older lines yield the screen
             y -= h;
             GUI.Box(new Rect(10, y - 2, feedW, h + 4), GUIContent.none);
             GUI.Label(new Rect(20, y, feedW - 30, h), feed[i], label);

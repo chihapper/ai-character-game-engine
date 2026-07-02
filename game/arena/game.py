@@ -143,6 +143,9 @@ class ArenaGame:
         p = perceive(self.world, slug, clock=self.clock, elapsed=elapsed, ref_of=self._ref)
         sit = to_situation(p)
         sit.extra["Performance"] = _PERF
+        frame = (self.scenario.get("world_frame") or "").strip()
+        if frame:  # scenario world-frame: a reused sheet's old life must not bleed through
+            sit.extra["The world you live in"] = frame
         if self.here_because.get(slug):
             sit.extra["Why you're here tonight"] = self.here_because[slug]
         return sit

@@ -72,6 +72,9 @@ class MindSession:
         d = {"location": sit.location, "present": sit.present, "clock": sit.clock} if sit else {}
         d["extra"] = {"Performance": sit.performance if sit and sit.performance
                       else policy.PERFORMANCE_RULES}
+        frame = (self.scenario.get("world_frame") or "").strip()
+        if frame:  # the scenario's world overrides a reused sheet's old life (no Marco here)
+            d["extra"]["The world you live in"] = frame
         if self.here_because.get(slug):
             d["extra"]["Why you're here tonight"] = self.here_because[slug]
         return Situation.from_dict(d)
@@ -188,8 +191,12 @@ async def choose(sid: str, slug: str, body: Choose):
     eng = s.engine(slug)
     if not body.options:
         raise HTTPException(status_code=400, detail="need options (the afforded actions)")
+    sit = body.situation
+    frame = (s.scenario.get("world_frame") or "").strip()
+    if frame:  # choices ground on the scenario's world too, not a reused sheet's old life
+        sit = f"(The world you live in: {frame})\n{sit}"
     async with _lock(sid):
-        out = await eng.choose_action(body.situation, body.options)
+        out = await eng.choose_action(sit, body.options)
     return {"action": out.get("action") or "", "reason": out.get("reason") or ""}
 
 
