@@ -36,7 +36,16 @@ public:
     /** a grounded action beat: compose situation, offer options, enact the mind's pick */
     void TakeBeat();
 
+    /** dress the agent in a built MetaHuman blueprint; hides the capsule placeholder */
+    void AttachMetaHumanBody(UClass* BodyClass);
+
 private:
+    UPROPERTY()
+    AActor* BodyActor = nullptr;
+
+    UPROPERTY()
+    UStaticMeshComponent* PlaceholderBody = nullptr;
+
     FString ComposeSituation() const;
     TArray<FString> ComposeOptions() const;
     void Enact(const FString& Action, const FString& Reason);

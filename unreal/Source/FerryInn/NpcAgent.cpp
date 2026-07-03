@@ -17,6 +17,8 @@ ANpcAgent::ANpcAgent()
     PrimaryActorTick.bCanEverTick = true;
     GetCapsuleComponent()->SetCapsuleSize(30.f, 90.f);
     GetCharacterMovement()->MaxWalkSpeed = 160.f;   // a tavern is not a racetrack
+    GetCharacterMovement()->bOrientRotationToMovement = true;   // bodies face where they walk
+    GetCharacterMovement()->RotationRate = FRotator(0.f, 240.f, 0.f);
 
     // PLACEHOLDER body until the MetaHumans arrive: a visible capsule, like the Unity
     // gray-box began — the mind is what's under test first
@@ -31,6 +33,30 @@ ANpcAgent::ANpcAgent()
         Body->SetRelativeLocation(FVector(0.f, 0.f, -5.f));
     }
     Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    PlaceholderBody = Body;
+}
+
+void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
+{
+    if (!BodyClass || BodyActor) return;
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    Params.Owner = this;
+    BodyActor = GetWorld()->SpawnActor<AActor>(BodyClass, GetActorLocation(), GetActorRotation(), Params);
+    if (!BodyActor)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("NpcAgent %s: body class failed to spawn"), *Slug);
+        return;
+    }
+    BodyActor->SetActorEnableCollision(false);   // the capsule owns movement and blocking
+    BodyActor->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    // MetaHuman BPs face +Y at yaw 0; the capsule's forward is +X. Feet go a half-height down.
+    BodyActor->SetActorRelativeRotation(FRotator(0.f, -90.f, 0.f));
+    BodyActor->SetActorRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+    if (PlaceholderBody)
+    {
+        PlaceholderBody->SetVisibility(false, true);
+    }
 }
 
 void ANpcAgent::BeginPlay()
@@ -44,6 +70,11 @@ void ANpcAgent::BeginPlay()
 
 void ANpcAgent::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if (BodyActor)
+    {
+        BodyActor->Destroy();
+        BodyActor = nullptr;
+    }
     All.Remove(this);
     Super::EndPlay(Reason);
 }

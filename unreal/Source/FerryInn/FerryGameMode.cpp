@@ -23,13 +23,14 @@ void AFerryGameMode::BeginPlay()
 
 void AFerryGameMode::SpawnCast()
 {
-    struct FCastEntry { const TCHAR* Slug; const TCHAR* Handle; const TCHAR* Region; const TCHAR* Stance; };
-    // slugs match game/scenarios/ferry_crossing.yaml — the same cast the Unity night ran
+    struct FCastEntry { const TCHAR* Slug; const TCHAR* Handle; const TCHAR* Region; const TCHAR* Stance; const TCHAR* BodyPath; };
+    // slugs match game/scenarios/ferry_crossing.yaml — the same cast the Unity night ran;
+    // bodies are the built MetaHumans under /Game/Cast/Unpacked
     const FCastEntry Cast[] = {
-        { TEXT("della-fenwick"),             TEXT("the ferrywoman"),             TEXT("the bar"),          TEXT("working the bar") },
-        { TEXT("corvin-ashgrave-inworld"),   TEXT("the watchful man"),           TEXT("a corner table"),   TEXT("nursing a cup, eyes on the door") },
-        { TEXT("edwin-hale"),                TEXT("the soaked performer"),       TEXT("the far tables"),   TEXT("drying out, watching the room") },
-        { TEXT("brielle-bri-castellano"),    TEXT("the bright young woman"),     TEXT("the long table"),   TEXT("cloak shed, taking in the room") },
+        { TEXT("della-fenwick"),             TEXT("the ferrywoman"),             TEXT("the bar"),          TEXT("working the bar"),                    TEXT("/Game/Cast/Unpacked/Della/BP_Della.BP_Della_C") },
+        { TEXT("corvin-ashgrave-inworld"),   TEXT("the watchful man"),           TEXT("a corner table"),   TEXT("nursing a cup, eyes on the door"),    TEXT("/Game/Cast/Unpacked/Corvin/BP_Corvin.BP_Corvin_C") },
+        { TEXT("edwin-hale"),                TEXT("the soaked performer"),       TEXT("the far tables"),   TEXT("drying out, watching the room"),      TEXT("/Game/Cast/Unpacked/Edwin/BP_Edwin.BP_Edwin_C") },
+        { TEXT("brielle-bri-castellano"),    TEXT("the bright young woman"),     TEXT("the long table"),   TEXT("cloak shed, taking in the room"),     TEXT("/Game/Cast/Unpacked/Bri/BP_Bri.BP_Bri_C") },
     };
     int32 Index = 0;
     for (const FCastEntry& C : Cast)
@@ -43,6 +44,14 @@ void AFerryGameMode::SpawnCast()
             Agent->Slug = C.Slug;
             Agent->Handle = C.Handle;
             Agent->Stance = C.Stance;
+            if (UClass* BodyClass = StaticLoadClass(AActor::StaticClass(), nullptr, C.BodyPath))
+            {
+                Agent->AttachMetaHumanBody(BodyClass);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("FerryGameMode: no body at %s — %s keeps the capsule"), C.BodyPath, C.Slug);
+            }
         }
         ++Index;
     }
