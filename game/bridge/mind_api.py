@@ -252,7 +252,8 @@ async def choose(sid: str, slug: str, body: Choose):
         sit = f"(The world you live in: {frame})\n{sit}"
     async with _lock(sid):
         out = await eng.choose_action(sit, body.options)
-    return {"action": out.get("action") or "", "reason": out.get("reason") or ""}
+    return {"action": out.get("action") or "", "reason": out.get("reason") or "",
+            "expression": out.get("expression") or "", "face": out.get("face") or "neutral"}
 
 
 @router.post("/{sid}/observe")
