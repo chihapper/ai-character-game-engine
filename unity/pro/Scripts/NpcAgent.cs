@@ -321,9 +321,9 @@ public class NpcAgent : MonoBehaviour
                 var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - transform.position).sqrMagnitude).First();
                 yield return WalkTo(new Vector3(seat.pos.x, 0, seat.pos.z));
                 var face = seat.face - seat.pos; face.y = 0; face.Normalize();
-                // the sit clip carries HIPS behind its root (orbit evidence: bodies floated
-                // beside their stools) — root goes ahead of the stool so the hips land ON it
-                transform.position = seat.pos + face * 0.3f;
+                // orbit-tested: the sit clip's hips sit exactly AT root — root goes ON the stool
+                // (a +0.3 forward shift sat Edwin on the tabletop)
+                transform.position = seat.pos;
                 transform.rotation = Quaternion.LookRotation(face);
             }
             SetPose(action.StartsWith("sit at") ? "Sit" : action.StartsWith("lean at") ? "Lean" : "Arms");

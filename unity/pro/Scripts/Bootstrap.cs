@@ -165,8 +165,8 @@ public class Bootstrap : MonoBehaviour
         {
             var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - body.transform.position).sqrMagnitude).First();
             var face = seat.face - seat.pos; face.y = 0; face.Normalize();
-            // sit clip carries hips behind root — root ahead of the stool, hips ON it
-            body.transform.position = seat.pos + face * 0.3f;
+            // orbit-tested: hips sit exactly AT root — root ON the stool, facing the table
+            body.transform.position = seat.pos;
             body.transform.rotation = Quaternion.LookRotation(face);
             anim.SetBool("Sit", true);
         }
