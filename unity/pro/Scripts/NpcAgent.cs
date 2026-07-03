@@ -71,7 +71,10 @@ public class NpcAgent : MonoBehaviour
             if (busy || anim == null) continue;
             bool cupInHand = stance.Contains("cup") || stance.Contains("drink") || stance.Contains("mug")
                              || stance.Contains("ale") || anim.GetBool("Sit");
-            if (cupInHand) anim.SetTrigger("Sip");
+            float roll = Random.value;
+            if (cupInHand && roll < 0.6f) anim.SetTrigger("Sip");
+            else if (roll < 0.75f) anim.SetTrigger("Stretch");   // a body gets stiff waiting out a storm
+            else if (roll < 0.85f && WorldClock.Hours > 2f) anim.SetTrigger("Yawn");  // the night wears on
         }
     }
 
@@ -96,6 +99,7 @@ public class NpcAgent : MonoBehaviour
         var options = Regions.Names.Where(n => n != here).Select(n => $"cross to {n}")
             .Concat(VisibleRefs().Select(r => $"watch {r}"))
             .Concat(NearRefs(5.5f).Select(r => $"nod to {r}"))   // a wordless acknowledgment
+            .Concat(VisibleRefs().Except(NearRefs(5.5f)).Select(r => $"wave across to {r}"))
             .Concat(IdleHere(here))
             .Append("stay where you are, watchful").ToList();
         if (StoryDirector.I != null && StoryDirector.I.WarrantUp)
@@ -154,7 +158,14 @@ public class NpcAgent : MonoBehaviour
         var t = (reply ?? "").ToLower();
         if (t.Contains("laugh") || t.Contains("haha") || t.Contains("ha!") || t.Contains("chuckle")
             || t.Contains("snort") || t.Contains("grin"))
+        {
+            anim?.SetTrigger("Laugh");   // the real Mixamo laugh, pose-aware (seated laughs seated)
             GetComponent<BodyLanguage>()?.Chuckle();
+        }
+        else if (t.Contains("gasp") || t.Contains("what?!") || t.Contains("startl") || t.Contains("shock"))
+            anim?.SetTrigger("Startle");
+        else if (t.Contains("shrug"))
+            anim?.SetTrigger("Shrug");
     }
 
     // What a body can DO in the place it's standing — small stance-setting idles per region,
@@ -263,6 +274,24 @@ public class NpcAgent : MonoBehaviour
                 }
             }
             anim?.SetTrigger("Nod");
+            if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
+            yield break;
+        }
+        if (action.StartsWith("wave across to "))
+        {
+            var who = action.Substring("wave across to ".Length);
+            var t = who == Bootstrap.PlayerHandle ? PlayerController.I?.transform
+                    : All.FirstOrDefault(a => a != this && a.Reference == who)?.transform;
+            if (t != null)
+            {
+                LookTarget = t;
+                if (anim != null && !anim.GetBool("Sit") && !anim.GetBool("Lean"))
+                {
+                    var dir = t.position - transform.position; dir.y = 0;
+                    if (dir.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(dir);
+                }
+            }
+            anim?.SetTrigger("Wave");
             if (!string.IsNullOrEmpty(reason)) DialogueUI.I.FeedAct(Reference, action, reason);
             yield break;
         }

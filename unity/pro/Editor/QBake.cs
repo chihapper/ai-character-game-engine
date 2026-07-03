@@ -123,6 +123,44 @@ public static class QBake
         OneShot("Sip", consume);
         OneShot("Nod", nod);
         OneShot("Shake", shake);
+
+        // MIXAMO gestures (Anims3): every Mixamo FBX holds ONE clip named "mixamo.com" —
+        // key by FILE name, wire as pose-aware one-shots like the UAL gestures
+        AnimationClip Mix(string file) =>
+            AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Q/Anims3/Unity/" + file + ".fbx")
+                .OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
+        OneShot("Shrug", Mix("Shrugging"));
+        OneShot("Point", Mix("Pointing"));
+        OneShot("Wave", Mix("Waving"));
+        OneShot("Startle", Mix("Surprised"));
+        OneShot("Yawn", Mix("Yawn"));
+        OneShot("Stretch", Mix("Neck Stretching"));
+        OneShot("Ponder", Mix("Thinking"));
+        // LAUGH is pose-aware: a seated body laughs seated (Mixamo pair)
+        var laughStand = Mix("Laughing");
+        var laughSit = Mix("Sitting Laughing");
+        if (laughStand != null)
+        {
+            ctrl.AddParameter("Laugh", AnimatorControllerParameterType.Trigger);
+            var ls = sm.AddState("LaughStand"); ls.motion = laughStand;
+            foreach (var f in new[] { move, leanState })
+            {
+                if (f == null) continue;
+                var t = f.AddTransition(ls); t.AddCondition(AnimatorConditionMode.If, 0, "Laugh"); t.hasExitTime = false; t.duration = 0.2f;
+            }
+            if (leanState != null)
+            { var r = ls.AddTransition(leanState); r.AddCondition(AnimatorConditionMode.If, 0, "Lean"); r.hasExitTime = true; r.exitTime = 0.9f; r.duration = 0.25f; }
+            var lsm = ls.AddTransition(move); lsm.hasExitTime = true; lsm.exitTime = 0.93f; lsm.duration = 0.25f;
+            if (laughSit != null && sitState != null)
+            {
+                var lsit = sm.AddState("LaughSit"); lsit.motion = laughSit;
+                var t2 = sitState.AddTransition(lsit); t2.AddCondition(AnimatorConditionMode.If, 0, "Laugh"); t2.hasExitTime = false; t2.duration = 0.2f;
+                var r2 = lsit.AddTransition(sitState); r2.hasExitTime = true; r2.exitTime = 0.9f; r2.duration = 0.25f;
+            }
+        }
+        Debug.Log($"QBAKE MIXAMO shrug={Mix("Shrugging") != null} point={Mix("Pointing") != null} wave={Mix("Waving") != null} " +
+                  $"startle={Mix("Surprised") != null} yawn={Mix("Yawn") != null} stretch={Mix("Neck Stretching") != null} " +
+                  $"ponder={Mix("Thinking") != null} laugh={laughStand != null} laughSit={laughSit != null}");
         AssetDatabase.SaveAssets();
         Debug.Log("QBAKE controller saved");
 
