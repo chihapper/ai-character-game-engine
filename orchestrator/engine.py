@@ -215,8 +215,11 @@ class Engine:
         currently affords) — but grounded in everything they've BECOME: evolved goals, near-term aim,
         feelings toward the player (scars included), and formed beliefs. Corvin chooses as the Corvin
         the engine knows, not as his static sheet. `situation` is the perceived scene (str or
-        Situation). Returns {"action": <exact option or None>, "reason": <short, in-character>};
-        the GAME executes the choice (applied-vs-returned, per the contract)."""
+        Situation). Returns {"action": <exact option or None>, "reason": <short, in-character>,
+        "expression": <what shows on their face, free text>, "face": <neutral|happy|sad|angry|
+        fear|surprise>}; the GAME executes the choice and renders (or ignores) the face —
+        applied-vs-returned, per the contract. WHICH expression surfaces is psychology meeting
+        the moment's relevance: unsettling characters may smile at the wrong things."""
         if not options:
             return {"action": None, "reason": ""}
         sit = situation if isinstance(situation, str) else render_situation(situation)

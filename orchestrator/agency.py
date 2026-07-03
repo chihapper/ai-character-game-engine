@@ -200,7 +200,13 @@ async def choose_action(character: Character, situation: str, options: list[str]
     `grounding` is who they've BECOME — evolved goals, near-term aim, feelings/scars, beliefs — so the
     choice is made by the lived character, not the static sheet. Prefer `Engine.choose_action`, which
     assembles it; calling this bare is for stateless demos. Returns {"action": <exact option or None>,
-    "reason": <short, in-character>}."""
+    "reason": <short, in-character>, "expression": <how it reads on their face, free text>,
+    "face": <neutral|happy|sad|angry|fear|surprise>}.
+
+    The face is part of the manifestation, not decoration: WHICH expression surfaces is the
+    character's psychology meeting the moment's relevance — an unsettling character may smile at
+    the wrong thing; most people's faces stay neutral unless the moment genuinely reaches them.
+    The game maps `face` to whatever its body layer can show (or ignores it)."""
     from .salience import _character_summary
     if not options:
         return {"action": None, "reason": ""}
@@ -215,14 +221,22 @@ async def choose_action(character: Character, situation: str, options: list[str]
               f"WHAT THEY PERCEIVE RIGHT NOW:\n{situation}\n\n"
               f"They may do exactly ONE of these, or nothing:\n{opts}\n\n"
               "Choose the single action THIS character would take now — copy its text EXACTLY, or use "
-              'null for nothing. Invent nothing outside the list. JSON: {"action": <exact option text '
-              'or null>, "reason": "<short, in their voice>"}')
-    data = await judgment(system, prompt, role="salience", model=model, max_tokens=140,
+              "null for nothing. Invent nothing outside the list. Also say what shows on their FACE as "
+              "they do it: most faces stay neutral unless the moment genuinely reaches this character; "
+              "what surfaces (and whether it fits the moment) is who they are — some people smile at "
+              'the wrong things. JSON: {"action": <exact option text or null>, "reason": "<short, in '
+              'their voice>", "expression": "<what their face does, one short phrase>", '
+              '"face": "<neutral|happy|sad|angry|fear|surprise>"}')
+    data = await judgment(system, prompt, role="salience", model=model, max_tokens=200,
                           what="choose_action")
     if not isinstance(data, dict):
-        return {"action": None, "reason": ""}
+        return {"action": None, "reason": "", "expression": "", "face": "neutral"}
     chosen = data.get("action")
     # Bind HARD to the offered set — the world's affordances are the guardrail, not the prompt.
     if chosen not in options:
         chosen = next((o for o in options if chosen and str(chosen).strip().lower() in o.lower()), None)
-    return {"action": chosen, "reason": str(data.get("reason") or "")[:200]}
+    face = str(data.get("face") or "neutral").strip().lower()
+    if face not in ("neutral", "happy", "sad", "angry", "fear", "surprise"):
+        face = "neutral"
+    return {"action": chosen, "reason": str(data.get("reason") or "")[:200],
+            "expression": str(data.get("expression") or "")[:120], "face": face}
