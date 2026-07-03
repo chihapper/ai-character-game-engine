@@ -354,6 +354,10 @@ public class NpcAgent : MonoBehaviour
     void SetPose(string flag)
     {
         if (anim == null) return;
+        // standing up from a seat WITHOUT walking left the body hovering at stool height
+        // (bridge live-read: standing clip at y=0.56 — the "not sitting correctly" playtest)
+        if (anim.GetBool("Sit") && flag != "Sit")
+            transform.position = new Vector3(transform.position.x, 0, transform.position.z);
         foreach (var b in new[] { "Sit", "Lean", "Arms" }) anim.SetBool(b, b == flag);
     }
 
