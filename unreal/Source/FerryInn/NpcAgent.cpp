@@ -102,6 +102,32 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
     {
         FaceMesh->PlayAnimation(FaceLoop, true);
     }
+    // reaction faces: the ENGINE decides which expression a beat surfaces (expression-relevance);
+    // clip variants differ per set/sex, so try candidates and keep whichever exists
+    const FString Ex = TEXT("/MetaHumanCharacter/Optional/Animation/TemplateAnimations/Expression_Loops/");
+    auto TryLoad = [](std::initializer_list<FString> Paths) -> UAnimSequence*
+    {
+        for (const FString& P : Paths)
+        {
+            if (UAnimSequence* A = LoadObject<UAnimSequence>(nullptr, *P)) return A;
+        }
+        return nullptr;
+    };
+    const FString S = FaceSex.IsEmpty() ? TEXT("f") : FaceSex;
+    FaceReactions.Add(TEXT("happy"), TryLoad({
+        Ex + FString::Printf(TEXT("Happy%s/mhc_mh002_fmn_f_facialloop_happy_%s_s001.mhc_mh002_fmn_f_facialloop_happy_%s_s001"), S == TEXT("f") ? TEXT("A") : TEXT("B"), *S, *S),
+        Ex + FString::Printf(TEXT("Happy%s/ue_mh002_fmn_f_facialloop_happy_%s_s001.ue_mh002_fmn_f_facialloop_happy_%s_s001"), S == TEXT("f") ? TEXT("A") : TEXT("B"), *S, *S) }));
+    for (const TCHAR* Emo : { TEXT("sad"), TEXT("angry"), TEXT("fear"), TEXT("surprise") })
+    {
+        TArray<UAnimSequence*> Found;
+        for (const TCHAR* SetTag : { TEXT("A"), TEXT("B") })
+        {
+            const FString EmoCap = FString(Emo) == TEXT("angry") ? TEXT("Anger") : FString(FString::Chr(FChar::ToUpper(Emo[0])) + FString(Emo + 1));
+            const FString P = Ex + FString::Printf(TEXT("%s%s/mhc_mh002_fmn_f_facialloop_%s_%s_s001.mhc_mh002_fmn_f_facialloop_%s_%s_s001"), *EmoCap, SetTag, Emo, *S, Emo, *S);
+            if (UAnimSequence* A = LoadObject<UAnimSequence>(nullptr, *P)) { Found.Add(A); break; }
+        }
+        if (Found.Num()) FaceReactions.Add(Emo, Found[0]);
+    }
     // occasional idle change-ups so nobody stands like a museum piece
     GetWorldTimerManager().SetTimer(IdleVarietyTimer, this, &ANpcAgent::VaryIdle,
                                     FMath::FRandRange(16.f, 30.f), true, FMath::FRandRange(6.f, 18.f));
@@ -235,10 +261,26 @@ void ANpcAgent::TakeBeat()
         {
             bBusy = false;
             if (!Json.IsValid()) return;
-            FString Action, Reason;
+            FString Action, Reason, Expression, Face;
             Json->TryGetStringField(TEXT("action"), Action);
             Json->TryGetStringField(TEXT("reason"), Reason);
-            UE_LOG(LogTemp, Display, TEXT("MINDBEAT %s -> '%s' (%s)"), *Slug, *Action, *Reason);
+            Json->TryGetStringField(TEXT("expression"), Expression);
+            Json->TryGetStringField(TEXT("face"), Face);
+            UE_LOG(LogTemp, Display, TEXT("MINDBEAT %s -> '%s' (%s) [face: %s | %s]"),
+                   *Slug, *Action, *Reason, *Face, *Expression);
+            // the engine chose what surfaces on the face this beat; wear it for a while, then settle
+            if (FaceMesh && !Face.IsEmpty() && Face != TEXT("neutral"))
+            {
+                if (UAnimSequence** Loop = FaceReactions.Find(Face))
+                {
+                    FaceMesh->PlayAnimation(*Loop, true);
+                    GetWorldTimerManager().SetTimer(FaceReturnTimer,
+                        FTimerDelegate::CreateWeakLambda(this, [this]()
+                        {
+                            if (FaceMesh && FaceLoop) { FaceMesh->PlayAnimation(FaceLoop, true); }
+                        }), 9.f, false);
+                }
+            }
             Enact(Action, Reason);
             // the mind must KNOW the body did it
             if (!Action.IsEmpty() && !Action.StartsWith(TEXT("stay where")))

@@ -29,6 +29,7 @@ public:
     /** per-character clip paths, set by the game mode before AttachMetaHumanBody */
     FString FaceLoopPath;
     FString IdleAltPath;
+    FString FaceSex;   // "f" or "m" — selects the gendered expression-loop variants
 
     /** all living agents, for percepts and options */
     static TArray<ANpcAgent*> All;
@@ -76,8 +77,13 @@ private:
     UPROPERTY()
     TArray<UAnimSequence*> Gestures;
 
+    /** engine-chosen reaction faces: tag ("happy", "sad", ...) -> loop */
+    UPROPERTY()
+    TMap<FString, UAnimSequence*> FaceReactions;
+
     FTimerHandle IdleVarietyTimer;
     FTimerHandle GestureReturnTimer;
+    FTimerHandle FaceReturnTimer;
     bool bAnimWalking = false;
 
     FString ComposeSituation() const;

@@ -52,6 +52,8 @@ void AFerryGameMode::SpawnCast()
             Agent->Stance = C.Stance;
             Agent->FaceLoopPath = C.FaceLoop;
             Agent->IdleAltPath = C.IdleAlt;
+            Agent->FaceSex = (FString(C.Slug).Contains(TEXT("della")) || FString(C.Slug).Contains(TEXT("brielle")))
+                                 ? TEXT("f") : TEXT("m");
             Agent->SetActorRotation(FRotator(0.f, C.OpeningYaw, 0.f));
             if (UClass* BodyClass = StaticLoadClass(AActor::StaticClass(), nullptr, C.BodyPath))
             {
