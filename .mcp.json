@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "unreal": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\Alejandro\\claude-sandbox\\ai-character-game-engine\\unreal\\mcp-server\\unreal_mcp_server.py"
+      ]
+    }
+  }
+}
