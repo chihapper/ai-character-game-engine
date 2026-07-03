@@ -66,16 +66,42 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
     BodyActor->GetComponents(Meshes);
     for (USkeletalMeshComponent* M : Meshes)
     {
-        if (M->GetName() == TEXT("Body")) { BodyMesh = M; break; }
+        if (M->GetName() == TEXT("Body")) { BodyMesh = M; }
+        if (M->GetName() == TEXT("Face")) { FaceMesh = M; }
     }
     if (!BodyMesh && Meshes.Num() > 0) BodyMesh = Meshes[0];
     IdleAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/MetaHumanCharacter/Optional/Animation/UEFNAnimPreset/Locomotion/AS_MH_Neutral_Stand_Idle_Loop.AS_MH_Neutral_Stand_Idle_Loop"));
     WalkAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/MetaHumanCharacter/Optional/Animation/UEFNAnimPreset/Locomotion/AS_MH_Neutral_Walk_Loop_F.AS_MH_Neutral_Walk_Loop_F"));
+    if (!IdleAltPath.IsEmpty())
+    {
+        IdleAltAnim = LoadObject<UAnimSequence>(nullptr, *IdleAltPath);
+    }
+    CurrentIdle = IdleAnim;
     if (BodyMesh && IdleAnim)
     {
         BodyMesh->PlayAnimation(IdleAnim, true);
         bAnimWalking = false;
     }
+    // the face gets its own loop — blinks and a resting expression that fits the character
+    if (!FaceLoopPath.IsEmpty())
+    {
+        FaceLoop = LoadObject<UAnimSequence>(nullptr, *FaceLoopPath);
+    }
+    if (FaceMesh && FaceLoop)
+    {
+        FaceMesh->PlayAnimation(FaceLoop, true);
+    }
+    // occasional idle change-ups so nobody stands like a museum piece
+    GetWorldTimerManager().SetTimer(IdleVarietyTimer, this, &ANpcAgent::VaryIdle,
+                                    FMath::FRandRange(16.f, 30.f), true, FMath::FRandRange(6.f, 18.f));
+}
+
+void ANpcAgent::VaryIdle()
+{
+    if (bAnimWalking || !BodyMesh) return;
+    UAnimSequence* Pick = (IdleAltAnim && FMath::FRand() < 0.45f) ? IdleAltAnim : IdleAnim;
+    CurrentIdle = Pick;
+    BodyMesh->PlayAnimation(Pick, true);
 }
 
 void ANpcAgent::BeginPlay()
@@ -108,7 +134,7 @@ void ANpcAgent::Tick(float DeltaSeconds)
         if (bMoving != bAnimWalking)
         {
             bAnimWalking = bMoving;
-            BodyMesh->PlayAnimation(bAnimWalking ? WalkAnim : IdleAnim, true);
+            BodyMesh->PlayAnimation(bAnimWalking ? WalkAnim : (CurrentIdle ? CurrentIdle : IdleAnim), true);
         }
     }
     if (bWalking)

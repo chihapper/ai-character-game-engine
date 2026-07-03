@@ -26,6 +26,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mind")
     FString Stance;
 
+    /** per-character clip paths, set by the game mode before AttachMetaHumanBody */
+    FString FaceLoopPath;
+    FString IdleAltPath;
+
     /** all living agents, for percepts and options */
     static TArray<ANpcAgent*> All;
 
@@ -50,11 +54,26 @@ private:
     USkeletalMeshComponent* BodyMesh = nullptr;
 
     UPROPERTY()
+    USkeletalMeshComponent* FaceMesh = nullptr;
+
+    UPROPERTY()
     UAnimSequence* IdleAnim = nullptr;
 
     UPROPERTY()
     UAnimSequence* WalkAnim = nullptr;
 
+    UPROPERTY()
+    UAnimSequence* IdleAltAnim = nullptr;
+
+    UPROPERTY()
+    UAnimSequence* FaceLoop = nullptr;
+
+    UPROPERTY()
+    UAnimSequence* CurrentIdle = nullptr;
+
+    void VaryIdle();
+
+    FTimerHandle IdleVarietyTimer;
     bool bAnimWalking = false;
 
     FString ComposeSituation() const;
