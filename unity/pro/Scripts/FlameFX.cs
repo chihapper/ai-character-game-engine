@@ -82,8 +82,11 @@ public static class FlameFX
             em2.maxParticles = 40;
             var er = eps.emission; er.rateOverTime = 5f;
             var evel = eps.velocityOverLifetime; evel.enabled = true;
+            // ALL THREE axes must share a curve mode — leaving z at its default spams
+            // "Particle Velocity curves must all be in the same mode" every frame
             evel.x = new ParticleSystem.MinMaxCurve(-0.15f, 0.15f);
             evel.y = new ParticleSystem.MinMaxCurve(0.5f, 1.1f);
+            evel.z = new ParticleSystem.MinMaxCurve(-0.15f, 0.15f);
             e.GetComponent<ParticleSystemRenderer>().material = Mat();
         }
     }

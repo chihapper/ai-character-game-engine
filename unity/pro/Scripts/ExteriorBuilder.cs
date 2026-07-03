@@ -121,6 +121,7 @@ public static class ExteriorBuilder
         vel.enabled = true;
         vel.x = new ParticleSystem.MinMaxCurve(-1.6f);   // wind-driven slant
         vel.y = new ParticleSystem.MinMaxCurve(-14f);
+        vel.z = new ParticleSystem.MinMaxCurve(0f);      // same curve mode on all three axes
         // the emission box overlaps the inn — without collision the streaks fall THROUGH the
         // ceiling into the taproom; they die on the roof collider instead
         var col = ps.collision;
