@@ -268,7 +268,8 @@ async def observe(sid: str, body: Observe):
             sal = await s.engine(item.slug).remember(
                 item.observed, kind="player_event", t=body.clock, magnitude=body.magnitude)
             return {"slug": item.slug, "salience": sal or 0.0,
-                    "react": policy.react_verdict(sal or 0.0)}
+                    "react": policy.react_verdict(sal or 0.0),
+                    "flinch": policy.flinch(sal or 0.0)}
         return {"results": await asyncio.gather(*(appraise(i) for i in body.items))}
 
 

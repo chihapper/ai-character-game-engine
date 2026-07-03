@@ -28,6 +28,14 @@ def react_verdict(salience: float) -> str:
     return ""
 
 
+def flinch(salience: float) -> bool:
+    """The pre-deliberative orienting response: does the moment of WITNESSING itself register on
+    the body (head turn, widened eyes) before any deliberation? Proportional to the witness's own
+    appraised salience — the orienting reflex is near-universal; personality differentiates in the
+    deliberate step that follows, not here."""
+    return salience >= REACT_SALIENCE
+
+
 def as_observed(conseq: str) -> str:
     """Third-person a consequence phrase for an onlooker ('stoke the peat fire' -> 'stokes the
     peat fire'); phrases already conjugated ('crosses to the bar') pass through."""
