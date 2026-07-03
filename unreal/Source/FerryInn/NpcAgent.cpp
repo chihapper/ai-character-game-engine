@@ -76,6 +76,17 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
     {
         IdleAltAnim = LoadObject<UAnimSequence>(nullptr, *IdleAltPath);
     }
+    // retargeted Mixamo one-shots: small human moments between beats
+    for (const TCHAR* G : { TEXT("/Game/Cast/Anims/MH/MHG_Thinking.MHG_Thinking"),
+                            TEXT("/Game/Cast/Anims/MH/MHG_NeckStretching.MHG_NeckStretching"),
+                            TEXT("/Game/Cast/Anims/MH/MHG_Shrugging.MHG_Shrugging"),
+                            TEXT("/Game/Cast/Anims/MH/MHG_Yawn.MHG_Yawn") })
+    {
+        if (UAnimSequence* A = LoadObject<UAnimSequence>(nullptr, G))
+        {
+            Gestures.Add(A);
+        }
+    }
     CurrentIdle = IdleAnim;
     if (BodyMesh && IdleAnim)
     {
@@ -99,7 +110,24 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
 void ANpcAgent::VaryIdle()
 {
     if (bAnimWalking || !BodyMesh) return;
-    UAnimSequence* Pick = (IdleAltAnim && FMath::FRand() < 0.45f) ? IdleAltAnim : IdleAnim;
+    const float Roll = FMath::FRand();
+    if (Gestures.Num() > 0 && Roll < 0.30f)
+    {
+        // one-shot gesture, then settle back into the current idle
+        UAnimSequence* G = Gestures[FMath::RandRange(0, Gestures.Num() - 1)];
+        BodyMesh->PlayAnimation(G, false);
+        GetWorldTimerManager().SetTimer(GestureReturnTimer,
+            FTimerDelegate::CreateWeakLambda(this, [this]()
+            {
+                if (!bAnimWalking && BodyMesh && CurrentIdle)
+                {
+                    BodyMesh->PlayAnimation(CurrentIdle, true);
+                }
+            }),
+            FMath::Max(0.5f, G->GetPlayLength() - 0.05f), false);
+        return;
+    }
+    UAnimSequence* Pick = (IdleAltAnim && Roll < 0.65f) ? IdleAltAnim : IdleAnim;
     CurrentIdle = Pick;
     BodyMesh->PlayAnimation(Pick, true);
 }

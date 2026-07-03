@@ -73,7 +73,11 @@ private:
 
     void VaryIdle();
 
+    UPROPERTY()
+    TArray<UAnimSequence*> Gestures;
+
     FTimerHandle IdleVarietyTimer;
+    FTimerHandle GestureReturnTimer;
     bool bAnimWalking = false;
 
     FString ComposeSituation() const;
