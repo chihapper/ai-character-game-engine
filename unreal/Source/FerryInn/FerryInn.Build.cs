@@ -1,8 +1,8 @@
 using UnrealBuildTool;
 
-public class FerryUnreal : ModuleRules
+public class FerryInn : ModuleRules
 {
-    public FerryUnreal(ReadOnlyTargetRules Target) : base(Target)
+    public FerryInn(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 

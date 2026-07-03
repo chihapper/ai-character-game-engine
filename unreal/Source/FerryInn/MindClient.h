@@ -12,7 +12,7 @@ DECLARE_DELEGATE_OneParam(FMindJsonReply, TSharedPtr<FJsonObject> /*Json, null o
 DECLARE_DELEGATE_TwoParams(FMindAudioReply, const TArray<uint8>& /*PCM16*/, int32 /*SampleRate*/);
 
 UCLASS()
-class FERRYUNREAL_API UMindClient : public UGameInstanceSubsystem
+class FERRYINN_API UMindClient : public UGameInstanceSubsystem
 {
     GENERATED_BODY()
 
