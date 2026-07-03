@@ -86,7 +86,7 @@ public static class QBridge
                 var q = (Get(raw, "a") ?? "").ToLower();
                 var hits = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
                     .Where(t => t.name.ToLower().Contains(q)).Take(40)
-                    .Select(t => $"{Path(t)} @ {t.position:F2}");
+                    .Select(t => $"{ScenePath(t)} @ {t.position:F2}");
                 return string.Join("\n", hits);
             }
             case "move":
@@ -113,6 +113,6 @@ public static class QBridge
         }
     }
 
-    static string Path(Transform t) =>
-        t.parent == null ? t.name : Path(t.parent) + "/" + t.name;
+    static string ScenePath(Transform t) =>
+        t.parent == null ? t.name : ScenePath(t.parent) + "/" + t.name;   // NOT `Path`: it would shadow System.IO.Path
 }
