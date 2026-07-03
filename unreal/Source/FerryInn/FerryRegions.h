@@ -13,6 +13,7 @@ struct FERRYINN_API FerryRegions
         static const TMap<FString, FVector> Regions = {
             { TEXT("the door"),                  FVector(-760.f,  135.f, 0.f) },  // west entrance
             { TEXT("the bar"),                   FVector( 250.f, -240.f, 0.f) },  // patron side of the counter
+            { TEXT("behind the bar"),            FVector( 620.f, -240.f, 0.f) },  // barkeep side: counter x~440, shelves x~860
             { TEXT("the long table"),            FVector( -30.f, -540.f, 0.f) },  // central bench rows
             { TEXT("a corner table"),            FVector(-650.f, -350.f, 0.f) },  // west, chairs
             { TEXT("the far tables"),            FVector(-150.f, 1050.f, 0.f) },  // south cluster

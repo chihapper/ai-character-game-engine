@@ -1,6 +1,8 @@
 #include "NpcAgent.h"
 
+#include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "FerryRegions.h"
@@ -57,6 +59,23 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
     {
         PlaceholderBody->SetVisibility(false, true);
     }
+
+    // life in the limbs: the Core Data locomotion loops, single-node — no AnimBP authoring.
+    // The game skeleton lists the plugin skeleton as compatible (unreal/anim_compat.py).
+    TArray<USkeletalMeshComponent*> Meshes;
+    BodyActor->GetComponents(Meshes);
+    for (USkeletalMeshComponent* M : Meshes)
+    {
+        if (M->GetName() == TEXT("Body")) { BodyMesh = M; break; }
+    }
+    if (!BodyMesh && Meshes.Num() > 0) BodyMesh = Meshes[0];
+    IdleAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/MetaHumanCharacter/Optional/Animation/UEFNAnimPreset/Locomotion/AS_MH_Neutral_Stand_Idle_Loop.AS_MH_Neutral_Stand_Idle_Loop"));
+    WalkAnim = LoadObject<UAnimSequence>(nullptr, TEXT("/MetaHumanCharacter/Optional/Animation/UEFNAnimPreset/Locomotion/AS_MH_Neutral_Walk_Loop_F.AS_MH_Neutral_Walk_Loop_F"));
+    if (BodyMesh && IdleAnim)
+    {
+        BodyMesh->PlayAnimation(IdleAnim, true);
+        bAnimWalking = false;
+    }
 }
 
 void ANpcAgent::BeginPlay()
@@ -82,6 +101,16 @@ void ANpcAgent::EndPlay(const EEndPlayReason::Type Reason)
 void ANpcAgent::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    // swap idle/walk loops with actual motion, not intent — no sliding statues
+    if (BodyMesh && IdleAnim && WalkAnim)
+    {
+        const bool bMoving = GetVelocity().SizeSquared2D() > 25.f;
+        if (bMoving != bAnimWalking)
+        {
+            bAnimWalking = bMoving;
+            BodyMesh->PlayAnimation(bAnimWalking ? WalkAnim : IdleAnim, true);
+        }
+    }
     if (bWalking)
     {
         const FVector To = WalkTarget - GetActorLocation();

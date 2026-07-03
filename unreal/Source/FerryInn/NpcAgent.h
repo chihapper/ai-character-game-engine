@@ -46,6 +46,17 @@ private:
     UPROPERTY()
     UStaticMeshComponent* PlaceholderBody = nullptr;
 
+    UPROPERTY()
+    USkeletalMeshComponent* BodyMesh = nullptr;
+
+    UPROPERTY()
+    UAnimSequence* IdleAnim = nullptr;
+
+    UPROPERTY()
+    UAnimSequence* WalkAnim = nullptr;
+
+    bool bAnimWalking = false;
+
     FString ComposeSituation() const;
     TArray<FString> ComposeOptions() const;
     void Enact(const FString& Action, const FString& Reason);
