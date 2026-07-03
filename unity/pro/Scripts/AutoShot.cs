@@ -71,6 +71,22 @@ public class AutoShot : MonoBehaviour
             yield return new WaitForSeconds(0.35f);   // let the async write land
         }
 
+        // SEAT INSPECTION FIRST — the walkthrough ghost makes everyone stand up to watch it,
+        // so seated bodies must be photographed before anything disturbs the opening tableau
+        foreach (var npc in NpcAgent.All.ToArray())
+        {
+            var aSit = npc.GetComponent<Animator>();
+            if (aSit == null || !aSit.GetBool("Sit")) continue;
+            var sc = npc.transform.position + Vector3.up * 0.8f;
+            var snm = npc.slug.Split('-')[0];
+            for (int k = 0; k < 4; k++)
+            {
+                var sdir = Quaternion.Euler(0, 90f * k + 30f, 0) * Vector3.forward;
+                float sd = ClearDist(sc, sdir, 2.0f);
+                yield return Shot($"seat_{snm}_{k}", sc + sdir * Mathf.Max(1.1f, sd - 0.3f) + Vector3.up * 0.4f, sc);
+            }
+        }
+
         foreach (var npc in NpcAgent.All.ToArray())
         {
             // portrait spot: in front if the room allows, else swing around until clear
@@ -157,22 +173,6 @@ public class AutoShot : MonoBehaviour
             yield return Walk(new Vector3(3.0f, 0, 0.8f));
             yield return Walk(new Vector3(4.2f, 0, -0.9f));
             yield return Pov("pov_7_back_kitchen", new Vector3(5.3f, 0.9f, -2.2f));
-        }
-
-        // SEAT INSPECTION: orbit every seated body up close — clipping, floating, and
-        // sitting-on-the-table hide from canonical angles; they can't hide from an orbit
-        foreach (var npc in NpcAgent.All.ToArray())
-        {
-            var a2 = npc.GetComponent<Animator>();
-            if (a2 == null || !a2.GetBool("Sit")) continue;
-            var c = npc.transform.position + Vector3.up * 0.8f;
-            var nm = npc.slug.Split('-')[0];
-            for (int k = 0; k < 4; k++)
-            {
-                var dir = Quaternion.Euler(0, 90f * k + 30f, 0) * Vector3.forward;
-                float d2 = ClearDist(c, dir, 2.0f);
-                yield return Shot($"seat_{nm}_{k}", c + dir * Mathf.Max(1.1f, d2 - 0.3f) + Vector3.up * 0.4f, c);
-            }
         }
 
         // GESTURE PROOF: force-fire every wired one-shot on a standing NPC and photograph it
