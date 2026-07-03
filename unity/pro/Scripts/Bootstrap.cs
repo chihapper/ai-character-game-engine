@@ -164,9 +164,10 @@ public class Bootstrap : MonoBehaviour
         if (slug.StartsWith("edwin") || slug.StartsWith("brielle"))
         {
             var seat = InnBuilder.Seats.OrderBy(sp => (sp.pos - body.transform.position).sqrMagnitude).First();
-            body.transform.position = seat.pos;   // seat.pos carries the stool-top height
-            var face = seat.face - body.transform.position; face.y = 0;
-            if (face.sqrMagnitude > 0.01f) body.transform.rotation = Quaternion.LookRotation(face);
+            var face = seat.face - seat.pos; face.y = 0; face.Normalize();
+            // sit clip carries hips behind root — root ahead of the stool, hips ON it
+            body.transform.position = seat.pos + face * 0.3f;
+            body.transform.rotation = Quaternion.LookRotation(face);
             anim.SetBool("Sit", true);
         }
         else if (slug.StartsWith("corvin"))

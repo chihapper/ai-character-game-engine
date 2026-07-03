@@ -343,20 +343,38 @@ public static class InnBuilder
         roofM.SetColor("_BaseColor", new Color(0.2f, 0.15f, 0.11f));
         roof.GetComponent<Renderer>().material = roofM;
 
-        // THE STAIRS (reference photo: steps rising to somewhere else — the inn stops being one
-        // box). They climb the south-west corner to a small landing with a shut door: rooms
-        // upstairs the player never needs, but the building believes in.
+        // THE STAIRS must genuinely GO somewhere: the top step meets a real stairwell opening
+        // punched through the ceiling (one tile out, timber-framed) — upstairs implied by a
+        // dark opening, not by a landing that clips the roof. If the module can't reach the
+        // ceiling, the stairs are deleted: a single-story taproom beats a broken illusion.
         var stair = Spawn(V + "Stair_Interior_Rails", new Vector3(-3.0f, 0, -3.35f), -90);
         if (stair != null)
         {
             var sb = WorldBounds(stair);
-            float topY = sb.max.y;
-            Timber(new Vector3(-5.1f, topY - 0.09f, -3.3f), new Vector3(1.9f, 0.18f, 1.35f), Vector3.zero, false); // landing
-            var upDoor = Spawn(V + "Door_1_Flat", new Vector3(-5.15f, 0, -3.55f), 180);
-            if (upDoor != null) upDoor.transform.position += Vector3.up * topY;
-            Timber(new Vector3(-4.2f, topY + 0.42f, -2.72f), new Vector3(0.1f, 0.84f, 0.1f), Vector3.zero, false);  // rail post
-            Timber(new Vector3(-5.0f, topY + 0.8f, -2.7f), new Vector3(1.8f, 0.09f, 0.09f), Vector3.zero, false);   // rail
-            BoxCollider(sb.center, sb.size);   // solid to the player
+            if (sb.max.y < WallHeight - 0.9f || sb.max.y > WallHeight + 0.22f)   // above +0.22 it pierces the roof cap
+            {
+                Debug.Log($"STAIRS removed: module top {sb.max.y:F2} can't meet ceiling {WallHeight:F2}");
+                if (Application.isPlaying) Object.Destroy(stair.gameObject); else Object.DestroyImmediate(stair.gameObject);
+            }
+            else
+            {
+                var topPoint = new Vector3(sb.min.x + 0.5f, WallHeight - 0.03f, sb.center.z);  // stairs ascend WEST
+                foreach (Transform t in root)
+                {
+                    if (!t.name.StartsWith("Floor_WoodLight")) continue;
+                    var tb = WorldBounds(t.gameObject);
+                    if (tb.center.y < WallHeight / 2 || !tb.Contains(topPoint)) continue;
+                    var hole = tb;
+                    if (Application.isPlaying) Object.Destroy(t.gameObject); else Object.DestroyImmediate(t.gameObject);   // the stairwell opening
+                    // timber rim on the two exposed edges (the other two meet walls)
+                    Timber(new Vector3(hole.center.x, WallHeight - 0.08f, hole.max.z - 0.08f),
+                           new Vector3(hole.size.x, 0.18f, 0.16f), Vector3.zero, false);
+                    Timber(new Vector3(hole.max.x - 0.08f, WallHeight - 0.08f, hole.center.z),
+                           new Vector3(0.16f, 0.18f, hole.size.z), Vector3.zero, false);
+                    break;
+                }
+                BoxCollider(sb.center, sb.size);   // solid to the player
+            }
         }
 
         // set dressing
