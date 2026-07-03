@@ -174,8 +174,14 @@ public static class InnBuilder
         {
             float z = z0 + U * (j + 0.5f);
             bool win = j == nz - 1;
-            Spawn(V + (win ? "Wall_UnevenBrick_Window_Wide_Flat" : "Wall_UnevenBrick_Straight"),
+            bool kdoor = j == 1;   // the KITCHEN is a room you never see: a shut door, mid east wall
+            Spawn(V + (win ? "Wall_UnevenBrick_Window_Wide_Flat" : kdoor ? "Wall_UnevenBrick_Door_Flat" : "Wall_UnevenBrick_Straight"),
                   new Vector3(W / 2, 0, z), -90);
+            if (kdoor)
+            {
+                Spawn(V + "DoorFrame_Flat_WoodDark", new Vector3(W / 2, 0, z), -90);
+                Spawn(V + "Door_1_Flat", new Vector3(W / 2 - 0.02f, 0, z), -90);
+            }
             Spawn(V + "Wall_UnevenBrick_Straight", new Vector3(-W / 2, 0, z), 90);
         }
         // THE TIMBER FRAME (reference: heavy posts, cross beams, angled braces against stone).
@@ -277,23 +283,13 @@ public static class InnBuilder
         Spawn(P + "Candle_1", barPos + new Vector3(0, 0, 1.4f), 0).transform.position += Vector3.up * barTop;
         BoxCollider(barPos + new Vector3(0, 0.5f, 0), new Vector3(0.9f, 1.1f, 3.4f));
 
-        // THE BACK KITCHEN (south-east, walled off behind the bar): where the stew actually
-        // comes from — prep counter, pots, crates of food, water bucket. Entry gap by the bar.
-        // the open WoodGrid lattice finally earns its place: an interior divider you can
-        // glimpse the kitchen through (reference bars use exactly this)
-        var kitchenWall = Spawn(V + "Wall_Plaster_WoodGrid", new Vector3(W / 2 - 1.0f, 0, -0.5f), 0);
-        if (kitchenWall != null) kitchenWall.name = "kitchen.partition";  // interior wall: not the perimeter audit's business
-        BoxCollider(new Vector3(W / 2 - 1.0f, WallHeight / 2, -0.5f), new Vector3(2.0f, WallHeight, 0.3f));
-        var prep = Spawn(P + "Workbench_Drawers", new Vector3(W / 2 - 0.55f, 0, -1.6f), -90);
-        float prepTop = TopOf(prep);
-        Spawn(P + "Pot_1", new Vector3(W / 2 - 0.55f, 0, -1.4f)).transform.position += Vector3.up * prepTop;
-        Spawn(P + "Table_Knife", new Vector3(W / 2 - 0.5f, 0, -1.9f), 25).transform.position += Vector3.up * prepTop;
-        Spawn(P + "FarmCrate_Carrot", new Vector3(W / 2 - 1.5f, 0, -3.3f), 15);
-        Spawn(P + "FarmCrate_Apple", new Vector3(W / 2 - 0.6f, 0, -3.3f), -10);
-        Spawn(P + "Bucket_Wooden_1", new Vector3(W / 2 - 1.7f, 0, -2.2f));
+        // KITCHEN STORAGE by the shut kitchen door in the east wall (the cooking stays
+        // off-stage — no tavern has a lattice cubicle behind its bar): crates, bucket, larder shelf
+        Spawn(P + "FarmCrate_Carrot", new Vector3(W / 2 - 0.7f, 0, -2.2f), 15);
+        Spawn(P + "FarmCrate_Apple", new Vector3(W / 2 - 0.65f, 0, -2.9f), -10);
+        Spawn(P + "Bucket_Wooden_1", new Vector3(W / 2 - 1.3f, 0, -2.5f));
         Spawn(P + "Shelf_Simple", new Vector3(W / 2 - 0.15f, 1.6f, -2.6f), -90);
         Spawn(P + "SmallBottles_1", new Vector3(W / 2 - 0.22f, 1.72f, -2.6f), -90);
-        BoxCollider(new Vector3(W / 2 - 0.55f, 0.5f, -1.6f), new Vector3(0.9f, 1.1f, 1.2f));
 
         // THE LONG TABLE (middle of the room): the table a stranger gets waved toward
         var tablePos = new Vector3(-1.2f, 0, -0.5f);
@@ -397,7 +393,7 @@ public static class InnBuilder
         Regions.Add("the hearth", hearthPos + new Vector3(1.55f, 0, 0));   // stand CLEAR of the mantel
         Regions.Add("the long table", tablePos + new Vector3(0.8f, 0, 0.8f));
         Regions.Add("a small table", smallPos + new Vector3(0.6f, 0, -0.7f));
-        Regions.Add("the back kitchen", new Vector3(W / 2 - 1.1f, 0, -2.3f));
+        Regions.Add("the kitchen door", new Vector3(W / 2 - 1.1f, 0, -1.0f));
         Regions.Add("the window", benchPos + new Vector3(-0.5f, 0, -0.9f));
         Regions.Add("the middle of the taproom", new Vector3(0.8f, 0, 1.0f));   // clear of the relocated long table
     }

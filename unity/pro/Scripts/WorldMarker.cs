@@ -12,7 +12,7 @@ public class WorldMarker : MonoBehaviour
     // bump whenever the BUILDERS change layout: a baked scene from an older builder silently
     // replays old geometry (stale panes, lattice walls, pre-kitchen bar) — Bootstrap detects
     // the mismatch and rebuilds at runtime instead of trusting the bake
-    public const int BuilderVersion = 2;
+    public const int BuilderVersion = 3;
     public int builderVersion;
 
     public List<string> regionNames = new();

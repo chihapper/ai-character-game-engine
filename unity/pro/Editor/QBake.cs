@@ -64,6 +64,7 @@ public static class QBake
         // SIT is a journey, not a flag: Move -> Sitting_Enter -> Sit ... Sit -> Sitting_Exit -> Move,
         // with Sitting_Talking while seated and Talk raised
         AnimatorState sitState = null;
+        AnimatorState sitTalkState = null;
         if (sit != null)
         {
             sitState = sm.AddState("Sit"); sitState.motion = sit;
@@ -85,31 +86,34 @@ public static class QBake
             { var t = sitState.AddTransition(move); t.AddCondition(AnimatorConditionMode.IfNot, 0, "Sit"); t.hasExitTime = false; t.duration = 0.3f; }
             if (sitTalk != null)
             {
-                var st = sm.AddState("SitTalk"); st.motion = sitTalk;
-                var a = sitState.AddTransition(st); a.AddCondition(AnimatorConditionMode.If, 0, "Talk"); a.hasExitTime = false; a.duration = 0.25f;
-                var b = st.AddTransition(sitState); b.AddCondition(AnimatorConditionMode.IfNot, 0, "Talk"); b.hasExitTime = false; b.duration = 0.25f;
+                sitTalkState = sm.AddState("SitTalk"); sitTalkState.motion = sitTalk;
+                var a = sitState.AddTransition(sitTalkState); a.AddCondition(AnimatorConditionMode.If, 0, "Talk"); a.hasExitTime = false; a.duration = 0.25f;
+                var b = sitTalkState.AddTransition(sitState); b.AddCondition(AnimatorConditionMode.IfNot, 0, "Talk"); b.hasExitTime = false; b.duration = 0.25f;
             }
         }
 
-        BoolState("Talk", talk);
+        var talkState = BoolState("Talk", talk);
         var leanState = BoolState("Lean", lean);
         BoolState("Arms", arms);
+        AnimatorState leanTalkState = null;
         if (leanState != null && leanCall != null)
         {
             // Corvin hails you without leaving his wall
-            var lc = sm.AddState("LeanTalk"); lc.motion = leanCall;
-            var a = leanState.AddTransition(lc); a.AddCondition(AnimatorConditionMode.If, 0, "Talk"); a.hasExitTime = false; a.duration = 0.25f;
-            var b = lc.AddTransition(leanState); b.AddCondition(AnimatorConditionMode.IfNot, 0, "Talk"); b.hasExitTime = false; b.duration = 0.25f;
+            leanTalkState = sm.AddState("LeanTalk"); leanTalkState.motion = leanCall;
+            var a = leanState.AddTransition(leanTalkState); a.AddCondition(AnimatorConditionMode.If, 0, "Talk"); a.hasExitTime = false; a.duration = 0.25f;
+            var b = leanTalkState.AddTransition(leanState); b.AddCondition(AnimatorConditionMode.IfNot, 0, "Talk"); b.hasExitTime = false; b.duration = 0.25f;
         }
 
-        // one-shot gestures, playable from idle, seated, or leaning — return to wherever the
-        // body still belongs (conditional returns are evaluated before the unconditional one)
+        // one-shot gestures, playable from idle, seated, leaning — AND from every TALK state:
+        // a laugh fires while the line is being SPOKEN, which is mid-Talk; without these
+        // transitions every mid-speech trigger was silently swallowed (the "Mixamo animations
+        // never play" playtest)
         void OneShot(string trig, AnimationClip clip)
         {
             if (clip == null) return;
             ctrl.AddParameter(trig, AnimatorControllerParameterType.Trigger);
             var st = sm.AddState(trig); st.motion = clip;
-            foreach (var f in new[] { move, sitState, leanState })
+            foreach (var f in new[] { move, sitState, leanState, talkState, sitTalkState, leanTalkState })
             {
                 if (f == null) continue;
                 var t = f.AddTransition(st); t.AddCondition(AnimatorConditionMode.If, 0, trig); t.hasExitTime = false; t.duration = 0.15f;
@@ -143,7 +147,7 @@ public static class QBake
         {
             ctrl.AddParameter("Laugh", AnimatorControllerParameterType.Trigger);
             var ls = sm.AddState("LaughStand"); ls.motion = laughStand;
-            foreach (var f in new[] { move, leanState })
+            foreach (var f in new[] { move, leanState, talkState, leanTalkState })
             {
                 if (f == null) continue;
                 var t = f.AddTransition(ls); t.AddCondition(AnimatorConditionMode.If, 0, "Laugh"); t.hasExitTime = false; t.duration = 0.2f;
@@ -154,7 +158,11 @@ public static class QBake
             if (laughSit != null && sitState != null)
             {
                 var lsit = sm.AddState("LaughSit"); lsit.motion = laughSit;
-                var t2 = sitState.AddTransition(lsit); t2.AddCondition(AnimatorConditionMode.If, 0, "Laugh"); t2.hasExitTime = false; t2.duration = 0.2f;
+                foreach (var f in new[] { sitState, sitTalkState })
+                {
+                    if (f == null) continue;
+                    var t2 = f.AddTransition(lsit); t2.AddCondition(AnimatorConditionMode.If, 0, "Laugh"); t2.hasExitTime = false; t2.duration = 0.2f;
+                }
                 var r2 = lsit.AddTransition(sitState); r2.hasExitTime = true; r2.exitTime = 0.9f; r2.duration = 0.25f;
             }
         }

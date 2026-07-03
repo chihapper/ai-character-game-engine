@@ -159,6 +159,44 @@ public class AutoShot : MonoBehaviour
             yield return Pov("pov_7_back_kitchen", new Vector3(5.3f, 0.9f, -2.2f));
         }
 
+        // SEAT INSPECTION: orbit every seated body up close — clipping, floating, and
+        // sitting-on-the-table hide from canonical angles; they can't hide from an orbit
+        foreach (var npc in NpcAgent.All.ToArray())
+        {
+            var a2 = npc.GetComponent<Animator>();
+            if (a2 == null || !a2.GetBool("Sit")) continue;
+            var c = npc.transform.position + Vector3.up * 0.8f;
+            var nm = npc.slug.Split('-')[0];
+            for (int k = 0; k < 4; k++)
+            {
+                var dir = Quaternion.Euler(0, 90f * k + 30f, 0) * Vector3.forward;
+                float d2 = ClearDist(c, dir, 2.0f);
+                yield return Shot($"seat_{nm}_{k}", c + dir * Mathf.Max(1.1f, d2 - 0.3f) + Vector3.up * 0.4f, c);
+            }
+        }
+
+        // GESTURE PROOF: force-fire every wired one-shot on a standing NPC and photograph it
+        // mid-clip. A trigger that doesn't change the picture is a broken wire — caught here,
+        // not in the user's playtest.
+        var subject = NpcAgent.All.FirstOrDefault(n =>
+        { var an = n.GetComponent<Animator>(); return an != null && !an.GetBool("Sit"); })
+            ?? NpcAgent.All.FirstOrDefault();
+        if (subject != null)
+        {
+            var an2 = subject.GetComponent<Animator>();
+            var head2 = subject.transform.position + Vector3.up * 1.2f;
+            var gdir = subject.transform.forward;
+            float gd = ClearDist(head2, gdir, 2.4f);
+            var gpos = head2 + gdir * Mathf.Max(1.2f, gd - 0.35f) + Vector3.up * 0.25f;
+            foreach (var trig in new[] { "Sip", "Nod", "Shrug", "Wave", "Startle", "Laugh", "Yawn", "Stretch", "Point" })
+            {
+                an2.SetTrigger(trig);
+                yield return new WaitForSeconds(0.9f);
+                yield return Shot("gesture_" + trig.ToLower(), gpos, head2);
+                yield return new WaitForSeconds(1.8f);   // let the clip finish and the pose return
+            }
+        }
+
         File.WriteAllText(Path.Combine(Dir, "scene_xray.txt"), Xray());
         File.WriteAllText(Path.Combine(Root, "autoshot.done"), "ok");
         Debug.Log("AUTOSHOT complete");

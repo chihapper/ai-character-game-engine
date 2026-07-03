@@ -178,7 +178,7 @@ public class NpcAgent : MonoBehaviour
             case "the hearth": yield return "warm your hands at the fire"; break;
             case "the long table": yield return "sit at the long table"; break;
             case "a small table": yield return "sit at the small table"; break;
-            case "the back kitchen": yield return "see to the pots in the back"; break;
+            case "the kitchen door": yield return "see to the pots in the back"; break;
             case "the window": yield return "watch the storm through the shutters"; break;
             case "the door": yield return "listen at the door"; break;
         }

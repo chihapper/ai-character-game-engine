@@ -12,7 +12,7 @@ using UnityEngine;
 
 public static class QShots
 {
-    const double DeadlineSecs = 300;
+    const double DeadlineSecs = 480;   // seat orbits + gesture proofs extended the run
 
     static string Root => Path.Combine(Application.dataPath, "..");
     static string Flag => Path.Combine(Root, "autoshot.flag");

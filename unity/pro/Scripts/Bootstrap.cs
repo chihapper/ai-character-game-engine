@@ -183,6 +183,9 @@ public class Bootstrap : MonoBehaviour
     /// any cast-swap decision. No mind attached; she is scenery with a pulse.
     void SpawnVrmPilot()
     {
+        // style-comparison probe ONLY: spawns when vrmpilot.flag exists (a random anime
+        // traveler in a medieval taproom is a test fixture, not a resident)
+        if (!System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath, "..", "vrmpilot.flag"))) return;
         var prefab = Resources.Load<GameObject>("VRM/traveler");
         if (prefab == null) return;
         var pos = Regions.Anchor("the window") + new Vector3(0.2f, 0, 0.4f);
