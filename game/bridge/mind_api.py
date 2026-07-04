@@ -131,6 +131,8 @@ class MindSession:
         provider = _tts_provider()
         char = self.engine(slug).character
         vid = (char.voice_id or "").strip() if getattr(char, "tts_provider", "") == provider else ""
+        if not vid and provider == "hume":
+            vid = casting.hume_voice(slug)   # the Track V cast — same voices as the play view
         if not vid and provider == "inworld":
             vid = self.voice_inworld.get(slug, "")
         if not vid and provider == "elevenlabs":
