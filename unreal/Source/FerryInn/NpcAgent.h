@@ -47,6 +47,9 @@ public:
     /** pre-deliberative orienting response: turn toward the event, startle crosses the face */
     void FlinchAt(const FVector& Where);
 
+    /** talking body language for the duration of a spoken reply, then settle back to idle */
+    void PlayTalkGesture(float Seconds);
+
 private:
     UPROPERTY()
     AActor* BodyActor = nullptr;

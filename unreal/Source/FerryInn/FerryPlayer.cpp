@@ -2,10 +2,13 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/Engine.h"
 #include "FerryRegions.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "MindClient.h"
 #include "NpcAgent.h"
+#include "Sound/SoundWaveProcedural.h"
 
 AFerryPlayer::AFerryPlayer()
 {
@@ -26,6 +29,150 @@ void AFerryPlayer::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAxis(TEXT("MoveRight"), this, &AFerryPlayer::MoveRight);
     Input->BindAxis(TEXT("Turn"), this, &APawn::AddControllerYawInput);
     Input->BindAxis(TEXT("LookUp"), this, &APawn::AddControllerPitchInput);
+    Input->BindAction(TEXT("Talk"), IE_Pressed, this, &AFerryPlayer::StartTalk);
+    Input->BindAction(TEXT("Talk"), IE_Released, this, &AFerryPlayer::StopTalk);
+}
+
+// ---- push-to-talk: the player's voice enters the world ---------------------------------------
+
+void AFerryPlayer::StartTalk()
+{
+    if (bTalking || bLineBusy) return;
+    {
+        FScopeLock Lock(&CaptureLock);
+        CaptureSamples.Reset();
+    }
+    Audio::FAudioCaptureDeviceParams Params;   // default mic
+    Audio::FOnAudioCaptureFunction OnCapture =
+        [this](const void* InAudio, int32 NumFrames, int32 NumChannels, int32 SampleRate, double, bool)
+        {
+            const float* Samples = static_cast<const float*>(InAudio);
+            FScopeLock Lock(&CaptureLock);
+            CaptureRate = SampleRate;
+            for (int32 F = 0; F < NumFrames; ++F)
+            {
+                float Mono = 0.f;   // mix channels down; the mind only needs the words
+                for (int32 C = 0; C < NumChannels; ++C) Mono += Samples[F * NumChannels + C];
+                Mono /= FMath::Max(1, NumChannels);
+                CaptureSamples.Add((int16)FMath::Clamp(Mono * 32767.f, -32768.f, 32767.f));
+            }
+        };
+    if (AudioCapture.OpenAudioCaptureStream(Params, MoveTemp(OnCapture), 1024))
+    {
+        AudioCapture.StartStream();
+        bTalking = true;
+        if (GEngine) GEngine->AddOnScreenDebugMessage(11, 30.f, FColor::Yellow, TEXT("listening... (release V to send)"));
+    }
+    else if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(11, 5.f, FColor::Red, TEXT("no microphone available"));
+    }
+}
+
+void AFerryPlayer::StopTalk()
+{
+    if (!bTalking) return;
+    bTalking = false;
+    AudioCapture.StopStream();
+    AudioCapture.CloseStream();
+
+    TArray<int16> Samples;
+    int32 Rate;
+    {
+        FScopeLock Lock(&CaptureLock);
+        Samples = MoveTemp(CaptureSamples);
+        Rate = CaptureRate;
+    }
+    if (GEngine) GEngine->AddOnScreenDebugMessage(11, 0.1f, FColor::Yellow, TEXT(""));
+    if (Samples.Num() < Rate / 4) return;   // sub-quarter-second: a misclick, not a sentence
+
+    // 44-byte PCM WAV wrapper — the server's STT wants a self-describing clip
+    const int32 DataBytes = Samples.Num() * 2;
+    TArray<uint8> Wav;
+    Wav.Reserve(44 + DataBytes);
+    auto U32 = [&Wav](uint32 V) { Wav.Append(reinterpret_cast<uint8*>(&V), 4); };
+    auto U16 = [&Wav](uint16 V) { Wav.Append(reinterpret_cast<uint8*>(&V), 2); };
+    Wav.Append((const uint8*)"RIFF", 4); U32(36 + DataBytes); Wav.Append((const uint8*)"WAVE", 4);
+    Wav.Append((const uint8*)"fmt ", 4); U32(16); U16(1); U16(1); U32(Rate); U32(Rate * 2); U16(2); U16(16);
+    Wav.Append((const uint8*)"data", 4); U32(DataBytes);
+    Wav.Append(reinterpret_cast<const uint8*>(Samples.GetData()), DataBytes);
+
+    UMindClient* Mind = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
+    if (!Mind || !Mind->HasSession()) return;
+    bLineBusy = true;
+    if (GEngine) GEngine->AddOnScreenDebugMessage(12, 20.f, FColor::Cyan, TEXT("..."));
+    Mind->Stt(Wav, FMindJsonReply::CreateWeakLambda(this, [this](TSharedPtr<FJsonObject> Json)
+    {
+        FString Line;
+        if (Json.IsValid()) Json->TryGetStringField(TEXT("text"), Line);
+        if (Line.TrimStartAndEnd().IsEmpty())
+        {
+            bLineBusy = false;
+            if (GEngine) GEngine->AddOnScreenDebugMessage(12, 3.f, FColor::Cyan, TEXT("(nothing heard)"));
+            return;
+        }
+        if (GEngine) GEngine->AddOnScreenDebugMessage(12, 8.f, FColor::Cyan,
+            FString::Printf(TEXT("You: %s"), *Line));
+        HandleSpokenLine(Line);
+    }));
+}
+
+ANpcAgent* AFerryPlayer::NearestAgent(float MaxDist) const
+{
+    ANpcAgent* Best = nullptr;
+    float BestDist = MaxDist;
+    for (ANpcAgent* A : ANpcAgent::All)
+    {
+        const float D = FVector::Dist2D(GetActorLocation(), A->GetActorLocation());
+        if (D < BestDist) { BestDist = D; Best = A; }
+    }
+    return Best;
+}
+
+void AFerryPlayer::HandleSpokenLine(const FString& Line)
+{
+    ANpcAgent* Who = NearestAgent(500.f);
+    UMindClient* Mind = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
+    if (!Who || !Mind)
+    {
+        bLineBusy = false;
+        if (GEngine) GEngine->AddOnScreenDebugMessage(13, 4.f, FColor::Silver, TEXT("(no one close enough to hear)"));
+        return;
+    }
+    Who->FlinchAt(GetActorLocation());   // being addressed turns the head before the mind replies
+    const FString Situation = FString::Printf(
+        TEXT("You are %s, at %s in the tavern's taproom. The traveler stands before you and speaks."),
+        *Who->Handle, *FerryRegions::NameAt(Who->GetActorLocation()));
+    Mind->Respond(Who->Slug, FString::Printf(TEXT("the traveler says: \"%s\""), *Line), Situation,
+        FMindJsonReply::CreateWeakLambda(this, [this, Who](TSharedPtr<FJsonObject> Json)
+        {
+            FString Reply;
+            if (Json.IsValid()) Json->TryGetStringField(TEXT("reply"), Reply);
+            if (Reply.IsEmpty())
+            {
+                bLineBusy = false;
+                return;
+            }
+            if (GEngine) GEngine->AddOnScreenDebugMessage(13, 12.f, FColor::Green,
+                FString::Printf(TEXT("%s: %s"), *Who->Handle, *Reply));
+            UMindClient* Mind2 = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
+            if (!Mind2) { bLineBusy = false; return; }
+            Mind2->Speak(Who->Slug, Reply, FMindAudioReply::CreateWeakLambda(this,
+                [this, Who](const TArray<uint8>& Pcm, int32 Rate)
+                {
+                    bLineBusy = false;
+                    if (Pcm.Num() < 2) return;
+                    USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
+                    Wave->SetSampleRate(Rate);
+                    Wave->NumChannels = 1;
+                    Wave->Duration = (float)(Pcm.Num() / 2) / (float)Rate;
+                    Wave->SoundGroup = SOUNDGROUP_Voice;
+                    Wave->bLooping = false;
+                    Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
+                    UGameplayStatics::PlaySoundAtLocation(this, Wave, Who->GetActorLocation());
+                    Who->PlayTalkGesture(Wave->Duration);
+                }));
+        }));
 }
 
 void AFerryPlayer::MoveForward(float V)

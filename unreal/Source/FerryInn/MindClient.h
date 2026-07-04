@@ -35,6 +35,9 @@ public:
     /** POST /{sid}/{slug}/speak — text -> PCM16 + sample rate (X-Sample-Rate header). */
     void Speak(const FString& Slug, const FString& Text, FMindAudioReply OnReply);
 
+    /** POST /{sid}/stt — a WAV clip of the player's voice -> their words. */
+    void Stt(const TArray<uint8>& WavBytes, FMindJsonReply OnReply);
+
     /** POST /{sid}/finish — close out the night. */
     void Finish();
 

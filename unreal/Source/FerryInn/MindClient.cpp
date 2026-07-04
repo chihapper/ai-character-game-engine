@@ -42,6 +42,32 @@ void UMindClient::PostJson(const FString& Path, const TSharedPtr<FJsonObject>& B
     Req->ProcessRequest();
 }
 
+void UMindClient::Stt(const TArray<uint8>& WavBytes, FMindJsonReply OnReply)
+{
+    if (SessionId.IsEmpty())
+    {
+        OnReply.ExecuteIfBound(nullptr);
+        return;
+    }
+    const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Req = FHttpModule::Get().CreateRequest();
+    Req->SetURL(BaseUrl + TEXT("/") + SessionId + TEXT("/stt"));
+    Req->SetVerb(TEXT("POST"));
+    Req->SetHeader(TEXT("Content-Type"), TEXT("application/octet-stream"));
+    Req->SetContent(WavBytes);
+    Req->SetTimeout(30.0f);
+    Req->OnProcessRequestComplete().BindLambda(
+        [OnReply](FHttpRequestPtr, FHttpResponsePtr Resp, bool bOk)
+        {
+            if (!bOk || !Resp.IsValid() || Resp->GetResponseCode() >= 400)
+            {
+                OnReply.ExecuteIfBound(nullptr);
+                return;
+            }
+            OnReply.ExecuteIfBound(ParseJson(Resp->GetContentAsString()));
+        });
+    Req->ProcessRequest();
+}
+
 void UMindClient::CreateSession(const FString& Scenario, FMindJsonReply OnReply)
 {
     const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();

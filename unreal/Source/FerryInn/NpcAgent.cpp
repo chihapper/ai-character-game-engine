@@ -155,6 +155,20 @@ void ANpcAgent::FlinchAt(const FVector& Where)
     }
 }
 
+void ANpcAgent::PlayTalkGesture(float Seconds)
+{
+    if (!BodyMesh || bAnimWalking) return;
+    UAnimSequence* Talk = LoadObject<UAnimSequence>(nullptr,
+        TEXT("/Game/Cast/Anims/MH/MHG_Talking.MHG_Talking"));
+    if (!Talk) return;
+    BodyMesh->PlayAnimation(Talk, true);
+    GetWorldTimerManager().SetTimer(GestureReturnTimer,
+        FTimerDelegate::CreateWeakLambda(this, [this]()
+        {
+            if (!bAnimWalking && BodyMesh && CurrentIdle) { BodyMesh->PlayAnimation(CurrentIdle, true); }
+        }), FMath::Max(1.f, Seconds), false);
+}
+
 void ANpcAgent::VaryIdle()
 {
     if (bAnimWalking || !BodyMesh) return;

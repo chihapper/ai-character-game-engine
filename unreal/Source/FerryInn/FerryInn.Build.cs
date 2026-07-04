@@ -9,7 +9,8 @@ public class FerryInn : ModuleRules
         PublicDependencyModuleNames.AddRange(new string[]
         {
             "Core", "CoreUObject", "Engine", "InputCore",
-            "HTTP", "Json", "JsonUtilities", "AudioMixer"
+            "HTTP", "Json", "JsonUtilities", "AudioMixer",
+            "AudioCapture", "AudioCaptureCore"
         });
     }
 }

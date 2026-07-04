@@ -4,10 +4,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AudioCaptureCore.h"
 #include "GameFramework/Character.h"
 #include "FerryPlayer.generated.h"
 
 class UCameraComponent;
+class ANpcAgent;
 
 UCLASS()
 class FERRYINN_API AFerryPlayer : public ACharacter
@@ -27,9 +29,22 @@ private:
     /** the react recipe, client half: everyone in the taproom witnesses the crossing */
     void ObserveCrossing(const FString& Region);
 
+    /** push-to-talk: hold to record, release to send the clip through STT -> nearest mind */
+    void StartTalk();
+    void StopTalk();
+    void HandleSpokenLine(const FString& Line);
+    ANpcAgent* NearestAgent(float MaxDist) const;
+
     UPROPERTY()
     UCameraComponent* Camera = nullptr;
 
     FString LastRegion;
     bool bObserveBusy = false;
+
+    Audio::FAudioCapture AudioCapture;
+    FCriticalSection CaptureLock;
+    TArray<int16> CaptureSamples;
+    int32 CaptureRate = 16000;
+    bool bTalking = false;
+    bool bLineBusy = false;
 };
