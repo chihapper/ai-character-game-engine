@@ -39,10 +39,11 @@ public:
     /** POST /{sid}/{slug}/speak — text -> PCM16 + sample rate (X-Sample-Rate header). */
     void Speak(const FString& Slug, const FString& Text, FMindAudioReply OnReply);
 
-    /** POST /{sid}/{slug}/speak_anim — text (+ engine face tag) -> PCM16 + ARKit blendshape
-     *  track solved remotely. Anim may be null (solver down): voice still plays, face falls
-     *  back to the authored FaceTalk loop. */
-    void SpeakAnim(const FString& Slug, const FString& Text, const FString& Face, FMindSpeakAnimReply OnReply);
+    /** POST /{sid}/{slug}/speak_anim — text (+ the engine's face marks from /respond, fractions
+     *  through the line) -> PCM16 + ARKit blendshape track solved remotely. Anim may be null
+     *  (solver down): voice still plays, face falls back to the authored FaceTalk loop. */
+    void SpeakAnim(const FString& Slug, const FString& Text,
+                   const TArray<TSharedPtr<FJsonValue>>& FaceMarks, FMindSpeakAnimReply OnReply);
 
     /** POST /{sid}/stt — a WAV clip of the player's voice -> their words. */
     void Stt(const TArray<uint8>& WavBytes, FMindJsonReply OnReply);

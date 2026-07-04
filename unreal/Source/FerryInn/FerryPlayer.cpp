@@ -161,11 +161,18 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
                 bLineBusy = false;
                 return;
             }
+            // the engine's stage machinery: what shows on the face, and where the line turns
+            TArray<TSharedPtr<FJsonValue>> FaceMarks;
+            const TArray<TSharedPtr<FJsonValue>>* MarksPtr = nullptr;
+            if (Json->TryGetArrayField(TEXT("face_marks"), MarksPtr))
+            {
+                FaceMarks = *MarksPtr;
+            }
             if (GEngine) GEngine->AddOnScreenDebugMessage(13, 12.f, FColor::Green,
                 FString::Printf(TEXT("%s: %s"), *Who->Handle, *Reply));
             UMindClient* Mind2 = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
             if (!Mind2) { bLineBusy = false; return; }
-            Mind2->SpeakAnim(Who->Slug, Reply, TEXT(""), FMindSpeakAnimReply::CreateWeakLambda(this,
+            Mind2->SpeakAnim(Who->Slug, Reply, FaceMarks, FMindSpeakAnimReply::CreateWeakLambda(this,
                 [this, Who](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
                 {
                     bLineBusy = false;

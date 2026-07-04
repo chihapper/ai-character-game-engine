@@ -287,7 +287,15 @@ void ANpcAgent::TestSpeakAnim(const FString& Line, const FString& Face)
 {
     UMindClient* MindC = Mind();
     if (!MindC || !MindC->HasSession()) return;
-    MindC->SpeakAnim(Slug, Line, Face, FMindSpeakAnimReply::CreateWeakLambda(this,
+    TArray<TSharedPtr<FJsonValue>> Marks;
+    if (!Face.IsEmpty())
+    {
+        const TSharedPtr<FJsonObject> M = MakeShared<FJsonObject>();
+        M->SetNumberField(TEXT("frac"), 0.0);
+        M->SetStringField(TEXT("face"), Face);
+        Marks.Add(MakeShared<FJsonValueObject>(M));
+    }
+    MindC->SpeakAnim(Slug, Line, Marks, FMindSpeakAnimReply::CreateWeakLambda(this,
         [this](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
         {
             if (Pcm.Num() < 2) return;

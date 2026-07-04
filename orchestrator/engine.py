@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 
 from .character_store import Character
 from .config import EngineCaps, get_settings
@@ -46,6 +47,19 @@ from .salience import (
 )
 
 
+_POSTSCRIPT = re.compile(r"\s*\[\[([^\[\]]{1,200})\]\]\s*$")
+
+
+def _detach_postscript(reply: str) -> tuple[str, str | None]:
+    """Split a trailing [[...]] stage-machinery line off a reply. The engine neither asks for
+    nor interprets it — a game's performance rules define it (e.g. [[FACE happy@0 angry@0.6]]);
+    detaching here keeps short-term history and the spoken line pure dialogue."""
+    m = _POSTSCRIPT.search(reply or "")
+    if not m:
+        return reply, None
+    return reply[: m.start()].rstrip(), m.group(1).strip()
+
+
 class Engine:
     def __init__(self, character: Character, llm=None, *, readonly: bool = False,
                  caps: EngineCaps | None = None) -> None:
@@ -63,6 +77,7 @@ class Engine:
         self.agency = AgencyStore(ns, readonly=readonly)  # evolving goals + last-deliberation clock (#20)
         self.short_term = ShortTermMemory(max_turns=self.caps.short_term_turns)
         self._bg_tasks: set[asyncio.Task] = set()  # background reflects (strong refs until done)
+        self.last_postscript: str | None = None    # detached [[...]] stage machinery, per respond()
         # Reflection/consolidation (#9): accumulate exchanges + their importance until enough has
         # happened to be worth forming beliefs (process-lifetime; resets on restart).
         self._reflect_buffer: list[str] = []
@@ -499,6 +514,10 @@ class Engine:
                 if injected else line)
         messages = self.short_term.messages() + [{"role": "user", "content": turn}]
         reply = await self._generate([stable], messages)
+        # A game's performance rules may ask for a trailing [[...]] postscript (stage machinery:
+        # e.g. what shows on the face). The engine DETACHES it — history and the returned line
+        # stay pure dialogue — and exposes it verbatim; interpreting it is the game's business.
+        reply, self.last_postscript = _detach_postscript(reply)
         if request.input_text() and reply:
             self.short_term.add_user(line)  # the framed form — history stays unambiguous on re-reads
             self.short_term.add_assistant(reply)

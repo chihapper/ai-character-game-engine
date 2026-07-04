@@ -174,13 +174,14 @@ void UMindClient::Speak(const FString& Slug, const FString& Text, FMindAudioRepl
     Req->ProcessRequest();
 }
 
-void UMindClient::SpeakAnim(const FString& Slug, const FString& Text, const FString& Face, FMindSpeakAnimReply OnReply)
+void UMindClient::SpeakAnim(const FString& Slug, const FString& Text,
+                            const TArray<TSharedPtr<FJsonValue>>& FaceMarks, FMindSpeakAnimReply OnReply)
 {
     const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
     Body->SetStringField(TEXT("text"), Text);
-    if (!Face.IsEmpty())
+    if (FaceMarks.Num() > 0)
     {
-        Body->SetStringField(TEXT("face"), Face);
+        Body->SetArrayField(TEXT("emotions"), FaceMarks);   // pass the engine's marks through verbatim
     }
     PostJson(FString::Printf(TEXT("/%s/%s/speak_anim"), *SessionId, *Slug), Body,
         FMindJsonReply::CreateLambda([OnReply](TSharedPtr<FJsonObject> Json)

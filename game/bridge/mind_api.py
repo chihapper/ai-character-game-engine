@@ -239,7 +239,8 @@ async def respond(sid: str, slug: str, body: Respond):
         reply = await eng.respond(RespondRequest(
             player_input=body.line.strip() or None, event=body.event.strip() or None,
             situation=s.situation(slug, body.situation)))
-    return {"reply": reply, "name_spoken": policy.spoken_name(eng.character.name, reply) or ""}
+    return {"reply": reply, "name_spoken": policy.spoken_name(eng.character.name, reply) or "",
+            "face_marks": policy.parse_face_marks(eng.last_postscript)}
 
 
 @router.post("/{sid}/{slug}/choose")
@@ -312,7 +313,8 @@ async def speak(sid: str, slug: str, body: Speak):
 
 
 class EmotionMark(BaseModel):
-    t: float = 0.0          # seconds into the clip — the performance can TURN mid-sentence
+    t: float | None = None     # seconds into the clip — the performance can TURN mid-sentence
+    frac: float | None = None  # OR a fraction of the clip (0-1); resolved to seconds after TTS
     face: str = ""
     strength: float = Field(default=0.9, ge=0, le=1)
 
@@ -345,7 +347,9 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     if os.environ.get("GAME_NVIDIA_API_KEY"):
         try:
             from orchestrator.adapters.faceanim_a2f import A2FFaceAnim
-            timeline = ([(m.t, m.face, m.strength) for m in body.emotions if m.face.strip()]
+            clip_secs = len(pcm) / 2 / AUDIO_SAMPLE_RATE
+            timeline = ([(m.t if m.t is not None else (m.frac or 0.0) * clip_secs,
+                          m.face, m.strength) for m in body.emotions if m.face.strip()]
                         if body.emotions else None)
             result = await A2FFaceAnim().animate(
                 pcm, AUDIO_SAMPLE_RATE,

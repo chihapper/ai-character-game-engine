@@ -76,10 +76,39 @@ def spoken_name(character_name: str, text: str) -> str | None:
     return None
 
 
+FACE_TAGS = {"happy", "sad", "angry", "fear", "surprise", "disgust"}
+
+
+def parse_face_marks(postscript: str | None) -> list[dict]:
+    """[[FACE happy@0 angry@0.6]] -> [{"frac": 0.0, "face": "happy"}, {"frac": 0.6, "face": "angry"}].
+    Neutral, absent, or malformed -> [] (the face stays neutral — the default IS the design)."""
+    if not postscript or not postscript.strip().lower().startswith("face"):
+        return []
+    marks = []
+    for token in postscript.strip()[4:].replace(",", " ").split():
+        tag, _, frac = token.partition("@")
+        tag = tag.strip().lower()
+        if tag not in FACE_TAGS:
+            continue
+        try:
+            at = min(1.0, max(0.0, float(frac))) if frac else 0.0
+        except ValueError:
+            at = 0.0
+        marks.append({"frac": at, "face": tag})
+    marks.sort(key=lambda m: m["frac"])
+    return marks
+
+
 # ---- performance rules (how a character SPEAKS on an embodied surface) --------------------------
 PERFORMANCE_RULES = (
     "Speak your words in the first person, in quotes. Write your OWN actions in the third person "
     "using a PRONOUN (he/she/they) — e.g. 'she brushes the rain off' — never the second person and "
     "NEVER your own name. Never narrate the player's actions, body, or feelings. The player's "
     "words are spoken TO YOU — a form of address like 'barkeep' or 'friend' means YOU, not a "
-    "third person.")
+    "third person. "
+    "End your reply with ONE line noting what shows on your face while you speak: [[FACE neutral]] "
+    "for most lines — or, when the moment genuinely reaches you, a tag from happy/sad/angry/fear/"
+    "surprise/disgust with the fraction of the line where it appears, e.g. [[FACE happy@0]] — and "
+    "if your face TURNS mid-line, list the change: [[FACE happy@0 angry@0.6]]. What surfaces must "
+    "fit WHO YOU ARE: some faces stay guarded even when moved; some people smile at the wrong "
+    "things. This line is stage machinery — never spoken, never referenced.")
