@@ -10,7 +10,9 @@ are flat/array-shaped so Unity's built-in JsonUtility can produce and parse them
 from __future__ import annotations
 
 import asyncio
+import base64
 import glob
+import logging
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -307,6 +309,44 @@ async def speak(sid: str, slug: str, body: Speak):
         raise HTTPException(status_code=404, detail="nothing speakable")
     return Response(content=b"".join(chunks), media_type="application/octet-stream",
                     headers={"X-Sample-Rate": str(AUDIO_SAMPLE_RATE)})
+
+
+class SpeakAnim(BaseModel):
+    text: str
+    face: str = ""          # engine face tag (happy/sad/...) — colors the facial performance
+    intensity: float = 0.9  # how strongly the tag overrides audio-inferred emotion
+
+
+@router.post("/{sid}/{slug}/speak_anim")
+async def speak_anim(sid: str, slug: str, body: SpeakAnim):
+    """Voice + face in one call: TTS PCM plus a timestamped ARKit blendshape track solved by
+    the face-anim adapter. The ENGINE's chosen face tag rides along as the preferred emotion —
+    which face a character makes stays a mind decision, the audio only times the mouth.
+    Face animation is an enhancement: if the solver is unreachable, voice still ships (anim=null)."""
+    s = _s(sid)
+    vid = await s.voice_for(slug)
+    if not vid or not body.text.strip():
+        raise HTTPException(status_code=404, detail="no voice available")
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    chunks = []
+    async for chunk in _tts().stream_speech(body.text, vid):
+        chunks.append(chunk)
+    if not chunks:
+        raise HTTPException(status_code=404, detail="nothing speakable")
+    pcm = b"".join(chunks)
+    anim = None
+    if os.environ.get("GAME_NVIDIA_API_KEY"):
+        try:
+            from orchestrator.adapters.faceanim_a2f import A2FFaceAnim
+            result = await A2FFaceAnim().animate(
+                pcm, AUDIO_SAMPLE_RATE,
+                emotion=body.face.strip() or None,
+                emotion_strength=body.intensity)
+            anim = result.to_dict()
+        except Exception as exc:  # never let lip-sync failure silence the voice
+            logging.getLogger("mind_api").warning("face anim skipped: %s", exc)
+    return {"rate": AUDIO_SAMPLE_RATE, "pcm_b64": base64.b64encode(pcm).decode("ascii"),
+            "anim": anim}
 
 
 @router.post("/{sid}/stt")
