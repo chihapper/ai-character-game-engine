@@ -313,7 +313,9 @@ async def speak(sid: str, slug: str, body: Speak):
     if not vid or not body.text.strip():
         raise HTTPException(status_code=404, detail="no voice available")
     from orchestrator.config import AUDIO_SAMPLE_RATE
-    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
+    # narration is stage business, never voiced — but Hume ACTS it: its adapter takes the
+    # full reply and turns the stage directions into per-utterance acting instructions
+    text = body.text if _tts_provider() == "hume" else policy.spoken_text(body.text)
     chunks = []
     async for chunk in _tts().stream_speech(text, vid):
         chunks.append(chunk)
@@ -348,7 +350,8 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     if not vid or not body.text.strip():
         raise HTTPException(status_code=404, detail="no voice available")
     from orchestrator.config import AUDIO_SAMPLE_RATE
-    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
+    # same rule as /speak: Hume receives the full reply (stage business -> direction)
+    text = body.text if _tts_provider() == "hume" else policy.spoken_text(body.text)
     chunks = []
     async for chunk in _tts().stream_speech(text, vid):
         chunks.append(chunk)
@@ -422,12 +425,14 @@ async def speak_multi(sid: str, slug: str, body: SpeakMulti):
     import io as _io
     s = _s(sid)
     from orchestrator.config import AUDIO_SAMPLE_RATE
-    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
+    spoken = policy.spoken_text(body.text)   # narration is stage business, never voiced
 
     async def one(provider: str) -> dict:
         try:
             tts = _adapter_named(provider)
             voice = await _bakeoff_voice(s, slug, provider)
+            # Hume gets the full reply: its adapter ACTS the stage directions
+            text = body.text if provider == "hume" else spoken
             t0 = _time.perf_counter()
             first = None
             chunks: list[bytes] = []

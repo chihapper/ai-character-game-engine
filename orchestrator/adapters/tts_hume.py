@@ -36,10 +36,39 @@ _HUME_PCM_RATE = 48000
 _LEAD_TAG = re.compile(r"^\s*\[([^\[\]]{1,120})\]\s*")
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
 _PAUSE_MARK = re.compile(r"\[(long )?pause\]", re.IGNORECASE)
+_QUOTES = re.compile(r'("[^"]*"|“[^”]*”)')   # alternating narration/quoted split
 
 # tone words that make a line linger after it lands
 _HEAVY_TONES = ("quiet", "grief", "sad", "somber", "broken", "wounded", "tired",
                 "distant", "cold", "hollow", "soft", "gentle", "wistful")
+# tone words that change pace (Octave speed: 0.5-2.0, 1.0 = neutral)
+_SLOW_TONES = ("whisper", "quiet", "soft", "grief", "broken", "measured", "careful",
+               "wistful", "to herself", "to himself")
+_FAST_TONES = ("excited", "urgent", "panick", "frantic", "rushed", "breathless", "eager")
+
+
+def _speed_for(description: str) -> float | None:
+    d = (description or "").lower()
+    if any(w in d for w in _SLOW_TONES):
+        return 0.9
+    if any(w in d for w in _FAST_TONES):
+        return 1.1
+    return None
+
+
+def _compact_direction(narration: str) -> str:
+    """Stage business -> a short acting instruction (Octave wants <=100 chars): keep the
+    LAST sentence of the narration (the beat closest to the words) and trim."""
+    n = (narration or "").strip().strip("*").strip()
+    if not n:
+        return ""
+    sentences = [s.strip() for s in _SENTENCE_END.split(n) if s.strip()]
+    if sentences:
+        n = sentences[-1]
+    n = n.rstrip(".")
+    if len(n) > 100:
+        n = n[:100].rsplit(" ", 1)[0].rstrip(",;")
+    return n
 
 
 def _resample_to_wire(pcm48: bytes) -> bytes:
@@ -81,32 +110,59 @@ class HumeTTS(TTSAdapter):
         self._api_key = settings.hume_api_key
 
     def _utterances(self, text: str, voice_id: str) -> list[dict]:
-        """Split a reply into per-sentence utterances with acting instructions.
-        A leading [tag] sets the description from that sentence onward (Octave carries
-        prosody forward on its own — we only re-state when the tone TURNS)."""
+        """A reply becomes per-sentence utterances with acting instructions, from BOTH
+        sources the character gives us: leading [tags] AND the third-person stage
+        business around the quotes ('she laughs softly, leaning in' — silenced as
+        speech, delivered as direction; Octave is built to act stage directions).
+        Octave carries prosody forward on its own — we only re-state on a TURN."""
         out: list[dict] = []
         active_desc = ""
-        m = _LEAD_TAG.match(text)
-        if m:
-            active_desc = m.group(1).strip()
-            text = text[m.end():]
-        sentences = [s for s in _SENTENCE_END.split(text) if s.strip()]
-        for s in sentences:
-            desc_new = False
-            m = _LEAD_TAG.match(s)
-            if m:
-                active_desc = m.group(1).strip()
-                desc_new = True
-                s = s[m.end():]
-            # keep [pause]/[long pause] (native markers) + non-verbal sounds; clean the rest
-            pauses = {p.span(): p.group(0) for p in _PAUSE_MARK.finditer(s)}
-            s = render_tags(s, "hume") if not pauses else s
-            if not has_speakable(s) and not pauses:
-                continue
-            utt: dict = {"text": s.strip()}
-            if active_desc and (desc_new or not out):
-                utt["description"] = active_desc[:100]
-            out.append(utt)
+
+        # narration/quoted alternation: narration becomes the NEXT quote's direction
+        parts = _QUOTES.split(text or "")
+        pending_direction = ""
+        segments: list[tuple[str, str]] = []  # (spoken_text, direction)
+        any_quotes = any(i % 2 == 1 and p.strip() for i, p in enumerate(parts))
+        if any_quotes:
+            for i, p in enumerate(parts):
+                if i % 2 == 0:
+                    d = _compact_direction(p)
+                    if d:
+                        pending_direction = d
+                else:
+                    q = p[1:-1].strip() if len(p) >= 2 else ""
+                    if q:
+                        segments.append((q, pending_direction))
+                        pending_direction = ""
+        else:
+            segments.append((text or "", ""))
+
+        for spoken, direction in segments:
+            m = _LEAD_TAG.match(spoken)
+            if m:  # an explicit [tag] outranks inferred stage business
+                direction = m.group(1).strip()
+                spoken = spoken[m.end():]
+            if direction:
+                active_desc = direction
+            desc_new = bool(direction)
+            for s in (x for x in _SENTENCE_END.split(spoken) if x.strip()):
+                m = _LEAD_TAG.match(s)
+                if m:
+                    active_desc = m.group(1).strip()
+                    desc_new = True
+                    s = s[m.end():]
+                pauses = {p.span(): p.group(0) for p in _PAUSE_MARK.finditer(s)}
+                s = render_tags(s, "hume") if not pauses else s
+                if not has_speakable(s) and not pauses:
+                    continue
+                utt: dict = {"text": s.strip()}
+                if active_desc and (desc_new or not out):
+                    utt["description"] = active_desc[:100]
+                    speed = _speed_for(active_desc)
+                    if speed:
+                        utt["speed"] = speed
+                    desc_new = False
+                out.append(utt)
         if not out:
             return out
         if voice_id:
