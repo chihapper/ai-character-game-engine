@@ -41,6 +41,23 @@ _QUOTES = re.compile(r'("[^"]*"|“[^”]*”)')   # alternating narration/quote
 # tone words that make a line linger after it lands
 _HEAVY_TONES = ("quiet", "grief", "sad", "somber", "broken", "wounded", "tired",
                 "distant", "cold", "hollow", "soft", "gentle", "wistful")
+# stage business that explicitly TAKES TIME — the line before it must hang
+_BEAT_WORDS = ("trails off", "falls silent", "silence", "long moment", "a moment", "beat",
+               "pauses", "waits", "lingers", "says nothing", "lets it", "studies",
+               "considers", "watches", "slowly", "turns away", "looks away", "sips",
+               "drinks", "sets down", "fingers", "traces")
+
+
+def _beat_silence(narration: str) -> float:
+    """How much TIME a piece of between-lines stage business takes. Bigger business,
+    longer beat; explicit hang-words ('trails off', 'a long moment') stretch it."""
+    n = (narration or "").strip()
+    if not n:
+        return 0.0
+    beat = min(1.6, 0.55 + len(n) / 130.0)
+    if any(w in n.lower() for w in _BEAT_WORDS):
+        beat += 0.7
+    return round(min(beat, 2.6), 2)
 # tone words that change pace (Octave speed: 0.5-2.0, 1.0 = neutral)
 _SLOW_TONES = ("whisper", "quiet", "soft", "grief", "broken", "measured", "careful",
                "wistful", "to herself", "to himself")
@@ -118,26 +135,38 @@ class HumeTTS(TTSAdapter):
         out: list[dict] = []
         active_desc = ""
 
-        # narration/quoted alternation: narration becomes the NEXT quote's direction
+        # narration/quoted alternation: narration becomes the NEXT quote's direction — and,
+        # between or after quotes, a TIMED BEAT: stage business takes time, so the line
+        # before it hangs for as long as the business plausibly lasts
         parts = _QUOTES.split(text or "")
+        segments: list[tuple[str, str, str]] = []  # (spoken_text, direction, narration_raw)
+        trailing_beat = 0.0
         pending_direction = ""
-        segments: list[tuple[str, str]] = []  # (spoken_text, direction)
+        pending_raw = ""
         any_quotes = any(i % 2 == 1 and p.strip() for i, p in enumerate(parts))
         if any_quotes:
             for i, p in enumerate(parts):
                 if i % 2 == 0:
-                    d = _compact_direction(p)
-                    if d:
-                        pending_direction = d
+                    if p.strip():
+                        pending_direction = _compact_direction(p)
+                        pending_raw = p.strip()
                 else:
                     q = p[1:-1].strip() if len(p) >= 2 else ""
                     if q:
-                        segments.append((q, pending_direction))
+                        segments.append((q, pending_direction, pending_raw))
                         pending_direction = ""
+                        pending_raw = ""
+            trailing_beat = _beat_silence(pending_raw)   # business AFTER the last line hangs it
         else:
-            segments.append((text or "", ""))
+            segments.append((text or "", "", ""))
 
-        for spoken, direction in segments:
+        beat_boosts: dict[int, float] = {}   # utterance index -> minimum trailing silence
+        for spoken, direction, narration_raw in segments:
+            if out and narration_raw:
+                # this stage business sits between the previous line and this one:
+                # the PREVIOUS utterance holds while it happens
+                beat_boosts[len(out) - 1] = max(beat_boosts.get(len(out) - 1, 0.0),
+                                                _beat_silence(narration_raw))
             m = _LEAD_TAG.match(spoken)
             if m:  # an explicit [tag] outranks inferred stage business
                 direction = m.group(1).strip()
@@ -174,8 +203,11 @@ class HumeTTS(TTSAdapter):
             for utt in out:
                 utt["voice"] = voice
         for i, utt in enumerate(out):
-            utt["trailing_silence"] = _trailing_silence(
-                utt["text"], utt.get("description", ""), i == len(out) - 1)
+            silence = _trailing_silence(utt["text"], utt.get("description", ""), i == len(out) - 1)
+            silence = max(silence, beat_boosts.get(i, 0.0))
+            if i == len(out) - 1 and trailing_beat:
+                silence = max(silence, trailing_beat)   # the reply's closing stage business
+            utt["trailing_silence"] = round(silence, 2)
         return out
 
     async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
