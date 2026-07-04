@@ -73,6 +73,9 @@ class Settings(BaseSettings):
 
     # --- TTS bake-off candidates (Track V) ---
     fish_model: str = "s2.1-pro-free"              # header-selected; s2-pro/s1 = the paid tiers
+    # Hume instant mode: ~1s faster to first audio but MEASURABLY flatter acting
+    # (furious/whisper energy ratio 1.5x vs 2.7x full quality). HUME_INSTANT=1 to trade back.
+    hume_instant: bool = False
     chatterbox_url: str = "http://127.0.0.1:8123"  # local tts-lab microservice (own venv/GPU)
     chatterbox_exaggeration: float = 0.6           # emotion dial (0.5 neutral, ~0.7 dramatic)
     chatterbox_cfg_weight: float = 0.4             # lower = slower, more deliberate pacing

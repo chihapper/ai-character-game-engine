@@ -125,6 +125,7 @@ class HumeTTS(TTSAdapter):
         if not settings.hume_api_key:
             raise RuntimeError("HUME_API_KEY is not set. Add it to your .env file.")
         self._api_key = settings.hume_api_key
+        self._instant = settings.hume_instant
 
     def _utterances(self, text: str, voice_id: str) -> list[dict]:
         """A reply becomes per-sentence utterances with acting instructions, from BOTH
@@ -219,8 +220,10 @@ class HumeTTS(TTSAdapter):
         utterances = self._utterances(text, voice_id)
         if not utterances:
             return
+        # instant mode measurably flattens the acting (furious/whisper energy ratio 1.5x vs
+        # 2.7x full quality) — quality is the default; HUME_INSTANT=1 buys ~1s of latency back
         body = {"utterances": utterances, "format": {"type": "pcm"},
-                "instant_mode": bool(voice_id)}
+                "instant_mode": bool(voice_id) and self._instant}
         headers = {"X-Hume-Api-Key": self._api_key, "Content-Type": "application/json"}
         first = True
         got_audio = False
