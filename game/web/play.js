@@ -1,6 +1,46 @@
 // The Ferry's Last Crossing — play view client. Drives game.web (/api/game) and renders the story.
 const $ = (id) => document.getElementById(id);
-const S = { gid: null, roster: [], target: "__room", mode: "speak", busy: false, ended: false };
+const S = { gid: null, roster: [], target: "__room", mode: "speak", busy: false, ended: false,
+            voice: true, audio: null, playhead: 0, voiceQueue: Promise.resolve() };
+
+// ---- voice: streaming PCM playback (starts at FIRST chunk, not full render) ----------------
+async function speakEvent(slug, text) {
+  if (!S.voice || !S.audio || !slug) return;
+  try {
+    const r = await fetch(`/api/game/${S.gid}/voice`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, text }),
+    });
+    if (!r.ok || !r.body) return;
+    const rate = parseInt(r.headers.get("X-Sample-Rate") || "24000", 10);
+    const reader = r.body.getReader();
+    let carry = new Uint8Array(0);
+    S.playhead = Math.max(S.playhead, S.audio.currentTime + 0.08);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const buf = new Uint8Array(carry.length + value.length);
+      buf.set(carry); buf.set(value, carry.length);
+      const even = buf.length - (buf.length % 2);
+      carry = buf.slice(even);
+      if (!even) continue;
+      const pcm = new Int16Array(buf.buffer.slice(0, even));
+      const ab = S.audio.createBuffer(1, pcm.length, rate);
+      const ch = ab.getChannelData(0);
+      for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+      const src = S.audio.createBufferSource();
+      src.buffer = ab; src.connect(S.audio.destination);
+      src.start(S.playhead);
+      S.playhead += ab.duration;
+    }
+    // hold the queue until this clip has actually finished sounding
+    const wait = (S.playhead - S.audio.currentTime) * 1000;
+    if (wait > 0) await new Promise((res) => setTimeout(res, wait));
+  } catch (e) { /* voice is an enhancement — the story never blocks on it */ }
+}
+function queueVoice(slug, text) {
+  S.voiceQueue = S.voiceQueue.then(() => speakEvent(slug, text));
+}
 
 async function api(path, method = "POST", body) {
   const r = await fetch("/api/game" + path, {
@@ -34,8 +74,10 @@ function renderEvents(events, replay = false) {
     else if (e.kind === "narration") add("narr", esc(e.text));
     else if (e.kind === "event") add("event", "⚡ " + esc(e.text));
     else if (e.kind === "reaction") add("react", `<b>${esc(e.who || "")}</b> ${esc(e.text)}`);
-    else if (e.kind === "dialogue")
+    else if (e.kind === "dialogue") {
       add("say", `<span class="who-name">${esc(e.who || "")}</span><span class="line">${esc(e.text)}</span>`);
+      if (!replay) queueVoice(e.slug, e.text);   // the voice speaks the quotes; narration stays silent
+    }
     else add("narr", esc(e.text));
   }
 }
@@ -126,15 +168,25 @@ function endNight() {
   window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 }
 
+const INTRO =
+  "A word before you step in: this is a riverlands world of ferries and fords, peat fires and " +
+  "oil lamps — an age of coin, crown soldiers, and market fairs, long before engines or " +
+  "electricity. The folk here have never known anything else, so speak to them as a traveler " +
+  "of their world. A storm has closed the river; everyone under this roof is stranded until " +
+  "the dawn ferry. Talk to them, watch them, take their measure — the night will change them.";
+
 async function begin() {
   $("beginBtn").disabled = true;
   $("startHint").textContent = "the storm closes in…";
+  // audio must be born from a user gesture (mobile browsers) — the Begin click is ours
+  try { S.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { S.voice = false; }
   try {
     const res = await api("/new", "POST", { reply_model: $("replyModel").value });
     S.gid = res.game_id;
     localStorage.setItem("ferry_gid", S.gid);  // so a dropped connection can resume on reload
     $("title").textContent = res.title;
     $("start").style.display = "none";
+    add("event", "⚑ " + INTRO);
     renderView(res.view);
     renderEvents(res.events);
     $("input").focus();
@@ -159,6 +211,13 @@ async function tryResume() {
 // ---- wiring -------------------------------------------------------------
 $("beginBtn").onclick = begin;
 $("sendBtn").onclick = send;
+$("voiceBtn").onclick = () => {
+  S.voice = !S.voice;
+  $("voiceBtn").textContent = S.voice ? "🔊 Voice on" : "🔇 Voice off";
+  if (!S.audio && S.voice) {
+    try { S.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { S.voice = false; }
+  }
+};
 $("advanceBtn").onclick = advance;
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }

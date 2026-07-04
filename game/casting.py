@@ -42,3 +42,22 @@ def situate(character, scenario: dict, cast_entry: dict | None):
     if backstory != (getattr(character, "backstory", "") or ""):
         changes["backstory"] = backstory
     return replace(character, **changes) if changes else character
+
+
+# ---- voice casting (Track V) --------------------------------------------------------------------
+# Hume Octave voices per cast member — library NAMES (platform.hume.ai). Per-slug env override
+# HUME_VOICE_<SLUG_WITH_UNDERSCORES> wins, then this map, then the global BAKEOFF_HUME_VOICE.
+HUME_VOICES = {
+    "della-fenwick": "Medieval Peasant Woman",
+    "brielle-bri-castellano": "Expressive Girl",
+    "edwin-hale": "Medieval Peasant Man",
+    "corvin-ashgrave-inworld": "Scottish Guy",   # closest library match to 'Scottish Scott'
+}
+
+
+def hume_voice(slug: str) -> str:
+    import os
+    return (os.environ.get("HUME_VOICE_" + (slug or "").upper().replace("-", "_"))
+            or HUME_VOICES.get(slug)
+            or os.environ.get("BAKEOFF_HUME_VOICE")
+            or "Ava Song")

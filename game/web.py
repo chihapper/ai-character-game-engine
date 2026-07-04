@@ -144,6 +144,42 @@ async def finish(gid: str, body: Finish):
     return {"ok": True, "run_id": g.run_id}
 
 
+class Voice(BaseModel):
+    slug: str
+    text: str
+
+
+@router.post("/{gid}/voice")
+async def voice(gid: str, body: Voice):
+    """A character's line as STREAMING audio (PCM s16le mono, X-Sample-Rate header) — the
+    text game's presentation layer, beside the game not inside it. Streams chunks as the
+    provider renders them so the browser starts playback at first audio, not at the end.
+    Cast per slug lives in casting.HUME_VOICES; GAME_TTS picks the provider."""
+    from fastapi.responses import StreamingResponse
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    from . import casting, policy
+    from .bridge.mind_api import _tts, _tts_provider
+    _game(gid)   # 404 on unknown/expired games
+    provider = _tts_provider()
+    if provider == "hume":
+        vid = casting.hume_voice(body.slug)
+        text = body.text            # Hume ACTS the stage directions (adapter splits them out)
+    else:
+        raise HTTPException(status_code=404,
+                            detail=f"play-view voice is cast for GAME_TTS=hume (got '{provider}')")
+    if not (text or "").strip():
+        raise HTTPException(status_code=400, detail="nothing to speak")
+    tts = _tts()
+
+    async def gen():
+        async for chunk in tts.stream_speech(text, vid):
+            yield chunk
+
+    return StreamingResponse(gen(), media_type="application/octet-stream",
+                             headers={"X-Sample-Rate": str(AUDIO_SAMPLE_RATE),
+                                      "Cache-Control": "no-store"})
+
+
 @router.get("/{gid}/state")
 async def state(gid: str):
     g = _game(gid)

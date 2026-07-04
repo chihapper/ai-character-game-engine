@@ -405,7 +405,7 @@ async def _bakeoff_voice(s: "MindSession", slug: str, provider: str) -> str:
         ref = _GAME_DIR.parent / "tts_voices" / "bri_inworld_ref.wav"
         return str(ref) if ref.exists() else ""
     if provider == "hume":
-        return "Ava Song"   # young-female library voice; BAKEOFF_HUME_VOICE overrides
+        return casting.hume_voice(slug)   # the cast map (env overrides handled inside)
     if provider == "fish":
         return ""  # provider default voice
     return await s.voice_for(slug) or ""
