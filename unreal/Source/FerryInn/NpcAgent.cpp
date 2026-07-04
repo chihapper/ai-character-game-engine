@@ -1,6 +1,8 @@
 #include "NpcAgent.h"
 
+#include "AIController.h"
 #include "Animation/AnimSequence.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -21,6 +23,11 @@ ANpcAgent::ANpcAgent()
     GetCharacterMovement()->MaxWalkSpeed = 160.f;   // a tavern is not a racetrack
     GetCharacterMovement()->bOrientRotationToMovement = true;   // bodies face where they walk
     GetCharacterMovement()->RotationRate = FRotator(0.f, 240.f, 0.f);
+    GetCharacterMovement()->SetAvoidanceEnabled(true);           // patrons don't merge shoulders
+
+    // an AI controller so chosen destinations PATH around furniture instead of shoving into it
+    AIControllerClass = AAIController::StaticClass();
+    AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
     // PLACEHOLDER body until the MetaHumans arrive: a visible capsule, like the Unity
     // gray-box began — the mind is what's under test first
@@ -239,6 +246,20 @@ void ANpcAgent::Tick(float DeltaSeconds)
             AddMovementInput(To.GetSafeNormal2D(), 1.f);
         }
     }
+    else if (!bAnimWalking)
+    {
+        // people notice someone stepping close: turn to face the traveler inside 3.5m
+        if (APawn* Player = GetWorld()->GetFirstPlayerController() ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr)
+        {
+            FVector ToPlayer = Player->GetActorLocation() - GetActorLocation();
+            ToPlayer.Z = 0.f;
+            if (ToPlayer.Size2D() < 350.f && !ToPlayer.IsNearlyZero())
+            {
+                const FRotator Want = ToPlayer.Rotation();
+                SetActorRotation(FMath::RInterpTo(GetActorRotation(), Want, DeltaSeconds, 3.5f));
+            }
+        }
+    }
 }
 
 UMindClient* ANpcAgent::Mind() const
@@ -354,5 +375,14 @@ void ANpcAgent::Enact(const FString& Action, const FString& Reason)
 void ANpcAgent::WalkTo(const FVector& Target)
 {
     WalkTarget = Target;
-    bWalking = true;
+    if (AAIController* AI = Cast<AAIController>(GetController()))
+    {
+        const EPathFollowingRequestResult::Type R = AI->MoveToLocation(Target, 55.f);
+        if (R != EPathFollowingRequestResult::Type::Failed)
+        {
+            bWalking = false;   // pathing handles it; Tick's fallback steering stays out of the way
+            return;
+        }
+    }
+    bWalking = true;   // no controller / off the navmesh: fall back to straight-line steering
 }
