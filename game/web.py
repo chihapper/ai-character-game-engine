@@ -74,26 +74,48 @@ def _view(g: Game) -> dict:
     return snap
 
 
+MAX_ACTIVE_GAMES = 5          # each concurrent world costs real LLM + TTS spend — cap it
+IDLE_GAME_TTL_S = 90 * 60     # walked-away worlds get finalized (and their minds cleaned up)
+_last_touch: dict[str, float] = {}
+
+
+def _touch(gid: str) -> None:
+    import time
+    _last_touch[gid] = time.monotonic()
+
+
+async def _reap_idle() -> None:
+    """Finalize abandoned games: frees their run-scoped memories and a concurrency slot."""
+    import time
+    now = time.monotonic()
+    for gid, g in list(_games.items()):
+        if now - _last_touch.get(gid, now) > IDLE_GAME_TTL_S:
+            async with _lock(gid):
+                try:
+                    await g.finish("(abandoned — idle timeout)")
+                except Exception:
+                    pass
+                _games.pop(gid, None)
+                _locks.pop(gid, None)
+                _last_touch.pop(gid, None)
+
+
 @router.post("/new")
 async def new_game(body: NewGame):
     for m in (body.reply_model, body.dm_model):
         if m and m not in ALLOWED_MODEL_IDS:
             raise HTTPException(status_code=422, detail=f"unknown model {m!r}")
-    # ONE live world per process: all games share the cast's memory namespaces and a new run
-    # resets them — a second "concurrent" game would play against wiped minds. Finalize the old
-    # run properly (its experiment-log row closes) before the reset.
-    for old_gid, old in list(_games.items()):
-        async with _lock(old_gid):
-            try:
-                await old.finish("(superseded by a new run)")
-            except Exception:
-                pass
-            _games.pop(old_gid, None)
-            _locks.pop(old_gid, None)
+    # CONCURRENT worlds (#37): each game runs ISOLATED minds (run-scoped memory namespaces,
+    # cleaned up at finish), so several people can play at once without sharing a world.
+    await _reap_idle()
+    if len(_games) >= MAX_ACTIVE_GAMES:
+        raise HTTPException(status_code=429,
+                            detail="the inn is full tonight — too many games in progress; try again soon")
     g = Game(str(_scenario_path(body.scenario)), condition=body.condition,
-             reply_model=body.reply_model, dm_model=body.dm_model)
+             reply_model=body.reply_model, dm_model=body.dm_model, isolated=True)
     gid = uuid4().hex[:8]
     _games[gid] = g
+    _touch(gid)
     await g.begin()
     return {"game_id": gid, "title": g.scenario["title"], "events": g.history, "view": _view(g)}
 
@@ -101,6 +123,7 @@ async def new_game(body: NewGame):
 @router.post("/{gid}/talk")
 async def talk(gid: str, body: Talk):
     g = _game(gid)
+    _touch(gid)
     async with _lock(gid):
         n = len(g.history)
         await g.talk(body.target, body.line)
@@ -110,6 +133,7 @@ async def talk(gid: str, body: Talk):
 @router.post("/{gid}/say")
 async def say(gid: str, body: Say):
     g = _game(gid)
+    _touch(gid)
     async with _lock(gid):
         n = len(g.history)
         await g.say_to_room(body.line)
@@ -119,6 +143,7 @@ async def say(gid: str, body: Say):
 @router.post("/{gid}/act")
 async def act(gid: str, body: Act):
     g = _game(gid)
+    _touch(gid)
     async with _lock(gid):
         n = len(g.history)
         await g.act(body.action)
@@ -128,6 +153,7 @@ async def act(gid: str, body: Act):
 @router.post("/{gid}/advance")
 async def advance(gid: str):
     g = _game(gid)
+    _touch(gid)
     async with _lock(gid):
         n = len(g.history)
         more = await g.advance()
@@ -137,6 +163,7 @@ async def advance(gid: str):
 @router.post("/{gid}/finish")
 async def finish(gid: str, body: Finish):
     g = _game(gid)
+    _touch(gid)
     async with _lock(gid):
         await g.finish(body.outcome)
     _games.pop(gid, None)
@@ -184,3 +211,4 @@ async def voice(gid: str, body: Voice):
 async def state(gid: str):
     g = _game(gid)
     return {"view": _view(g), "history": g.history}
+

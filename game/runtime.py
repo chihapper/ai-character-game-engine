@@ -32,7 +32,7 @@ class Game:
 
     def __init__(self, scenario_path, *, condition: str = "CTRL-TEXT", reply_model: str | None = None,
                  dm_model: str | None = None, hours_per_beat: float = 2.0, reset: bool = True,
-                 log_doc=None):
+                 log_doc=None, isolated: bool = False):
         self.scenario = yaml.safe_load(Path(scenario_path).read_text(encoding="utf-8"))
         self.condition = condition
         self.reply_model = reply_model
@@ -49,9 +49,24 @@ class Game:
         caps = EngineCaps.from_settings(get_settings(), **over)
         self.dm = DM(self.scenario, model=dm_model)
         self.present = [c["slug"] for c in self.scenario["cast"]]
-        if reset:
+        # ISOLATED (#37, run-scoped namespaces): this game gets its own COPIES of the minds —
+        # a unique namespace per (run, character), born clean, deleted at finish(). Many games
+        # can then run concurrently without stepping on each other's memories. The default
+        # (shared namespaces + wipe) remains for experiments, where one canonical world is the
+        # point and its memories are the artifact under study.
+        from uuid import uuid4 as _uuid4
+        self.ns_prefix = f"run-{_uuid4().hex[:10]}" if isolated else ""
+        if reset and not self.ns_prefix:
             self._wipe_memory()
-        self.engines = {c["slug"]: Engine(load_character(c["slug"]), AnthropicLLM(model=reply_model),
+
+        def _char(slug: str):
+            c = load_character(slug)
+            if self.ns_prefix:
+                from dataclasses import replace as _replace
+                c = _replace(c, memory_namespace=f"{self.ns_prefix}.{c.memory_namespace}")
+            return c
+
+        self.engines = {c["slug"]: Engine(_char(c["slug"]), AnthropicLLM(model=reply_model),
                                           caps=caps)
                         for c in self.scenario["cast"]}
         # Scenario-specific "why you're here tonight" — reconciles each borrowed character with this
@@ -296,6 +311,15 @@ class Game:
             await eng.flush_reflection()
         if self.run_id:
             experiment_log.finalize_run(self.run_id, outcome or "(completed)", doc=self.log_doc)
+        if self.ns_prefix:  # isolated run: its minds die with it — remove their memory files
+            for eng in self.engines.values():
+                ns = eng.character.memory_namespace
+                for f in glob.glob(str(Path(get_settings().memory_dir) / f"{ns}.*")):
+                    try:
+                        os.remove(f)
+                    except OSError:
+                        pass
+                LongTermMemory.invalidate(ns)
 
     # ---- read-only snapshot for a play view / debugging ---------------------
     def snapshot(self) -> dict:
