@@ -76,6 +76,18 @@ def spoken_name(character_name: str, text: str) -> str | None:
     return None
 
 
+def spoken_text(reply: str) -> str:
+    """What the VOICE gets: only the quoted speech, with the surrounding third-person
+    narration ('she leans forward...') silenced — stage business is for the body and the
+    subtitle, never the mouth. Quotes are stripped (TTS reads bare text); inline [tags]
+    inside quotes survive for the expressive providers. A reply with no quotes at all is
+    treated as pure speech (some characters answer without stage business)."""
+    parts = split_quotes(reply)
+    quoted = [p[1:-1].strip() for p in parts[1::2] if len(p) >= 2]
+    spoken = " ".join(q for q in quoted if q)
+    return spoken if spoken else (reply or "").strip()
+
+
 FACE_TAGS = {"happy", "sad", "angry", "fear", "surprise", "disgust"}
 
 

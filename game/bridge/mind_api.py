@@ -313,8 +313,9 @@ async def speak(sid: str, slug: str, body: Speak):
     if not vid or not body.text.strip():
         raise HTTPException(status_code=404, detail="no voice available")
     from orchestrator.config import AUDIO_SAMPLE_RATE
+    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
     chunks = []
-    async for chunk in _tts().stream_speech(body.text, vid):
+    async for chunk in _tts().stream_speech(text, vid):
         chunks.append(chunk)
     if not chunks:
         raise HTTPException(status_code=404, detail="nothing speakable")
@@ -347,8 +348,9 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     if not vid or not body.text.strip():
         raise HTTPException(status_code=404, detail="no voice available")
     from orchestrator.config import AUDIO_SAMPLE_RATE
+    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
     chunks = []
-    async for chunk in _tts().stream_speech(body.text, vid):
+    async for chunk in _tts().stream_speech(text, vid):
         chunks.append(chunk)
     if not chunks:
         raise HTTPException(status_code=404, detail="nothing speakable")
@@ -420,6 +422,7 @@ async def speak_multi(sid: str, slug: str, body: SpeakMulti):
     import io as _io
     s = _s(sid)
     from orchestrator.config import AUDIO_SAMPLE_RATE
+    text = policy.spoken_text(body.text)   # narration is stage business, never voiced
 
     async def one(provider: str) -> dict:
         try:
@@ -428,7 +431,7 @@ async def speak_multi(sid: str, slug: str, body: SpeakMulti):
             t0 = _time.perf_counter()
             first = None
             chunks: list[bytes] = []
-            async for chunk in tts.stream_speech(body.text, voice):
+            async for chunk in tts.stream_speech(text, voice):
                 if first is None:
                     first = _time.perf_counter() - t0
                 chunks.append(chunk)
