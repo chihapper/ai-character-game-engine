@@ -45,13 +45,13 @@ def situate(character, scenario: dict, cast_entry: dict | None):
 
 
 # ---- voice casting (Track V) --------------------------------------------------------------------
-# Hume Octave voices per cast member — library NAMES (platform.hume.ai). Per-slug env override
+# Hume Octave voices per cast member ï¿½ library NAMES (platform.hume.ai). Per-slug env override
 # HUME_VOICE_<SLUG_WITH_UNDERSCORES> wins, then this map, then the global BAKEOFF_HUME_VOICE.
 HUME_VOICES = {
     "della-fenwick": "Medieval Peasant Woman",
     "brielle-bri-castellano": "Expressive Girl",
-    "edwin-hale": "Medieval Peasant Man",
-    "corvin-ashgrave-inworld": "Scottish Guy",   # closest library match to 'Scottish Scott'
+    "edwin-hale": "Yorkshire Chap",
+    "corvin-ashgrave-inworld": "Brooding Intellectual Man",
 }
 
 
