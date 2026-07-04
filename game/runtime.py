@@ -20,7 +20,7 @@ from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
 
-from . import experiment_log
+from . import experiment_log, policy
 from .dm import DM
 
 RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
@@ -176,10 +176,9 @@ class Game:
         others = [self._ref(s) for s in self.present if s != slug]
         recent = [f'{self.label(sl)} just said: "{ln}"' for sl, ln in (in_scene or [])]
         extra = {"Where the player is": self.player_location,
-                 "Performance": (
-                     "Speak your words in the first person, in quotes. Write your OWN actions and "
-                     "reactions in the THIRD person (e.g. 'she brushes the rain from her hair'), never "
-                     "the second person. Do not narrate the player's actions, body, or feelings.")}
+                 # the SHARED performance contract (policy.py) — same expressive machinery as the
+                 # mind-server path: stage business carries feeling, face postscript, address rules
+                 "Performance": policy.PERFORMANCE_RULES}
         if self.here_because.get(slug):
             extra["Why you're here tonight"] = self.here_because[slug]
         return Situation(location=self._perception, present=others, recent_events=recent,
@@ -210,10 +209,15 @@ class Game:
     async def _enter_beat(self) -> None:
         beat = self._beat()
         refs = self._refs()
-        narration = self._scrub(await self.dm.narrate_beat(beat, self._recap(), refs, self.player_location))
-        self._log("narration", narration, beat_title=beat["title"])
-        self._perception = self._scrub(await self.dm.scene_perception(beat, refs, self.player_location,
-                                                                     recent=self._recap()))
+        recap = self._recap()
+        # narration and perception are independent DM calls — run them together (start-up
+        # was two big sequential model calls before a player saw anything)
+        import asyncio
+        narration, perception = await asyncio.gather(
+            self.dm.narrate_beat(beat, recap, refs, self.player_location),
+            self.dm.scene_perception(beat, refs, self.player_location, recent=recap))
+        self._log("narration", self._scrub(narration), beat_title=beat["title"])
+        self._perception = self._scrub(perception)
         for ev in beat.get("events", []):
             await self._fire_event(ev)
 

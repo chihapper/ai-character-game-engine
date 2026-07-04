@@ -28,6 +28,9 @@ async function speakEvent(slug, text) {
       const ab = S.audio.createBuffer(1, pcm.length, rate);
       const ch = ab.getChannelData(0);
       for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+      // underrun guard: if the network fell behind playback, move the playhead forward —
+      // scheduling in the past plays IMMEDIATELY and chunks pile on top of each other
+      if (S.playhead < S.audio.currentTime + 0.06) S.playhead = S.audio.currentTime + 0.06;
       const src = S.audio.createBufferSource();
       src.buffer = ab; src.connect(S.audio.destination);
       src.start(S.playhead);
