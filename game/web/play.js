@@ -14,6 +14,12 @@ function ensureAudio() {
 }
 ["pointerdown", "touchend", "keydown"].forEach((ev) =>
   document.addEventListener(ev, ensureAudio, { passive: true }));
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    ensureAudio();
+    if (S.audio) S.playhead = S.audio.currentTime;   // drop stale schedule from the frozen clock
+  }
+});
 
 async function speakEvent(slug, text) {
   if (!S.voice || !slug) return;
@@ -57,8 +63,12 @@ async function speakEvent(slug, text) {
       src.start(S.playhead);
       S.playhead += ab.duration;
     }
-    // hold the queue until this clip has actually finished sounding
-    const wait = (S.playhead - S.audio.currentTime) * 1000;
+    // hold the queue until this clip has actually finished sounding — but never WEDGE it:
+    // a suspended context freezes currentTime, which would turn this wait into minutes and
+    // silently swallow every voice queued behind it
+    let wait = (S.playhead - S.audio.currentTime) * 1000;
+    if (S.audio.state !== "running") wait = 0;
+    wait = Math.min(wait, 30000);
     if (wait > 0) await new Promise((res) => setTimeout(res, wait));
   } catch (e) { /* voice is an enhancement — the story never blocks on it */ }
 }
