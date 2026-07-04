@@ -1,8 +1,14 @@
 #include "FerryGameMode.h"
 
+#include "FerryPlayer.h"
 #include "FerryRegions.h"
 #include "MindClient.h"
 #include "NpcAgent.h"
+
+AFerryGameMode::AFerryGameMode()
+{
+    DefaultPawnClass = AFerryPlayer::StaticClass();   // the traveler walks in as the player
+}
 
 void AFerryGameMode::BeginPlay()
 {

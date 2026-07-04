@@ -133,6 +133,28 @@ void ANpcAgent::AttachMetaHumanBody(UClass* BodyClass)
                                     FMath::FRandRange(16.f, 30.f), true, FMath::FRandRange(6.f, 18.f));
 }
 
+void ANpcAgent::FlinchAt(const FVector& Where)
+{
+    FVector Dir = Where - GetActorLocation();
+    Dir.Z = 0.f;
+    if (!Dir.IsNearlyZero() && !bWalking)
+    {
+        SetActorRotation(Dir.Rotation());
+    }
+    if (FaceMesh)
+    {
+        if (UAnimSequence** Startle = FaceReactions.Find(TEXT("surprise")))
+        {
+            FaceMesh->PlayAnimation(*Startle, true);
+            GetWorldTimerManager().SetTimer(FaceReturnTimer,
+                FTimerDelegate::CreateWeakLambda(this, [this]()
+                {
+                    if (FaceMesh && FaceLoop) { FaceMesh->PlayAnimation(FaceLoop, true); }
+                }), 3.5f, false);
+        }
+    }
+}
+
 void ANpcAgent::VaryIdle()
 {
     if (bAnimWalking || !BodyMesh) return;

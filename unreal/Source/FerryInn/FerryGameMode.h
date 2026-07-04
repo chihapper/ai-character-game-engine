@@ -11,6 +11,8 @@ class FERRYINN_API AFerryGameMode : public AGameModeBase
     GENERATED_BODY()
 
 public:
+    AFerryGameMode();
+
     virtual void BeginPlay() override;
 
 private:

@@ -44,6 +44,9 @@ public:
     /** dress the agent in a built MetaHuman blueprint; hides the capsule placeholder */
     void AttachMetaHumanBody(UClass* BodyClass);
 
+    /** pre-deliberative orienting response: turn toward the event, startle crosses the face */
+    void FlinchAt(const FVector& Where);
+
 private:
     UPROPERTY()
     AActor* BodyActor = nullptr;
