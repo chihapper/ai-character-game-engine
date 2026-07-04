@@ -30,18 +30,28 @@ from orchestrator.memory.long_term import LongTermMemory
 
 from .. import casting, experiment_log, policy
 
-# TTS provider is a game-level knob (GAME_TTS=inworld|elevenlabs). Inworld is the default —
-# it is the CURRENT Track V setup and the ElevenLabs account is out of credits; the seam means
-# Unity never knows which engine spoke.
+# TTS provider is a game-level knob (GAME_TTS=inworld|elevenlabs|hume|fish|chatterbox).
+# Inworld is the default — the CURRENT Track V setup; the seam means the client never
+# knows which engine spoke. The bake-off candidates swap in with an env change + restart.
 def _tts_provider() -> str:
     import os
     return (os.environ.get("GAME_TTS") or "inworld").strip().lower()
 
 
 def _tts():
-    if _tts_provider() == "elevenlabs":
+    provider = _tts_provider()
+    if provider == "elevenlabs":
         from orchestrator.adapters.tts_elevenlabs import ElevenLabsTTS
         return ElevenLabsTTS()
+    if provider == "hume":
+        from orchestrator.adapters.tts_hume import HumeTTS
+        return HumeTTS()
+    if provider == "fish":
+        from orchestrator.adapters.tts_fish import FishTTS
+        return FishTTS()
+    if provider == "chatterbox":
+        from orchestrator.adapters.tts_chatterbox import ChatterboxTTS
+        return ChatterboxTTS()
     from orchestrator.adapters.tts_inworld import InworldTTS
     return InworldTTS()
 

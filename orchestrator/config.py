@@ -68,6 +68,14 @@ class Settings(BaseSettings):
     cartesia_api_key: str = ""
     elevenlabs_api_key: str = ""
     assemblyai_api_key: str = ""
+    hume_api_key: str = ""
+    fish_api_key: str = ""
+
+    # --- TTS bake-off candidates (Track V) ---
+    fish_model: str = "s2-pro"                     # header-selected; s1 = cheaper fallback
+    chatterbox_url: str = "http://127.0.0.1:8123"  # local tts-lab microservice (own venv/GPU)
+    chatterbox_exaggeration: float = 0.6           # emotion dial (0.5 neutral, ~0.7 dramatic)
+    chatterbox_cfg_weight: float = 0.4             # lower = slower, more deliberate pacing
 
     # --- LLM ---
     # Default model when the UI doesn't specify one. Sonnet 4.6 for richer
