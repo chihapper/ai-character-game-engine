@@ -140,10 +140,18 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
         return;
     }
     Who->FlinchAt(GetActorLocation());   // being addressed turns the head before the mind replies
-    const FString Situation = FString::Printf(
-        TEXT("You are %s, at %s in the tavern's taproom. The traveler stands before you and speaks."),
-        *Who->Handle, *FerryRegions::NameAt(Who->GetActorLocation()));
-    Mind->Respond(Who->Slug, FString::Printf(TEXT("the traveler says: \"%s\""), *Line), Situation,
+    const FString Location = FString::Printf(TEXT("%s, in the tavern's taproom"),
+        *FerryRegions::NameAt(Who->GetActorLocation()));
+    TArray<FString> Present;
+    Present.Add(TEXT("the traveler stands right in front of you, speaking to you"));
+    for (const ANpcAgent* Other : ANpcAgent::All)
+    {
+        if (Other == Who) continue;
+        Present.Add(FString::Printf(TEXT("%s is at %s"),
+            *Other->Handle, *FerryRegions::NameAt(Other->GetActorLocation())));
+    }
+    Mind->Respond(Who->Slug, Line, Location, Present,
+        TEXT("rain drums on the roof; the storm outside has the ferry grounded for the night"),
         FMindJsonReply::CreateWeakLambda(this, [this, Who](TSharedPtr<FJsonObject> Json)
         {
             FString Reply;

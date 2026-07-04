@@ -85,11 +85,25 @@ void UMindClient::CreateSession(const FString& Scenario, FMindJsonReply OnReply)
              }));
 }
 
-void UMindClient::Respond(const FString& Slug, const FString& Event, const FString& Situation, FMindJsonReply OnReply)
+void UMindClient::Respond(const FString& Slug, const FString& Line, const FString& Location,
+                          const TArray<FString>& Present, const FString& Ambient, FMindJsonReply OnReply)
 {
     const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
-    Body->SetStringField(TEXT("event"), Event);
-    Body->SetStringField(TEXT("situation"), Situation);
+    Body->SetStringField(TEXT("line"), Line);
+
+    const TSharedPtr<FJsonObject> Sit = MakeShared<FJsonObject>();
+    Sit->SetStringField(TEXT("location"), Location);
+    TArray<TSharedPtr<FJsonValue>> P;
+    for (const FString& S : Present)
+    {
+        P.Add(MakeShared<FJsonValueString>(S));
+    }
+    Sit->SetArrayField(TEXT("present"), P);
+    if (!Ambient.IsEmpty())
+    {
+        Sit->SetStringField(TEXT("ambient"), Ambient);
+    }
+    Body->SetObjectField(TEXT("situation"), Sit);
     PostJson(FString::Printf(TEXT("/%s/%s/respond"), *SessionId, *Slug), Body, OnReply);
 }
 

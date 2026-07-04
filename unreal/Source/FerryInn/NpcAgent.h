@@ -90,7 +90,9 @@ private:
     FTimerHandle IdleVarietyTimer;
     FTimerHandle GestureReturnTimer;
     FTimerHandle FaceReturnTimer;
+    FTimerHandle TalkFaceTimer;
     bool bAnimWalking = false;
+    bool bTalkingFace = false;   // while true, Tick drives the face rig's jaw (procedural lip motion)
 
     FString ComposeSituation() const;
     TArray<FString> ComposeOptions() const;

@@ -20,8 +20,10 @@ public:
     /** POST /session with the scenario; remembers SessionId for every later call. */
     void CreateSession(const FString& Scenario, FMindJsonReply OnReply);
 
-    /** POST /{sid}/{slug}/respond — a spoken exchange (event + situation -> reply, name_spoken). */
-    void Respond(const FString& Slug, const FString& Event, const FString& Situation, FMindJsonReply OnReply);
+    /** POST /{sid}/{slug}/respond — the traveler's spoken line + a structured SituationDTO
+     *  (location / present / ambient), which is what the server's Respond model validates. */
+    void Respond(const FString& Slug, const FString& Line, const FString& Location,
+                 const TArray<FString>& Present, const FString& Ambient, FMindJsonReply OnReply);
 
     /** POST /{sid}/{slug}/choose — grounded action pick from afforded options. */
     void Choose(const FString& Slug, const FString& Situation, const TArray<FString>& Options, FMindJsonReply OnReply);

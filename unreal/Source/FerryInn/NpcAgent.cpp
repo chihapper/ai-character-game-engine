@@ -164,6 +164,20 @@ void ANpcAgent::FlinchAt(const FVector& Where)
 
 void ANpcAgent::PlayTalkGesture(float Seconds)
 {
+    // the face talks for the whole clip even if the body is mid-walk
+    bTalkingFace = true;
+    GetWorldTimerManager().SetTimer(TalkFaceTimer,
+        FTimerDelegate::CreateWeakLambda(this, [this]()
+        {
+            bTalkingFace = false;
+            if (FaceMesh)
+            {
+                FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_jawOpen"), 0.f);
+                FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_mouthUpperLipRaiseL"), 0.f);
+                FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_mouthUpperLipRaiseR"), 0.f);
+            }
+        }), FMath::Max(1.f, Seconds), false);
+
     if (!BodyMesh || bAnimWalking) return;
     UAnimSequence* Talk = LoadObject<UAnimSequence>(nullptr,
         TEXT("/Game/Cast/Anims/MH/MHG_Talking.MHG_Talking"));
@@ -224,6 +238,18 @@ void ANpcAgent::EndPlay(const EEndPlayReason::Type Reason)
 void ANpcAgent::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    // procedural speech face: noise-driven jaw + a touch of upper lip, in speech-syllable rhythm.
+    // Not phoneme lip-sync — but a mouth that MOVES while the voice plays.
+    if (bTalkingFace && FaceMesh)
+    {
+        const float T = GetWorld()->GetTimeSeconds();
+        const float Syllable = 0.5f + 0.5f * FMath::PerlinNoise1D(T * 7.f);      // ~4-7 Hz articulation
+        const float Cadence  = 0.55f + 0.45f * FMath::PerlinNoise1D(T * 1.3f);   // phrases rise and fall
+        const float Jaw = FMath::Clamp(0.55f * Syllable * Cadence, 0.02f, 0.55f);
+        FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_jawOpen"), Jaw);
+        FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_mouthUpperLipRaiseL"), Jaw * 0.35f);
+        FaceMesh->SetMorphTarget(TEXT("CTRL_expressions_mouthUpperLipRaiseR"), Jaw * 0.35f);
+    }
     // swap idle/walk loops with actual motion, not intent — no sliding statues
     if (BodyMesh && IdleAnim && WalkAnim)
     {
