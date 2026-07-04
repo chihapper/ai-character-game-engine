@@ -65,12 +65,12 @@ async def main() -> None:
     print(f"frames: {len(result.frames)}"
           + (f" (~{len(result.frames) / dur:.0f} fps)" if result.frames else ""))
     if result.frames and result.blendshape_names:
-        jaw_candidates = [i for i, n in enumerate(result.blendshape_names) if "jaw" in n.lower()]
-        if jaw_candidates:
-            j = jaw_candidates[0]
-            peak = max(f[1][j] for f in result.frames)
-            print(f"'{result.blendshape_names[j]}' peak: {peak:.3f} "
-                  + ("— the mouth MOVES" if peak > 0.05 else "— suspiciously flat"))
+        for want in ("JawOpen", "MouthFunnel", "MouthSmileLeft"):
+            hits = [i for i, n in enumerate(result.blendshape_names) if n.lower() == want.lower()]
+            if hits:
+                peak = max(f[1][hits[0]] for f in result.frames)
+                print(f"'{want}' peak: {peak:.3f} "
+                      + ("- MOVES" if peak > 0.05 else "- flat"))
 
 
 if __name__ == "__main__":
