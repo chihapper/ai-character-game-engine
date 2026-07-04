@@ -179,27 +179,47 @@ class HumeTTS(TTSAdapter):
         return out
 
     async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+        """Streams via /v0/tts/stream/json — unlike /stream/file, it reports REAL errors
+        (the file endpoint returns 200 + zero bytes on e.g. exhausted credits) and is the
+        endpoint that carries generation_id (continuation) and timestamps when we want them."""
+        import base64 as _b64
+        import json as _json
         utterances = self._utterances(text, voice_id)
         if not utterances:
             return
         body = {"utterances": utterances, "format": {"type": "pcm"},
                 "instant_mode": bool(voice_id)}
         headers = {"X-Hume-Api-Key": self._api_key, "Content-Type": "application/json"}
-        carry = b""
-        block = _HUME_PCM_RATE * 2 // 10   # resample in ~100ms blocks; stream stays a stream
+        first = True
+        got_audio = False
         async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
-            async with client.stream("POST", f"{_BASE_URL}/v0/tts/stream/file",
+            async with client.stream("POST", f"{_BASE_URL}/v0/tts/stream/json",
                                      json=body, headers=headers) as resp:
                 if resp.status_code != 200:
                     detail = (await resp.aread()).decode("utf-8", "replace")
                     raise RuntimeError(f"Hume TTS error {resp.status_code}: {detail[:300]}")
-                async for chunk in resp.aiter_bytes():
-                    carry += chunk
-                    while len(carry) >= block:
-                        yield _resample_to_wire(carry[:block])
-                        carry = carry[block:]
-        if carry:
-            yield _resample_to_wire(carry)
+                async for line in resp.aiter_lines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        msg = _json.loads(line)
+                    except ValueError:
+                        continue
+                    if msg.get("error") or msg.get("message") and not msg.get("audio"):
+                        raise RuntimeError(f"Hume TTS error: {str(msg)[:300]}")
+                    audio = msg.get("audio")
+                    if not audio:
+                        continue
+                    pcm48 = _b64.b64decode(audio)
+                    if first:
+                        # Octave starts speech at sample zero; give the first word room to land
+                        yield b"\x00\x00" * (AUDIO_SAMPLE_RATE * 15 // 100)
+                        first = False
+                    got_audio = True
+                    yield _resample_to_wire(pcm48)
+        if not got_audio:
+            raise RuntimeError("Hume TTS returned no audio (check credits at platform.hume.ai/billing)")
 
     async def clone_voice(self, sample_audio: bytes, display_name: str) -> str:
         raise NotImplementedError("Hume voice cloning: create the voice in Hume's UI and use its id")
