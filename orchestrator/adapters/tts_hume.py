@@ -1,15 +1,20 @@
-"""Hume Octave TTS adapter (bake-off candidate: emotion via natural-language direction).
+"""Hume Octave TTS adapter (bake-off front-runner: emotion via natural-language direction).
 
-Octave is an LLM-based voice: each utterance takes a free-text `description` of HOW the
-line should sound ("wounded but hiding it, brittle cheer"). That maps beautifully onto
-our engine's tone tags — the leading [bracket] direction becomes the description instead
-of an inline token, so the whole tone-carry machinery drives it.
+Octave is an LLM-based voice, and its docs want structure, not a text blob:
+  - MULTIPLE UTTERANCES in one request — prosody and voice continue across them, so we
+    split a reply into sentences and let Octave breathe between them (the cadence fix).
+  - `description` per utterance (<=100 chars, Octave 1): our leading [tone] tags become
+    acting instructions per sentence — tone can TURN mid-reply, same as the face.
+  - `trailing_silence` per utterance: how a line HANGS, derived from how the sentence
+    ends and feels ("..." trails long; "!" snaps; grief lingers) — fluctuating delivery,
+    not a fixed gap.
+  - [pause] / [long pause] are native inline markers — kept verbatim in text.
 
-Docs consulted (verified 2026-07):
-  - POST https://api.hume.ai/v0/tts/stream/file   (raw audio bytes, instant mode)
-  - auth: X-Hume-Api-Key header. Body: {utterances: [{text, description, voice}], format}.
-  - PCM output is 48 kHz s16le mono -> resampled here to our canonical rate.
-Voice ids: use a Hume voice NAME (voice library) or a CUSTOM_VOICE id saved on the account.
+Docs consulted (verified 2026-07): dev.hume.ai TTS overview / acting-instructions /
+continuation / timestamps. POST /v0/tts/stream/file, X-Hume-Api-Key auth, PCM = 48 kHz
+s16le mono -> resampled to our wire rate. Timestamps (word/phoneme, /stream/json v2)
+exist for precise lip-sync alignment later. EVI (speech-to-speech, custom-LLM capable)
+is a separate product — a Track V full-loop candidate, not this adapter.
 """
 from __future__ import annotations
 
@@ -29,6 +34,12 @@ logger = logging.getLogger(__name__)
 _BASE_URL = "https://api.hume.ai"
 _HUME_PCM_RATE = 48000
 _LEAD_TAG = re.compile(r"^\s*\[([^\[\]]{1,120})\]\s*")
+_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
+_PAUSE_MARK = re.compile(r"\[(long )?pause\]", re.IGNORECASE)
+
+# tone words that make a line linger after it lands
+_HEAVY_TONES = ("quiet", "grief", "sad", "somber", "broken", "wounded", "tired",
+                "distant", "cold", "hollow", "soft", "gentle", "wistful")
 
 
 def _resample_to_wire(pcm48: bytes) -> bytes:
@@ -44,6 +55,24 @@ def _resample_to_wire(pcm48: bytes) -> bytes:
     return np.clip(np.interp(xq, xp, x), -32768, 32767).astype(np.int16).tobytes()
 
 
+def _trailing_silence(sentence: str, description: str, is_last: bool) -> float:
+    """How long the line hangs, from how it ends and how it feels. Seconds."""
+    s = sentence.rstrip()
+    if s.endswith(("...", "…", "—", "--")):
+        gap = 0.9       # trailing off — let it hang
+    elif s.endswith("!"):
+        gap = 0.2       # snapped — move on
+    elif s.endswith("?"):
+        gap = 0.45      # leaving room for an answer
+    else:
+        gap = 0.35      # a natural period breath
+    if any(w in (description or "").lower() for w in _HEAVY_TONES):
+        gap += 0.3      # heavy feelings linger
+    if is_last and gap < 0.5:
+        gap = 0.5       # the reply's final beat always lands before the world moves
+    return round(min(gap, 1.5), 2)
+
+
 class HumeTTS(TTSAdapter):
     def __init__(self) -> None:
         settings = get_settings()
@@ -51,31 +80,58 @@ class HumeTTS(TTSAdapter):
             raise RuntimeError("HUME_API_KEY is not set. Add it to your .env file.")
         self._api_key = settings.hume_api_key
 
-    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
-        # Octave wants the performance as a DESCRIPTION, not inline tokens: lift the
-        # leading [tone] off the line, keep the words clean.
-        description = None
+    def _utterances(self, text: str, voice_id: str) -> list[dict]:
+        """Split a reply into per-sentence utterances with acting instructions.
+        A leading [tag] sets the description from that sentence onward (Octave carries
+        prosody forward on its own — we only re-state when the tone TURNS)."""
+        out: list[dict] = []
+        active_desc = ""
         m = _LEAD_TAG.match(text)
         if m:
-            description = m.group(1).strip()
+            active_desc = m.group(1).strip()
             text = text[m.end():]
-        text = render_tags(text, "hume")
-        if not has_speakable(text):
-            return
-        utterance: dict = {"text": text}
-        if description:
-            utterance["description"] = description
+        sentences = [s for s in _SENTENCE_END.split(text) if s.strip()]
+        for s in sentences:
+            desc_new = False
+            m = _LEAD_TAG.match(s)
+            if m:
+                active_desc = m.group(1).strip()
+                desc_new = True
+                s = s[m.end():]
+            # keep [pause]/[long pause] (native markers) + non-verbal sounds; clean the rest
+            pauses = {p.span(): p.group(0) for p in _PAUSE_MARK.finditer(s)}
+            s = render_tags(s, "hume") if not pauses else s
+            if not has_speakable(s) and not pauses:
+                continue
+            utt: dict = {"text": s.strip()}
+            if active_desc and (desc_new or not out):
+                utt["description"] = active_desc[:100]
+            out.append(utt)
+        if not out:
+            return out
         if voice_id:
-            # a UUID means a saved custom voice; anything else is a library voice name
+            # instant mode wants the voice on EVERY utterance (identity is stable anyway;
+            # prosody still continues utterance-to-utterance within the request)
             is_id = bool(re.fullmatch(r"[0-9a-f\-]{36}", voice_id.lower()))
-            utterance["voice"] = ({"id": voice_id, "provider": "CUSTOM_VOICE"} if is_id
-                                  else {"name": voice_id, "provider": "HUME_AI"})
-        body = {"utterances": [utterance], "format": {"type": "pcm"}, "instant_mode": bool(voice_id)}
+            voice = ({"id": voice_id, "provider": "CUSTOM_VOICE"} if is_id
+                     else {"name": voice_id, "provider": "HUME_AI"})
+            for utt in out:
+                utt["voice"] = voice
+        for i, utt in enumerate(out):
+            utt["trailing_silence"] = _trailing_silence(
+                utt["text"], utt.get("description", ""), i == len(out) - 1)
+        return out
+
+    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+        utterances = self._utterances(text, voice_id)
+        if not utterances:
+            return
+        body = {"utterances": utterances, "format": {"type": "pcm"},
+                "instant_mode": bool(voice_id)}
         headers = {"X-Hume-Api-Key": self._api_key, "Content-Type": "application/json"}
-        # resample in ~100ms blocks so the stream stays a stream
         carry = b""
-        block = _HUME_PCM_RATE * 2 // 10
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0, connect=10.0)) as client:
+        block = _HUME_PCM_RATE * 2 // 10   # resample in ~100ms blocks; stream stays a stream
+        async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=10.0)) as client:
             async with client.stream("POST", f"{_BASE_URL}/v0/tts/stream/file",
                                      json=body, headers=headers) as resp:
                 if resp.status_code != 200:
