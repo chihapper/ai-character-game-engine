@@ -10,6 +10,8 @@
 
 DECLARE_DELEGATE_OneParam(FMindJsonReply, TSharedPtr<FJsonObject> /*Json, null on failure*/);
 DECLARE_DELEGATE_TwoParams(FMindAudioReply, const TArray<uint8>& /*PCM16*/, int32 /*SampleRate*/);
+DECLARE_DELEGATE_ThreeParams(FMindSpeakAnimReply, const TArray<uint8>& /*PCM16*/, int32 /*SampleRate*/,
+                             TSharedPtr<FJsonObject> /*Anim: blendshape_names + frames, null if unsolved*/);
 
 UCLASS()
 class FERRYINN_API UMindClient : public UGameInstanceSubsystem
@@ -36,6 +38,11 @@ public:
 
     /** POST /{sid}/{slug}/speak — text -> PCM16 + sample rate (X-Sample-Rate header). */
     void Speak(const FString& Slug, const FString& Text, FMindAudioReply OnReply);
+
+    /** POST /{sid}/{slug}/speak_anim — text (+ engine face tag) -> PCM16 + ARKit blendshape
+     *  track solved remotely. Anim may be null (solver down): voice still plays, face falls
+     *  back to the authored FaceTalk loop. */
+    void SpeakAnim(const FString& Slug, const FString& Text, const FString& Face, FMindSpeakAnimReply OnReply);
 
     /** POST /{sid}/stt — a WAV clip of the player's voice -> their words. */
     void Stt(const TArray<uint8>& WavBytes, FMindJsonReply OnReply);

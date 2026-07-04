@@ -3,6 +3,7 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Misc/Base64.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -171,6 +172,31 @@ void UMindClient::Speak(const FString& Slug, const FString& Text, FMindAudioRepl
             OnReply.ExecuteIfBound(Resp->GetContent(), Rate > 0 ? Rate : 24000);
         });
     Req->ProcessRequest();
+}
+
+void UMindClient::SpeakAnim(const FString& Slug, const FString& Text, const FString& Face, FMindSpeakAnimReply OnReply)
+{
+    const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
+    Body->SetStringField(TEXT("text"), Text);
+    if (!Face.IsEmpty())
+    {
+        Body->SetStringField(TEXT("face"), Face);
+    }
+    PostJson(FString::Printf(TEXT("/%s/%s/speak_anim"), *SessionId, *Slug), Body,
+        FMindJsonReply::CreateLambda([OnReply](TSharedPtr<FJsonObject> Json)
+        {
+            if (!Json.IsValid())
+            {
+                OnReply.ExecuteIfBound(TArray<uint8>(), 0, nullptr);
+                return;
+            }
+            TArray<uint8> Pcm;
+            FBase64::Decode(Json->GetStringField(TEXT("pcm_b64")), Pcm);
+            const int32 Rate = (int32)Json->GetNumberField(TEXT("rate"));
+            const TSharedPtr<FJsonObject>* Anim = nullptr;
+            Json->TryGetObjectField(TEXT("anim"), Anim);
+            OnReply.ExecuteIfBound(Pcm, Rate > 0 ? Rate : 24000, Anim ? *Anim : nullptr);
+        }));
 }
 
 void UMindClient::Finish()

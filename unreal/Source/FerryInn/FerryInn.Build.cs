@@ -10,7 +10,8 @@ public class FerryInn : ModuleRules
         {
             "Core", "CoreUObject", "Engine", "InputCore",
             "HTTP", "Json", "JsonUtilities", "AudioMixer",
-            "AudioCapture", "AudioCaptureCore", "AIModule", "NavigationSystem"
+            "AudioCapture", "AudioCaptureCore", "AIModule", "NavigationSystem",
+            "AnimGraphRuntime"
         });
     }
 }

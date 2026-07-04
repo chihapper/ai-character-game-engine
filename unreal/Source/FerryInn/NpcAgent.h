@@ -47,8 +47,18 @@ public:
     /** pre-deliberative orienting response: turn toward the event, startle crosses the face */
     void FlinchAt(const FVector& Where);
 
-    /** talking body language for the duration of a spoken reply, then settle back to idle */
-    void PlayTalkGesture(float Seconds);
+    /** talking body language for the duration of a spoken reply, then settle back to idle.
+     *  bIncludeFace=false when a real A2F track owns the face (body gesture only). */
+    void PlayTalkGesture(float Seconds, bool bIncludeFace = true);
+
+    /** play a remote-solved ARKit blendshape track on the face, synced from now; returns
+     *  false (and leaves the face alone) if the payload is unusable */
+    bool PlayFaceTrack(TSharedPtr<FJsonObject> AnimJson);
+
+    /** smallest-test hook: speak a line (voice + A2F face) with an engine face tag; callable
+     *  from Python/BP so lip-sync is verifiable without a microphone */
+    UFUNCTION(BlueprintCallable, Category = "Mind")
+    void TestSpeakAnim(const FString& Line, const FString& Face);
 
 private:
     UPROPERTY()
@@ -92,6 +102,15 @@ private:
     FTimerHandle FaceReturnTimer;
     FTimerHandle TalkFaceTimer;
     bool bAnimWalking = false;
+
+    /** A2F track playback state (Tick interpolates weights against the audio clock) */
+    struct FFaceFrame { float Time = 0.f; TArray<float> Weights; };
+    TArray<FName> FaceTrackNames;
+    TArray<FFaceFrame> FaceTrackFrames;
+    float FaceTrackClock = 0.f;
+    int32 FaceTrackCursor = 0;
+    bool bFaceTrackPlaying = false;
+    void TickFaceTrack(float DeltaSeconds);
 
     FString ComposeSituation() const;
     TArray<FString> ComposeOptions() const;

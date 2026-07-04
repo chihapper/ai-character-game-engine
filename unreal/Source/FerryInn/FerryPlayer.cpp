@@ -165,8 +165,8 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
                 FString::Printf(TEXT("%s: %s"), *Who->Handle, *Reply));
             UMindClient* Mind2 = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
             if (!Mind2) { bLineBusy = false; return; }
-            Mind2->Speak(Who->Slug, Reply, FMindAudioReply::CreateWeakLambda(this,
-                [this, Who](const TArray<uint8>& Pcm, int32 Rate)
+            Mind2->SpeakAnim(Who->Slug, Reply, TEXT(""), FMindSpeakAnimReply::CreateWeakLambda(this,
+                [this, Who](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
                 {
                     bLineBusy = false;
                     if (Pcm.Num() < 2) return;
@@ -178,7 +178,8 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
                     Wave->bLooping = false;
                     Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
                     UGameplayStatics::PlaySoundAtLocation(this, Wave, Who->GetActorLocation());
-                    Who->PlayTalkGesture(Wave->Duration);
+                    const bool bFaced = Who->PlayFaceTrack(Anim);   // remote lip-sync; FaceTalk if unsolved
+                    Who->PlayTalkGesture(Wave->Duration, !bFaced);
                 }));
         }));
 }

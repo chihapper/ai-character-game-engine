@@ -10,7 +10,10 @@
 #include "FerryRegions.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/PoseAsset.h"
 #include "MindClient.h"
+#include "NpcFaceAnimInstance.h"
+#include "Sound/SoundWaveProcedural.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -162,11 +165,11 @@ void ANpcAgent::FlinchAt(const FVector& Where)
     }
 }
 
-void ANpcAgent::PlayTalkGesture(float Seconds)
+void ANpcAgent::PlayTalkGesture(float Seconds, bool bIncludeFace)
 {
     // face: a syllabic jaw/lip loop (authored curves, same rig-logic path as the expression
     // loops) for the duration of the voice clip, then settle back to the neutral loop
-    if (FaceMesh)
+    if (FaceMesh && bIncludeFace)
     {
         if (UAnimSequence* FaceTalk = LoadObject<UAnimSequence>(nullptr,
             TEXT("/Game/Cast/Anims/MH/FaceTalk.FaceTalk")))
@@ -190,6 +193,117 @@ void ANpcAgent::PlayTalkGesture(float Seconds)
         {
             if (!bAnimWalking && BodyMesh && CurrentIdle) { BodyMesh->PlayAnimation(CurrentIdle, true); }
         }), FMath::Max(1.f, Seconds), false);
+}
+
+bool ANpcAgent::PlayFaceTrack(TSharedPtr<FJsonObject> AnimJson)
+{
+    if (!FaceMesh || !AnimJson.IsValid()) return false;
+    const TArray<TSharedPtr<FJsonValue>>* NamesJson = nullptr;
+    const TArray<TSharedPtr<FJsonValue>>* FramesJson = nullptr;
+    if (!AnimJson->TryGetArrayField(TEXT("blendshape_names"), NamesJson) ||
+        !AnimJson->TryGetArrayField(TEXT("frames"), FramesJson) ||
+        NamesJson->Num() == 0 || FramesJson->Num() == 0)
+    {
+        return false;
+    }
+
+    FaceTrackNames.Reset();
+    for (const TSharedPtr<FJsonValue>& V : *NamesJson)
+    {
+        FaceTrackNames.Add(FName(*V->AsString()));
+    }
+    FaceTrackFrames.Reset();
+    for (const TSharedPtr<FJsonValue>& V : *FramesJson)
+    {
+        const TSharedPtr<FJsonObject> F = V->AsObject();
+        if (!F.IsValid()) continue;
+        FFaceFrame Frame;
+        Frame.Time = (float)F->GetNumberField(TEXT("t"));
+        for (const TSharedPtr<FJsonValue>& W : F->GetArrayField(TEXT("w")))
+        {
+            Frame.Weights.Add((float)W->AsNumber());
+        }
+        FaceTrackFrames.Add(MoveTemp(Frame));
+    }
+    if (FaceTrackFrames.Num() == 0) return false;
+
+    UPoseAsset* Mapping = LoadObject<UPoseAsset>(nullptr,
+        TEXT("/Game/Cast/Built/Common/Face/ARKit/PA_MetaHuman_ARKit_Mapping.PA_MetaHuman_ARKit_Mapping"));
+    if (!Mapping) return false;
+
+    GetWorldTimerManager().ClearTimer(TalkFaceTimer);   // the real track outranks FaceTalk
+    FaceMesh->SetAnimInstanceClass(UNpcFaceAnimInstance::StaticClass());
+    UNpcFaceAnimInstance* Inst = Cast<UNpcFaceAnimInstance>(FaceMesh->GetAnimInstance());
+    if (!Inst)
+    {
+        if (FaceLoop) { FaceMesh->PlayAnimation(FaceLoop, true); }
+        return false;
+    }
+    Inst->MappingAsset = Mapping;
+    FaceMesh->InitAnim(true);   // re-run proxy Initialize now that the mapping is set
+
+    FaceTrackClock = 0.f;
+    FaceTrackCursor = 0;
+    bFaceTrackPlaying = true;
+    return true;
+}
+
+void ANpcAgent::TickFaceTrack(float DeltaSeconds)
+{
+    if (!bFaceTrackPlaying || !FaceMesh) return;
+    FaceTrackClock += DeltaSeconds;
+    const float End = FaceTrackFrames.Last().Time;
+    if (FaceTrackClock > End + 0.25f)
+    {
+        bFaceTrackPlaying = false;   // clip over: hand the face back to the neutral loop
+        if (FaceLoop) { FaceMesh->PlayAnimation(FaceLoop, true); }
+        return;
+    }
+    while (FaceTrackCursor + 1 < FaceTrackFrames.Num() &&
+           FaceTrackFrames[FaceTrackCursor + 1].Time <= FaceTrackClock)
+    {
+        ++FaceTrackCursor;
+    }
+    const FFaceFrame& A = FaceTrackFrames[FaceTrackCursor];
+    const FFaceFrame* B = FaceTrackCursor + 1 < FaceTrackFrames.Num()
+        ? &FaceTrackFrames[FaceTrackCursor + 1] : nullptr;
+    const float Alpha = (B && B->Time > A.Time)
+        ? FMath::Clamp((FaceTrackClock - A.Time) / (B->Time - A.Time), 0.f, 1.f) : 0.f;
+    TArray<float> Now;
+    const int32 N = FMath::Min(FaceTrackNames.Num(), A.Weights.Num());
+    Now.SetNumUninitialized(N);
+    for (int32 I = 0; I < N; ++I)
+    {
+        const float WB = (B && I < B->Weights.Num()) ? B->Weights[I] : A.Weights[I];
+        Now[I] = FMath::Lerp(A.Weights[I], WB, Alpha);
+    }
+    if (UNpcFaceAnimInstance* Inst = Cast<UNpcFaceAnimInstance>(FaceMesh->GetAnimInstance()))
+    {
+        Inst->SetArkitWeights(FaceTrackNames, Now);
+    }
+}
+
+void ANpcAgent::TestSpeakAnim(const FString& Line, const FString& Face)
+{
+    UMindClient* MindC = Mind();
+    if (!MindC || !MindC->HasSession()) return;
+    MindC->SpeakAnim(Slug, Line, Face, FMindSpeakAnimReply::CreateWeakLambda(this,
+        [this](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
+        {
+            if (Pcm.Num() < 2) return;
+            USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
+            Wave->SetSampleRate(Rate);
+            Wave->NumChannels = 1;
+            Wave->Duration = (float)(Pcm.Num() / 2) / (float)Rate;
+            Wave->SoundGroup = SOUNDGROUP_Voice;
+            Wave->bLooping = false;
+            Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
+            UGameplayStatics::PlaySoundAtLocation(this, Wave, GetActorLocation());
+            const bool bFaced = PlayFaceTrack(Anim);
+            PlayTalkGesture(Wave->Duration, !bFaced);
+            UE_LOG(LogTemp, Display, TEXT("TestSpeakAnim %s: %.1fs audio, face track: %s"),
+                   *Handle, Wave->Duration, bFaced ? TEXT("A2F") : TEXT("fallback"));
+        }));
 }
 
 void ANpcAgent::VaryIdle()
@@ -240,6 +354,7 @@ void ANpcAgent::EndPlay(const EEndPlayReason::Type Reason)
 void ANpcAgent::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    TickFaceTrack(DeltaSeconds);
     // swap idle/walk loops with actual motion, not intent — no sliding statues
     if (BodyMesh && IdleAnim && WalkAnim)
     {
