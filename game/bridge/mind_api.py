@@ -311,10 +311,17 @@ async def speak(sid: str, slug: str, body: Speak):
                     headers={"X-Sample-Rate": str(AUDIO_SAMPLE_RATE)})
 
 
+class EmotionMark(BaseModel):
+    t: float = 0.0          # seconds into the clip — the performance can TURN mid-sentence
+    face: str = ""
+    strength: float = Field(default=0.9, ge=0, le=1)
+
+
 class SpeakAnim(BaseModel):
     text: str
     face: str = ""          # engine face tag (happy/sad/...) — colors the facial performance
     intensity: float = 0.9  # how strongly the tag overrides audio-inferred emotion
+    emotions: list[EmotionMark] = Field(default_factory=list)  # timeline; supersedes `face`
 
 
 @router.post("/{sid}/{slug}/speak_anim")
@@ -338,10 +345,13 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     if os.environ.get("GAME_NVIDIA_API_KEY"):
         try:
             from orchestrator.adapters.faceanim_a2f import A2FFaceAnim
+            timeline = ([(m.t, m.face, m.strength) for m in body.emotions if m.face.strip()]
+                        if body.emotions else None)
             result = await A2FFaceAnim().animate(
                 pcm, AUDIO_SAMPLE_RATE,
                 emotion=body.face.strip() or None,
-                emotion_strength=body.intensity)
+                emotion_strength=body.intensity,
+                emotion_timeline=timeline)
             anim = result.to_dict()
         except Exception as exc:  # never let lip-sync failure silence the voice
             logging.getLogger("mind_api").warning("face anim skipped: %s", exc)

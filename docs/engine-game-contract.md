@@ -251,6 +251,23 @@ sandbox/games turn it on, but salience scoring, time decay, foregrounding, and t
 
 ---
 
+## 7.5 Presentation services (voice + face) — beside the engine, not inside it
+
+Voice (TTS) and facial animation (audio → ARKit blendshapes, e.g. the Audio2Face adapter)
+are **bridge conveniences**, not engine surface. They live behind `FaceAnimAdapter` /
+`TTSAdapter` seams next to the LLM adapters; the engine core never references them, and a
+text-only game never touches them. The transport is deliberately client-agnostic: raw PCM
+plus timestamped **ARKit-52** blendshape frames — Unreal, Unity, VRM, and web avatars all
+consume ARKit; how curves reach a specific rig is the CLIENT's code.
+
+One deliberate crossing, in the correct direction: the engine's chosen expression (a mind
+fact — `face` tags from `choose_action` / reactions) may be passed DOWN to color the
+performance (`/speak_anim`'s `face` or per-timecode `emotions` list, which can turn
+mid-sentence). Psychology tells the face what to feel; audio only times the mouth. The
+reverse never happens — no presentation signal feeds the mind.
+
+---
+
 ## 8. Minimal integration checklist
 
 To drive a character from a game:

@@ -151,7 +151,7 @@ void ANpcAgent::FlinchAt(const FVector& Where)
     {
         SetActorRotation(Dir.Rotation());
     }
-    if (FaceMesh)
+    if (FaceMesh && !bFaceTrackPlaying)   // never let a startle stomp live lip-sync
     {
         if (UAnimSequence** Startle = FaceReactions.Find(TEXT("surprise")))
         {
@@ -457,7 +457,7 @@ void ANpcAgent::TakeBeat()
             UE_LOG(LogTemp, Display, TEXT("MINDBEAT %s -> '%s' (%s) [face: %s | %s]"),
                    *Slug, *Action, *Reason, *Face, *Expression);
             // the engine chose what surfaces on the face this beat; wear it for a while, then settle
-            if (FaceMesh && !Face.IsEmpty() && Face != TEXT("neutral"))
+            if (FaceMesh && !bFaceTrackPlaying && !Face.IsEmpty() && Face != TEXT("neutral"))
             {
                 if (UAnimSequence** Loop = FaceReactions.Find(Face))
                 {

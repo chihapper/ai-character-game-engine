@@ -46,11 +46,14 @@ class FaceAnimAdapter(ABC):
     async def animate(
         self, pcm16: bytes, sample_rate: int,
         emotion: str | None = None, emotion_strength: float = 1.0,
+        emotion_timeline: list[tuple[float, str, float]] | None = None,
     ) -> "FaceAnimResult":
         """Solve facial animation for a complete PCM16-mono clip.
 
         `emotion` is an engine-side tag (happy/sad/angry/fear/surprise/... or None
-        for neutral); each adapter maps it to its provider's emotion space."""
+        for neutral); each adapter maps it to its provider's emotion space.
+        `emotion_timeline` [(time_sec, tag, strength), ...] supersedes `emotion` and
+        lets the performance TURN mid-clip (starts amused, hardens halfway)."""
         raise NotImplementedError
 
 
@@ -62,11 +65,14 @@ class FaceAnimResult:
                  emotions: list[tuple[float, dict[str, float]]] | None = None):
         self.blendshape_names = blendshape_names  # e.g. the ARKit-52 names
         self.frames = frames                      # [(time_sec, [weight per name]), ...]
-        self.emotions = emotions or []            # provider's per-window emotion readout
+        # provider's DETECTED per-window emotions [(time_sec, {name: weight}), ...] —
+        # diagnostic gold for the TTS bake-off: how much feeling the audio actually carries
+        self.emotions = emotions or []
 
     def to_dict(self) -> dict:
         return {"blendshape_names": self.blendshape_names,
-                "frames": [{"t": t, "w": w} for t, w in self.frames]}
+                "frames": [{"t": t, "w": w} for t, w in self.frames],
+                "detected_emotions": [{"t": t, "e": e} for t, e in self.emotions]}
 
 
 class TTSAdapter(ABC):

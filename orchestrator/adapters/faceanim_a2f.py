@@ -51,7 +51,7 @@ class A2FFaceAnim(FaceAnimAdapter):
         return md
 
     def _request_stream(self, pcm16: bytes, sample_rate: int,
-                        emotion: str | None, emotion_strength: float):
+                        timeline: list[tuple[float, str, float]]):
         header = messages_pb2.AudioWithEmotionStreamHeader(
             audio_header=audio_pb2.AudioHeader(
                 audio_format=audio_pb2.AudioHeader.AUDIO_FORMAT_PCM,
@@ -60,31 +60,38 @@ class A2FFaceAnim(FaceAnimAdapter):
                 bits_per_sample=16,
             ),
         )
-        a2f_emotion = ENGINE_TO_A2F_EMOTION.get((emotion or "").lower())
-        if a2f_emotion:
-            # deterministic path: the engine's pick becomes the preferred emotion,
+        # engine tags -> a2f emotion space; unknown tags drop (neutral = say nothing)
+        marks = [(t, ENGINE_TO_A2F_EMOTION.get((tag or "").lower()), s)
+                 for t, tag, s in timeline]
+        marks = [(t, name, s) for t, name, s in marks if name]
+        if marks:
+            # deterministic path: the engine's picks become the preferred emotion,
             # weighted in ahead of (not blended blindly with) audio inference
             pp = header.emotion_post_processing_params
             pp.enable_preferred_emotion = True
-            pp.preferred_emotion_strength = max(0.0, min(1.0, emotion_strength))
+            pp.preferred_emotion_strength = max(0.0, min(1.0, max(s for _, _, s in marks)))
         yield messages_pb2.AudioWithEmotionStream(audio_stream_header=header)
 
         chunk_bytes = sample_rate * 2 // 10  # 100 ms of PCM16 mono per message
         for off in range(0, len(pcm16), chunk_bytes):
             audio = messages_pb2.AudioWithEmotion(audio_buffer=pcm16[off:off + chunk_bytes])
-            if a2f_emotion and off == 0:
-                e = audio.emotions.add()
-                e.time_code = 0.0
-                e.emotion[a2f_emotion] = max(0.0, min(1.0, emotion_strength))
+            if off == 0:
+                for t, name, s in marks:   # timecodes place them; the face can TURN mid-clip
+                    e = audio.emotions.add()
+                    e.time_code = max(0.0, t)
+                    e.emotion[name] = max(0.0, min(1.0, s))
             yield messages_pb2.AudioWithEmotionStream(audio_with_emotion=audio)
 
         yield messages_pb2.AudioWithEmotionStream(
             end_of_audio=messages_pb2.AudioWithEmotionStream.EndOfAudio())
 
     async def animate(self, pcm16: bytes, sample_rate: int,
-                      emotion: str | None = None, emotion_strength: float = 1.0) -> FaceAnimResult:
+                      emotion: str | None = None, emotion_strength: float = 1.0,
+                      emotion_timeline: list[tuple[float, str, float]] | None = None) -> FaceAnimResult:
         if not self.api_key:
             raise RuntimeError("GAME_NVIDIA_API_KEY not set — cannot reach the hosted A2F-3D NIM")
+        timeline = emotion_timeline if emotion_timeline is not None else (
+            [(0.0, emotion, emotion_strength)] if emotion else [])
         creds = grpc.ssl_channel_credentials()
         names: list[str] = []
         frames: list[tuple[float, list[float]]] = []
@@ -92,7 +99,7 @@ class A2FFaceAnim(FaceAnimAdapter):
         async with grpc.aio.secure_channel(self.target, creds) as channel:
             stub = audio2face_pb2_grpc.A2FControllerServiceStub(channel)
             call = stub.ProcessAudioStream(
-                self._request_stream(pcm16, sample_rate, emotion, emotion_strength),
+                self._request_stream(pcm16, sample_rate, timeline),
                 metadata=self._metadata())
             async for msg in call:
                 kind = msg.WhichOneof("stream_part")
@@ -101,7 +108,13 @@ class A2FFaceAnim(FaceAnimAdapter):
                 elif kind == "animation_data":
                     for bs in msg.animation_data.skel_animation.blend_shape_weights:
                         frames.append((bs.time_code, list(bs.values)))
+                    for packed in msg.animation_data.metadata.values():
+                        agg = messages_pb2.EmotionAggregate()
+                        if packed.Unpack(agg):   # what Audio2Emotion HEARD in the voice
+                            for e in agg.a2e_output:
+                                emotions.append((e.time_code, dict(e.emotion)))
                 elif kind == "status" and msg.status.code != 0:
                     raise RuntimeError(f"A2F-3D error: {msg.status.message}")
         frames.sort(key=lambda f: f[0])
+        emotions.sort(key=lambda e: e[0])
         return FaceAnimResult(names, frames, emotions)
