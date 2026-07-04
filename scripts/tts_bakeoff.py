@@ -1,13 +1,13 @@
-"""Track V TTS bake-off harness.
+﻿"""Track V TTS bake-off harness.
 
 Runs the same emotionally-demanding lines through every provider with credentials,
 writes listenable WAVs, measures latency, and (--a2f) scores each clip's FACIAL LIFE
-by running it through Audio2Face — how much expression the audio actually carries
+by running it through Audio2Face -- how much expression the audio actually carries
 (flat voice -> flat face; this is the dual test).
 
     .venv\\Scripts\\python.exe scripts\\tts_bakeoff.py [--a2f] [--providers hume,fish,...]
 
-Voices: provider defaults unless overridden below — the bake-off compares PERFORMANCE,
+Voices: provider defaults unless overridden below -- the bake-off compares PERFORMANCE,
 casting comes after a winner is picked. Output: tts_bakeoff_out/<provider>/<line>.wav
 + report.md with the numbers side by side.
 """
@@ -32,7 +32,7 @@ LINES = {
     "neutral":  "Room's four coppers a night, meals are extra. Storm like this, you'll want the stew.",
     "rage":     "[furious, shouting] GET OUT! Get out of my inn RIGHT NOW, and don't you DARE come back!",
     "grief":    "[quiet, voice breaking] He was on the ferry when it went down. I keep... I keep setting his place at the table.",
-    "joy":      "[laughing, delighted] You actually did it! Ha! I never doubted you — all right, I doubted you a LITTLE.",
+    "joy":      "[laughing, delighted] You actually did it! Ha! I never doubted you -- all right, I doubted you a LITTLE.",
     "fear":     "[whispering, terrified] Don't turn around. There's something at the window. It's been watching us for an hour.",
     "flirt":    "[warm, teasing] Well now. The storm blows in all kinds of trouble, but you... you might be my favorite kind.",
 }
@@ -51,7 +51,7 @@ def _providers():
     except Exception:
         pass
     from orchestrator.adapters.tts_hume import HumeTTS
-    out["hume"] = (HumeTTS, "Female English Actor")
+    out['hume'] = (HumeTTS, 'Ava Song')
     from orchestrator.adapters.tts_fish import FishTTS
     out["fish"] = (FishTTS, "")  # default voice
     from orchestrator.adapters.tts_chatterbox import ChatterboxTTS
@@ -129,3 +129,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+

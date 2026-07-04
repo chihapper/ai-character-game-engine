@@ -373,6 +373,159 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
             "anim": anim}
 
 
+def _adapter_named(provider: str):
+    if provider == "elevenlabs":
+        from orchestrator.adapters.tts_elevenlabs import ElevenLabsTTS
+        return ElevenLabsTTS()
+    if provider == "hume":
+        from orchestrator.adapters.tts_hume import HumeTTS
+        return HumeTTS()
+    if provider == "fish":
+        from orchestrator.adapters.tts_fish import FishTTS
+        return FishTTS()
+    if provider == "chatterbox":
+        from orchestrator.adapters.tts_chatterbox import ChatterboxTTS
+        return ChatterboxTTS()
+    from orchestrator.adapters.tts_inworld import InworldTTS
+    return InworldTTS()
+
+
+async def _bakeoff_voice(s: "MindSession", slug: str, provider: str) -> str:
+    """Bake-off casting: env override BAKEOFF_<PROVIDER>_VOICE, else a sensible default —
+    the comparison is about PERFORMANCE; final casting comes after a winner is picked."""
+    env = os.environ.get(f"BAKEOFF_{provider.upper()}_VOICE")
+    if env:
+        return env
+    if provider == "chatterbox":
+        ref = _GAME_DIR.parent / "tts_voices" / "bri_inworld_ref.wav"
+        return str(ref) if ref.exists() else ""
+    if provider == "hume":
+        return "Ava Song"   # young-female library voice; BAKEOFF_HUME_VOICE overrides
+    if provider == "fish":
+        return ""  # provider default voice
+    return await s.voice_for(slug) or ""
+
+
+class SpeakMulti(BaseModel):
+    text: str
+    providers: list[str] = Field(default_factory=lambda: ["inworld"])
+
+
+@router.post("/{sid}/{slug}/speak_multi")
+async def speak_multi(sid: str, slug: str, body: SpeakMulti):
+    """The bake-off seam: ONE reply, every requested voice. Returns per-provider WAV
+    (base64) + first-audio/total latency so ears and numbers line up on identical text."""
+    import time as _time
+    import wave as _wave
+    import io as _io
+    s = _s(sid)
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+
+    async def one(provider: str) -> dict:
+        try:
+            tts = _adapter_named(provider)
+            voice = await _bakeoff_voice(s, slug, provider)
+            t0 = _time.perf_counter()
+            first = None
+            chunks: list[bytes] = []
+            async for chunk in tts.stream_speech(body.text, voice):
+                if first is None:
+                    first = _time.perf_counter() - t0
+                chunks.append(chunk)
+            total = _time.perf_counter() - t0
+            pcm = b"".join(chunks)
+            if not pcm:
+                return {"provider": provider, "error": "no audio"}
+            buf = _io.BytesIO()
+            with _wave.open(buf, "wb") as w:
+                w.setnchannels(1)
+                w.setsampwidth(2)
+                w.setframerate(AUDIO_SAMPLE_RATE)
+                w.writeframes(pcm)
+            return {"provider": provider, "wav_b64": base64.b64encode(buf.getvalue()).decode("ascii"),
+                    "first_audio_s": round(first, 2), "total_s": round(total, 2),
+                    "clip_s": round(len(pcm) / 2 / AUDIO_SAMPLE_RATE, 1), "voice": voice}
+        except Exception as exc:
+            return {"provider": provider, "error": str(exc)[:200]}
+
+    results = await asyncio.gather(*(one(p.strip().lower()) for p in body.providers if p.strip()))
+    return {"results": list(results)}
+
+
+@router.get("/bakeoff")
+async def bakeoff_page():
+    """The conversational bake-off: talk to a mind once, hear the reply in every candidate
+    voice side by side. Dev instrument — ears first, numbers alongside."""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(_BAKEOFF_HTML, headers={"Cache-Control": "no-store"})
+
+
+_BAKEOFF_HTML = """<!doctype html><html><head><meta charset="utf-8"><title>TTS bake-off — talk to Bri</title>
+<style>
+ body{font-family:Segoe UI,system-ui,sans-serif;background:#14100d;color:#e8dcc8;max-width:860px;margin:2rem auto;padding:0 1rem}
+ h1{font-size:1.2rem;color:#d8a24a} .muted{color:#8d7f6a;font-size:.85rem}
+ #log{border:1px solid #3a2f24;border-radius:8px;padding:1rem;min-height:120px;margin:1rem 0;background:#1b1611}
+ .turn{margin:.6rem 0} .you{color:#9fb7d8} .her{color:#e8dcc8} .marks{color:#d8a24a;font-size:.8rem}
+ .voices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.6rem;margin:.4rem 0 1rem}
+ .voice{border:1px solid #3a2f24;border-radius:8px;padding:.6rem;background:#201a13}
+ .voice b{color:#d8a24a} .voice .num{color:#8d7f6a;font-size:.8rem} .err{color:#c96a5a;font-size:.8rem}
+ input[type=text]{width:70%;padding:.55rem;background:#241d15;border:1px solid #3a2f24;color:#e8dcc8;border-radius:6px}
+ button{padding:.55rem 1rem;background:#d8a24a;border:none;border-radius:6px;font-weight:600;cursor:pointer}
+ label{margin-right:.9rem;font-size:.9rem}
+</style></head><body>
+<h1>TTS bake-off — a conversation with Bri, every voice at once</h1>
+<div class="muted">One mind, one reply, N voices. Latency shown per provider. Session resets on reload.</div>
+<div id="provs">
+ <label><input type="checkbox" value="inworld" checked>inworld (current)</label>
+ <label><input type="checkbox" value="hume" checked>hume</label>
+ <label><input type="checkbox" value="fish" checked>fish s2-pro</label>
+ <label><input type="checkbox" value="chatterbox" checked>chatterbox (local)</label>
+ <label><input type="checkbox" value="elevenlabs">elevenlabs</label>
+</div>
+<div id="log"></div>
+<form id="f"><input type="text" id="line" placeholder="Say something to Bri..." autocomplete="off">
+<button>Send</button></form>
+<script>
+const SLUG='brielle-bri-castellano'; let SID=null;
+const log=document.getElementById('log');
+async function init(){
+  const r=await fetch('/api/mind/session',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({scenario:'ferry_crossing.yaml'})});
+  SID=(await r.json()).session_id;
+}
+function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstChild}
+document.getElementById('f').onsubmit=async e=>{
+  e.preventDefault();
+  const line=document.getElementById('line').value.trim(); if(!line||!SID)return;
+  document.getElementById('line').value='';
+  log.appendChild(el(`<div class="turn you">You: ${line}</div>`));
+  const think=el(`<div class="turn muted">Bri is thinking...</div>`); log.appendChild(think);
+  const rr=await fetch(`/api/mind/${SID}/${SLUG}/respond`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({line,situation:{location:'the bar, in the taproom',
+      present:['the traveler stands right in front of you, speaking to you'],
+      ambient:'rain drums on the roof; the storm has the ferry grounded'}})});
+  const rd=await rr.json(); think.remove();
+  const marks=(rd.face_marks||[]).map(m=>`${m.face}@${m.frac}`).join(' ')||'neutral';
+  log.appendChild(el(`<div class="turn her">Bri: ${rd.reply} <span class="marks">[face: ${marks}]</span></div>`));
+  const provs=[...document.querySelectorAll('#provs input:checked')].map(c=>c.value);
+  const grid=el(`<div class="voices"></div>`); log.appendChild(grid);
+  for(const p of provs) grid.appendChild(el(`<div class="voice" id="v-${p}"><b>${p}</b><div class="num">synthesizing...</div></div>`));
+  window.scrollTo(0,document.body.scrollHeight);
+  const sr=await fetch(`/api/mind/${SID}/${SLUG}/speak_multi`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:rd.reply,providers:provs})});
+  for(const res of (await sr.json()).results){
+    const box=document.getElementById(`v-${res.provider}`); if(!box)continue;
+    box.innerHTML=res.error
+      ? `<b>${res.provider}</b><div class="err">${res.error}</div>`
+      : `<b>${res.provider}</b><div class="num">first audio ${res.first_audio_s}s · total ${res.total_s}s · clip ${res.clip_s}s</div>
+         <audio controls src="data:audio/wav;base64,${res.wav_b64}" style="width:100%"></audio>`;
+  }
+  window.scrollTo(0,document.body.scrollHeight);
+};
+init();
+</script></body></html>"""
+
+
 @router.post("/{sid}/stt")
 async def stt(sid: str, request: Request):
     """Push-to-talk: a WAV clip in, the player's words out (AssemblyAI batch — short clips
