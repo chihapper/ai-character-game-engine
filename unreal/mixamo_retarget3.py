@@ -66,7 +66,14 @@ try:
     out = op.duplicate_and_retarget(anims, xbot_mesh, mh_mesh, rtg,
                                     search="Mx_", replace="MHG_", target_path=DEST + "/MH")
     unreal.log("RETARGETED %d assets" % len(out))
-    for o in list(out)[:15]:
-        unreal.log("  %s" % o.get_name())
 except Exception as e:
     unreal.log("batch ERR: %s" % e)
+
+# the batch only creates in-memory assets — without this, a restart deletes them all
+if unreal.EditorAssetLibrary.does_asset_exist(DEST + "/MH/MHG_Talking_Anim"):
+    unreal.EditorAssetLibrary.rename_asset(DEST + "/MH/MHG_Talking_Anim", DEST + "/MH/MHG_Talking")
+saved = 0
+for p in unreal.EditorAssetLibrary.list_assets(DEST + "/MH", recursive=True, include_folder=False):
+    if unreal.EditorAssetLibrary.save_asset(str(p).split(".")[0]):
+        saved += 1
+unreal.log("SAVED %d retargeted clips to disk" % saved)
