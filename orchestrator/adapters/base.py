@@ -34,6 +34,41 @@ class LLMAdapter(ABC):
         raise NotImplementedError
 
 
+class FaceAnimAdapter(ABC):
+    """Audio -> facial animation: PCM speech in, timestamped blendshape frames out.
+
+    Provider-agnostic by construction: the input is the same PCM the TTS adapters
+    emit, so swapping TTS (or moving to a full-loop provider) never touches this
+    seam. The engine's chosen emotion is passed EXPLICITLY — the character's
+    psychology overrides any audio-inferred mood (expression-relevance mechanic)."""
+
+    @abstractmethod
+    async def animate(
+        self, pcm16: bytes, sample_rate: int,
+        emotion: str | None = None, emotion_strength: float = 1.0,
+    ) -> "FaceAnimResult":
+        """Solve facial animation for a complete PCM16-mono clip.
+
+        `emotion` is an engine-side tag (happy/sad/angry/fear/surprise/... or None
+        for neutral); each adapter maps it to its provider's emotion space."""
+        raise NotImplementedError
+
+
+class FaceAnimResult:
+    """Timestamped blendshape track for one spoken clip."""
+
+    def __init__(self, blendshape_names: list[str],
+                 frames: list[tuple[float, list[float]]],
+                 emotions: list[tuple[float, dict[str, float]]] | None = None):
+        self.blendshape_names = blendshape_names  # e.g. the ARKit-52 names
+        self.frames = frames                      # [(time_sec, [weight per name]), ...]
+        self.emotions = emotions or []            # provider's per-window emotion readout
+
+    def to_dict(self) -> dict:
+        return {"blendshape_names": self.blendshape_names,
+                "frames": [{"t": t, "w": w} for t, w in self.frames]}
+
+
 class TTSAdapter(ABC):
     """Text-to-speech: a sentence + voice id in, a stream of audio chunks out.
 
