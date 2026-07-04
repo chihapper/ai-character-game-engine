@@ -109,7 +109,12 @@ function renderEvents(events, replay = false) {
     else if (e.kind === "event") add("event", "⚡ " + esc(e.text));
     else if (e.kind === "reaction") add("react", `<b>${esc(e.who || "")}</b> ${esc(e.text)}`);
     else if (e.kind === "dialogue") {
-      add("say", `<span class="who-name">${esc(e.who || "")}</span><span class="line">${esc(e.text)}</span>`);
+      // stage business reads italic-gray; only the quoted words are "spoken" ink —
+      // the same narration/speech split the voice itself uses
+      const rich = esc(e.text).split(/("[^"]*"|“[^”]*”)/g).map((p, i) =>
+        i % 2 ? `<span class="spoken">${p}</span>` : (p ? `<span class="stage">${p}</span>` : "")
+      ).join("");
+      add("say", `<span class="who-name">${esc(e.who || "")}</span><span class="line">${rich}</span>`);
       if (!replay) queueVoice(e.slug, e.text);   // the voice speaks the quotes; narration stays silent
     }
     else add("narr", esc(e.text));
