@@ -11,7 +11,14 @@ async function speakEvent(slug, text) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slug, text }),
     });
-    if (!r.ok || !r.body) return;
+    if (!r.ok || !r.body) {
+      if (!S.voiceWarned) {   // once per session: silence with no explanation ruins a demo
+        S.voiceWarned = true;
+        const detail = (await r.json().catch(() => ({}))).detail || `provider error ${r.status}`;
+        add("event", "🔇 voice unavailable — " + esc(String(detail).slice(0, 140)));
+      }
+      return;
+    }
     const rate = parseInt(r.headers.get("X-Sample-Rate") || "24000", 10);
     const reader = r.body.getReader();
     let carry = new Uint8Array(0);

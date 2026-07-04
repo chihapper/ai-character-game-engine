@@ -32,6 +32,13 @@ from .base import TTSAdapter
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.hume.ai"
+
+# cross-TURN prosody continuation: Octave can continue from the previous generation, so a
+# conversation keeps one emotional through-line instead of starting cold each reply.
+# Keyed per voice (per character), module-level because adapters are constructed per call;
+# TTL'd so a new scene doesn't inherit a stale mood.
+_LAST_GENERATION: dict[str, tuple[str, float]] = {}
+_CONTINUATION_TTL_S = 300.0
 _HUME_PCM_RATE = 48000
 _LEAD_TAG = re.compile(r"^\s*\[([^\[\]]{1,120})\]\s*")
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
@@ -224,6 +231,10 @@ class HumeTTS(TTSAdapter):
         # 2.7x full quality) — quality is the default; HUME_INSTANT=1 buys ~1s of latency back
         body = {"utterances": utterances, "format": {"type": "pcm"},
                 "instant_mode": bool(voice_id) and self._instant}
+        import time as _time
+        prev = _LAST_GENERATION.get(voice_id)
+        if prev and _time.monotonic() - prev[1] < _CONTINUATION_TTL_S:
+            body["context"] = {"generation_id": prev[0]}   # carry the mood across turns
         headers = {"X-Hume-Api-Key": self._api_key, "Content-Type": "application/json"}
         first = True
         got_audio = False
@@ -242,7 +253,12 @@ class HumeTTS(TTSAdapter):
                     except ValueError:
                         continue
                     if msg.get("error") or msg.get("message") and not msg.get("audio"):
+                        _LAST_GENERATION.pop(voice_id, None)   # a failed context must not persist
                         raise RuntimeError(f"Hume TTS error: {str(msg)[:300]}")
+                    gid = msg.get("generation_id")
+                    if gid:
+                        import time as _time
+                        _LAST_GENERATION[voice_id] = (gid, _time.monotonic())
                     audio = msg.get("audio")
                     if not audio:
                         continue
