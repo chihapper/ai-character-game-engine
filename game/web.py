@@ -71,6 +71,7 @@ def _view(g: Game) -> dict:
     snap = g.snapshot()  # scenario, beat, beat_title, clock, present (handles), run_id
     # Chips address people by appearance (strangers) — same as the fiction; the slug does the routing.
     snap["roster"] = [{"slug": s, "name": g.label(s)} for s in g.present]
+    snap["history_len"] = len(g.history)   # lets a client that lost a response resync the delta
     return snap
 
 

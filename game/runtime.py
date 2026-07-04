@@ -5,6 +5,7 @@ calls the same `Game` methods. Every playthrough writes a durable transcript and
 embodiment-experiment log (#30)."""
 from __future__ import annotations
 
+import asyncio
 import glob
 import json
 import os
@@ -227,7 +228,6 @@ class Game:
         recap = self._recap()
         # narration and perception are independent DM calls — run them together (start-up
         # was two big sequential model calls before a player saw anything)
-        import asyncio
         narration, perception = await asyncio.gather(
             self.dm.narrate_beat(beat, recap, refs, self.player_location),
             self.dm.scene_perception(beat, refs, self.player_location, recent=recap))
@@ -242,12 +242,18 @@ class Game:
         targets = self.present if to in (None, "all") else [t for t in to if t in self.present]
         self._log("event", text)
         threshold = self.scenario.get("deliberation", {}).get("react_threshold", 0.7)
-        for slug in targets:
-            sal = await self.engines[slug].remember(text, magnitude=mag, t=self.clock)
-            if ev.get("react") and sal is not None and sal >= threshold:
-                dec = await self.engines[slug].deliberate(Situation(clock=self.clock), mode="free")
-                if dec.get("changed") and dec.get("world_action"):
-                    self._log("reaction", self._scrub(dec["world_action"]), slug=slug, who=self.label(slug))
+        # each mind is its own engine — appraise everyone AT ONCE, then let all the reactors
+        # deliberate at once (sequential was the slowest stretch of a beat, and long enough to
+        # trip proxy timeouts on the tunnel); reaction log order stays deterministic (targets order)
+        sals = await asyncio.gather(*(self.engines[s].remember(text, magnitude=mag, t=self.clock)
+                                      for s in targets))
+        reactors = [s for s, sal in zip(targets, sals)
+                    if ev.get("react") and sal is not None and sal >= threshold]
+        decs = await asyncio.gather(*(self.engines[s].deliberate(Situation(clock=self.clock), mode="free")
+                                      for s in reactors))
+        for slug, dec in zip(reactors, decs):
+            if dec.get("changed") and dec.get("world_action"):
+                self._log("reaction", self._scrub(dec["world_action"]), slug=slug, who=self.label(slug))
 
     async def talk(self, target_ref: str, line: str) -> str:
         slug = self._resolve(target_ref)
@@ -297,8 +303,10 @@ class Game:
         """Advance to the next beat: NPCs deliberate (metabolize the night), clock ticks, next beat
         is entered + its events fire. Returns False if there is no next beat (the story is over)."""
         if self.scenario.get("deliberation", {}).get("on_beat_advance"):
-            for slug in self.present:
-                await self.engines[slug].deliberate(Situation(clock=self.clock), mode="free")
+            # independent minds metabolize the night TOGETHER — this was four sequential
+            # deliberations (1-3 model calls each) before the player saw anything
+            await asyncio.gather(*(self.engines[s].deliberate(Situation(clock=self.clock), mode="free")
+                                   for s in self.present))
         self.clock += self.hours_per_beat
         if self.beat_i + 1 >= len(self.scenario["beats"]):
             return False

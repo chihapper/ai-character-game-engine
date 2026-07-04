@@ -135,6 +135,7 @@ function renderView(v) {
   if (!v) return;
   $("beat").textContent = v.beat_title || "—";
   $("clock").textContent = `hour ${Math.round(v.clock)}`;
+  if (typeof v.history_len === "number") S.histLen = v.history_len;
   S.roster = v.roster || S.roster;
   $("roster").innerHTML = S.roster.map((r) => `<span class="who">${esc(r.name)}</span>`).join("");
   renderTargets();
@@ -147,6 +148,35 @@ function renderTargets() {
   $("targets").style.opacity = S.mode === "act" ? ".4" : "1";
   $("targets").style.pointerEvents = S.mode === "act" ? "none" : "auto";
   [...$("targets").children].forEach((ch) => ch.onclick = () => { S.target = ch.dataset.slug; renderTargets(); });
+}
+
+// ---- lost-response recovery ----------------------------------------------
+// A long turn (especially "the night moves on") can outlive the tunnel's proxy timeout:
+// the phone sees "load failed" while the server keeps working under the game lock. The
+// world DID move — so instead of stranding the player, poll /state and render what we
+// missed until the story stops growing.
+const isNetDrop = (e) =>
+  e instanceof TypeError || /load failed|failed to fetch|network|timeout/i.test(e.message || "");
+
+async function resync(label) {
+  thinking(true, label || "the night is long — catching up…");
+  let stable = 0;
+  for (let i = 0; i < 40 && stable < 2; i++) {   // up to ~3.5 min, stop after 2 quiet polls
+    await new Promise((r) => setTimeout(r, 5000));
+    try {
+      const res = await api(`/${S.gid}/state`, "GET");
+      const total = (res.history || []).length;
+      if (total > (S.histLen || 0)) {
+        renderEvents(res.history.slice(S.histLen || 0));
+        renderView(res.view);   // updates S.histLen from history_len
+        S.histLen = total;
+        stable = 0;
+      } else {
+        stable++;
+      }
+    } catch (e) { /* server mid-turn; keep waiting */ }
+  }
+  thinking(false);
 }
 
 // ---- actions ------------------------------------------------------------
@@ -171,7 +201,11 @@ async function send() {
     thinking(false);
     renderEvents(res.events);
     renderView(res.view);
-  } catch (e) { thinking(false); add("event", "⚠ " + esc(e.message)); }
+  } catch (e) {
+    thinking(false);
+    if (isNetDrop(e)) await resync("a slow moment — catching up…");
+    else add("event", "⚠ " + esc(e.message));
+  }
   finally { setBusy(false); $("input").focus(); }
 }
 async function advance() {
@@ -184,7 +218,11 @@ async function advance() {
     renderEvents(res.events);
     renderView(res.view);
     if (res.ended) endNight();
-  } catch (e) { thinking(false); add("event", "⚠ " + esc(e.message)); }
+  } catch (e) {
+    thinking(false);
+    if (isNetDrop(e)) await resync("The night turns (slowly) — catching up…");
+    else add("event", "⚠ " + esc(e.message));
+  }
   finally { setBusy(false); }
 }
 function endNight() {
