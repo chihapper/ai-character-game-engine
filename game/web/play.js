@@ -234,6 +234,16 @@ async function tryResume() {
 // ---- wiring -------------------------------------------------------------
 $("beginBtn").onclick = begin;
 $("sendBtn").onclick = send;
+$("restartBtn").onclick = async () => {
+  if (S.busy) return;
+  if (!confirm("Leave this night behind and start a fresh one?")) return;
+  const gid = S.gid;
+  localStorage.removeItem("ferry_gid");   // clear FIRST — reload must land on the start card
+  if (gid) {
+    try { await api(`/${gid}/finish`, "POST", { outcome: "(started over)" }); } catch (e) {}
+  }
+  location.reload();
+};
 $("voiceBtn").onclick = () => {
   S.voice = !S.voice;
   $("voiceBtn").textContent = S.voice ? "🔊 Voice on" : "🔇 Voice off";
