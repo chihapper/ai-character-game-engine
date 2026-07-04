@@ -4,8 +4,22 @@ const S = { gid: null, roster: [], target: "__room", mode: "speak", busy: false,
             voice: true, audio: null, playhead: 0, voiceQueue: Promise.resolve() };
 
 // ---- voice: streaming PCM playback (starts at FIRST chunk, not full render) ----------------
+function ensureAudio() {
+  // mobile browsers gate audio behind a user gesture, and iOS often births the context
+  // SUSPENDED even then — create on any first touch and always kick resume()
+  if (!S.audio) {
+    try { S.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  }
+  if (S.audio.state === "suspended") S.audio.resume().catch(() => {});
+}
+["pointerdown", "touchend", "keydown"].forEach((ev) =>
+  document.addEventListener(ev, ensureAudio, { passive: true }));
+
 async function speakEvent(slug, text) {
-  if (!S.voice || !S.audio || !slug) return;
+  if (!S.voice || !slug) return;
+  ensureAudio();
+  if (!S.audio) return;
+  if (S.audio.state === "suspended") { try { await S.audio.resume(); } catch (e) { return; } }
   try {
     const r = await fetch(`/api/game/${S.gid}/voice`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -188,8 +202,7 @@ const INTRO =
 async function begin() {
   $("beginBtn").disabled = true;
   $("startHint").textContent = "the storm closes in…";
-  // audio must be born from a user gesture (mobile browsers) — the Begin click is ours
-  try { S.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { S.voice = false; }
+  ensureAudio();   // the Begin click is a user gesture — birth (and resume) the audio here
   try {
     const res = await api("/new", "POST", { reply_model: $("replyModel").value });
     S.gid = res.game_id;
@@ -224,9 +237,7 @@ $("sendBtn").onclick = send;
 $("voiceBtn").onclick = () => {
   S.voice = !S.voice;
   $("voiceBtn").textContent = S.voice ? "🔊 Voice on" : "🔇 Voice off";
-  if (!S.audio && S.voice) {
-    try { S.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { S.voice = false; }
-  }
+  if (S.voice) ensureAudio();
 };
 $("advanceBtn").onclick = advance;
 $("input").addEventListener("keydown", (e) => {
