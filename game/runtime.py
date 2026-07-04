@@ -21,7 +21,7 @@ from orchestrator.context import RespondRequest, Situation
 from orchestrator.engine import Engine
 from orchestrator.memory.long_term import LongTermMemory
 
-from . import experiment_log, policy
+from . import casting, experiment_log, policy
 from .dm import DM
 
 RUNS_DIR = ROOT_DIR / ".game_runs"  # repo-anchored, never cwd-relative
@@ -60,8 +60,15 @@ class Game:
         if reset and not self.ns_prefix:
             self._wipe_memory()
 
+        # SITUATE each borrowed sheet INTO this world (same as the mind server, casting.situate):
+        # bakes the world frame into the backstory at SYSTEM-PROMPT authority and applies the
+        # cast's adapt swaps. Without this the text game ran raw sheets — Corvin as a literal
+        # dockside harbormaster, Bri still naming "Marco" — because a per-turn situation note
+        # can't out-argue the sheet. This is the real grounding; the situation extra is backup.
+        by_slug = {c["slug"]: c for c in self.scenario["cast"]}
+
         def _char(slug: str):
-            c = load_character(slug)
+            c = casting.situate(load_character(slug), self.scenario, by_slug.get(slug))
             if self.ns_prefix:
                 from dataclasses import replace as _replace
                 c = _replace(c, memory_namespace=f"{self.ns_prefix}.{c.memory_namespace}")
@@ -185,20 +192,37 @@ class Game:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         return rec
 
+    def _grounding_extra(self, slug: str) -> dict:
+        """The world-anchoring EVERY situation needs so a borrowed sheet can't override tonight:
+        the scenario's world frame (riverlands, no modern world) and why THIS character is here.
+        Missing on the between-beat deliberation path was the 'Corvin at the docks' regression —
+        his sheet is a harbormaster of a smuggling port; only this grounding makes him a river-inn
+        guest. Same anchor the mind-server path injects into every situation."""
+        extra = {"Performance": policy.PERFORMANCE_RULES}
+        frame = (self.scenario.get("world_frame") or "").strip()
+        if frame:
+            extra["The world you live in"] = frame
+        if self.here_because.get(slug):
+            extra["Why you're here tonight"] = self.here_because[slug]
+        return extra
+
     def _situation_for(self, slug: str, *, in_scene: list | None = None) -> Situation:
         """The perceiving NPC's view of the room right now: the rich-text perception, who's here, any
         lines JUST said in this exchange (so an NPC responding to the room hears the others), and why
         THEY are here tonight (scenario grounding)."""
         others = [self._ref(s) for s in self.present if s != slug]
         recent = [f'{self.label(sl)} just said: "{ln}"' for sl, ln in (in_scene or [])]
-        extra = {"Where the player is": self.player_location,
-                 # the SHARED performance contract (policy.py) — same expressive machinery as the
-                 # mind-server path: stage business carries feeling, face postscript, address rules
-                 "Performance": policy.PERFORMANCE_RULES}
-        if self.here_because.get(slug):
-            extra["Why you're here tonight"] = self.here_because[slug]
+        extra = {"Where the player is": self.player_location, **self._grounding_extra(slug)}
         return Situation(location=self._perception, present=others, recent_events=recent,
                          extra=extra, game_time=self._beat()["title"], clock=self.clock)
+
+    def _deliberation_situation(self, slug: str) -> Situation:
+        """A GROUNDED situation for between-beat deliberation (advance + event reactions), so an
+        off-duty mind metabolizes the night AS a guest in tonight's world, not its paper self."""
+        return Situation(location=self._perception or self.player_location,
+                         present=[self._ref(s) for s in self.present if s != slug],
+                         extra=self._grounding_extra(slug),
+                         game_time=self._beat()["title"], clock=self.clock)
 
     def _dialogue_recap(self, n: int = 4) -> str:
         """The last few player/NPC lines, so the responder-picker can read who's being addressed."""
@@ -249,7 +273,7 @@ class Game:
                                       for s in targets))
         reactors = [s for s, sal in zip(targets, sals)
                     if ev.get("react") and sal is not None and sal >= threshold]
-        decs = await asyncio.gather(*(self.engines[s].deliberate(Situation(clock=self.clock), mode="free")
+        decs = await asyncio.gather(*(self.engines[s].deliberate(self._deliberation_situation(s), mode="free")
                                       for s in reactors))
         for slug, dec in zip(reactors, decs):
             if dec.get("changed") and dec.get("world_action"):
@@ -305,7 +329,7 @@ class Game:
         if self.scenario.get("deliberation", {}).get("on_beat_advance"):
             # independent minds metabolize the night TOGETHER — this was four sequential
             # deliberations (1-3 model calls each) before the player saw anything
-            await asyncio.gather(*(self.engines[s].deliberate(Situation(clock=self.clock), mode="free")
+            await asyncio.gather(*(self.engines[s].deliberate(self._deliberation_situation(s), mode="free")
                                    for s in self.present))
         self.clock += self.hours_per_beat
         if self.beat_i + 1 >= len(self.scenario["beats"]):

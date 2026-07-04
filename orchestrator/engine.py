@@ -259,6 +259,19 @@ class Engine:
         feelings + scars, beliefs, what's happened (esp. since they last took stock), and elapsed time."""
         goals = self.agency.goals() or self.character.goals
         parts = [_character_summary(self.character)]
+        # WHERE YOU ARE, RIGHT NOW — so a self-chosen world_action is anchored to the present
+        # scene, not a locale from the character's backstory. Without this, deliberation knew a
+        # character's whole life but not where they physically stood, and a harbor-man's mind
+        # produced "slips out of the harbormaster's office" while stranded at a ferry-inn.
+        if situation is not None:
+            extra = getattr(situation, "extra", None) or {}
+            here = [str(getattr(situation, "location", "") or "").strip(),
+                    str(extra.get("Why you're here tonight", "") or "").strip(),
+                    str(extra.get("The world you live in", "") or "").strip()]
+            here = "\n".join(b for b in here if b)
+            if here:
+                parts.append("WHERE YOU ARE RIGHT NOW (any action happens in and from THIS place, "
+                             "not somewhere out of your past):\n" + here)
         if goals:
             parts.append("Your current goals: " + "; ".join(goals))
         if self.intent.get().intent:
