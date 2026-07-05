@@ -364,8 +364,17 @@ class Game:
         if m:
             self.player_location = m.group(1).strip()
             text = (text[:m.start()] + text[m.end():]).strip()
-        # ...and `TARGET: ...` names who the action was aimed at, so the one it happened to weighs it
-        # as a participant even if the prose was terse about them. Parse + strip it.
+        # ...and `WITNESSED: ...` is a clean, past-tense account of what the room actually saw — the
+        # memory the minds keep. We plant THIS, not the player-facing 2nd-person prose: crudely
+        # regex-swapping "you"->"the traveler" on the narration produced garbled, ambiguous memories
+        # ("You doesn't have time to react — her head snaps"), which the NPC then mis-read or forgot.
+        witnessed_line = None
+        m = re.search(r"(?im)^\s*WITNESSED:\s*(.+?)\s*$", text)
+        if m:
+            witnessed_line = m.group(1).strip()
+            text = (text[:m.start()] + text[m.end():]).strip()
+        # `TARGET: ...` names who the action was aimed at, so the one it happened to weighs it as a
+        # participant AND has their disposition toward the player actually move. Parse + strip it.
         targets: list[str] = []
         m = re.search(r"(?im)^\s*TARGET:\s*(.+?)\s*$", text)
         if m:
@@ -377,23 +386,32 @@ class Game:
         self._log("narration", text)
         # WORLD -> MINDS: the people present WITNESS a physical player action, so plant it in their
         # memory via the engine's remember() seam — the SAME door _fire_event and the mind-server
-        # /observe use. The engine stays ignorant of what the action IS; the game owns "who saw
-        # what". This is why paying Della now reaches her mind (before, `act` never told anyone).
+        # /observe use. The engine stays ignorant of what the action IS; the game owns "who saw what".
         if not self._INTROSPECTION.search(action):
-            witnessed = self._witnessed(text)
+            # Prefer the DM's clean witnessed account; fall back to reframing the narration if absent.
+            witnessed = witnessed_line or self._witnessed(text)
             # Each mind gets its OWN copy: the person it happened TO reads it in the second person
-            # ("slaps you") and weighs it as a participant; onlookers get the third-person account.
-            # Without this, being slapped landed as "I watched the young woman get slapped" — low
-            # salience, no reaction, forgotten a moment later.
+            # ("slapped you") and weighs it as a participant; onlookers get the third-person account.
             personal = [self._personalize(witnessed, s) for s in self.present]
-            # A participant is whoever the DM named as a TARGET, or whoever the prose put in the
+            # A participant is whoever the DM named as a TARGET, or whoever the account put in the
             # scene by name (personalize changed their copy). They weigh it heavily; onlookers less.
-            mags = [0.85 if (s in targets or p != witnessed) else 0.5
-                    for s, p in zip(self.present, personal)]
+            involved = [s in targets or p != witnessed for s, p in zip(self.present, personal)]
+            # Whose disposition toward the player MOVES: the DM's explicit TARGETs — or, if it named
+            # none, the SOLE person the clean account was actually written about (so a directed act
+            # still costs/earns trust even when the TARGET line was dropped; an ambiguous multi-name
+            # scene waits for an explicit TARGET rather than guess). The engine judges sign+size from
+            # the account (a slap costs trust, a kindness earns it); onlookers just remember.
+            caused = set(targets)
+            if not caused:
+                rewritten = [s for s, p in zip(self.present, personal) if p != witnessed]
+                if len(rewritten) == 1:
+                    caused = set(rewritten)
             sals = await asyncio.gather(*(
-                self.engines[s].remember(p, kind="player_event", actor="player",
-                                         magnitude=m, t=self.clock)
-                for s, p, m in zip(self.present, personal, mags)))
+                self.engines[s].remember(
+                    p, kind="player_event", actor="player",
+                    player_role=("caused" if s in caused else None),
+                    magnitude=(0.85 if inv else 0.5), t=self.clock)
+                for s, p, inv in zip(self.present, personal, involved)))
             # ...and let anyone who found it salient enough REACT in the moment — the same recipe
             # scripted events use. Salience gates it, so mundane acts (counting coins, checking a
             # coat) stay quiet while a slap or a drawn blade draws a response.
