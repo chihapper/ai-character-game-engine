@@ -55,6 +55,11 @@ public:
      *  false (and leaves the face alone) if the payload is unusable */
     bool PlayFaceTrack(TSharedPtr<FJsonObject> AnimJson);
 
+    /** play a spoken PCM16 clip on this NPC; returns its duration. The A2F face track (if one
+     *  is playing) SLAVES its clock to this audio's real playback position — no drift, no
+     *  start-up offset, hitch-proof lip-sync. */
+    float PlayVoice(const TArray<uint8>& Pcm, int32 Rate);
+
     /** smallest-test hook: speak a line (voice + A2F face) with an engine face tag; callable
      *  from Python/BP so lip-sync is verifiable without a microphone */
     UFUNCTION(BlueprintCallable, Category = "Mind")
@@ -111,6 +116,14 @@ private:
     int32 FaceTrackCursor = 0;
     bool bFaceTrackPlaying = false;
     void TickFaceTrack(float DeltaSeconds);
+
+    /** the live voice component + its real playback position, so the face follows the AUDIO */
+    UPROPERTY()
+    UAudioComponent* VoiceAudio = nullptr;
+    float VoiceClipDuration = 0.f;
+    float VoicePlayTime = 0.f;
+    bool bVoiceSlaved = false;
+    void OnVoicePlaybackPercent(const UAudioComponent* Comp, const USoundWave* Wave, float Percent);
 
     FString ComposeSituation() const;
     TArray<FString> ComposeOptions() const;

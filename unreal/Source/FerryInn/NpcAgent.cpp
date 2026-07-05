@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Animation/PoseAsset.h"
+#include "Components/AudioComponent.h"
 #include "MindClient.h"
 #include "NpcFaceAnimInstance.h"
 #include "Sound/SoundWaveProcedural.h"
@@ -248,10 +249,59 @@ bool ANpcAgent::PlayFaceTrack(TSharedPtr<FJsonObject> AnimJson)
     return true;
 }
 
+float ANpcAgent::PlayVoice(const TArray<uint8>& Pcm, int32 Rate)
+{
+    if (Pcm.Num() < 2 || Rate <= 0) return 0.f;
+    USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
+    Wave->SetSampleRate(Rate);
+    Wave->NumChannels = 1;
+    Wave->Duration = (float)(Pcm.Num() / 2) / (float)Rate;
+    Wave->SoundGroup = SOUNDGROUP_Voice;
+    Wave->bLooping = false;
+    Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
+
+    VoiceClipDuration = Wave->Duration;
+    VoicePlayTime = 0.f;
+    bVoiceSlaved = false;
+    if (VoiceAudio) { VoiceAudio->Stop(); VoiceAudio->DestroyComponent(); VoiceAudio = nullptr; }
+
+    // a manually-created component so the playback-percent delegate is bound BEFORE Play() — the
+    // audio device only tracks playback position when the delegate is already bound at play time.
+    // That position is what the face track slaves to (see TickFaceTrack), so the mouth follows the
+    // AUDIO, never a free-running game clock that a frame hitch could drift off the words.
+    UAudioComponent* AC = NewObject<UAudioComponent>(this);
+    AC->bAutoActivate = false;
+    AC->bAutoDestroy = true;           // self-cleans when the clip finishes
+    AC->bAllowSpatialization = true;
+    AC->SetSound(Wave);
+    AC->SetWorldLocation(GetActorLocation());
+    AC->OnAudioPlaybackPercentNative.AddUObject(this, &ANpcAgent::OnVoicePlaybackPercent);
+    AC->RegisterComponent();
+    AC->Play();
+    VoiceAudio = AC;
+    return Wave->Duration;
+}
+
+void ANpcAgent::OnVoicePlaybackPercent(const UAudioComponent* Comp, const USoundWave* Wave, float Percent)
+{
+    if (Comp != VoiceAudio) return;   // ignore a stale prior clip's tail callbacks
+    VoicePlayTime = Percent * VoiceClipDuration;
+    bVoiceSlaved = true;
+}
+
 void ANpcAgent::TickFaceTrack(float DeltaSeconds)
 {
     if (!bFaceTrackPlaying || !FaceMesh) return;
-    FaceTrackClock += DeltaSeconds;
+    // SLAVE the face to the audio's real playback position once it's reporting; until the first
+    // callback lands, advance on the game clock so the opening frames aren't frozen
+    if (bVoiceSlaved && VoiceAudio && VoiceAudio->IsPlaying())
+    {
+        FaceTrackClock = VoicePlayTime;
+    }
+    else
+    {
+        FaceTrackClock += DeltaSeconds;
+    }
     const float End = FaceTrackFrames.Last().Time;
     if (FaceTrackClock > End + 0.25f)
     {
@@ -299,18 +349,11 @@ void ANpcAgent::TestSpeakAnim(const FString& Line, const FString& Face)
         [this](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
         {
             if (Pcm.Num() < 2) return;
-            USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
-            Wave->SetSampleRate(Rate);
-            Wave->NumChannels = 1;
-            Wave->Duration = (float)(Pcm.Num() / 2) / (float)Rate;
-            Wave->SoundGroup = SOUNDGROUP_Voice;
-            Wave->bLooping = false;
-            Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
-            UGameplayStatics::PlaySoundAtLocation(this, Wave, GetActorLocation());
-            const bool bFaced = PlayFaceTrack(Anim);
-            PlayTalkGesture(Wave->Duration, !bFaced);
+            const bool bFaced = PlayFaceTrack(Anim);   // arm the face BEFORE audio so it slaves from frame 1
+            const float Dur = PlayVoice(Pcm, Rate);
+            PlayTalkGesture(Dur, !bFaced);
             UE_LOG(LogTemp, Display, TEXT("TestSpeakAnim %s: %.1fs audio, face track: %s"),
-                   *Handle, Wave->Duration, bFaced ? TEXT("A2F") : TEXT("fallback"));
+                   *Handle, Dur, bFaced ? TEXT("A2F") : TEXT("fallback"));
         }));
 }
 
@@ -350,6 +393,11 @@ void ANpcAgent::BeginPlay()
 
 void ANpcAgent::EndPlay(const EEndPlayReason::Type Reason)
 {
+    if (VoiceAudio)
+    {
+        VoiceAudio->Stop();
+        VoiceAudio = nullptr;
+    }
     if (BodyActor)
     {
         BodyActor->Destroy();

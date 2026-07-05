@@ -184,16 +184,11 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
                     bLineBusy = false;
                     ANpcAgent* Who = WhoW.Get();
                     if (!Who || Pcm.Num() < 2) return;
-                    USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
-                    Wave->SetSampleRate(Rate);
-                    Wave->NumChannels = 1;
-                    Wave->Duration = (float)(Pcm.Num() / 2) / (float)Rate;
-                    Wave->SoundGroup = SOUNDGROUP_Voice;
-                    Wave->bLooping = false;
-                    Wave->QueueAudio(Pcm.GetData(), Pcm.Num());
-                    UGameplayStatics::PlaySoundAtLocation(this, Wave, Who->GetActorLocation());
+                    // arm the face track FIRST so it slaves to the audio from the first frame, then
+                    // the NPC plays the voice on itself (audio-position-driven lip-sync — no drift)
                     const bool bFaced = Who->PlayFaceTrack(Anim);   // remote lip-sync; FaceTalk if unsolved
-                    Who->PlayTalkGesture(Wave->Duration, !bFaced);
+                    const float Dur = Who->PlayVoice(Pcm, Rate);
+                    Who->PlayTalkGesture(Dur, !bFaced);
                 }));
         }));
 }
