@@ -263,15 +263,22 @@ class Engine:
         # scene, not a locale from the character's backstory. Without this, deliberation knew a
         # character's whole life but not where they physically stood, and a harbor-man's mind
         # produced "slips out of the harbormaster's office" while stranded at a ferry-inn.
-        if situation is not None:
-            extra = getattr(situation, "extra", None) or {}
-            here = [str(getattr(situation, "location", "") or "").strip(),
-                    str(extra.get("Why you're here tonight", "") or "").strip(),
-                    str(extra.get("The world you live in", "") or "").strip()]
-            here = "\n".join(b for b in here if b)
-            if here:
-                parts.append("WHERE YOU ARE RIGHT NOW (any action happens in and from THIS place, "
-                             "not somewhere out of your past):\n" + here)
+        extra = getattr(situation, "extra", None) or {} if situation is not None else {}
+        here = "\n".join(b for b in (
+            str(getattr(situation, "location", "") or "").strip() if situation is not None else "",
+            str(extra.get("Why you're here tonight", "") or "").strip(),
+            str(extra.get("The world you live in", "") or "").strip()) if b)
+        if here:
+            parts.append("WHERE YOU ARE RIGHT NOW (any action happens in and from THIS place, "
+                         "not somewhere out of your past):\n" + here)
+        else:
+            # No scene anchor -> world_actions can drift to a backstory locale (the "Corvin at the
+            # docks" bug). The engine can't invent a place (the game owns the world), so this is a
+            # caller contract violation — make it LOUD so a future ungrounded path is caught here,
+            # not by a player. See docs/engine-game-contract.md.
+            logging.getLogger(__name__).warning(
+                "deliberate(%s) has no scene anchor (situation lacks location/world) — "
+                "world_actions may drift to the sheet's backstory locale", self.character.slug)
         if goals:
             parts.append("Your current goals: " + "; ".join(goals))
         if self.intent.get().intent:

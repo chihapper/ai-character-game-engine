@@ -109,6 +109,13 @@ accumulated and decides what it does or becomes. The **Decision** dict:
 The engine **applies the inner half itself** (the soul — it needs no game architecture) and
 **returns `world_action` for the game to enact.**
 
+> **Always pass the current scene** (`location`, and the world frame / why-they're-here in
+> `extra`). The engine can't invent where a character is, so a `deliberate()` with no scene
+> anchor lets `world_action` drift to a locale from the character's backstory ("harbormaster
+> of a smuggling port" → *slips out of the harbormaster's office* while stranded at a ferry-inn).
+> The engine **logs a warning** when it deliberates without a scene — treat that log line as a
+> bug in the caller, not noise. Same scene you'd pass to `respond`/`choose_action`.
+
 ### 1.4 `choose_action` — the embodied-action seam (for games with a world model)
 
 ```python
