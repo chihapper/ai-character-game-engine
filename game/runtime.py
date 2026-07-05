@@ -265,14 +265,25 @@ class Game:
         to = ev.get("to")
         targets = self.present if to in (None, "all") else [t for t in to if t in self.present]
         self._log("event", text)
-        threshold = self.scenario.get("deliberation", {}).get("react_threshold", 0.7)
-        # each mind is its own engine — appraise everyone AT ONCE, then let all the reactors
-        # deliberate at once (sequential was the slowest stretch of a beat, and long enough to
-        # trip proxy timeouts on the tunnel); reaction log order stays deterministic (targets order)
+        # each mind is its own engine — appraise everyone AT ONCE (sequential was the slowest
+        # stretch of a beat, long enough to trip proxy timeouts on the tunnel)
         sals = await asyncio.gather(*(self.engines[s].remember(text, magnitude=mag, t=self.clock)
                                       for s in targets))
+        if ev.get("react"):
+            await self._provoke_reactions(targets, sals)
+
+    async def _provoke_reactions(self, targets: list[str], sals: list) -> None:
+        """Reaction recipe (game-owned): a witness whose salience clears the scenario's bar
+        deliberates and may surface a `world_action`, which the game narrates. Shared by scripted
+        events (`_fire_event`) AND witnessed player actions (`act`) so the room reacts to BOTH.
+        Before this, only scripted events drew a reaction — a player drawing a weapon or shoving
+        someone landed to total silence, which read as 'the characters don't understand actions'.
+        Reactors deliberate in parallel; log order stays deterministic (targets order)."""
+        threshold = self.scenario.get("deliberation", {}).get("react_threshold", 0.7)
         reactors = [s for s, sal in zip(targets, sals)
-                    if ev.get("react") and sal is not None and sal >= threshold]
+                    if sal is not None and sal >= threshold]
+        if not reactors:
+            return
         decs = await asyncio.gather(*(self.engines[s].deliberate(self._deliberation_situation(s), mode="free")
                                       for s in reactors))
         for slug, dec in zip(reactors, decs):
@@ -341,10 +352,15 @@ class Game:
         # what". This is why paying Della now reaches her mind (before, `act` never told anyone).
         if not self._INTROSPECTION.search(action):
             witnessed = self._witnessed(text)
-            await asyncio.gather(*(
+            sals = await asyncio.gather(*(
                 self.engines[s].remember(witnessed, kind="player_event", actor="player",
                                          magnitude=0.5, t=self.clock)
                 for s in self.present))
+            # ...and let anyone who found it salient enough REACT in the moment — the same recipe
+            # scripted events use. This is why drawing a weapon or shoving someone now draws a
+            # response instead of silence. Salience gates it, so mundane acts (counting coins,
+            # checking a coat) stay quiet.
+            await self._provoke_reactions(self.present, sals)
         return text
 
     async def advance(self) -> bool:
