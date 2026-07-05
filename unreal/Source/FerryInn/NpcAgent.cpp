@@ -229,10 +229,17 @@ bool ANpcAgent::PlayFaceTrack(TSharedPtr<FJsonObject> AnimJson)
     }
 
     FaceTrackNames.Reset();
+    BlinkIdxL = BlinkIdxR = EyeLookIdxL = EyeLookIdxR = -1;
     for (const TSharedPtr<FJsonValue>& V : *NamesJson)
     {
-        FaceTrackNames.Add(FName(*V->AsString()));
+        const FString Nm = V->AsString();
+        const int32 Idx = FaceTrackNames.Add(FName(*Nm));
+        if (Nm == TEXT("EyeBlinkLeft")) BlinkIdxL = Idx;
+        else if (Nm == TEXT("EyeBlinkRight")) BlinkIdxR = Idx;
+        else if (Nm == TEXT("EyeLookOutLeft")) EyeLookIdxL = Idx;
+        else if (Nm == TEXT("EyeLookOutRight")) EyeLookIdxR = Idx;
     }
+    FaceLifeSeed = FMath::FRandRange(0.f, 100.f);   // so agents don't blink in lockstep
     FaceTrackFrames.Reset();
     for (const TSharedPtr<FJsonValue>& V : *FramesJson)
     {
@@ -347,6 +354,22 @@ void ANpcAgent::TickFaceTrack(float DeltaSeconds)
         const float WB = (B && I < B->Weights.Num()) ? B->Weights[I] : A.Weights[I];
         Now[I] = FMath::Lerp(A.Weights[I], WB, Alpha);
     }
+
+    // ---- keep the eyes ALIVE (A2F leaves them staring) ----------------------------------------
+    const float T = FaceTrackClock + FaceLifeSeed;
+    // a blink roughly every ~3.4s: a fast close-and-open (~0.14s), eased
+    const float Cycle = FMath::Fmod(T, 3.4f);
+    if (Cycle < 0.14f)
+    {
+        const float Blink = FMath::Sin(Cycle / 0.14f * PI);   // 0 -> 1 -> 0
+        if (BlinkIdxL != INDEX_NONE && BlinkIdxL < N) Now[BlinkIdxL] = FMath::Max(Now[BlinkIdxL], Blink);
+        if (BlinkIdxR != INDEX_NONE && BlinkIdxR < N) Now[BlinkIdxR] = FMath::Max(Now[BlinkIdxR], Blink);
+    }
+    // slow, small wandering gaze so the eyes don't lock dead-ahead (Perlin = smooth, non-repeating)
+    const float Gaze = 0.12f * FMath::PerlinNoise1D(T * 0.35f);
+    if (Gaze > 0.f && EyeLookIdxL != INDEX_NONE && EyeLookIdxL < N) Now[EyeLookIdxL] = FMath::Max(Now[EyeLookIdxL], Gaze);
+    if (Gaze < 0.f && EyeLookIdxR != INDEX_NONE && EyeLookIdxR < N) Now[EyeLookIdxR] = FMath::Max(Now[EyeLookIdxR], -Gaze);
+
     if (UNpcFaceAnimInstance* Inst = Cast<UNpcFaceAnimInstance>(FaceMesh->GetAnimInstance()))
     {
         Inst->SetArkitWeights(FaceTrackNames, Now);

@@ -122,6 +122,14 @@ private:
     bool bFaceTrackPlaying = false;
     void TickFaceTrack(float DeltaSeconds);
 
+    /** A2F drives the mouth from audio but never idle-blinks — without this the eyes STARE,
+     *  dead, the whole time she speaks. Procedural blink + gaze life injected over the track. */
+    int32 BlinkIdxL = -1;
+    int32 BlinkIdxR = -1;
+    int32 EyeLookIdxL = -1;
+    int32 EyeLookIdxR = -1;
+    float FaceLifeSeed = 0.f;
+
     /** the live voice component + its real playback position, so the face follows the AUDIO */
     UPROPERTY()
     UAudioComponent* VoiceAudio = nullptr;
