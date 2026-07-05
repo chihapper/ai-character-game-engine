@@ -1,14 +1,26 @@
-# Track V — full-loop migration plan (scoping)
+# Track V — full-loop migration plan (SUPERSEDED — not adopted)
+
+> ⚠️ **SUPERSEDED (2026-07). This plan was not adopted — kept for the record.**
+> We scoped and spiked replacing the modular pipeline with **Inworld's full-loop realtime
+> agent** (Phases 0–1 wired behind `VOICE_RUNTIME=inworld_fullloop` and verified end-to-end),
+> but **chose to keep the modular pipeline** instead: after a TTS bake-off it runs **Hume
+> Octave**, which gave us more control over each stage than a single vendor-owned session.
+> The current voice story lives in the [README](../README.md) ("The voice + face layer") and
+> the seam design in [`architecture-seams.md`](architecture-seams.md). Everything below is the
+> original migration plan, left intact for anyone who revisits the full-loop idea.
+>
+> 🧭 **Remember:** this whole track was *infrastructure* for the real goal — the
+> game-director **engine/game seam (Track E)**. Don't let voice polish crowd it out.
+
+---
+
+## Original plan (as scoped)
 
 > Implementation plan for replacing the inherited modular pipeline with **Inworld's
 > full-loop realtime agent**. Companion to [`architecture-seams.md`](architecture-seams.md)
 > (which says *what* the architecture is and why); this says *how* we get `main` there.
-> Status: **Phase 0 + Phase 1 DONE** (full loop wired behind `VOICE_RUNTIME=inworld_fullloop`,
-> verified end-to-end); Phase 2 partial; latency + cutover open (§10).
->
-> 🧭 **Remember:** this whole track is *infrastructure* for the real goal — the
-> game-director **engine/game seam (Track E)**. Don't let voice polish here crowd it out.
-> See `architecture-seams.md` (North star).
+> Status at time of writing: **Phase 0 + Phase 1 DONE**; Phase 2 partial; latency + cutover
+> open (§10).
 
 ## 1. Goal & success criteria
 

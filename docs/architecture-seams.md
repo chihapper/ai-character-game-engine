@@ -1,5 +1,16 @@
 # Architecture & seams
 
+> ⚠️ **Correction (2026-07): the voice-runtime seam below (§1) describes a direction we did
+> NOT adopt.** This doc treats "drive Inworld's full-loop realtime agent" as the committed
+> target and the modular STT/LLM/TTS pipeline as "retiring." **That is inverted.** We spiked
+> the full loop, then **kept the modular pipeline** — after a TTS bake-off it runs **Hume
+> Octave**. So wherever §1 (and the **RETIRING** / **TARGET** tags) say the modular path is
+> going away and the Inworld session is the future, read the opposite. Current voice/face
+> reality: [README](../README.md) → "The voice + face layer"; the full-loop plan is
+> [superseded](track-v-full-loop-plan.md). **The engine/game seam (§2–4) is unaffected and
+> current** — that's the durable design, and it's front-end-agnostic (text, Unreal, or a
+> possible 2D Godot front-end all drive the same engine).
+
 > Design doc for the **game-director direction**. Status: design (target state),
 > not yet fully built. Tracks issues
 > [#1 — memory & retrieval](https://github.com/chihapper/ai-character-game-engine/issues/1)

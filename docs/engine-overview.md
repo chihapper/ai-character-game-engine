@@ -5,24 +5,25 @@ character thinks and remembers* (the engine + memory — the north-star game-dir
 
 ---
 
-## Track V — Voice runtime (Inworld full loop) — on `main`
+## Track V — Voice runtime (Hume Octave, modular pipeline) — on `main`
 
-One Inworld Realtime session owns the whole loop: speech-in → LLM → speech-out, with
-cross-turn voice continuity. Enabled with `VOICE_RUNTIME=inworld_fullloop` (the default
-runtime is still the older modular STT→LLM→TTS pipeline until the Phase-3 cutover).
+The runtime on `main` is the **modular streaming pipeline** (STT → LLM → sentence-chunk → TTS),
+with **Hume Octave** as the TTS, chosen after a provider bake-off. Stages overlap so first audio
+lands ~1s after the input. It's what the voiced web demo and the Unreal client both use.
 
 | Capability | What it does | Where / how |
 | --- | --- | --- |
-| **Per-turn memory recall (§5.6)** | The voice loop retrieves + injects relevant memories every turn — the same relevance realization the modular path had. | `orchestrator/main.py` `run_full_loop` |
-| **Model selection** | Pick the routed LLM per session. gpt-4o ≈ 1.1s to first audio, Haiku 4.5 ≈ 2.4s. First-audio latency is dominated by the LLM's time-to-first-token through Inworld, *not* TTS. | UI dropdown, `?realtime_llm=openai/gpt-4o`, or `REALTIME_LLM_MODEL` |
-| **Delivery mode** | tts-2 expressiveness: Stable / Balanced / **Creative** (default). | UI "Voice delivery" dropdown, `?delivery=`, or `REALTIME_DELIVERY_MODE` |
-| **Expressivity directive** | Drives the model to tag *every sentence* vividly, match intensity to punctuation (`!`/`?`), pause via `…`/`<break time="600ms"/>` (never `[pause]`), and lead/weave vocatives (not trailing pet-names). | `orchestrator/expressivity.py` |
-| **Barge-in** | Talk over the character and she stops instantly (browser silences playback; server cancels the response + clears queued audio). | `InworldSession.interrupt`, `main.py` |
-| **Reconnect** | If the Inworld session drops, it auto-rebuilds (backoff) and replays recent dialogue so the character keeps the thread. | `run_full_loop` supervisor |
+| **Provider seam** | TTS is one adapter behind `TTSAdapter`; the bake-off swapped providers with a one-line change and settled on Hume. | `orchestrator/adapters/tts_hume.py` |
+| **Acting directions** | Each utterance carries a per-utterance acting `description` (a character's own stage business becomes the delivery note), dynamic trailing silences, and cross-turn continuity (`context.generation_id`). | `tts_hume.py` |
+| **Streaming overlap** | Sentence-chunk the LLM stream: TTS sentence 1 while the LLM still writes sentence 2. First-audio latency is dominated by the LLM's time-to-first-token, *not* TTS. | `orchestrator/pipeline.py`, `sentence_chunker.py` |
+| **Model selection** | Pick the LLM per session — Sonnet for richer roleplay, Haiku for speed. | UI dropdown, `LLM_MODEL` |
+| **Expressivity directive** | Drives the model to tag sentences vividly, match intensity to punctuation (`!`/`?`), pause via `…`/`<break time="600ms"/>` (never `[pause]`), and lead/weave vocatives (not trailing pet-names). | `orchestrator/expressivity.py` |
+| **Face / lip-sync** *(explored, paused)* | Audio→ARKit-blendshape lip-sync behind `FaceAnimAdapter` (A2F → self-hosted NeuroSync) drove a MetaHuman face in Unreal. On pause; front-end direction under review. | `orchestrator/adapters/faceanim_neurosync.py`, mind server `/speak_anim` |
 
-**Key fact learned:** in the full loop the model's text/tags hit tts-2 **raw** (no modular
-cleanup), so voice quality is controlled in the *prompt/profile* — tag richness, pause
-syntax, and vocative placement all matter.
+> **Not adopted:** an Inworld single-session **full-loop** runtime
+> (`VOICE_RUNTIME=inworld_fullloop`, `orchestrator/realtime/`) was spiked for native cross-turn
+> voice continuity but not taken up — the modular pipeline plus Hume was kept. See the
+> [superseded plan](track-v-full-loop-plan.md).
 
 ---
 
@@ -256,9 +257,10 @@ python -m tools.recall_reinforce_sim
 
 | Flag | Default | What it does |
 | --- | --- | --- |
-| `VOICE_RUNTIME` | `pipeline` | `inworld_fullloop` enables the voice loop |
-| `REALTIME_LLM_MODEL` | `anthropic/claude-haiku-4-5` | full-loop LLM |
-| `REALTIME_DELIVERY_MODE` | `CREATIVE` | tts-2 expressiveness |
+| `VOICE_RUNTIME` | `pipeline` | modular Hume pipeline (in use); `inworld_fullloop` = the spiked-but-not-adopted agent |
+| `DEFAULT_TTS_PROVIDER` | `elevenlabs` | fallback when a character YAML omits one; set `hume` for the chosen voice |
+| `REALTIME_LLM_MODEL` | `anthropic/claude-haiku-4-5` | full-loop LLM (only used by the not-adopted `inworld_fullloop`) |
+| `REALTIME_DELIVERY_MODE` | `CREATIVE` | tts-2 expressiveness (full-loop only) |
 | `MEMORY_DEBUG` | off | emit the 🧠 score panel each turn (shows `str` / `↺N` / `t`) |
 | `MEMORY_READONLY` | off | freeze all stores (for controlled A/B — writes become no-ops) |
 | `REINFORCE_ON_RECALL` | off | recalling a memory rehearses it (slows decay) |

@@ -14,10 +14,13 @@ a relationship counter** — they optimize for *consistency*. This one is an **A
 genuinely changes**: it warms and cools, scars and heals, forms convictions and breaks them
 under pressure, holds grudges and lets them go on its own. A consistent mask vs. a mind.
 
-As one front-end — the *crown* — the engine can drive **Inworld's full-loop realtime voice
-agent** (STT → Claude LLM → Realtime TTS-2, with cross-turn voice continuity), so a character
-speaks aloud in a consistent cloned voice. The voice is a **presentation layer the engine
-animates, not the engine itself.**
+Because the mind sits behind a clean seam, the **front-end is pluggable** — text, 3D, or 2D,
+the engine doesn't change. Built so far: a **voiced web demo** where characters speak aloud in
+their own **Hume Octave** voices, and an **Unreal 5 MetaHuman** client (3D, spoken). A lip-sync
+face layer (NVIDIA Audio2Face → self-hosted NeuroSync) was explored and is **currently paused**;
+a **2D front-end (Godot)** is under consideration. Voice and body are a **presentation layer the
+engine animates, not the engine itself** — which is exactly why the front-end can change without
+touching the mind.
 
 You define a character; the game tells the engine what's happening; the AI makes that character
 respond — and **evolve**: memory that decays and reinforces, feelings that move and *scar*,
@@ -29,8 +32,10 @@ and change on their own**. The character mind is the heart of the project — se
 > as its own portfolio project:
 > [real-time-ai-character-engine](https://github.com/chihapper/real-time-ai-character-engine)
 > (ancestry snapshot: tag **`voice-engine-v1`**, in both repos). The modular streaming pipeline
-> documented later is that inheritance — the path the full-loop agent **replaces**. It still runs
-> in `main` today, but it is being retired, not extended.
+> documented later is that inheritance — and the path we **kept**: after a TTS bake-off it now
+> runs **Hume Octave** for speech. (An Inworld single-session *full-loop* runtime was scoped and
+> spiked but **not adopted**; the superseded plan is kept at
+> [`docs/track-v-full-loop-plan.md`](docs/track-v-full-loop-plan.md).)
 
 ---
 
@@ -80,7 +85,7 @@ confirming goal-evolution stays coherent and in-character over a full life.
 
 > **From reactive to alive.** The engine began *reactive* (it animates a character on demand) and
 > now reaches **autonomous agency** — characters that deliberate and act *unprompted*, living their
-> own lives between scenes ([#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20), shipped). The remaining milestone is **Track V** — the voice runtime — the *crown*, not the power.
+> own lives between scenes ([#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20), shipped). **Track V** — the voice runtime — is largely in hand (Hume Octave, voiced demo); the open question now is the *front-end* direction (a 3D MetaHuman client exists; a 2D Godot game is under consideration). Either way, the mind is the *power* and the presentation the *crown*.
 
 ---
 
@@ -114,18 +119,18 @@ native build. See [`docs/relevance-scoring.md`](docs/relevance-scoring.md) and i
 [#1](https://github.com/chihapper/ai-character-game-engine/issues/1) /
 [#3](https://github.com/chihapper/ai-character-game-engine/issues/3).
 
-**Provider seams (inherited, retiring)** — every external vendor sits behind an adapter
-interface ([`adapters/base.py`](orchestrator/adapters/base.py)); the pipeline depends
-only on the interface, never a concrete provider. Under the full loop the STT and TTS
-seams collapse into the Inworld session and the `LLMAdapter` is superseded by in-session
-Claude routing — so treat this layer as the retiring path. Voice cloning/design is the
-piece that survives (the engine still mints the voice id it hands to the session):
+**Provider seams** — every external vendor sits behind an adapter interface
+([`adapters/base.py`](orchestrator/adapters/base.py)); the pipeline depends only on the
+interface, never a concrete provider. This is what let a **TTS bake-off** swap providers with
+a one-line change and settle on **Hume Octave**, and what lets a **face-animation** provider
+plug in the same way:
 
 | Role | Interface | Implementations |
 | --- | --- | --- |
 | Speech-to-text | `STTAdapter` | Whisper (local), AssemblyAI (batch + realtime) |
 | LLM | `LLMAdapter` | Anthropic (streaming) |
-| Text-to-speech | `TTSAdapter` | Inworld, ElevenLabs, Cartesia, Fallback |
+| Text-to-speech | `TTSAdapter` | **Hume Octave** (chosen), Inworld, ElevenLabs, Cartesia, Fish, Chatterbox |
+| Face animation | `FaceAnimAdapter` | NeuroSync (self-hosted), Audio2Face — *explored, paused* |
 
 The audio wire format (PCM s16le, mono, 24 kHz) is fixed in
 [`config.py`](orchestrator/config.py) so the browser playback path is identical
@@ -134,54 +139,50 @@ field) — the cost/quality lever at scale.
 
 ---
 
-## The voice runtime (the *crown*): Inworld's full loop
+## The voice + face layer (the *crown*, as-built)
 
-The character mind needs no voice to work — but the engine can crown it with one. The voice
-runtime is **Inworld's Realtime API agent**, driven over a WebSocket (OpenAI Realtime protocol).
-One agent session is the whole loop — **STT → LLM → TTS** — so we get **cross-turn voice
-continuity** (prosody and timbre carry between turns) that a per-utterance TTS can't give. Inside
-that session:
+The character mind needs no voice to work — but the engine can crown it with presentation.
+What's actually built, and what isn't:
 
-- **The LLM is routed to Claude** (`anthropic/claude-sonnet-4-6`) — the agent reasons
-  as Claude, Inworld handles the speech ends.
-- **Our character *is* the agent's instructions.** The engine compiles a character's
-  structured profile into a system prompt
-  ([`Character.build_prompt()`](orchestrator/character_store.py)) and hands it to the
-  session as the agent's instructions — so the same character definition that drives
-  the text path drives the voice agent.
-- **Tools are how the game runs mechanics.** Function-calling lets the engine execute
-  game logic *through the conversation* — a dice roll, a state change, a quest update —
-  instead of having the model narrate outcomes it shouldn't decide. (Feasibility for
-  steering + tools is validated; see the spike on branch `inworld-full-loop`.)
+- **Voice — Hume Octave.** After a bake-off (Inworld, ElevenLabs, Cartesia, Fish, Chatterbox,
+  Hume), **Hume won** on emotional range. The engine feeds it per-utterance *acting directions*
+  (a character's own stage business becomes the delivery note), dynamic trailing silences, and
+  cross-turn continuity. It runs **inside the modular pipeline** below — a provider behind the
+  `TTSAdapter` seam, not a separate runtime.
+- **Face / lip-sync — explored, paused.** Audio→ARKit-blendshape lip-sync was built through the
+  `FaceAnimAdapter` seam (NVIDIA Audio2Face, then self-hosted **NeuroSync** once A2F needed
+  hardware the dev GPU lacked) and drove a MetaHuman face in the Unreal client. This layer is
+  **currently on pause** while the front-end direction is under review.
+- **Front-ends are pluggable.** A **voiced web demo** (text + spoken Hume replies) and an
+  **Unreal 5 MetaHuman** client both drive the *same* engine. A **2D Godot** game is under
+  consideration; the engine wouldn't change.
 
 ```
 game event / player line
         │
         ▼
-  game director (this repo)  ──►  character prompt + tools + per-request situation
+  game director (this repo)  ──►  character prompt + per-request situation
         │                                         │
         │  owns: the character mind,              ▼
-        │  world/time seam, mechanics      Inworld Realtime agent
-        │                                  (STT → Claude → Realtime TTS-2,
-        ▼                                   cross-turn voice continuity)
+        │  world/time seam, mechanics       modular pipeline
+        │                                   (STT → Claude → Hume Octave TTS,
+        ▼                                    streaming-overlapped)
    long-term memory  ◄── remembers ───────────────┘
                                                    │
                                                    ▼
-                                            🔊 spoken, in-voice reply
+                                     🔊 spoken reply  ─(optional)─►  face-anim seam
 ```
 
-What the engine owns vs. what Inworld owns is the point: **Inworld owns the voice
-loop; this repo owns the game-character logic.** The seams between them — context-in,
-the memory-write API, the world/time channel — are specified in
-[`docs/architecture-seams.md`](docs/architecture-seams.md).
+> **The road not taken.** An Inworld single-session **full-loop** runtime (one session owning
+> STT→LLM→TTS, for native cross-turn voice continuity) was scoped and spiked but **not adopted** —
+> the modular pipeline plus Hume gave us more control over each stage. The superseded plan is kept
+> for the record at [`docs/track-v-full-loop-plan.md`](docs/track-v-full-loop-plan.md).
 
-### The inherited pipeline: streaming overlap (being retired)
+### The modular pipeline: streaming overlap
 
-Before the full-loop agent lands, `main` still runs the inherited modular pipeline, so
-it's documented here. It's good engineering — the character starts speaking **~1 second
-after the input lands** because the stages *overlap* instead of running end-to-end — but
-the full-loop session gives cross-turn voice continuity natively, so this path is being
-**replaced**, not extended:
+`main` runs the modular pipeline: the character starts speaking **~1 second after the input
+lands** because the stages *overlap* instead of running end-to-end. Hume Octave is the TTS
+stage; the rest is the streaming machinery that keeps first-audio fast:
 
 ```
 input (player line / event)
@@ -206,7 +207,7 @@ splits them into sentences on the fly; the moment sentence 1 is complete it's se
 TTS and audio streams back — **while the LLM is still generating the rest**. The
 overlap logic lives in [`pipeline.py`](orchestrator/pipeline.py). Every stage is timed
 and the **latency panel** in the UI makes the budget visible. The same prompt-assembly
-and memory that feed this pipeline feed the full-loop agent.
+and memory feed every front-end — the text demo, the voiced web demo, and the Unreal client.
 
 ---
 
@@ -217,13 +218,12 @@ and memory that feed this pipeline feed the full-loop agent.
 - API keys (only for the providers you actually use):
   - **Anthropic** — the LLM (the character's brain; also drives character drafting and
     memory-salience scoring). <https://console.anthropic.com/>
-  - **Inworld** — TTS + voice cloning, and — in the full-loop runtime — the realtime
-    agent that runs STT + LLM + TTS in one session. From the
-    [Inworld portal](https://platform.inworld.ai/): API Keys → copy the **"Basic
-    (Base64)" signature** verbatim (already base64-encoded — do not re-encode it).
-  - **ElevenLabs / Cartesia** *(optional)* — alternative TTS providers behind the same adapter.
-  - **AssemblyAI** *(optional)* — cloud STT for **voice input on the inherited modular
-    runtime only** (the full loop uses Inworld's built-in STT; local **Whisper** is the
+  - **Hume** — the chosen TTS (Octave). Emotional-range voice with per-utterance acting
+    directions. From the [Hume portal](https://platform.hume.ai/): copy your API key.
+  - **Inworld / ElevenLabs / Cartesia / Fish** *(optional)* — alternative TTS providers behind
+    the same adapter, kept as bake-off candidates. Inworld also needs the **"Basic (Base64)"
+    signature** copied verbatim (already base64-encoded — do not re-encode it).
+  - **AssemblyAI** *(optional)* — cloud STT for **voice input** (local **Whisper** is the
     offline alternative). Typed input needs no STT at all.
 
 ---
@@ -254,7 +254,7 @@ The dependencies are split so the app always boots:
   recall than the lexical fallback) and **Whisper** (local STT for voice input on the
   modular runtime). Installed **best-effort**; if they're absent the app still runs —
   memory just uses the coarser lexical embedder and local voice input is unavailable
-  (typed input and the Inworld full loop are unaffected). No ChromaDB, no native ANN
+  (typed input is unaffected). No ChromaDB, no native ANN
   build (dropped per issue [#1](https://github.com/chihapper/ai-character-game-engine/issues/1)).
 
 > fastembed downloads a small ONNX model on first use (and Whisper its model, if
@@ -324,9 +324,9 @@ All settings live in [`config.py`](orchestrator/config.py), overridable in `.env
 
 | Setting | Default | Notes |
 | --- | --- | --- |
-| `VOICE_RUNTIME` | `pipeline` | `pipeline` = inherited modular STT→LLM→TTS (current default); `inworld_fullloop` = drive Inworld's realtime agent. |
+| `VOICE_RUNTIME` | `pipeline` | `pipeline` = modular STT→LLM→TTS (the runtime in use); `inworld_fullloop` = the spiked-but-not-adopted single-session agent. |
 | `LLM_MODEL` | `claude-sonnet-4-6` | Richer roleplay; switch to `claude-haiku-4-5` (fast) per session in the UI. |
-| `DEFAULT_TTS_PROVIDER` | `elevenlabs` | Fallback when a character YAML doesn't specify one. |
+| `DEFAULT_TTS_PROVIDER` | `elevenlabs` | Fallback when a character YAML doesn't specify one. **Hume** is the chosen provider and what the voiced demo uses; set `hume` (or per-character `tts_provider: hume`) to make it the default. |
 | `STT_PROVIDER` | `whisper` | Modular-runtime voice input: `whisper` (local) or `assemblyai` (cloud). |
 | `SALIENCE_MODEL` | `claude-sonnet-4-6` | Rates memory importance per character at write time (drop to haiku for cost). |
 | `MEMORY_DEBUG` | `false` | Stream the relevance-realization panel to the browser (dev). |
@@ -362,9 +362,10 @@ orchestrator/
     _audio.py            PCM helpers (resample, fades, WAV)
     stt_whisper.py / stt_assemblyai.py / stt_assemblyai_stream.py
     llm_anthropic.py
-    tts_inworld.py / tts_elevenlabs.py / tts_cartesia.py / tts_fallback.py
+    tts_hume.py (chosen) / tts_inworld.py / tts_elevenlabs.py / tts_cartesia.py / tts_fish.py / tts_chatterbox.py / tts_fallback.py
+    faceanim_neurosync.py / faceanim_a2f.py   FaceAnimAdapter (audio→ARKit lip-sync) — explored, paused
   realtime/
-    inworld_session.py   Inworld full-loop runtime (behind VOICE_RUNTIME=inworld_fullloop)
+    full_loop.py / inworld_session.py   Inworld full-loop spike — scoped, NOT adopted (behind VOICE_RUNTIME=inworld_fullloop)
   memory/
     short_term.py        rolling buffer of recent turns
     long_term.py         per-character JSONL store (fastembed/lexical) + remember() / beliefs
@@ -381,7 +382,7 @@ tools/game_demo.py       headless game-loop demo driving the Engine (no voice)
 tools/stress_*.py        engine validation harnesses (arcs · suite · beliefs · recovery · saga · agency)
 docs/engine-overview.md      the character mind (Track E): every layer + rationale  ← current state
 docs/architecture-seams.md   the engine/game seam design (Track V + Track E)
-docs/track-v-full-loop-plan.md  the Inworld full-loop migration plan
+docs/track-v-full-loop-plan.md  SUPERSEDED — the Inworld full-loop plan (not adopted; kept for record)
 docs/relevance-scoring.md    how memory recall is scored + decay + the debug panel
 ```
 

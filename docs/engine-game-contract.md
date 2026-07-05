@@ -260,12 +260,19 @@ sandbox/games turn it on, but salience scoring, time decay, foregrounding, and t
 
 ## 7.5 Presentation services (voice + face) — beside the engine, not inside it
 
-Voice (TTS) and facial animation (audio → ARKit blendshapes, e.g. the Audio2Face adapter)
-are **bridge conveniences**, not engine surface. They live behind `FaceAnimAdapter` /
-`TTSAdapter` seams next to the LLM adapters; the engine core never references them, and a
-text-only game never touches them. The transport is deliberately client-agnostic: raw PCM
-plus timestamped **ARKit-52** blendshape frames — Unreal, Unity, VRM, and web avatars all
-consume ARKit; how curves reach a specific rig is the CLIENT's code.
+Voice (TTS) and facial animation (audio → ARKit blendshapes) are **bridge conveniences**,
+not engine surface. They live behind `FaceAnimAdapter` / `TTSAdapter` seams next to the LLM
+adapters; the engine core never references them, and a text-only game never touches them.
+The transport is deliberately client-agnostic: raw PCM plus timestamped **ARKit-52**
+blendshape frames — Unreal, Unity, VRM, and web avatars all consume ARKit; how curves reach
+a specific rig is the CLIENT's code.
+
+> **Current status (2026-07):** the TTS seam runs **Hume Octave** (chosen after a bake-off).
+> The face seam had two implementations — NVIDIA **Audio2Face** (`faceanim_a2f.py`), then a
+> self-hosted **NeuroSync** (`faceanim_neurosync.py`) once A2F needed hardware the dev GPU
+> lacked — and drove a MetaHuman face in the Unreal client. **The face layer is currently
+> paused** pending a front-end direction decision (a 2D Godot front-end is under
+> consideration). The seam itself is unchanged and this contract holds regardless.
 
 One deliberate crossing, in the correct direction: the engine's chosen expression (a mind
 fact — `face` tags from `choose_action` / reactions) may be passed DOWN to color the

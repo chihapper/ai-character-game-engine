@@ -1,5 +1,11 @@
 # Unreal Demo Port — what carries over, what rebuilds, what changes strategy
 
+> **Status (2026-07-05):** the Unreal client works — NPCs speak (Hume) and the engine drives
+> them end-to-end. The **face/lip-sync layer is paused**, and the **front-end direction is under
+> review**: a 2D game on **Godot** is being considered. None of that touches the engine or the
+> mind server — the whole point below is that the front-end is swappable. Treat this doc as the
+> Unreal-specific port record, not a committed roadmap.
+
 Decision (2026-07-02): the demo client moves to Unreal Engine. The prior Unity client
 (`unity/pro/`) stays on `sandbox` as a working reference implementation; this branch
 (`unreal-demo`) hosts the port. The mind is untouched — that was always the design.
@@ -15,8 +21,13 @@ Decision (2026-07-02): the demo client moves to Unreal Engine. The prior Unity c
   name/acquaintance rules — all as-is.
 - **The contract** (`docs/engine-game-contract.md`): engine owns the MIND, game owns the
   WORLD. Unreal is just a different WORLD.
-- **Voice**: Inworld TTS/AssemblyAI STT already flow through the mind server (`GAME_TTS`),
-  so the voice pipeline ports by doing nothing.
+- **Voice**: TTS (now **Hume Octave**, chosen after a bake-off) / AssemblyAI STT already flow
+  through the mind server, so the voice pipeline ports by doing nothing.
+- **Face / lip-sync** *(explored, paused)*: audio→ARKit-blendshape lip-sync (NVIDIA Audio2Face,
+  then self-hosted **NeuroSync**) was wired through the mind server's `/speak_anim` and drove a
+  MetaHuman face here. It's **currently on pause** — see the note below and the
+  [engine/game contract §7.5](engine-game-contract.md). If the front-end pivots to 2D (Godot
+  under consideration), the face layer likely won't be resumed.
 
 ## Re-implements in Unreal (the client layer — designs proven in Unity, code rewritten)
 
