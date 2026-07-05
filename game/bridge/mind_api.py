@@ -371,22 +371,16 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     if not chunks:
         raise HTTPException(status_code=404, detail="nothing speakable")
     pcm = b"".join(chunks)
+    # Face animation via NeuroSync (self-hosted, replaced A2F — 1080 Ti can't run A2F locally).
+    # NeuroSync is audio-only, so the engine's emotion reaches the face THROUGH the emotional Hume
+    # voice, not an explicit tag. Face anim is an enhancement: solver down -> voice still ships.
     anim = None
-    if os.environ.get("GAME_NVIDIA_API_KEY"):
-        try:
-            from orchestrator.adapters.faceanim_a2f import A2FFaceAnim
-            clip_secs = len(pcm) / 2 / AUDIO_SAMPLE_RATE
-            timeline = ([(m.t if m.t is not None else (m.frac or 0.0) * clip_secs,
-                          m.face, m.strength) for m in body.emotions if m.face.strip()]
-                        if body.emotions else None)
-            result = await A2FFaceAnim().animate(
-                pcm, AUDIO_SAMPLE_RATE,
-                emotion=body.face.strip() or None,
-                emotion_strength=body.intensity,
-                emotion_timeline=timeline)
-            anim = result.to_dict()
-        except Exception as exc:  # never let lip-sync failure silence the voice
-            logging.getLogger("mind_api").warning("face anim skipped: %s", exc)
+    try:
+        from orchestrator.adapters.faceanim_neurosync import NeuroSyncFaceAnim
+        result = await NeuroSyncFaceAnim().animate(pcm, AUDIO_SAMPLE_RATE)
+        anim = result.to_dict()
+    except Exception as exc:  # never let lip-sync failure silence the voice
+        logging.getLogger("mind_api").warning("face anim skipped: %s", exc)
     return {"rate": AUDIO_SAMPLE_RATE, "pcm_b64": base64.b64encode(pcm).decode("ascii"),
             "anim": anim}
 
