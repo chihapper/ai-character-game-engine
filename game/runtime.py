@@ -311,6 +311,20 @@ class Game:
             said.append((slug, reply))
         return [(self.label(s), r) for s, r in said]
 
+    # A private/introspective action is not a world event — nobody in the room perceives a thought.
+    _INTROSPECTION = re.compile(
+        r"\b(think|thought|wonder|ponder|reflect|consider|realis|realiz|myself|"
+        r"recall|imagine|feel|felt|remember|remind)\b", re.IGNORECASE)
+
+    def _witnessed(self, narration: str) -> str:
+        """Reframe the player-facing 2nd-person narration into a 3rd-person WITNESSED account for
+        the room's minds — to them, 'you' is themselves, so it must become 'the traveler'."""
+        t = re.sub(r"\bYour\b", "The traveler's", narration)
+        t = re.sub(r"\byour\b", "the traveler's", t)
+        t = re.sub(r"\bYou\b", "The traveler", t)
+        t = re.sub(r"\byou\b", "the traveler", t)
+        return re.sub(r"\byourself\b", "themselves", t)
+
     async def act(self, action: str) -> str:
         self._log("player_action", action)
         text = await self.dm.adjudicate(action, self._perception, self._refs(), self.player_location)
@@ -321,6 +335,16 @@ class Game:
             text = (text[:m.start()] + text[m.end():]).strip()
         text = self._scrub(text)
         self._log("narration", text)
+        # WORLD -> MINDS: the people present WITNESS a physical player action, so plant it in their
+        # memory via the engine's remember() seam — the SAME door _fire_event and the mind-server
+        # /observe use. The engine stays ignorant of what the action IS; the game owns "who saw
+        # what". This is why paying Della now reaches her mind (before, `act` never told anyone).
+        if not self._INTROSPECTION.search(action):
+            witnessed = self._witnessed(text)
+            await asyncio.gather(*(
+                self.engines[s].remember(witnessed, kind="player_event", actor="player",
+                                         magnitude=0.5, t=self.clock)
+                for s in self.present))
         return text
 
     async def advance(self) -> bool:
