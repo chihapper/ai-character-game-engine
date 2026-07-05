@@ -73,6 +73,9 @@ void UMindClient::CreateSession(const FString& Scenario, FMindJsonReply OnReply)
 {
     const TSharedPtr<FJsonObject> Body = MakeShared<FJsonObject>();
     Body->SetStringField(TEXT("scenario"), Scenario);
+    // the embodied loop stacks STT + LLM + TTS + face-solve latency, so use the FAST reply model —
+    // a snappy answer matters more than Sonnet's prose when you're standing there waiting for her
+    Body->SetStringField(TEXT("reply_model"), TEXT("claude-haiku-4-5"));
     PostJson(TEXT("/session"),
              Body,
              FMindJsonReply::CreateLambda([this, OnReply](TSharedPtr<FJsonObject> Json)

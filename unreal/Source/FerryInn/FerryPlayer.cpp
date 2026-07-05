@@ -139,7 +139,7 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
         if (GEngine) GEngine->AddOnScreenDebugMessage(13, 4.f, FColor::Silver, TEXT("(no one close enough to hear)"));
         return;
     }
-    Who->FlinchAt(GetActorLocation());   // being addressed turns the head before the mind replies
+    Who->BeginListening(GetActorLocation());   // turn + a "considering" beat through the reply wait
     const FString Location = FString::Printf(TEXT("%s, in the tavern's taproom"),
         *FerryRegions::NameAt(Who->GetActorLocation()));
     TArray<FString> Present;

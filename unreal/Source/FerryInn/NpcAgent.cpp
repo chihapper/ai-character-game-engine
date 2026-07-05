@@ -166,6 +166,26 @@ void ANpcAgent::FlinchAt(const FVector& Where)
     }
 }
 
+void ANpcAgent::BeginListening(const FVector& From)
+{
+    FVector Dir = From - GetActorLocation();
+    Dir.Z = 0.f;
+    if (!Dir.IsNearlyZero() && !bWalking)
+    {
+        SetActorRotation(Dir.Rotation());
+    }
+    // a "considering you" body beat during the reply latency — keeps her alive while the mind
+    // works. NO startle expression: being spoken to isn't alarming; the neutral face stays.
+    if (BodyMesh && !bAnimWalking)
+    {
+        if (UAnimSequence* Think = LoadObject<UAnimSequence>(nullptr,
+            TEXT("/Game/Cast/Anims/MH/MHG_Thinking.MHG_Thinking")))
+        {
+            BodyMesh->PlayAnimation(Think, true);
+        }
+    }
+}
+
 void ANpcAgent::PlayTalkGesture(float Seconds, bool bIncludeFace)
 {
     // face: a syllabic jaw/lip loop (authored curves, same rig-logic path as the expression
@@ -522,7 +542,7 @@ void ANpcAgent::TakeBeat()
                         FTimerDelegate::CreateWeakLambda(this, [this]()
                         {
                             if (FaceMesh && FaceLoop) { FaceMesh->PlayAnimation(FaceLoop, true); }
-                        }), 9.f, false);
+                        }), 4.f, false);   // a passing expression, not a mask held until it turns uncanny
                 }
             }
             Enact(Action, Reason);

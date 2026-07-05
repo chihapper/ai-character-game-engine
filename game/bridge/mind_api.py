@@ -110,10 +110,21 @@ class MindSession:
             raise HTTPException(status_code=404, detail=f"no such character in this session: {slug}")
         return eng
 
+    # This is the EMBODIED path (Unreal/Unity): every reply is spoken aloud, so its length is
+    # LATENCY — a 6-sentence answer is 6 sentences of TTS + face-solve the player waits through.
+    # Keep spoken replies short; the text demo (game/web.py) has no such cap (text is instant).
+    _VOICE_BREVITY = (
+        "\n\nCRITICAL — THIS IS A LIVE SPOKEN CONVERSATION, and every word you say is voiced "
+        "aloud while the player stands waiting. Your SPOKEN line must be AT MOST 1-2 short "
+        "sentences (~25 words of speech, hard ceiling). At most ONE brief stage direction, and "
+        "often none. Say the single thing that matters, in character, and STOP so they can "
+        "reply — a paragraph forces them to wait through it and kills the conversation. Short and "
+        "alive beats long and complete, every time.")
+
     def situation(self, slug: str, sit: "SituationDTO | None") -> Situation | None:
         d = {"location": sit.location, "present": sit.present, "clock": sit.clock} if sit else {}
-        d["extra"] = {"Performance": sit.performance if sit and sit.performance
-                      else policy.PERFORMANCE_RULES}
+        base_perf = sit.performance if sit and sit.performance else policy.PERFORMANCE_RULES
+        d["extra"] = {"Performance": base_perf + self._VOICE_BREVITY}
         if sit and sit.ambient:
             d["extra"]["Around you, right now"] = sit.ambient
         frame = (self.scenario.get("world_frame") or "").strip()

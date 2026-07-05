@@ -47,6 +47,11 @@ public:
     /** pre-deliberative orienting response: turn toward the event, startle crosses the face */
     void FlinchAt(const FVector& Where);
 
+    /** addressed by the player: turn to them and play a brief "taking you in / considering"
+     *  body beat so she's ALIVE through the reply latency, not a frozen mannequin. No startle
+     *  face — being spoken to isn't alarming. */
+    void BeginListening(const FVector& From);
+
     /** talking body language for the duration of a spoken reply, then settle back to idle.
      *  bIncludeFace=false when a real A2F track owns the face (body gesture only). */
     void PlayTalkGesture(float Seconds, bool bIncludeFace = true);
