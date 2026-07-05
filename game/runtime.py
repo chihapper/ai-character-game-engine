@@ -338,7 +338,8 @@ class Game:
 
     async def act(self, action: str) -> str:
         self._log("player_action", action)
-        text = await self.dm.adjudicate(action, self._perception, self._refs(), self.player_location)
+        text = await self.dm.adjudicate(action, self._perception, self._refs(), self.player_location,
+                                        recent=self._recap())
         # The DM appends `LOCATION: ...` ONLY when the action moved the player — apply it, strip it.
         m = re.search(r"(?im)^\s*LOCATION:\s*(.+?)\s*$", text)
         if m:

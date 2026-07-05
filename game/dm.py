@@ -122,19 +122,33 @@ class DM:
         return picks
 
     async def adjudicate(self, action: str, perception: str, refs: list[str],
-                         player_location: str) -> str:
+                         player_location: str, recent: str = "") -> str:
         """Narrate the world's response to a free-form player action. RESPECTS the player's current
         position — only moves them if the action explicitly does; a movement is reported back to the
-        runtime via a trailing `LOCATION: ...` line, which the runtime parses and strips."""
+        runtime via a trailing `LOCATION: ...` line, which the runtime parses and strips.
+
+        `recent` is the recent narration/dialogue so the DM can RESOLVE back-references — 'him',
+        'her', 'again', 'this process', 'the same' — against what actually just happened. Without it
+        the DM is stateless per call and mis-binds pronouns (e.g. 'him' snapping to the wrong person)."""
+        ctx = (f"WHAT JUST HAPPENED (most recent last — use it to resolve 'him/her/again/this/the "
+               f"same' to the RIGHT person or thing):\n{recent}\n\n" if recent else "")
         prompt = (
             f"SCENARIO: {self.s['title']}\n\n{self._people(refs)}\n\n"
-            f"THE SCENE RIGHT NOW: {perception}\n\nTHE PLAYER IS CURRENTLY: {player_location}.\n\n"
+            f"THE SCENE RIGHT NOW: {perception}\n\n{ctx}THE PLAYER IS CURRENTLY: {player_location}.\n\n"
             f"The player attempts: \"{action}\"\n\n"
             "Narrate what happens in 1-3 grounded sentences (second person, present tense). Stay "
             "physically plausible and CONSISTENT with where the player is — do NOT move them unless the "
             "action explicitly moves them; looking around, surveying, noticing, or speaking does NOT "
             "move them. Do NOT resolve any character's feelings or decisions — only the world's "
             "response. No proper names for anyone unnamed.\n"
+            "RESOLVE REFERENCES: if the action says 'him', 'her', 'them', 'again', 'this process', "
+            "'the same', or 'that', bind it to the person or action it clearly refers to in WHAT JUST "
+            "HAPPENED — act on who the player MEANS, not the nearest body. If a target is genuinely "
+            "unclear, act on the most recently involved one rather than silently doing nothing.\n"
+            "NEVER DEAD-END THE PLAYER: if the action can't succeed (e.g. trying to leave — the "
+            "crossing is closed and there is nowhere to go out in the storm tonight), narrate WHY "
+            "in-world, but also leave a thread to pull: something they could do here, or someone in "
+            "the room they could turn to. Don't answer with a flat, empty refusal.\n"
             "If — and ONLY if — the action moves the player to a new spot, add a final line, exactly: "
             "LOCATION: <short phrase of where they now are>. Otherwise do not add that line."
         )
