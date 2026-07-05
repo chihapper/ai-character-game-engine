@@ -150,10 +150,16 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
         Present.Add(FString::Printf(TEXT("%s is at %s"),
             *Other->Handle, *FerryRegions::NameAt(Other->GetActorLocation())));
     }
+    // Who is a UObject held across two chained network hops (~seconds). The weak lambda guards
+    // `this` (the player), not the NPC — so weak-track Who too and bail if it's gone by the time
+    // a reply lands, rather than dereference a dangling actor.
+    const TWeakObjectPtr<ANpcAgent> WhoW(Who);
     Mind->Respond(Who->Slug, Line, Location, Present,
         TEXT("rain drums on the roof; the storm outside has the ferry grounded for the night"),
-        FMindJsonReply::CreateWeakLambda(this, [this, Who](TSharedPtr<FJsonObject> Json)
+        FMindJsonReply::CreateWeakLambda(this, [this, WhoW](TSharedPtr<FJsonObject> Json)
         {
+            ANpcAgent* Who = WhoW.Get();
+            if (!Who) { bLineBusy = false; return; }
             FString Reply;
             if (Json.IsValid()) Json->TryGetStringField(TEXT("reply"), Reply);
             if (Reply.IsEmpty())
@@ -173,10 +179,11 @@ void AFerryPlayer::HandleSpokenLine(const FString& Line)
             UMindClient* Mind2 = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMindClient>() : nullptr;
             if (!Mind2) { bLineBusy = false; return; }
             Mind2->SpeakAnim(Who->Slug, Reply, FaceMarks, FMindSpeakAnimReply::CreateWeakLambda(this,
-                [this, Who](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
+                [this, WhoW](const TArray<uint8>& Pcm, int32 Rate, TSharedPtr<FJsonObject> Anim)
                 {
                     bLineBusy = false;
-                    if (Pcm.Num() < 2) return;
+                    ANpcAgent* Who = WhoW.Get();
+                    if (!Who || Pcm.Num() < 2) return;
                     USoundWaveProcedural* Wave = NewObject<USoundWaveProcedural>();
                     Wave->SetSampleRate(Rate);
                     Wave->NumChannels = 1;
