@@ -336,6 +336,25 @@ class Game:
         t = re.sub(r"\byou\b", "the traveler", t)
         return re.sub(r"\byourself\b", "themselves", t)
 
+    def _personalize(self, witnessed: str, slug: str) -> str:
+        """Rewrite a witnessed account into the SECOND PERSON for the one it happened TO — so the
+        target of a slap remembers being slapped, not watching 'the young woman' get slapped. Only
+        this character's OWN self-reference (handle / learned name) is swapped; everyone else stays
+        third person. Returns the text UNCHANGED for a pure bystander (they aren't named in it),
+        which is also how `act()` tells a participant from an onlooker."""
+        forms = sorted({self.handles.get(slug) or "", self.known_names.get(slug) or "", self._name(slug)}
+                       - {""}, key=len, reverse=True)
+        out = witnessed
+        for f in forms:
+            if len(f) < 3:
+                continue
+            out = re.sub(rf"\b{re.escape(f)}'s\b", "your", out, flags=re.IGNORECASE)
+            out = re.sub(rf"\b{re.escape(f)}\b", "you", out, flags=re.IGNORECASE)
+        if out == witnessed:
+            return witnessed
+        # Recapitalize a 'you/your' that now opens a sentence.
+        return re.sub(r"(^|[.!?]\s+)(you)", lambda m: m.group(1) + m.group(2).capitalize(), out)
+
     async def act(self, action: str) -> str:
         self._log("player_action", action)
         text = await self.dm.adjudicate(action, self._perception, self._refs(), self.player_location,
@@ -345,6 +364,15 @@ class Game:
         if m:
             self.player_location = m.group(1).strip()
             text = (text[:m.start()] + text[m.end():]).strip()
+        # ...and `TARGET: ...` names who the action was aimed at, so the one it happened to weighs it
+        # as a participant even if the prose was terse about them. Parse + strip it.
+        targets: list[str] = []
+        m = re.search(r"(?im)^\s*TARGET:\s*(.+?)\s*$", text)
+        if m:
+            raw = m.group(1).strip()
+            text = (text[:m.start()] + text[m.end():]).strip()
+            if raw.lower() not in ("none", "no one", "-", ""):
+                targets = [s for s in (self._resolve(r) for r in raw.split(",")) if s]
         text = self._scrub(text)
         self._log("narration", text)
         # WORLD -> MINDS: the people present WITNESS a physical player action, so plant it in their
@@ -353,14 +381,22 @@ class Game:
         # what". This is why paying Della now reaches her mind (before, `act` never told anyone).
         if not self._INTROSPECTION.search(action):
             witnessed = self._witnessed(text)
+            # Each mind gets its OWN copy: the person it happened TO reads it in the second person
+            # ("slaps you") and weighs it as a participant; onlookers get the third-person account.
+            # Without this, being slapped landed as "I watched the young woman get slapped" — low
+            # salience, no reaction, forgotten a moment later.
+            personal = [self._personalize(witnessed, s) for s in self.present]
+            # A participant is whoever the DM named as a TARGET, or whoever the prose put in the
+            # scene by name (personalize changed their copy). They weigh it heavily; onlookers less.
+            mags = [0.85 if (s in targets or p != witnessed) else 0.5
+                    for s, p in zip(self.present, personal)]
             sals = await asyncio.gather(*(
-                self.engines[s].remember(witnessed, kind="player_event", actor="player",
-                                         magnitude=0.5, t=self.clock)
-                for s in self.present))
+                self.engines[s].remember(p, kind="player_event", actor="player",
+                                         magnitude=m, t=self.clock)
+                for s, p, m in zip(self.present, personal, mags)))
             # ...and let anyone who found it salient enough REACT in the moment — the same recipe
-            # scripted events use. This is why drawing a weapon or shoving someone now draws a
-            # response instead of silence. Salience gates it, so mundane acts (counting coins,
-            # checking a coat) stay quiet.
+            # scripted events use. Salience gates it, so mundane acts (counting coins, checking a
+            # coat) stay quiet while a slap or a drawn blade draws a response.
             await self._provoke_reactions(self.present, sals)
         return text
 
