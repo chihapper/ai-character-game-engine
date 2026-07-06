@@ -131,20 +131,14 @@ func _open_common() -> void:
 		_edit.call_deferred("grab_focus")
 
 
-func show_reply(npc: String, speech: String, action: String = "") -> void:
-	# The reply also lands in the HUD log (main.gd routes the same dialogue event there);
-	# here we surface the latest line in the overlay's reply area if it's still open. `speech` is
-	# the spoken words (voiced); `action` is the stage business, shown as a dim parenthetical.
+func show_reply(npc: String, speech: String, _action: String = "") -> void:
+	# The reply also lands in the HUD log. We surface only the SPOKEN words here — stage directions
+	# (`_action`) are NOT shown as text; they're the DM's to narrate aloud IF relevant.
 	if _reply == null:
 		return
 	var who := str(npc).strip_edges()
 	var line := str(speech).strip_edges()
-	if line == "":
-		line = str(action).strip_edges()   # no quoted speech — show the description itself
-	var body := ("%s: %s" % [who, line]) if who != "" else line
-	if str(action).strip_edges() != "" and str(speech).strip_edges() != "":
-		body += "\n(%s)" % str(action).strip_edges()
-	_reply.text = body
+	_reply.text = ("%s: %s" % [who, line]) if who != "" else line
 
 
 func _on_submit(t: String) -> void:
