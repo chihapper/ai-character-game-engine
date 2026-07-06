@@ -49,6 +49,17 @@ MODEL = os.environ.get("EVI_SPIKE_MODEL", "claude-haiku-4-5")   # low latency fo
 PORT = int(os.environ.get("EVI_SPIKE_PORT", "8010"))
 REQLOG = pathlib.Path(__file__).with_name("evi_clm_requests.jsonl")
 
+# Lever 2 (words carry the performance): the only delivery channel through EVI's text-only CLM is
+# the SPOKEN words themselves. Octave is a speech-LANGUAGE model, so a laugh written INTO the quoted
+# speech ("Ha—", "haha") is voiced as an audible laugh; a stage direction ("*she laughs*") is stripped
+# by spoken_text() and never reaches the voice. So we direct the mind to put its vocal reactions in
+# the words. ([pause] is Octave's only supported inline marker; [laughs]-style tags are NOT.)
+_VOICE_PERF = {"Voice performance": (
+    "Your reply is SPOKEN ALOUD by a voice engine that voices only your quoted words. Put your laughs "
+    "and vocal reactions INTO the quoted speech, spelled out — 'Ha—', 'haha', a breathy 'mmm', 'pfft' "
+    "— never as third-person stage directions (those are silent). Speak expressively and musically, "
+    "with interjections, em-dashes and ellipses for real rhythm; use '[pause]' for a beat. Never flat.")}
+
 app = FastAPI()
 _eng: Engine | None = None
 
@@ -103,8 +114,9 @@ async def chat_completions(request: Request):
     full = await engine().respond(RespondRequest(
         player_input=user_text,
         situation=Situation(location="a rain-locked ferry inn", game_time="evening",
-                            clock=0.0, present=[])))
-    reply = spoken_text(full)                  # ONLY the quoted speech -> EVI must not voice stage business
+                            clock=0.0, present=[], extra=_VOICE_PERF)))
+    reply = spoken_text(full).replace("*", "")   # quoted speech only; drop markdown emphasis (Octave
+    #                                              guide says avoid markup — EVI may voice the asterisks)
     gen_ms = round((time.time() - t0) * 1000)
     _log("reply", {"user_text": user_text, "full": full, "spoken": reply, "engine_ms": gen_ms})
 
