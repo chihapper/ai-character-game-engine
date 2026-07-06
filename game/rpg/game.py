@@ -196,25 +196,25 @@ class RpgGame(GameSession):
 
     def _move_player(self, dx: int, dy: int) -> None:
         s = self.state
-        nx, ny = s.player.pos[0] + dx, s.player.pos[1] + dy
+        old = tuple(s.player.pos)
+        nx, ny = old[0] + dx, old[1] + dy
         door = next((d for d in s.doors if d.locked and tuple(d.pos) == (nx, ny)), None)
         if door:
             self._try_open_door(door)       # walking into a locked door = try to open it
             return
         if not s.world_map.walkable(nx, ny):
             return
-        # A non-hostile NPC or follower on the target cell STEPS ASIDE (swaps to your old cell) rather
-        # than walling you off — a bystander must never block a corridor or the only path. Enemies
-        # stay solid (you reach them through combat, not by walking onto them).
-        mover = (next((n for n in s.npcs if n.pos and tuple(n.pos) == (nx, ny)), None)
-                 or next((f for f in s.followers if f.alive and f.pos and tuple(f.pos) == (nx, ny)), None))
-        if mover is not None:
-            mover.pos = tuple(s.player.pos)
-        elif self._occupied((nx, ny), s.player.id):
+        # Enemies are solid (you reach them through combat). A non-hostile NPC on the target cell is
+        # pushed to your OLD cell so a bystander can't wall you off; followers are re-threaded onto
+        # your trail below (see _advance_followers), so walking onto one is fine.
+        if any(en.alive and en.pos and tuple(en.pos) == (nx, ny) for e in s.encounters for en in e.enemies):
             return
+        npc = next((n for n in s.npcs if n.pos and tuple(n.pos) == (nx, ny)), None)
+        if npc is not None:
+            npc.pos = old
         s.player.pos = (nx, ny)
         s.clock.advance(0.05)               # exploration narrative time (game owns the clock)
-        self._step_followers()              # companions trail you
+        self._advance_followers(old)        # party follows your EXACT path, single-file
         self._maybe_trigger_encounter()
 
     def _try_open_door(self, door) -> None:
@@ -268,21 +268,29 @@ class RpgGame(GameSession):
         if opts:
             mover.pos = min(opts, key=lambda c: self._dist(c, dest))
 
-    def _step_followers(self) -> None:
+    def _advance_followers(self, vacated) -> None:
+        """Party follow = a single-file SNAKE: each companion steps into the cell the one ahead just
+        vacated (the head into the player's OLD cell), so the party trails the player's EXACT path —
+        always directly behind in the direction of travel, never lagging off to the side. Falls back
+        to a greedy gap-close only if the trail cell is momentarily blocked (e.g. a bystander NPC
+        was just pushed into it)."""
         s = self.state
+        vacated = tuple(vacated)
         for f in s.followers:
             if not (f.alive and f.pos):
                 continue
-            # Close the gap THIS turn (up to a few steps), not one step at a time — otherwise a
-            # companion only maintains her distance while you keep moving and appears to "catch up"
-            # only when you stop. _step_toward respects walls + occupancy, so this never clips/stacks.
-            for _ in range(6):
-                if self._dist(f.pos, s.player.pos) <= 1:
-                    break
-                before = tuple(f.pos)
-                self._step_toward(f, s.player.pos)
-                if tuple(f.pos) == before:      # blocked — stop trying this turn
-                    break
+            cur = tuple(f.pos)
+            if vacated != cur and s.world_map.walkable(*vacated) and not self._occupied(vacated, f.id):
+                f.pos = vacated
+            else:
+                for _ in range(6):          # trail cell blocked — close the gap greedily instead
+                    if self._dist(f.pos, s.player.pos) <= 1:
+                        break
+                    before = tuple(f.pos)
+                    self._step_toward(f, s.player.pos)
+                    if tuple(f.pos) == before:
+                        break
+            vacated = cur                   # the next companion trails into where THIS one just was
 
     def _maybe_trigger_encounter(self) -> None:
         s = self.state
