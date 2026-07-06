@@ -163,3 +163,18 @@ Steps:
 - Work incrementally; **validate each Phase A step**, and prove the differentiator, before touching Phase B.
 - Keep the game-core strictly renderer-agnostic behind the `GameSession` interface — the tcod view and the Godot client consume the same one.
 - Write a README so a stranger could run Phase A in the terminal and, later, build + launch the native Godot client against the same core.
+
+---
+
+## Roadmap — deferred until AFTER the Godot proof-of-concept (do NOT build before PoC)
+
+**Order of operations (owner decision, 2026-07-06):** finish the **full proof-of-concept in Godot (Phase B)** on the *current* content model before fleshing out a real game. Today we do **constructive PCG**: the **map layout is procedural** (seeded rooms-and-corridors + cellular-automata caverns, connectivity enforced by `dungeon._assert_connected`), while enemies / loot / NPCs / objective are **authored per slice** and *placed* on procedural anchors (`Dungeon.spawns`). That is a standard, respected pattern and is enough to prove the PoC.
+
+**Deferred (post-PoC) — procedural CONTENT generation.** The below is a large build (enemy classes, difficulty math, balancing) and is premature before the PoC lands. It all lives in the **content layer on top of the existing map + anchor-population seam — NO game-core change** (the seam was audited + adversarially verified slice-agnostic; a third slice was authored touching only content):
+- **Enemy system:** enemy *classes / archetypes* (e.g. melee brute, skirmisher, archer, caster, support) with distinct **attack profiles** (the `Combatant.damage_dice` / `attack_ability` seam already exists) and behaviors; **stat-block generation** rather than hand-authored rosters.
+- **Difficulty / depth scaling:** a CR-like budget so encounters scale to player level / dungeon depth (Pawson's "loot scaled to rank" idea, generalized to foes).
+- **Loot tables:** depth/level-scaled loot with **rarity tiers**, rolled per run (today loot is DM-narrated + authored keys only).
+- **Encounter composition:** a budget-based encounter builder that picks a *mix* of enemy classes to a target difficulty for a room / depth, then places them on anchors.
+- (Optional, further out) noise-driven **biome / hazard tile variation** (Perlin), and additional map generators (BSP, drunkard's-walk) behind the same `generate_*` contract.
+
+**Guard already in place for this:** `game/rpg/gencheck.py` fuzzes every generator's invariants across N seeds (connected floor, reachable stairs, valid anchors) — extend it to cover generated encounters/loot when that work begins.
