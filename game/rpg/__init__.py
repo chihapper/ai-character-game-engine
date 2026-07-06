@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from .content import build_first_slice, characters
 from .dungeon import Dungeon, generate_dungeon, render_ascii
+from .game import RpgGame
 from .minds import Minds, full_depth_caps, reskin
 from .rules import AttackResult, CheckResult, D20Rules, RulesEngine
 from .session import (
@@ -63,4 +64,6 @@ __all__ = [
     "Minds", "reskin", "full_depth_caps",
     # dungeon + content
     "Dungeon", "generate_dungeon", "render_ascii", "build_first_slice", "characters",
+    # core loop
+    "RpgGame",
 ]
