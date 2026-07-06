@@ -201,7 +201,16 @@ class RpgGame(GameSession):
         if door:
             self._try_open_door(door)       # walking into a locked door = try to open it
             return
-        if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
+        if not s.world_map.walkable(nx, ny):
+            return
+        # A non-hostile NPC or follower on the target cell STEPS ASIDE (swaps to your old cell) rather
+        # than walling you off — a bystander must never block a corridor or the only path. Enemies
+        # stay solid (you reach them through combat, not by walking onto them).
+        mover = (next((n for n in s.npcs if n.pos and tuple(n.pos) == (nx, ny)), None)
+                 or next((f for f in s.followers if f.alive and f.pos and tuple(f.pos) == (nx, ny)), None))
+        if mover is not None:
+            mover.pos = tuple(s.player.pos)
+        elif self._occupied((nx, ny), s.player.id):
             return
         s.player.pos = (nx, ny)
         s.clock.advance(0.05)               # exploration narrative time (game owns the clock)
