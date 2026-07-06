@@ -269,9 +269,20 @@ class RpgGame(GameSession):
             mover.pos = min(opts, key=lambda c: self._dist(c, dest))
 
     def _step_followers(self) -> None:
-        for f in self.state.followers:
-            if f.alive and f.pos and self._dist(f.pos, self.state.player.pos) > 1:
-                self._step_toward(f, self.state.player.pos)
+        s = self.state
+        for f in s.followers:
+            if not (f.alive and f.pos):
+                continue
+            # Close the gap THIS turn (up to a few steps), not one step at a time — otherwise a
+            # companion only maintains her distance while you keep moving and appears to "catch up"
+            # only when you stop. _step_toward respects walls + occupancy, so this never clips/stacks.
+            for _ in range(6):
+                if self._dist(f.pos, s.player.pos) <= 1:
+                    break
+                before = tuple(f.pos)
+                self._step_toward(f, s.player.pos)
+                if tuple(f.pos) == before:      # blocked — stop trying this turn
+                    break
 
     def _maybe_trigger_encounter(self) -> None:
         s = self.state
