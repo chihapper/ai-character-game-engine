@@ -43,10 +43,22 @@ class DM:
                                                    f"2-3 sentences. No check — just set the scene."}])
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
-    async def adjudicate(self, action_text: str, *, scene: str, player: Combatant) -> str:
-        """Resolve a free-form player action. The DM may call ability_check (rules core decides), then
-        narrates the authoritative outcome. `player` is the Combatant the check rolls against."""
+    async def adjudicate(self, action_text: str, *, scene: str, player: Combatant, grant_item=None) -> str:
+        """Resolve a free-form player action. The DM may call ability_check (rules core decides pass/
+        fail) and, if provided, grant_item (loot becomes REAL), then narrates the authoritative
+        outcome. `player` is the Combatant a check rolls against."""
         tools = [t for t in self.rules.tools() if t["name"] == "ability_check"]
+        if grant_item is not None:
+            tools.append({
+                "name": "grant_item",
+                "description": "Give the player a SMALL, fitting item they plausibly found or took from "
+                               "this action (a coin-purse, a tool, a note, a trinket, a common weapon). "
+                               "NEVER a key to a sealed door, nor anything that trivializes an objective. "
+                               "Call only on a genuine find, then narrate it.",
+                "input_schema": {"type": "object", "properties": {
+                    "name": {"type": "string", "description": "e.g. 'a pouch of silver'"},
+                    "kind": {"type": "string", "enum": ["misc", "weapon", "consumable", "note"]}},
+                    "required": ["name"]}})
         messages: list[dict] = [{"role": "user", "content":
             f"SCENE:\n{scene}\n\nThe player attempts: \"{action_text}\"\n\nNarrate what happens."}]
         for _ in range(3):                       # bounded tool loop
@@ -60,12 +72,17 @@ class DM:
                 if getattr(block, "type", None) != "tool_use":
                     continue
                 inp = block.input or {}
-                r = self.rules.ability_check(player, str(inp.get("ability", "WIS")),
-                                             int(inp.get("dc", 12)), advantage=int(inp.get("advantage", 0) or 0))
-                verdict = "SUCCESS" if r.success else "FAILURE"
-                crit = f" (natural {'20' if r.critical == 'hit' else '1'})" if r.critical else ""
-                results.append({"type": "tool_result", "tool_use_id": block.id,
-                                "content": f"{inp.get('ability','WIS')} check: {verdict}{crit} "
-                                           f"(rolled {r.total} vs DC {r.dc})."})
+                if block.name == "grant_item" and grant_item is not None:
+                    got = grant_item(str(inp.get("name", "something")), str(inp.get("kind", "misc")))
+                    results.append({"type": "tool_result", "tool_use_id": block.id,
+                                    "content": f"Given to the player: {got}."})
+                else:
+                    r = self.rules.ability_check(player, str(inp.get("ability", "WIS")),
+                                                 int(inp.get("dc", 12)), advantage=int(inp.get("advantage", 0) or 0))
+                    verdict = "SUCCESS" if r.success else "FAILURE"
+                    crit = f" (natural {'20' if r.critical == 'hit' else '1'})" if r.critical else ""
+                    results.append({"type": "tool_result", "tool_use_id": block.id,
+                                    "content": f"{inp.get('ability', 'WIS')} check: {verdict}{crit} "
+                                               f"(rolled {r.total} vs DC {r.dc})."})
             messages.append({"role": "user", "content": results})
         return "..."

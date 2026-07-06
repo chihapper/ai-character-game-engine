@@ -30,7 +30,8 @@ _TILE = {
     "#": (60, 55, 50), ".": (120, 110, 100), "+": (150, 120, 80),
     ">": (230, 200, 80), "<": (230, 200, 80), " ": (20, 20, 20),
 }
-_ENT = {"player": (255, 255, 255), "npc": (95, 205, 225), "follower": (120, 220, 120), "enemy": (220, 90, 90)}
+_ENT = {"player": (255, 255, 255), "npc": (95, 205, 225), "follower": (120, 220, 120),
+        "enemy": (220, 90, 90), "door": (205, 150, 70)}
 _LOG_ROWS = 14
 _MOVE = {
     tcod.event.KeySym.UP: (0, -1), tcod.event.KeySym.DOWN: (0, 1),
@@ -117,8 +118,9 @@ class _View:
         console.print(snap.player.pos[0], snap.player.pos[1], "@", fg=_ENT["player"])
         # status line
         p = snap.player
-        status = f" HP {p.hp}/{p.max_hp}  {snap.mode.value}  t={snap.clock:.1f} "
-        console.print(0, self.map_h, status.ljust(console.width), fg=(255, 255, 255), bg=(40, 40, 50))
+        obj = f"  |  {snap.objective}" if snap.objective else ""
+        status = f" HP {p.hp}/{p.max_hp}  {snap.mode.value}  t={snap.clock:.1f}  items:{len(snap.inventory)}{obj} "
+        console.print(0, self.map_h, status.ljust(console.width)[:console.width], fg=(255, 255, 255), bg=(40, 40, 50))
         # message log (scrollable): wrap the whole log, then show a window controlled by scroll
         all_lines: list[tuple[str, tuple]] = []
         for text, col in self.log:

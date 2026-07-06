@@ -11,7 +11,16 @@ from orchestrator.character_store import Character
 
 from .dungeon import generate_dungeon
 from .minds import reskin
-from .state import Encounter, Enemy, GameState, NpcPlacement, PlayerCharacter, Stats
+from .state import (Door, Encounter, Enemy, GameState, Item, NpcPlacement, PlayerCharacter,
+                    QuestThread, Stats)
+
+KEYSTONE = "keystone"   # item id — Vael's secret, opens the Vault's inner door
+
+
+def keystone_item() -> Item:
+    return Item(id=KEYSTONE, name="a black keystone", kind="key",
+                data={"desc": "A palm-sized wedge of black stone, warm to the touch. It fits the "
+                              "Vault's inner door."})
 
 VAEL = "rpg-vael"    # Corvin-derived — guarded, suspicious, a dangerous past
 LIRA = "rpg-lira"    # Bri-derived — warm, quick, disarming
@@ -108,6 +117,19 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
                      stats=Stats(STR=8, DEX=14, CON=10), pos=gpos[i % len(gpos)]) for i in range(3)]
     encounter = Encounter(id="vault-guards", enemies=goblins, trigger_pos=enc_pos, region="the deep gallery")
 
-    gs = GameState(player=player, world_map=d.world_map, npcs=[vael, lira], encounters=[encounter])
+    # OBJECTIVE: a sealed inner door guards the descent; its keystone is Vael's secret. Place the
+    # door on a walkable cell by the down-stairs (it blocks that cell until opened with the keystone).
+    sdx, sdy = d.world_map.stairs_down
+    door_cell = next(((sdx + ox, sdy + oy) for ox, oy in ((0, -1), (-1, 0), (1, 0), (0, 1), (0, 0))
+                      if d.world_map.walkable(sdx + ox, sdy + oy) and (sdx + ox, sdy + oy) != tuple(player.pos)),
+                     (sdx, sdy))
+    door = Door(id="inner-door", pos=door_cell, name="the Vault's sealed inner door",
+                locked=True, key_item=KEYSTONE)
+    quest = QuestThread(id="descend", title="Open the Vault's sealed inner door and descend",
+                        notes=["The way down is barred by an ancient door.",
+                               "Vael was hired to bring out its keystone — he may still have it."])
+
+    gs = GameState(player=player, world_map=d.world_map, npcs=[vael, lira],
+                   encounters=[encounter], doors=[door], quests=[quest])
     gs.campaign_log.add(0.0, "You descend into the Sunken Vault, torchlight swallowed by old dark.", tags=["intro"])
     return gs, characters()

@@ -78,8 +78,13 @@ class RpgGame(GameSession):
                     ents.append(EntityView(id=en.id, name=en.name, pos=en.pos, kind="enemy",
                                            hp=en.hp if show_hp else None,
                                            max_hp=en.max_hp if show_hp else None))
+        for d in s.doors:
+            if d.locked:
+                ents.append(EntityView(id=d.id, name="Door", pos=d.pos, kind="door"))
+        objective = next((q.title for q in s.quests if q.state in ("open", "active")), "")
         return StateSnapshot(
-            mode=s.mode, clock=s.clock.value, player=s.player,
+            mode=s.mode, clock=s.clock.value, player=s.player, objective=objective,
+            inventory=[it.name for it in s.player.inventory],
             map_width=s.world_map.width, map_height=s.world_map.height, tiles=s.world_map.tiles,
             entities=ents, combat_order=(s.combat.order if s.combat else []),
             combat_turn=(s.combat.current() if s.combat else None), show_enemy_hp=show_hp)
@@ -154,7 +159,8 @@ class RpgGame(GameSession):
         """A free-form player action — the DM adjudicates (rules core is the authority) and narrates."""
         if not (action_text or "").strip():
             return
-        narration = await self.dm.adjudicate(action_text, scene=self._scene_text(), player=self.state.player)
+        narration = await self.dm.adjudicate(action_text, scene=self._scene_text(),
+                                             player=self.state.player, grant_item=self._grant_item)
         self._emit(NarrationEvent(text=narration))
         self.state.campaign_log.add(self.state.clock.value, narration, tags=["action"])
         self.state.clock.advance(0.1)
@@ -162,12 +168,32 @@ class RpgGame(GameSession):
     def _move_player(self, dx: int, dy: int) -> None:
         s = self.state
         nx, ny = s.player.pos[0] + dx, s.player.pos[1] + dy
+        door = next((d for d in s.doors if d.locked and tuple(d.pos) == (nx, ny)), None)
+        if door:
+            self._try_open_door(door)       # walking into a locked door = try to open it
+            return
         if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
             return
         s.player.pos = (nx, ny)
         s.clock.advance(0.05)               # exploration narrative time (game owns the clock)
         self._step_followers()              # companions trail you
         self._maybe_trigger_encounter()
+
+    def _try_open_door(self, door) -> None:
+        """Opening is GAME-enforced: a keyed door needs the item in hand (the DM can't hand-wave it)."""
+        s = self.state
+        if door.key_item and not s.has_item(door.key_item):
+            self._emit(NarrationEvent(text=f"{door.name} is sealed fast — it won't give without its keystone."))
+            return
+        door.locked = False
+        self._emit(NarrationEvent(text=f"You set the black keystone to the lock; {door.name} grinds open, "
+                                        "and cold air breathes up from a stair spiraling down into deeper dark."))
+        for q in s.quests:
+            if q.id == "descend":
+                q.state = "done"
+        s.flags["inner_door_open"] = True
+        self._emit(NarrationEvent(text="[End of the demo slice — the way down is open. What you carry and "
+                                        "who walks beside you are yours to take deeper.]"))
 
     # ---- shared movement / occupancy helpers ----
     def _occupied(self, pos, exclude_id: str | None = None) -> bool:
@@ -237,6 +263,34 @@ class RpgGame(GameSession):
         if "go" in (choice.get("action") or "").lower():
             self._make_follower(npc)
             self._emit(NarrationEvent(text=f"{npc.name} falls in beside you."))
+            self._maybe_give_keystone(npc)
+
+    def _maybe_give_keystone(self, npc) -> None:
+        """The differentiator meets progression: Vael only chooses to JOIN if he's come to trust you —
+        and a Vael who trusts you enough to travel with you hands over the keystone (his secret). A
+        Vael you've alienated won't join, so this path to the inner door stays shut. Consequences."""
+        from .content import KEYSTONE, VAEL, keystone_item
+        s = self.state
+        if npc.slug == VAEL and not s.has_item(KEYSTONE):
+            s.player.inventory.append(keystone_item())
+            self._emit(DialogueEvent(npc=npc.name, slug=npc.slug,
+                       text="If we're in this together — here. The thing my crew died for. It opens the "
+                            "inner door. Don't make me sorry I trusted you with it."))
+            self._emit(NarrationEvent(text=f"{npc.name} presses a black keystone into your palm."))
+            for q in s.quests:
+                if q.id == "descend":
+                    q.state = "active"
+
+    def _grant_item(self, name: str, kind: str = "misc") -> str:
+        """DM callback: loot found through a free-form action becomes a REAL item — but never the
+        objective key (that gate is game-owned, not the DM's to hand out)."""
+        iid = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")[:40] or "item"
+        if "keystone" in iid or iid == "keystone":
+            return "(refused: that item is off-limits to grant)"
+        from .state import Item
+        self.state.player.inventory.append(Item(id=iid, name=name, kind=kind))
+        self.state.campaign_log.add(self.state.clock.value, f"The traveler took {name}.", tags=["loot"])
+        return name
 
     def _make_follower(self, npc) -> None:
         from .state import Follower, Stats

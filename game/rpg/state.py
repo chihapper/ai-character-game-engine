@@ -163,6 +163,16 @@ class WorldMap(BaseModel):
         return self.tile(x, y) in (".", "+", ">", "<")
 
 
+class Door(BaseModel):
+    """An interactive world feature that blocks a cell until opened. A locked door needs a specific
+    key item in the player's inventory — that gating is GAME-enforced, never the DM's to hand-wave."""
+    id: str
+    pos: Pos
+    name: str = "a heavy door"
+    locked: bool = True
+    key_item: str = ""                        # item id that opens it ('' = openable by hand)
+
+
 class CombatState(BaseModel):
     round: int = 1
     order: list[str] = Field(default_factory=list)   # combatant ids in initiative order
@@ -185,9 +195,14 @@ class GameState(BaseModel):
     npcs: list[NpcPlacement] = Field(default_factory=list)
     followers: list[Follower] = Field(default_factory=list)
     encounters: list[Encounter] = Field(default_factory=list)
+    doors: list[Door] = Field(default_factory=list)
     quests: list[QuestThread] = Field(default_factory=list)
+    flags: dict[str, bool] = Field(default_factory=dict)   # game/quest flags (e.g. inner_door_open)
     campaign_log: CampaignLog = Field(default_factory=CampaignLog)
     combat: CombatState | None = None
+
+    def has_item(self, item_id: str) -> bool:
+        return any(it.id == item_id for it in self.player.inventory)
 
     # --- save/load (WORLD only; never the mind store) ---
     def to_json(self) -> str:
@@ -216,6 +231,8 @@ class StateSnapshot(BaseModel):
     mode: Mode
     clock: float
     player: PlayerCharacter
+    objective: str = ""
+    inventory: list[str] = Field(default_factory=list)
     map_width: int
     map_height: int
     tiles: list[str]
