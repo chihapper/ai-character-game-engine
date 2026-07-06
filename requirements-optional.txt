@@ -17,3 +17,4 @@ requests>=2.31
 fastembed>=0.3
 # sentence-transformers is an alternative embedder (heavier; pulls torch). Optional.
 # sentence-transformers==3.3.1
+tcod  # Phase A disposable dev view (game/rpg/play.py)
