@@ -12,7 +12,6 @@ import asyncio
 
 from game import policy
 
-from .content import build_first_slice
 from .dm import DM
 from .minds import Minds
 from .rules import D20Rules

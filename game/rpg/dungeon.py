@@ -9,11 +9,41 @@ same `generate_dungeon` signature.)
 from __future__ import annotations
 
 import random
+from collections import deque
 from dataclasses import dataclass
 
 from .state import Pos, WorldMap
 
 WALL, FLOOR, DOOR, DOWN, UP = "#", ".", "+", ">", "<"
+
+
+def _dist(a: Pos, b: Pos) -> int:
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+
+def _assert_connected(world_map, spawns) -> None:
+    """The core generation RULE, ENFORCED: every walkable cell is reachable from the up-stair (no
+    marooned pockets), and every spawn anchor is walkable + reachable. A generator that ever violated
+    this would silently ship an uncompletable map — so we fail loudly at generation instead. (This is
+    the concrete form of "a set of rules that ensures whatever you generate doesn't break the game".)"""
+    wm = world_map
+    start = tuple(wm.stairs_up or (spawns[0] if spawns else (0, 0)))
+    seen = {start}
+    q = deque([start])
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nb = (x + dx, y + dy)
+            if nb not in seen and wm.walkable(*nb):
+                seen.add(nb)
+                q.append(nb)
+    floors = sum(1 for y in range(wm.height) for x in range(wm.width) if wm.walkable(x, y))
+    if len(seen) != floors:
+        raise AssertionError(f"generator produced a disconnected map: "
+                             f"{floors - len(seen)} of {floors} floor cells unreachable from the up-stair")
+    for p in spawns:
+        if tuple(p) not in seen:
+            raise AssertionError(f"spawn anchor {tuple(p)} is unreachable")
 
 
 @dataclass
@@ -88,7 +118,11 @@ def generate_dungeon(*, width: int = 64, height: int = 32, seed: int | None = No
             continue
         _carve_room(grid, room)
         if rooms:
-            _carve_corridor(grid, rooms[-1].center, room.center, rng)
+            # Connect to the NEAREST already-placed room (not the previously-placed one): shorter,
+            # more natural corridors, and since every new room attaches to an existing one the graph
+            # stays a spanning tree = fully connected by construction.
+            nearest = min(rooms, key=lambda r: _dist(r.center, room.center))
+            _carve_corridor(grid, nearest.center, room.center, rng)
         rooms.append(room)
         if len(rooms) >= max_rooms:
             break
@@ -98,6 +132,15 @@ def generate_dungeon(*, width: int = 64, height: int = 32, seed: int | None = No
         _carve_room(grid, room)
         rooms.append(room)
 
+    # A few EXTRA corridors between nearby rooms add loops (better flow than a pure tree — a lone
+    # spanning tree forces backtracking; a couple of loops is the TinyKeep/MST + a-few-edges idea).
+    for _ in range(max(0, len(rooms) // 4)):
+        if len(rooms) < 2:
+            break
+        a, b = rng.sample(rooms, 2)
+        if _dist(a.center, b.center) <= room_max * 4:
+            _carve_corridor(grid, a.center, b.center, rng)
+
     up = rooms[0].center
     down = rooms[-1].center
     grid[up[1]][up[0]] = UP
@@ -105,6 +148,7 @@ def generate_dungeon(*, width: int = 64, height: int = 32, seed: int | None = No
 
     world_map = WorldMap(width=width, height=height, tiles=["".join(row) for row in grid],
                          seed=seed, source="procedural", stairs_up=up, stairs_down=down)
+    _assert_connected(world_map, [r.center for r in rooms])
     return Dungeon(world_map=world_map, rooms=rooms)
 
 
@@ -201,6 +245,7 @@ def generate_caverns(*, width: int = 72, height: int = 36, seed: int | None = No
 
     world_map = WorldMap(width=width, height=height, tiles=["".join(row) for row in grid],
                          seed=seed, source="procedural", stairs_up=up, stairs_down=down)
+    _assert_connected(world_map, pts)
     return Dungeon(world_map=world_map, rooms=rooms)
 
 
