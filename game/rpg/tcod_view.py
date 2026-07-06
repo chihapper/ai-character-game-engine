@@ -71,8 +71,8 @@ class _View:
             for x, c in enumerate(row):
                 self._map_ch[y, x] = ord(c)
                 self._map_fg[y, x] = _TILE.get(c, (100, 100, 100))
-        self._note("You descend into the Sunken Vault. Keys: move=arrows/hjkl  t=talk  f=help  "
-                   "r=recruit  g=toggle enemy HP  PgUp/PgDn=scroll log  .=wait  q=quit")
+        self._note("Keys: move=arrows/hjkl  x=do (type any action)  t=talk  f=help  r=recruit  "
+                   "g=toggle enemy HP  PgUp/PgDn=scroll  .=wait  q=quit")
 
     def _note(self, text: str, colour=(200, 200, 190)) -> None:
         self.log.append((text, colour))
@@ -186,6 +186,10 @@ def run(game) -> None:
     h = game.state.world_map.height + 1 + _LOG_ROWS
     console = tcod.console.Console(w, h, order="C")
     with tcod.context.new(columns=w, rows=h, tileset=tileset, title="The Sunken Vault") as context:
+        if hasattr(game, "begin"):                    # opening DM scene — the world speaks first
+            view.render(console); context.present(console)   # show the map immediately
+            view.loop.run_until_complete(game.begin())
+            view._drain()
         while True:
             view.render(console)
             context.present(console)
@@ -237,3 +241,7 @@ def run(game) -> None:
                         view._note("No one beside you to ask along.", (150, 150, 150))
                         break
                     view._act(PlayerAction(kind="recruit", target_id=who.id))
+                elif sym == tcod.event.KeySym.x:
+                    line = _prompt_line(view, console, context, "You try to: ")
+                    if line:
+                        view._act(PlayerAction(kind="do", text=line))

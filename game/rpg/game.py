@@ -13,6 +13,7 @@ import asyncio
 from game import policy
 
 from .content import build_first_slice
+from .dm import DM
 from .minds import Minds
 from .rules import D20Rules
 from .session import (
@@ -34,16 +35,23 @@ _REACT_THRESHOLD = 0.7   # game-owned salience bar for turning a witnessed event
 
 
 class RpgGame(GameSession):
-    def __init__(self, state: GameState, minds: Minds, rules: D20Rules) -> None:
+    def __init__(self, state: GameState, minds: Minds, rules: D20Rules, dm: DM) -> None:
         self.state = state
         self.minds = minds
         self.rules = rules
+        self.dm = dm
         self._events: asyncio.Queue[GameEvent] = asyncio.Queue()
 
     @classmethod
-    def new(cls, *, seed: int = 1337, reply_model: str | None = "claude-haiku-4-5") -> "RpgGame":
+    def new(cls, *, seed: int = 1337, reply_model: str | None = "claude-haiku-4-5",
+            dm_model: str | None = "claude-haiku-4-5") -> "RpgGame":
         state, chars = build_first_slice(seed=seed)
-        return cls(state, Minds(chars, reply_model=reply_model), D20Rules(seed=seed))
+        rules = D20Rules(seed=seed)
+        return cls(state, Minds(chars, reply_model=reply_model), rules, DM(rules, model=dm_model))
+
+    async def begin(self) -> None:
+        """Open the game with a DM scene — the world speaks first."""
+        self._emit(NarrationEvent(text=await self.dm.narrate_scene(self._scene_text())))
 
     # ---- events (to the view) ----
     def _emit(self, ev: GameEvent) -> None:
@@ -119,8 +127,37 @@ class RpgGame(GameSession):
             await self._talk(action)
         elif action.kind == "recruit":
             await self._recruit(action)
+        elif action.kind == "do":
+            await self._do(action.text)
+        elif action.kind == "look":
+            self._emit(NarrationEvent(text=await self.dm.narrate_scene(self._scene_text())))
         elif action.kind == "wait":
             self.state.clock.advance(0.1)
+
+    def _scene_text(self) -> str:
+        """The world-state the DM narrates FROM — where the player is, who's near, recent history."""
+        s = self.state
+        near = [n.name for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 5]
+        party = [f.name for f in s.followers if f.alive]
+        parts = ["The player stands deep in the Sunken Vault — black stone, standing water, old wards, "
+                 "torchlight the only light."]
+        if near:
+            parts.append("Others nearby: " + ", ".join(near) + ".")
+        if party:
+            parts.append("Traveling with the player: " + ", ".join(party) + ".")
+        recent = [e.text for e in s.campaign_log.recent(4)]
+        if recent:
+            parts.append("Recently: " + " ".join(recent))
+        return " ".join(parts)
+
+    async def _do(self, action_text: str) -> None:
+        """A free-form player action — the DM adjudicates (rules core is the authority) and narrates."""
+        if not (action_text or "").strip():
+            return
+        narration = await self.dm.adjudicate(action_text, scene=self._scene_text(), player=self.state.player)
+        self._emit(NarrationEvent(text=narration))
+        self.state.campaign_log.add(self.state.clock.value, narration, tags=["action"])
+        self.state.clock.advance(0.1)
 
     def _move_player(self, dx: int, dy: int) -> None:
         s = self.state
