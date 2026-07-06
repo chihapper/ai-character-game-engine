@@ -175,6 +175,11 @@ Steps:
 - **Difficulty / depth scaling:** a CR-like budget so encounters scale to player level / dungeon depth (Pawson's "loot scaled to rank" idea, generalized to foes).
 - **Loot tables:** depth/level-scaled loot with **rarity tiers**, rolled per run (today loot is DM-narrated + authored keys only).
 - **Encounter composition:** a budget-based encounter builder that picks a *mix* of enemy classes to a target difficulty for a room / depth, then places them on anchors.
+- **Secret walls / hidden passages:** a hidden door/wall (a `Door` or wall tile with `hidden=True` + `reveal_dc`) that renders as solid until a **search / perception check passes** — the DM already calls `ability_check`, so this slots in with no new machinery; adds exploration reward and optional shortcuts/loot rooms.
+- **Obstacles & terrain types:** expand the tile vocabulary beyond wall/floor/door/stairs — pillars, rubble, water, chasms, hazard/cover tiles, destructibles — plus the **rules effects** they carry (block/slow movement, break line-of-sight, deal damage). Data-model + rules work; the generator seeds them, content authors them.
 - (Optional, further out) noise-driven **biome / hazard tile variation** (Perlin), and additional map generators (BSP, drunkard's-walk) behind the same `generate_*` contract.
+
+**Deferred further — presentation / dimensionality:**
+- **2.5D & elevation gameplay:** height layers, high-ground advantage, line-of-sight by elevation, falling. Two parts kept distinct: *2.5D as a rendering choice* (isometric / layered sprites) lives in the **Godot client** over the same flat tile grid; *elevation that affects gameplay* is a deeper **core** change (data model + rules). Both deferred until well after the PoC.
 
 **Guard already in place for this:** `game/rpg/gencheck.py` fuzzes every generator's invariants across N seeds (connected floor, reachable stairs, valid anchors) — extend it to cover generated encounters/loot when that work begins.

@@ -64,6 +64,7 @@ def main(n: int = 200) -> int:
                       ("caverns (generate_caverns)", generate_caverns)):
         broken = 0
         ratios = []
+        exit_frac = []                                     # entrance<->exit distance as a fraction of map size
         for seed in range(1, n + 1):
             try:
                 d = gen(seed=seed)
@@ -75,10 +76,16 @@ def main(n: int = 200) -> int:
                 if broken <= 5:
                     print(f"  [{name} seed {seed}] {probs}")
             else:
-                ratios.append(len(_floor(d.world_map)) / (d.world_map.width * d.world_map.height))
+                wm = d.world_map
+                ratios.append(len(_floor(wm)) / (wm.width * wm.height))
+                dist = abs(wm.stairs_up[0] - wm.stairs_down[0]) + abs(wm.stairs_up[1] - wm.stairs_down[1])
+                exit_frac.append(dist / (wm.width + wm.height))
         avg = sum(ratios) / len(ratios) if ratios else 0.0
+        ef_min = min(exit_frac) if exit_frac else 0.0
+        ef_avg = sum(exit_frac) / len(exit_frac) if exit_frac else 0.0
         status = "PASS" if broken == 0 else f"FAIL ({broken} broken)"
-        print(f"  [{status}] {name}: {n} seeds  avg floor ratio {avg:.2f}")
+        print(f"  [{status}] {name}: {n} seeds  avg floor ratio {avg:.2f}  "
+              f"entrance<->exit spread avg {ef_avg:.2f} min {ef_min:.2f} of (w+h)")
         ok = ok and broken == 0
     print("\n" + ("ALL GENERATORS PASS every invariant — no map can ship uncompletable."
                   if ok else "INVARIANT FAILURES ABOVE."))

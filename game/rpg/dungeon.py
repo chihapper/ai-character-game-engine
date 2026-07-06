@@ -141,8 +141,10 @@ def generate_dungeon(*, width: int = 64, height: int = 32, seed: int | None = No
         if _dist(a.center, b.center) <= room_max * 4:
             _carve_corridor(grid, a.center, b.center, rng)
 
+    # Entrance = the player's start room; EXIT = the room FARTHEST from it (not just the last placed),
+    # so the objective is a real journey across the map rather than next door to the start.
     up = rooms[0].center
-    down = rooms[-1].center
+    down = max((r.center for r in rooms), key=lambda c: _dist(c, up))
     grid[up[1]][up[0]] = UP
     grid[down[1]][down[0]] = DOWN
 
@@ -239,7 +241,11 @@ def generate_caverns(*, width: int = 72, height: int = 36, seed: int | None = No
 
     pts = _spread_anchors(sorted(region), anchors)
     rooms = [Room(x, y, 1, 1) for (x, y) in pts]        # 1x1 anchor 'rooms' feed the .spawns contract
-    up, down = pts[0], pts[-1]
+    # Entrance = the player's start anchor; EXIT = the anchor FARTHEST from it. (Was `pts[-1]`, the
+    # last farthest-point pick, which is a gap-filler and often lands NEAR the entrance — the reason
+    # cavern entrances/exits looked clustered.)
+    up = pts[0]
+    down = max(pts, key=lambda p: _dist(p, up))
     grid[up[1]][up[0]] = UP
     grid[down[1]][down[0]] = DOWN
 
