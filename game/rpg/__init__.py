@@ -13,6 +13,7 @@ orchestrator, procedural dungeon gen, the tcod dev view, and world save/load.
 """
 from __future__ import annotations
 
+from .minds import Minds, full_depth_caps, reskin
 from .rules import AttackResult, CheckResult, D20Rules, RulesEngine
 from .session import (
     CombatEvent,
@@ -56,4 +57,6 @@ __all__ = [
     # session
     "GameSession", "PlayerAction", "GameEvent", "NarrationEvent", "DialogueEvent",
     "MapUpdateEvent", "CombatEvent", "ModeChangedEvent", "StateChangedEvent",
+    # minds (engine integration)
+    "Minds", "reskin", "full_depth_caps",
 ]
