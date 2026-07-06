@@ -160,11 +160,16 @@ func log_event(ev: Dictionary) -> void:
 				log_line(txt)
 		"dialogue":
 			var npc := str(ev.get("npc", ""))
-			var dtext := str(ev.get("text", ""))
+			var speech := str(ev.get("speech", ""))
+			var action := str(ev.get("action", ""))
+			if speech == "":
+				speech = str(ev.get("text", ""))   # fallback if the server didn't split
 			if npc != "":
-				log_line("%s: %s" % [npc, dtext])
+				log_line("%s: %s" % [npc, speech])
 			else:
-				log_line(dtext)
+				log_line(speech)
+			if action != "":
+				log_line("   (%s)" % action)         # stage business as a dim description line
 		"mode_changed":
 			log_line("— %s —" % str(ev.get("mode", "")).to_upper())
 		"state_changed":

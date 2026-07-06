@@ -13,6 +13,7 @@ extends Node2D
 var _world: Node2D
 var _hud: CanvasLayer
 var _dialogue: CanvasLayer
+var _voice: AudioStreamPlayer   # plays Hume-voiced NPC lines (PCM streamed from the server)
 
 ## Last snapshot received from the server; drives the nearest-interactable helper.
 var _snapshot: Dictionary = {}
@@ -38,6 +39,10 @@ func _ready() -> void:
 	_dialogue.name = "Dialogue"
 	_dialogue.set_script(load("res://dialogue.gd"))
 	add_child(_dialogue)
+
+	_voice = AudioStreamPlayer.new()
+	_voice.name = "Voice"
+	add_child(_voice)
 
 	# Wire the Net autoload. `Net` is a global autoload (extends Node) that owns the
 	# WebSocket; it emits these three signals and exposes the action methods we call.
@@ -76,7 +81,25 @@ func _on_game_event(ev: Dictionary) -> void:
 		_hud.log_event(ev)
 	if str(ev.get("type", "")) == "dialogue":
 		if _dialogue != null:
-			_dialogue.show_reply(str(ev.get("npc", "")), str(ev.get("text", "")))
+			_dialogue.show_reply(str(ev.get("npc", "")), str(ev.get("speech", "")), str(ev.get("action", "")))
+		if ev.has("audio_b64"):
+			_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
+
+
+## Play an NPC's Hume-voiced line: base64 -> raw s16le PCM -> a 16-bit mono AudioStreamWAV.
+func _play_voice(b64: String, rate: int) -> void:
+	if b64 == "" or _voice == null:
+		return
+	var pcm := Marshalls.base64_to_raw(b64)
+	if pcm.size() == 0:
+		return
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = maxi(rate, 8000)
+	wav.stereo = false
+	wav.data = pcm
+	_voice.stream = wav
+	_voice.play()
 
 
 # -- Input routing ------------------------------------------------------------
