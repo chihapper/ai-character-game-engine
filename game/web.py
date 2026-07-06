@@ -17,6 +17,22 @@ from .runtime import Game
 router = APIRouter(prefix="/api/game")
 _games: dict[str, Game] = {}
 _locks: dict[str, "asyncio.Lock"] = {}
+# One TTS adapter per game (built lazily on first /voice), so a stateful provider (Hume
+# Octave continuation) keeps its cross-turn prosody through-line scoped to THIS playthrough
+# and can't bleed into another concurrent game on the same NPC voice. Reset on a scene cut
+# (/advance); evicted when the game finishes or is reaped.
+_tts_by_game: dict = {}
+
+
+def _game_tts(gid: str):
+    """The game's own TTS adapter, reused across every /voice call so continuity carries
+    turn-to-turn within the playthrough while staying isolated from other concurrent games."""
+    tts = _tts_by_game.get(gid)
+    if tts is None:
+        from .bridge.mind_api import _tts
+        tts = _tts()
+        _tts_by_game[gid] = tts
+    return tts
 
 
 def _lock(gid: str):
@@ -99,6 +115,7 @@ async def _reap_idle() -> None:
                 _games.pop(gid, None)
                 _locks.pop(gid, None)
                 _last_touch.pop(gid, None)
+                _tts_by_game.pop(gid, None)
 
 
 @router.post("/new")
@@ -158,6 +175,11 @@ async def advance(gid: str):
     async with _lock(gid):
         n = len(g.history)
         more = await g.advance()
+        # A beat advance is a scene cut: drop any carried voice mood so the next beat's
+        # spoken lines start fresh instead of inheriting the previous scene's through-line.
+        tts = _tts_by_game.get(gid)
+        if tts is not None:
+            tts.reset_continuation()
         return {"events": g.history[n:], "view": _view(g), "ended": not more}
 
 
@@ -169,6 +191,7 @@ async def finish(gid: str, body: Finish):
         await g.finish(body.outcome)
     _games.pop(gid, None)
     _locks.pop(gid, None)
+    _tts_by_game.pop(gid, None)
     return {"ok": True, "run_id": g.run_id}
 
 
@@ -186,7 +209,7 @@ async def voice(gid: str, body: Voice):
     from fastapi.responses import StreamingResponse
     from orchestrator.config import AUDIO_SAMPLE_RATE
     from . import casting, policy
-    from .bridge.mind_api import _tts, _tts_provider
+    from .bridge.mind_api import _tts_provider
     _game(gid)   # 404 on unknown/expired games
     provider = _tts_provider()
     if provider == "hume":
@@ -197,7 +220,7 @@ async def voice(gid: str, body: Voice):
                             detail=f"play-view voice is cast for GAME_TTS=hume (got '{provider}')")
     if not (text or "").strip():
         raise HTTPException(status_code=400, detail="nothing to speak")
-    tts = _tts()
+    tts = _game_tts(gid)
 
     async def gen():
         async for chunk in tts.stream_speech(text, vid):

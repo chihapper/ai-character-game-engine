@@ -96,6 +96,7 @@ class MindSession:
         self.voice_names = {c["slug"]: (c.get("voice") or "").strip() for c in self.scenario["cast"]}
         self.voice_inworld = {c["slug"]: (c.get("voice_inworld") or "").strip() for c in self.scenario["cast"]}
         self.voice_ids: dict = {}
+        self._tts_adapter = None   # one adapter for THIS session (see .tts()), built lazily
         st = get_settings()
         self.voice_ready = bool(st.inworld_api_key if _tts_provider() == "inworld"
                                 else st.elevenlabs_api_key)
@@ -109,6 +110,17 @@ class MindSession:
         if eng is None:
             raise HTTPException(status_code=404, detail=f"no such character in this session: {slug}")
         return eng
+
+    def tts(self):
+        """This session's ONE TTS adapter, reused across every /speak in the session so a
+        stateful provider (Hume Octave continuation) carries prosody turn-to-turn WITHIN the
+        session — while staying isolated from any concurrent session on the same NPC voice,
+        because each session holds its own instance. Built lazily: a session that never speaks
+        (or runs without the provider's key) never constructs one. New session == fresh adapter
+        == the continuity reset, so a superseding session can't inherit the old one's mood."""
+        if self._tts_adapter is None:
+            self._tts_adapter = _tts()
+        return self._tts_adapter
 
     # This is the EMBODIED path (Unreal/Unity): every reply is spoken aloud, so its length is
     # LATENCY — a 6-sentence answer is 6 sentences of TTS + face-solve the player waits through.
@@ -330,7 +342,7 @@ async def speak(sid: str, slug: str, body: Speak):
     # full reply and turns the stage directions into per-utterance acting instructions
     text = body.text if _tts_provider() == "hume" else policy.spoken_text(body.text)
     chunks = []
-    async for chunk in _tts().stream_speech(text, vid):
+    async for chunk in s.tts().stream_speech(text, vid):
         chunks.append(chunk)
     if not chunks:
         raise HTTPException(status_code=404, detail="nothing speakable")
@@ -366,7 +378,7 @@ async def speak_anim(sid: str, slug: str, body: SpeakAnim):
     # same rule as /speak: Hume receives the full reply (stage business -> direction)
     text = body.text if _tts_provider() == "hume" else policy.spoken_text(body.text)
     chunks = []
-    async for chunk in _tts().stream_speech(text, vid):
+    async for chunk in s.tts().stream_speech(text, vid):
         chunks.append(chunk)
     if not chunks:
         raise HTTPException(status_code=404, detail="nothing speakable")
