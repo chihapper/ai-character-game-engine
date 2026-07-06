@@ -30,6 +30,16 @@ from .state import EntityView, GameState, Mode, NpcPlacement, StateSnapshot
 
 _REACT_THRESHOLD = 0.7   # game-owned salience bar for turning a witnessed event into a reaction
 
+# In-scene brevity — this is LIVE, VOICED play, so NPCs answer like people in a moment, not essays.
+# A game-layer nudge (RPG-local, NOT the shared PERFORMANCE_RULES), fed through the situation `extra`.
+_SCENE_PACE = (
+    "This is live, in-scene play with real voices — answer the way a person actually speaks in the "
+    "moment: usually ONE or TWO sentences of dialogue, three at the very most. Say the one thing that "
+    "matters and stop, leaving room for the other person to reply. Never deliver a monologue, a "
+    "speech, or a paragraph. Any stage business stays to a SHORT beat — a handful of words in the "
+    "third person (he/she/they), e.g. 'she wipes the grime from her hands' — not a paragraph of prose "
+    "and never in the first person.")
+
 
 def _enemy_label(enemies) -> str:
     """A readable plural for the DOMINANT enemy in a fight ('goblins', 'cinder-husks') — so combat
@@ -160,7 +170,8 @@ class RpgGame(GameSession):
                                              if n.slug != for_slug and n.pos
                                              and self._dist(n.pos, self.state.player.pos) <= 6]
         flavor = self.state.flavor
-        extra = {"The world you live in": flavor.world_frame, "Performance": policy.PERFORMANCE_RULES}
+        extra = {"The world you live in": flavor.world_frame, "Performance": policy.PERFORMANCE_RULES,
+                 "Scene pace": _SCENE_PACE}
         return self.minds.situation(clock=self.state.clock.value, location=flavor.location_label,
                                     present=others, recent_events=recent or [], game_time=flavor.time_label,
                                     extra=extra)
