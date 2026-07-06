@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import os
 
+import numpy as np
 import tcod
 
 from .session import (
@@ -54,6 +55,16 @@ class _View:
         self.game = game
         self.log: list[tuple[str, tuple[int, int, int]]] = []
         self.loop = asyncio.new_event_loop()
+        # The map is STATIC — bake its glyphs+colours into numpy arrays ONCE, then bulk-assign per
+        # frame (vs re-printing every cell each render). Entities/status/log draw on top.
+        wm = game.state.world_map
+        self.map_h, self.map_w = wm.height, wm.width
+        self._map_ch = np.zeros((self.map_h, self.map_w), dtype=np.int32)
+        self._map_fg = np.zeros((self.map_h, self.map_w, 3), dtype=np.uint8)
+        for y, row in enumerate(wm.tiles):
+            for x, c in enumerate(row):
+                self._map_ch[y, x] = ord(c)
+                self._map_fg[y, x] = _TILE.get(c, (100, 100, 100))
         self._note("You descend into the Sunken Vault. (t: talk  f: free/help  arrows: move  q: quit)")
 
     def _note(self, text: str, colour=(200, 200, 190)) -> None:
@@ -86,12 +97,11 @@ class _View:
 
     def render(self, console: tcod.console.Console) -> None:
         console.clear()
+        # static map: one bulk array assign (no per-cell loop)
+        console.ch[:self.map_h, :self.map_w] = self._map_ch
+        console.fg[:self.map_h, :self.map_w] = self._map_fg
+        # entities (few) draw on top
         snap = self.game.get_state()
-        # map
-        for y, row in enumerate(snap.tiles):
-            for x, ch in enumerate(row):
-                console.print(x, y, ch, fg=_TILE.get(ch, (100, 100, 100)))
-        # entities
         for e in snap.entities:
             if e.pos:
                 console.print(e.pos[0], e.pos[1], e.name[0], fg=_ENT.get(e.kind, (200, 200, 200)))
@@ -99,13 +109,14 @@ class _View:
         # status line
         p = snap.player
         status = f" HP {p.hp}/{p.max_hp}  {snap.mode.value}  t={snap.clock:.1f} "
-        console.print(0, snap.map_height, status.ljust(console.width), fg=(255, 255, 255), bg=(40, 40, 50))
-        # message log (wrapped, newest at bottom)
-        top = snap.map_height + 1
+        console.print(0, self.map_h, status.ljust(console.width), fg=(255, 255, 255), bg=(40, 40, 50))
+        # message log — wrap only enough tail entries to fill the visible rows (not the whole log)
         lines: list[tuple[str, tuple]] = []
-        for text, col in self.log:
-            for w in _wrap(text, console.width):
-                lines.append((w, col))
+        for text, col in reversed(self.log):
+            lines = [(w, col) for w in _wrap(text, console.width)] + lines
+            if len(lines) >= _LOG_ROWS:
+                break
+        top = self.map_h + 1
         for i, (text, col) in enumerate(lines[-_LOG_ROWS:]):
             console.print(0, top + i, text[:console.width], fg=col)
 
@@ -127,7 +138,7 @@ def _prompt_line(view: _View, console, context, label: str) -> str | None:
     buf = ""
     while True:
         view.render(console)
-        console.print(0, view.game.get_state().map_height, f"{label}{buf}_".ljust(console.width),
+        console.print(0, view.map_h, f"{label}{buf}_".ljust(console.width),
                       fg=(255, 255, 255), bg=(30, 60, 30))
         context.present(console)
         for event in tcod.event.wait():
