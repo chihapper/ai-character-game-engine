@@ -87,7 +87,10 @@ class RpgGame(GameSession):
             inventory=[it.name for it in s.player.inventory],
             map_width=s.world_map.width, map_height=s.world_map.height, tiles=s.world_map.tiles,
             entities=ents, combat_order=(s.combat.order if s.combat else []),
-            combat_turn=(s.combat.current() if s.combat else None), show_enemy_hp=show_hp)
+            # This loop resolves player -> all allies -> all enemies per action rather than stepping a
+            # single initiative cursor, so there is no one "current" combatant to report (turn_index
+            # is not advanced). Leave combat_turn None instead of always claiming order[0].
+            combat_turn=None, show_enemy_hp=show_hp)
 
     # ---- world helpers ----
     def _npc_at(self, pos) -> NpcPlacement | None:
@@ -115,6 +118,8 @@ class RpgGame(GameSession):
 
     # ---- action dispatch ----
     async def submit_action(self, action: PlayerAction) -> None:
+        if self.state.flags.get("game_over"):
+            return                           # terminal state — the only way on is a fresh game
         if action.kind == "toggle_enemy_hp":
             if self.state.combat:
                 self.state.combat.show_enemy_hp = not self.state.combat.show_enemy_hp
@@ -180,14 +185,29 @@ class RpgGame(GameSession):
         self._maybe_trigger_encounter()
 
     def _try_open_door(self, door) -> None:
-        """Opening is GAME-enforced: a keyed door needs the item in hand (the DM can't hand-wave it)."""
+        """Opening is GAME-enforced: a keyed door yields to its keystone (the DM can't hand-wave it).
+        If you don't have the keystone you may still FORCE it with a hard STR check — a costly, luck-
+        dependent fallback so alienating Vael (the keystone's holder) is a real setback, not a dead
+        soft-lock. The check is game-owned (rules core), re-attemptable each time you shoulder it."""
         s = self.state
-        if door.key_item and not s.has_item(door.key_item):
-            self._emit(NarrationEvent(text=f"{door.name} is sealed fast — it won't give without its keystone."))
+        if not door.key_item or s.has_item(door.key_item):
+            self._open_inner_door(door, "You set the black keystone to the lock; " + door.name +
+                                  " grinds open, and cold air breathes up from a stair spiraling down "
+                                  "into deeper dark.")
             return
+        r = self.rules.ability_check(s.player, "STR", 18)   # DC 18: hard, not hopeless
+        if r.success:
+            self._open_inner_door(door, "You set your shoulder to " + door.name + " and heave — old iron "
+                                  "shrieks, timber splinters, and it bursts inward. Cold air breathes up "
+                                  "from a stair spiraling down into deeper dark.")
+        else:
+            self._emit(NarrationEvent(text=f"{door.name} holds fast against your shoulder. It won't give "
+                                           "without its keystone — or a mightier effort than that."))
+
+    def _open_inner_door(self, door, how: str) -> None:
+        s = self.state
         door.locked = False
-        self._emit(NarrationEvent(text=f"You set the black keystone to the lock; {door.name} grinds open, "
-                                        "and cold air breathes up from a stair spiraling down into deeper dark."))
+        self._emit(NarrationEvent(text=how))
         for q in s.quests:
             if q.id == "descend":
                 q.state = "done"
@@ -364,9 +384,21 @@ class RpgGame(GameSession):
             self._end_combat(victory=True); return
         self._enemy_turns()
         if not s.player.alive:
-            self._emit(CombatEvent(text="You fall in the dark of the Vault... (press q to quit)"))
+            self._on_player_death()
             return
         s.combat.round += 1
+
+    def _on_player_death(self) -> None:
+        """Defeat is a TERMINAL state, not a stuck combat: leave combat mode, set game_over, and
+        stop accepting further actions (submit_action guards on the flag). Without this the player
+        is trapped in combat forever — a corpse that can still 'act' while enemies keep rolling."""
+        s = self.state
+        s.flags["game_over"] = True
+        s.mode = Mode.exploration
+        s.combat = None
+        self._emit(ModeChangedEvent(mode=Mode.exploration))
+        self._emit(CombatEvent(text="You fall in the dark of the Vault, and it closes over you. "
+                                    "Your story ends here. (press q to quit)"))
 
     async def _ally_turns(self) -> None:
         s = self.state

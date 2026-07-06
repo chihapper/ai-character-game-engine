@@ -19,12 +19,14 @@ from .state import Mode, StateSnapshot
 class PlayerAction(BaseModel):
     """One intent from the view. `kind` selects the fields that matter; the core validates per
     kind. Free-flow in exploration; one action per turn in combat."""
-    kind: Literal["move", "talk", "recruit", "do", "look", "attack", "use", "wait", "toggle_enemy_hp", "advance"]
+    # Only kinds the core actually handles. Combat attacks are bump-to-attack (kind="move" into an
+    # enemy), so there's no separate "attack"; "use"/"advance" aren't wired yet — add them here the
+    # moment the core handles them, not before (a declared-but-ignored kind is a silent no-op trap).
+    kind: Literal["move", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp"]
     dx: int = 0                  # move
     dy: int = 0
-    target_id: str = ""          # talk / attack / use-on
-    text: str = ""               # the player's spoken line (talk) or free-form action text
-    item_id: str = ""            # use
+    target_id: str = ""          # talk / recruit target (NPC slug)
+    text: str = ""               # the player's spoken line (talk) or free-form action text (do)
 
 
 # ---- events (to the view) -----------------------------------------------------

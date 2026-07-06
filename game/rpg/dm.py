@@ -8,11 +8,12 @@ NPC's Engine.respond). Grounding comes from the scene + the campaign log.
 """
 from __future__ import annotations
 
-from orchestrator.adapters.llm_anthropic import _shared_client
+import anthropic
+
 from orchestrator.config import get_settings
 
 from .rules import RulesEngine
-from .state import Combatant
+from .state import ABILITIES, Combatant
 
 _SYSTEM = (
     "You are the Dungeon Master of a grim, torch-lit high-fantasy dungeon crawl — the player's eyes, "
@@ -33,7 +34,9 @@ class DM:
     def __init__(self, rules: RulesEngine, *, model: str | None = None) -> None:
         self.rules = rules
         self.model = model or "claude-haiku-4-5"
-        self.client = _shared_client(get_settings().anthropic_api_key)   # shared connection pool
+        # The DM is a GAME-layer narrator, not an engine Character — it owns its own Anthropic client
+        # rather than reaching into the engine's LLM adapter internals (keeps the game/engine seam clean).
+        self.client = anthropic.AsyncAnthropic(api_key=get_settings().anthropic_api_key)
 
     async def narrate_scene(self, scene: str) -> str:
         """Atmospheric narration of the current surroundings (no check) — used on arrival / look."""
@@ -77,12 +80,18 @@ class DM:
                     results.append({"type": "tool_result", "tool_use_id": block.id,
                                     "content": f"Given to the player: {got}."})
                 else:
-                    r = self.rules.ability_check(player, str(inp.get("ability", "WIS")),
+                    # The tool schema restricts `ability` to ABILITIES, but tool-use inputs aren't
+                    # hard-validated by the API — a model that emits 'Perception'/'LUCK' would crash
+                    # Stats.mod's getattr. Coerce any off-enum value to a safe default (WIS).
+                    ability = str(inp.get("ability", "WIS")).upper()
+                    if ability not in ABILITIES:
+                        ability = "WIS"
+                    r = self.rules.ability_check(player, ability,
                                                  int(inp.get("dc", 12)), advantage=int(inp.get("advantage", 0) or 0))
                     verdict = "SUCCESS" if r.success else "FAILURE"
                     crit = f" (natural {'20' if r.critical == 'hit' else '1'})" if r.critical else ""
                     results.append({"type": "tool_result", "tool_use_id": block.id,
-                                    "content": f"{inp.get('ability', 'WIS')} check: {verdict}{crit} "
+                                    "content": f"{ability} check: {verdict}{crit} "
                                                f"(rolled {r.total} vs DC {r.dc})."})
             messages.append({"role": "user", "content": results})
         return "..."
