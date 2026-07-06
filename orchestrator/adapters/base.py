@@ -94,3 +94,12 @@ class TTSAdapter(ABC):
     async def clone_voice(self, sample_audio: bytes, display_name: str) -> str:
         """Instant-clone a voice from an audio sample; return the new voice id."""
         raise NotImplementedError
+
+    def reset_continuation(self, voice_id: str | None = None) -> None:
+        """Lifecycle hint: a new scene/situate began — forget any cross-turn prosodic
+        through-line carried for `voice_id` (or all voices if None), so the next line
+        starts cold instead of inheriting the prior scene's mood. Stateless providers
+        have nothing to forget and ignore this (the default no-op); a stateful one (Hume
+        Octave continuation) overrides it. Continuity state is ALWAYS scoped to a single
+        adapter instance, so this only ever resets THIS session — never a concurrent one."""
+        return None

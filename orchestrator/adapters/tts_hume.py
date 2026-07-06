@@ -33,11 +33,12 @@ logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.hume.ai"
 
-# cross-TURN prosody continuation: Octave can continue from the previous generation, so a
-# conversation keeps one emotional through-line instead of starting cold each reply.
-# Keyed per voice (per character), module-level because adapters are constructed per call;
-# TTL'd so a new scene doesn't inherit a stale mood.
-_LAST_GENERATION: dict[str, tuple[str, float]] = {}
+# cross-TURN prosody continuation TTL: Octave can continue from the previous generation, so a
+# conversation keeps one emotional through-line instead of starting cold each reply — but a long
+# gap between turns shouldn't inherit a stale mood, so a carried generation older than this is
+# dropped. The continuation MAP itself is per-adapter-instance (see HumeTTS.__init__), NOT
+# module-global: the instance is scoped to one session/scene, so two concurrent sessions on the
+# same NPC voice can never cross-contaminate each other's through-line.
 _CONTINUATION_TTL_S = 300.0
 _HUME_PCM_RATE = 48000
 _LEAD_TAG = re.compile(r"^\s*\[([^\[\]]{1,120})\]\s*")
@@ -133,6 +134,12 @@ class HumeTTS(TTSAdapter):
             raise RuntimeError("HUME_API_KEY is not set. Add it to your .env file.")
         self._api_key = settings.hume_api_key
         self._instant = settings.hume_instant
+        # cross-turn prosody continuation, one generation-id per voice. INSTANCE-scoped (not
+        # module-global) so this map belongs to exactly one session/scene: concurrent sessions
+        # get their own adapter and can't bleed moods across the same NPC voice. Drivers reuse
+        # ONE HumeTTS per session for this to carry across turns (see mind_api / web.py). TTL'd
+        # per entry (_CONTINUATION_TTL_S); reset_continuation() clears it on a new scene.
+        self._last_generation: dict[str, tuple[str, float]] = {}
 
     def _utterances(self, text: str, voice_id: str) -> list[dict]:
         """A reply becomes per-sentence utterances with acting instructions, from BOTH
@@ -232,7 +239,7 @@ class HumeTTS(TTSAdapter):
         body = {"utterances": utterances, "format": {"type": "pcm"},
                 "instant_mode": bool(voice_id) and self._instant}
         import time as _time
-        prev = _LAST_GENERATION.get(voice_id)
+        prev = self._last_generation.get(voice_id)
         if prev and _time.monotonic() - prev[1] < _CONTINUATION_TTL_S:
             body["context"] = {"generation_id": prev[0]}   # carry the mood across turns
         headers = {"X-Hume-Api-Key": self._api_key, "Content-Type": "application/json"}
@@ -253,12 +260,12 @@ class HumeTTS(TTSAdapter):
                     except ValueError:
                         continue
                     if msg.get("error") or msg.get("message") and not msg.get("audio"):
-                        _LAST_GENERATION.pop(voice_id, None)   # a failed context must not persist
+                        self._last_generation.pop(voice_id, None)  # a failed context must not persist
                         raise RuntimeError(f"Hume TTS error: {str(msg)[:300]}")
                     gid = msg.get("generation_id")
                     if gid:
                         import time as _time
-                        _LAST_GENERATION[voice_id] = (gid, _time.monotonic())
+                        self._last_generation[voice_id] = (gid, _time.monotonic())
                     audio = msg.get("audio")
                     if not audio:
                         continue
@@ -271,6 +278,16 @@ class HumeTTS(TTSAdapter):
                     yield _resample_to_wire(pcm48)
         if not got_audio:
             raise RuntimeError("Hume TTS returned no audio (check credits at platform.hume.ai/billing)")
+
+    def reset_continuation(self, voice_id: str | None = None) -> None:
+        """New scene/situate: drop the carried generation-id so the next line starts cold
+        instead of inheriting the prior scene's mood. Clears one voice, or the whole scene
+        (all voices) when `voice_id` is None. Only touches THIS instance's map, so a reset
+        here never disturbs another concurrent session on the same voice."""
+        if voice_id is None:
+            self._last_generation.clear()
+        else:
+            self._last_generation.pop(voice_id, None)
 
     async def clone_voice(self, sample_audio: bytes, display_name: str) -> str:
         raise NotImplementedError("Hume voice cloning: create the voice in Hume's UI and use its id")
