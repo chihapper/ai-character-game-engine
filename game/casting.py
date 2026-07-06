@@ -52,6 +52,11 @@ HUME_VOICES = {
     "brielle-bri-castellano": "Expressive Girl",
     "edwin-hale": "Yorkshire Chap",
     "corvin-ashgrave-inworld": "Brooding Intellectual Man",
+    # RPG cast (game/rpg) — reskinned from the above, so they inherit their base's voice
+    "rpg-vael": "Brooding Intellectual Man",    # Corvin-derived — guarded scavenger
+    "rpg-lira": "Expressive Girl",              # Bri-derived — warm sellsword
+    "rpg-torvald": "Yorkshire Chap",            # Halvard-derived — gruff forge-delver
+    "rpg-senna": "Medieval Peasant Woman",      # Wren-derived — quiet cartographer
 }
 
 

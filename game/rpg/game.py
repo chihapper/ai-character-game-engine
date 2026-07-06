@@ -9,6 +9,7 @@ layer on top of this without changing the seam.
 from __future__ import annotations
 
 import asyncio
+import re
 
 from game import policy
 
@@ -36,6 +37,24 @@ def _enemy_label(enemies) -> str:
     names = [e.name for e in enemies] or ["enemies"]
     noun = max(set(names), key=names.count).lower()
     return noun if noun.endswith("s") else noun + "s"
+
+
+_QUOTED = re.compile(r'"([^"]*)"|“([^”]*)”')
+
+
+def _split_speech(text: str) -> tuple[str, str]:
+    """Split an NPC reply into (spoken speech, stage-direction action). The engine's replies mix
+    first-person quoted speech ("Name's Vael…") with third-person action beats ("He shifts weight…").
+    The game/client layer separates them: speech becomes the dialogue line (shown + voiced); action
+    becomes description (shown italic, never voiced). No quotes -> the whole line is speech."""
+    text = (text or "").strip()
+    quoted = [(m.group(1) or m.group(2) or "").strip() for m in _QUOTED.finditer(text)]
+    quoted = [q for q in quoted if q]
+    if not quoted:
+        return text, ""
+    speech = " ".join(quoted)
+    action = re.sub(r"\s+", " ", _QUOTED.sub(" ", text)).strip(" *—-")
+    return speech, action
 
 
 class RpgGame(GameSession):
@@ -69,6 +88,13 @@ class RpgGame(GameSession):
     # ---- events (to the view) ----
     def _emit(self, ev: GameEvent) -> None:
         self._events.put_nowait(ev)
+
+    def _say(self, name: str, slug: str, text: str) -> None:
+        """Emit an NPC line, split into spoken speech vs. stage-direction action (see _split_speech).
+        The renderer shows `speech` as the dialogue line + `action` as description; downstream voice
+        synthesis reads the full `text` (Hume voices only the quoted speech, acts the directions)."""
+        speech, action = _split_speech(text)
+        self._emit(DialogueEvent(npc=name, slug=slug, text=text, speech=speech, action=action))
 
     async def events(self):
         while True:
@@ -313,7 +339,7 @@ class RpgGame(GameSession):
             return
         name = self.minds.characters[slug].name
         reply = await self.minds.talk(slug, action.text, self._situation(slug))
-        self._emit(DialogueEvent(npc=name, slug=slug, text=reply))
+        self._say(name, slug, reply)
         s.campaign_log.add(s.clock.value, f'The traveler said to {name}: "{action.text}"', tags=["talk", slug])
 
     async def _recruit(self, action: PlayerAction) -> None:
@@ -331,7 +357,7 @@ class RpgGame(GameSession):
         choice = await self.minds.act(npc.slug, self._situation(
             npc.slug, recent=[self.state.flavor.recruit_prompt]),
             ["Go with the traveler", "Stay here"])
-        self._emit(DialogueEvent(npc=npc.name, slug=npc.slug, text=choice.get("reason") or "..."))
+        self._say(npc.name, npc.slug, choice.get("reason") or "...")
         if "go" in (choice.get("action") or "").lower():
             self._make_follower(npc)
             self._emit(NarrationEvent(text=f"{npc.name} falls in beside you."))
@@ -348,7 +374,7 @@ class RpgGame(GameSession):
             return
         s.player.inventory.append(item.model_copy(deep=True))
         if npc.on_recruit_line:
-            self._emit(DialogueEvent(npc=npc.name, slug=npc.slug, text=npc.on_recruit_line))
+            self._say(npc.name, npc.slug, npc.on_recruit_line)
         self._emit(NarrationEvent(text=f"{npc.name} presses {item.name} into your palm."))
         # If this item unlocks a door tied to a quest, mark that quest active (linked by data).
         for d in s.doors:

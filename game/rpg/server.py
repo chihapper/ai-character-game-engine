@@ -10,6 +10,7 @@ Env: RPG_HOST (127.0.0.1), RPG_PORT (8787), RPG_MODEL (claude-haiku-4-5).
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
 import sys
@@ -32,15 +33,18 @@ from .protocol import (  # noqa: E402
     parse_client,
     snapshot_msg,
 )
+from .voice import synth_line  # noqa: E402
 
 
 class RpgConnection:
     """One connected client's session. Holds the game; each `handle` returns the server messages to
     send back (drained events, then the fresh snapshot)."""
 
-    def __init__(self, *, reply_model: str | None = None, dm_model: str | None = None) -> None:
+    def __init__(self, *, reply_model: str | None = None, dm_model: str | None = None,
+                 voice: bool = False) -> None:
         self.reply_model = reply_model
         self.dm_model = dm_model
+        self.voice = voice
         self.game: RpgGame | None = None
 
     async def handle(self, data: dict) -> list[dict]:
@@ -49,7 +53,7 @@ class RpgConnection:
             self.game = RpgGame.new(slice=msg.slice, seed=msg.seed,
                                     reply_model=self.reply_model, dm_model=self.dm_model)
             await self.game.begin()                  # the world speaks first
-            return self._drain() + [snapshot_msg(self.game.get_state())]
+            return await self._emit_events() + [snapshot_msg(self.game.get_state())]
         if self.game is None:
             return [error_msg("send a 'start' message before anything else")]
         if isinstance(msg, StateReqMsg):
@@ -59,16 +63,30 @@ class RpgConnection:
         elif isinstance(msg, DeedMsg):
             await self.game.remember_player_deed(msg.fact, targets=msg.targets,
                                                  player_role=msg.player_role, magnitude=msg.magnitude)
-        return self._drain() + [snapshot_msg(self.game.get_state())]
+        return await self._emit_events() + [snapshot_msg(self.game.get_state())]
 
-    def _drain(self) -> list[dict]:
-        return [event_msg(ev) for ev in self.game.drain_events()]
+    async def _emit_events(self) -> list[dict]:
+        """Serialize the queued events, and (if voice is on) synthesize Hume audio for each NPC line,
+        attaching it as base64 PCM + sample rate. Voice is best-effort — a synth failure just yields a
+        text-only dialogue event."""
+        out: list[dict] = []
+        for ev in self.game.drain_events():
+            msg = event_msg(ev)
+            e = msg["event"]
+            if self.voice and e.get("type") == "dialogue" and (e.get("text") or "").strip():
+                pcm, rate = await synth_line(e["text"], e.get("slug", ""))
+                if pcm:
+                    e["audio_b64"] = base64.b64encode(pcm).decode("ascii")
+                    e["rate"] = rate
+            out.append(msg)
+        return out
 
 
 async def serve(host: str = "127.0.0.1", port: int = 8787, *,
-                reply_model: str | None = None, dm_model: str | None = None) -> None:
+                reply_model: str | None = None, dm_model: str | None = None,
+                voice: bool = False) -> None:
     async def handler(ws) -> None:
-        conn = RpgConnection(reply_model=reply_model, dm_model=dm_model)
+        conn = RpgConnection(reply_model=reply_model, dm_model=dm_model, voice=voice)
         async for raw in ws:
             try:
                 outs = await conn.handle(json.loads(raw))
@@ -78,7 +96,7 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                 await ws.send(json.dumps(o))
 
     async with websockets.serve(handler, host, port, max_size=2 ** 22):
-        print(f"[rpg-server] listening on ws://{host}:{port}  (one game per connection)")
+        print(f"[rpg-server] listening on ws://{host}:{port}  (one game per connection; voice={voice})")
         await asyncio.Future()                        # run forever
 
 
@@ -86,7 +104,10 @@ def main() -> None:
     host = os.environ.get("RPG_HOST", "127.0.0.1")
     port = int(os.environ.get("RPG_PORT", "8787"))
     model = os.environ.get("RPG_MODEL", "claude-haiku-4-5")
-    asyncio.run(serve(host, port, reply_model=model, dm_model=model))
+    # Voice defaults ON when a Hume key is present; RPG_VOICE=0 forces text-only.
+    from orchestrator.config import get_settings
+    voice = os.environ.get("RPG_VOICE", "1") != "0" and bool(get_settings().hume_api_key)
+    asyncio.run(serve(host, port, reply_model=model, dm_model=model, voice=voice))
 
 
 if __name__ == "__main__":
