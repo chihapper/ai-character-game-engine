@@ -40,6 +40,11 @@ _MOVE = {
     tcod.event.KeySym.w: (0, -1), tcod.event.KeySym.s: (0, 1),
     tcod.event.KeySym.a: (-1, 0), tcod.event.KeySym.d: (1, 0),
 }
+# US-layout shifted symbols, for building typed text from KeyDown keycodes (SDL3 doesn't emit
+# TextInput events unless text input is explicitly started, so we read chars off KeyDown instead).
+_SHIFT_SYM = {"1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", "8": "*",
+              "9": "(", "0": ")", "-": "_", "=": "+", "[": "{", "]": "}", "\\": "|", ";": ":",
+              "'": '"', ",": "<", ".": ">", "/": "?", "`": "~"}
 
 
 def _tileset():
@@ -144,15 +149,22 @@ def _prompt_line(view: _View, console, context, label: str) -> str | None:
         for event in tcod.event.wait():
             if isinstance(event, tcod.event.Quit):
                 return None
-            if isinstance(event, tcod.event.TextInput):
-                buf += event.text
-            elif isinstance(event, tcod.event.KeyDown):
-                if event.sym == tcod.event.KeySym.RETURN:
-                    return buf.strip()
-                if event.sym == tcod.event.KeySym.ESCAPE:
-                    return None
-                if event.sym == tcod.event.KeySym.BACKSPACE:
-                    buf = buf[:-1]
+            if not isinstance(event, tcod.event.KeyDown):
+                continue
+            sym = event.sym
+            if sym == tcod.event.KeySym.RETURN:
+                return buf.strip()
+            if sym == tcod.event.KeySym.ESCAPE:
+                return None
+            if sym == tcod.event.KeySym.BACKSPACE:
+                buf = buf[:-1]
+                continue
+            code = int(sym)                      # SDL keycode == ASCII base for printable keys
+            if 32 <= code <= 126:
+                ch = chr(code)
+                if event.mod & tcod.event.Modifier.SHIFT:
+                    ch = ch.upper() if ch.isalpha() else _SHIFT_SYM.get(ch, ch)
+                buf += ch
 
 
 def run(game) -> None:
