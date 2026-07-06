@@ -61,14 +61,15 @@ class RpgGame(GameSession):
             ents.append(EntityView(id=n.slug, name=n.name, pos=n.pos, kind="npc"))
         for f in s.followers:
             ents.append(EntityView(id=f.id, name=f.name, pos=f.pos, kind="follower", hp=f.hp, max_hp=f.max_hp))
+        # Enemies are visible on the map (no fog-of-war yet); HP stays hidden unless the player
+        # toggles it in combat (guardrail #5). `triggered` governs combat ENTRY, not sight.
         show_hp = bool(s.combat and s.combat.show_enemy_hp)
         for e in s.encounters:
-            if e.triggered:
-                for en in e.enemies:
-                    if en.alive:
-                        ents.append(EntityView(id=en.id, name=en.name, pos=en.pos, kind="enemy",
-                                               hp=en.hp if show_hp else None,
-                                               max_hp=en.max_hp if show_hp else None))
+            for en in e.enemies:
+                if en.alive:
+                    ents.append(EntityView(id=en.id, name=en.name, pos=en.pos, kind="enemy",
+                                           hp=en.hp if show_hp else None,
+                                           max_hp=en.max_hp if show_hp else None))
         return StateSnapshot(
             mode=s.mode, clock=s.clock.value, player=s.player,
             map_width=s.world_map.width, map_height=s.world_map.height, tiles=s.world_map.tiles,

@@ -96,8 +96,16 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
                         game_data={"dnd5e": {"role": "recruitable companion"}})
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
-    goblins = [Enemy(id=f"goblin{i}", name="Goblin", kind="goblin", max_hp=7, hp=7, ac=12,
-                     stats=Stats(STR=8, DEX=14, CON=10), pos=enc_pos) for i in range(1, 4)]
+    # spread the goblins across the nearest distinct walkable cells to the anchor (so they don't
+    # stack on one tile — they render as separate 'g's and can be positioned for combat)
+    ex, ey = enc_pos
+    taken = {tuple(player.pos), tuple(vael.pos), tuple(lira.pos)}
+    cells = sorted(((x, y) for x in range(ex - 3, ex + 4) for y in range(ey - 3, ey + 4)
+                    if d.world_map.walkable(x, y) and (x, y) not in taken),
+                   key=lambda c: abs(c[0] - ex) + abs(c[1] - ey))
+    gpos = cells[:3] or [enc_pos]
+    goblins = [Enemy(id=f"goblin{i + 1}", name="Goblin", kind="goblin", max_hp=7, hp=7, ac=12,
+                     stats=Stats(STR=8, DEX=14, CON=10), pos=gpos[i % len(gpos)]) for i in range(3)]
     encounter = Encounter(id="vault-guards", enemies=goblins, trigger_pos=enc_pos, region="the deep gallery")
 
     gs = GameState(player=player, world_map=d.world_map, npcs=[vael, lira], encounters=[encounter])
