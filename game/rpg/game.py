@@ -28,10 +28,15 @@ from .session import (
 )
 from .state import EntityView, GameState, Mode, NpcPlacement, StateSnapshot
 
-WORLD_FRAME = ("You are deep in the Sunken Vault — a flooded, ancient dungeon of black stone, old "
-               "wards, and worse things in the dark. Torchlight, dripping water, no way out but "
-               "through. This is a world of blades and lantern-light, not of any modern place.")
 _REACT_THRESHOLD = 0.7   # game-owned salience bar for turning a witnessed event into a reaction
+
+
+def _enemy_label(enemies) -> str:
+    """A readable plural for the DOMINANT enemy in a fight ('goblins', 'cinder-husks') — so combat
+    barks name whatever the slice actually fielded, never a hard-coded 'goblins'."""
+    names = [e.name for e in enemies] or ["enemies"]
+    noun = max(set(names), key=names.count).lower()
+    return noun if noun.endswith("s") else noun + "s"
 
 
 class RpgGame(GameSession):
@@ -43,11 +48,20 @@ class RpgGame(GameSession):
         self._events: asyncio.Queue[GameEvent] = asyncio.Queue()
 
     @classmethod
-    def new(cls, *, seed: int = 1337, reply_model: str | None = "claude-haiku-4-5",
+    def new(cls, *, slice: str = "vault", seed: int = 1337,
+            reply_model: str | None = "claude-haiku-4-5",
             dm_model: str | None = "claude-haiku-4-5") -> "RpgGame":
-        state, chars = build_first_slice(seed=seed)
+        """Build a game from a named SLICE. The slice is pure content (map + minds + world flavor);
+        the core reads `state.flavor` and never authors prose, so a new slice needs no core change."""
+        from .content import SLICES
+        builder = SLICES.get(slice)
+        if builder is None:
+            raise ValueError(f"unknown slice {slice!r}; known: {', '.join(sorted(SLICES))}")
+        state, chars = builder(seed=seed)
         rules = D20Rules(seed=seed)
-        return cls(state, Minds(chars, reply_model=reply_model), rules, DM(rules, model=dm_model))
+        # The DM's setting/genre comes from the slice's flavor — not a hard-coded dungeon.
+        return cls(state, Minds(chars, reply_model=reply_model), rules,
+                   DM(rules, model=dm_model, setting=state.flavor.dm_setting))
 
     async def begin(self) -> None:
         """Open the game with a DM scene — the world speaks first."""
@@ -111,9 +125,10 @@ class RpgGame(GameSession):
         others = [self.state.player.name] + [n.name for n in self.state.npcs
                                              if n.slug != for_slug and n.pos
                                              and self._dist(n.pos, self.state.player.pos) <= 6]
-        extra = {"The world you live in": WORLD_FRAME, "Performance": policy.PERFORMANCE_RULES}
-        return self.minds.situation(clock=self.state.clock.value, location="a chamber of the Sunken Vault",
-                                    present=others, recent_events=recent or [], game_time="deep underground",
+        flavor = self.state.flavor
+        extra = {"The world you live in": flavor.world_frame, "Performance": policy.PERFORMANCE_RULES}
+        return self.minds.situation(clock=self.state.clock.value, location=flavor.location_label,
+                                    present=others, recent_events=recent or [], game_time=flavor.time_label,
                                     extra=extra)
 
     # ---- action dispatch ----
@@ -145,12 +160,13 @@ class RpgGame(GameSession):
             self.state.clock.advance(0.1)
 
     def _scene_text(self) -> str:
-        """The world-state the DM narrates FROM — where the player is, who's near, recent history."""
+        """The world-state the DM narrates FROM — where the player is, who's near, recent history.
+        The base setting sentence is the SLICE's (flavor.scene_prose); the core only assembles the
+        live who's-near / party / recent context around it."""
         s = self.state
         near = [n.name for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 5]
         party = [f.name for f in s.followers if f.alive]
-        parts = ["The player stands deep in the Sunken Vault — black stone, standing water, old wards, "
-                 "torchlight the only light."]
+        parts = [s.flavor.scene_prose]
         if near:
             parts.append("Others nearby: " + ", ".join(near) + ".")
         if party:
@@ -185,35 +201,35 @@ class RpgGame(GameSession):
         self._maybe_trigger_encounter()
 
     def _try_open_door(self, door) -> None:
-        """Opening is GAME-enforced: a keyed door yields to its keystone (the DM can't hand-wave it).
-        If you don't have the keystone you may still FORCE it with a hard STR check — a costly, luck-
-        dependent fallback so alienating Vael (the keystone's holder) is a real setback, not a dead
-        soft-lock. The check is game-owned (rules core), re-attemptable each time you shoulder it."""
+        """Opening is GAME-enforced: a keyed door yields to its key item (the DM can't hand-wave it).
+        Without the key you may still FORCE it with a hard STR check (door.force_dc) — a costly,
+        luck-dependent fallback so losing the key-holder's goodwill is a real setback, not a dead
+        soft-lock. All narration is the SLICE's (door.*_text); the core names no keystone or stair."""
         s = self.state
         if not door.key_item or s.has_item(door.key_item):
-            self._open_inner_door(door, "You set the black keystone to the lock; " + door.name +
-                                  " grinds open, and cold air breathes up from a stair spiraling down "
-                                  "into deeper dark.")
+            self._open_door(door, door.open_text or f"You unlock {door.name}; it swings open.")
             return
-        r = self.rules.ability_check(s.player, "STR", 18)   # DC 18: hard, not hopeless
+        if door.force_dc <= 0:                              # slice declared this gate unforceable
+            self._emit(NarrationEvent(text=door.locked_text or f"{door.name} holds fast — it needs its key."))
+            return
+        r = self.rules.ability_check(s.player, "STR", door.force_dc)
         if r.success:
-            self._open_inner_door(door, "You set your shoulder to " + door.name + " and heave — old iron "
-                                  "shrieks, timber splinters, and it bursts inward. Cold air breathes up "
-                                  "from a stair spiraling down into deeper dark.")
+            self._open_door(door, door.force_text or f"You force {door.name} open by main strength.")
         else:
-            self._emit(NarrationEvent(text=f"{door.name} holds fast against your shoulder. It won't give "
-                                           "without its keystone — or a mightier effort than that."))
+            self._emit(NarrationEvent(text=door.locked_text or
+                                      f"{door.name} holds fast — it needs its key, or a mightier effort."))
 
-    def _open_inner_door(self, door, how: str) -> None:
+    def _open_door(self, door, how: str) -> None:
         s = self.state
         door.locked = False
         self._emit(NarrationEvent(text=how))
-        for q in s.quests:
-            if q.id == "descend":
-                q.state = "done"
-        s.flags["inner_door_open"] = True
-        self._emit(NarrationEvent(text="[End of the demo slice — the way down is open. What you carry and "
-                                        "who walks beside you are yours to take deeper.]"))
+        if door.opens_quest:                               # data-linked objective, not a literal id
+            for q in s.quests:
+                if q.id == door.opens_quest:
+                    q.state = "done"
+        s.flags[f"{door.id}_open"] = True
+        if door.outro:
+            self._emit(NarrationEvent(text=door.outro))
 
     # ---- shared movement / occupancy helpers ----
     def _occupied(self, pos, exclude_id: str | None = None) -> bool:
@@ -266,7 +282,7 @@ class RpgGame(GameSession):
 
     async def _recruit(self, action: PlayerAction) -> None:
         """Ask an adjacent NPC to join. The NPC DECIDES via choose_action, grounded in how they've
-        come to regard the traveler — so a Vael you've helped comes along; one you've wronged won't.
+        come to regard the traveler — so one you've helped comes along; one you've wronged won't.
         On yes, they become a Follower who trails you (and can fight beside you)."""
         s = self.state
         npc = next((n for n in s.npcs if n.slug == action.target_id), None)
@@ -277,35 +293,45 @@ class RpgGame(GameSession):
             self._emit(NarrationEvent(text="No one beside you to ask along."))
             return
         choice = await self.minds.act(npc.slug, self._situation(
-            npc.slug, recent=["The traveler asks you to come with them, deeper into the Vault."]),
+            npc.slug, recent=[self.state.flavor.recruit_prompt]),
             ["Go with the traveler", "Stay here"])
         self._emit(DialogueEvent(npc=npc.name, slug=npc.slug, text=choice.get("reason") or "..."))
         if "go" in (choice.get("action") or "").lower():
             self._make_follower(npc)
             self._emit(NarrationEvent(text=f"{npc.name} falls in beside you."))
-            self._maybe_give_keystone(npc)
+            self._grant_on_recruit(npc)
 
-    def _maybe_give_keystone(self, npc) -> None:
-        """The differentiator meets progression: Vael only chooses to JOIN if he's come to trust you —
-        and a Vael who trusts you enough to travel with you hands over the keystone (his secret). A
-        Vael you've alienated won't join, so this path to the inner door stays shut. Consequences."""
-        from .content import KEYSTONE, VAEL, keystone_item
+    def _grant_on_recruit(self, npc) -> None:
+        """The differentiator meets progression — DATA-DRIVEN, no slice literals in the core: an NPC
+        that carries an `on_recruit_grant` only chooses to JOIN if it has come to trust the player,
+        and on joining it hands that item over (often the objective key). An NPC you've alienated
+        won't join, so that path stays shut — a real consequence, authored entirely in content."""
+        item = getattr(npc, "on_recruit_grant", None)
         s = self.state
-        if npc.slug == VAEL and not s.has_item(KEYSTONE):
-            s.player.inventory.append(keystone_item())
-            self._emit(DialogueEvent(npc=npc.name, slug=npc.slug,
-                       text="If we're in this together — here. The thing my crew died for. It opens the "
-                            "inner door. Don't make me sorry I trusted you with it."))
-            self._emit(NarrationEvent(text=f"{npc.name} presses a black keystone into your palm."))
-            for q in s.quests:
-                if q.id == "descend":
-                    q.state = "active"
+        if item is None or s.has_item(item.id):
+            return
+        s.player.inventory.append(item.model_copy(deep=True))
+        if npc.on_recruit_line:
+            self._emit(DialogueEvent(npc=npc.name, slug=npc.slug, text=npc.on_recruit_line))
+        self._emit(NarrationEvent(text=f"{npc.name} presses {item.name} into your palm."))
+        # If this item unlocks a door tied to a quest, mark that quest active (linked by data).
+        for d in s.doors:
+            if d.key_item == item.id and d.opens_quest:
+                for q in s.quests:
+                    if q.id == d.opens_quest and q.state == "open":
+                        q.state = "active"
+
+    def _objective_key_ids(self) -> set[str]:
+        """Item ids the DM must never hand out as loot — the keys to the slice's gated doors. Read
+        from data, so it protects whatever THIS slice's objective key is (keystone, sigil, passcard)."""
+        return {d.key_item for d in self.state.doors if d.key_item}
 
     def _grant_item(self, name: str, kind: str = "misc") -> str:
-        """DM callback: loot found through a free-form action becomes a REAL item — but never the
-        objective key (that gate is game-owned, not the DM's to hand out)."""
+        """DM callback: loot found through a free-form action becomes a REAL item — but never an
+        objective key (that gate is game-owned, not the DM's to hand out). Refusal is by DATA (the
+        slice's door keys), not a hard-coded item name."""
         iid = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")[:40] or "item"
-        if "keystone" in iid or iid == "keystone":
+        if iid in self._objective_key_ids():
             return "(refused: that item is off-limits to grant)"
         from .state import Item
         self.state.player.inventory.append(Item(id=iid, name=name, kind=kind))
@@ -351,14 +377,17 @@ class RpgGame(GameSession):
         self.state.combat = CombatState(order=order, round=1, turn_index=0)
         self.state.mode = Mode.combat
         self._emit(ModeChangedEvent(mode=Mode.combat))
-        self._emit(CombatEvent(text="Steel rings in the dark — goblins boil out of the shadows! "
-                                    "(move into one to attack · g: toggle their HP)"))
+        label = _enemy_label([e for e in encounter.enemies])
+        self._emit(CombatEvent(text=self.state.flavor.combat_start.format(enemies=label)))
 
     def _living_enemies(self) -> list:
         return [en for e in self.state.encounters for en in e.enemies if en.alive]
 
-    def _resolve_attack(self, attacker, target, dice: str, ability: str) -> None:
-        r = self.rules.attack(attacker, target, ability=ability, damage_dice=dice)
+    def _resolve_attack(self, attacker, target, dice: str | None = None, ability: str | None = None) -> None:
+        """Resolve one attack. Dice/ability come from the ATTACKER's profile by default (data), so a
+        slice's archer or brute fights as authored; callers may still override for a special strike."""
+        r = self.rules.attack(attacker, target, ability=ability or attacker.attack_ability,
+                              damage_dice=dice or attacker.damage_dice)
         self._emit(CombatEvent(text=f"{attacker.name} {'hits for %d' % r.damage if r.hit else 'misses'} {target.name}."))
         if r.target_down:
             self._emit(CombatEvent(text=f"{target.name} falls."))
@@ -370,7 +399,7 @@ class RpgGame(GameSession):
             tx, ty = s.player.pos[0] + action.dx, s.player.pos[1] + action.dy
             tgt = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
             if tgt:
-                self._resolve_attack(s.player, tgt, "1d8", "STR")
+                self._resolve_attack(s.player, tgt)      # player's own weapon profile (data)
             elif s.world_map.walkable(tx, ty) and not self._occupied((tx, ty), s.player.id):
                 s.player.pos = (tx, ty)
             else:
@@ -397,8 +426,7 @@ class RpgGame(GameSession):
         s.mode = Mode.exploration
         s.combat = None
         self._emit(ModeChangedEvent(mode=Mode.exploration))
-        self._emit(CombatEvent(text="You fall in the dark of the Vault, and it closes over you. "
-                                    "Your story ends here. (press q to quit)"))
+        self._emit(CombatEvent(text=s.flavor.defeat_text))
 
     async def _ally_turns(self) -> None:
         s = self.state
@@ -406,13 +434,13 @@ class RpgGame(GameSession):
             if not (f.alive and self._living_enemies()):
                 continue
             # Decide the ally's stance ONCE per fight (an LLM call), grounded in how they regard the
-            # traveler — then just execute it each round. This is the sharpest differentiator: a Vael
-            # you've helped fights; one you've wronged guards himself, hangs back, or flees.
+            # traveler — then just execute it each round. This is the sharpest differentiator: an ally
+            # you've helped fights; one you've wronged guards itself, hangs back, or flees.
             act = s.combat.ally_stance.get(f.mind_slug)
             if act is None:
-                choice = await self.minds.act(f.mind_slug, self._situation(
-                    f.mind_slug, recent=["Goblins have set on the traveler — steel is out in the dark."]),
-                    ["Fight the goblins beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
+                alarm = s.flavor.combat_alarm.format(enemies=_enemy_label(self._living_enemies()))
+                choice = await self.minds.act(f.mind_slug, self._situation(f.mind_slug, recent=[alarm]),
+                    ["Fight beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
                 act = (choice.get("action") or "").lower()
                 s.combat.ally_stance[f.mind_slug] = act
                 self._emit(CombatEvent(text=f"{f.name}: {choice.get('reason') or act}"))
@@ -421,7 +449,7 @@ class RpgGame(GameSession):
                 if self._dist(f.pos, tgt.pos) > 1:
                     self._step_toward(f, tgt.pos)
                 if self._dist(f.pos, tgt.pos) <= 1:
-                    self._resolve_attack(f, tgt, "1d6", "STR")
+                    self._resolve_attack(f, tgt)         # follower's own weapon profile (data)
             # guard / hang back / flee -> no attack: a wronged ally simply won't spend blood for you
 
     def _enemy_turns(self) -> None:
@@ -432,12 +460,14 @@ class RpgGame(GameSession):
             if self._dist(g.pos, tgt.pos) > 1:
                 self._step_toward(g, tgt.pos)
             if self._dist(g.pos, tgt.pos) <= 1:
-                self._resolve_attack(g, tgt, "1d4", "DEX")
+                self._resolve_attack(g, tgt)             # enemy's own attack profile (data)
 
     def _end_combat(self, victory: bool) -> None:
         s = self.state
+        # Enemy label BEFORE we leave combat, drawn from whatever this slice fielded (all now dead).
+        label = _enemy_label([en for e in s.encounters for en in e.enemies])
         s.mode = Mode.exploration
         s.combat = None
         self._emit(ModeChangedEvent(mode=Mode.exploration))
         if victory:
-            self._emit(CombatEvent(text="The goblins are down. Quiet settles back over the Vault."))
+            self._emit(CombatEvent(text=s.flavor.combat_victory.format(enemies=label)))

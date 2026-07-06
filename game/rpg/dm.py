@@ -15,25 +15,29 @@ from orchestrator.config import get_settings
 from .rules import RulesEngine
 from .state import ABILITIES, Combatant
 
-_SYSTEM = (
-    "You are the Dungeon Master of a grim, torch-lit high-fantasy dungeon crawl — the player's eyes, "
-    "ears, and referee. Narrate what happens when the player attempts something: 1-3 vivid, grounded "
-    "sentences, second person, present tense. Convey only what the player could perceive.\n"
-    "You have NO access to any character's inner thoughts, and you NEVER put words in an NPC's mouth "
-    "or speak their dialogue — they speak for themselves. You never mention rules, dice, or DCs.\n"
-    "When an attempt has a real chance of failure — searching, forcing, climbing, sneaking, sensing, "
-    "disarming, persuading against resistance — CALL the ability_check tool: you choose the ability "
-    "and a DC from 5 (trivial) to 20 (near-impossible). The check's result is AUTHORITATIVE: narrate "
-    "the SUCCESS or FAILURE it returns, never a different outcome. For a trivial or purely descriptive "
-    "action, just narrate — no check.\n"
-    "Stay physically consistent: keep the player where they are unless the action clearly moves them, "
-    "and never invent an exit from the Vault that isn't there.")
+def _system(setting: str) -> str:
+    """The DM system prompt, keyed off the SLICE's setting (data) so the same narrator serves a
+    flooded vault, a volcanic cavern, or a sunlit ruin without any hard-coded biome."""
+    return (
+        f"You are the Dungeon Master of {setting} — the player's eyes, ears, and referee. Narrate "
+        "what happens when the player attempts something: 1-3 vivid, grounded sentences, second "
+        "person, present tense. Convey only what the player could perceive.\n"
+        "You have NO access to any character's inner thoughts, and you NEVER put words in an NPC's "
+        "mouth or speak their dialogue — they speak for themselves. You never mention rules, dice, or DCs.\n"
+        "When an attempt has a real chance of failure — searching, forcing, climbing, sneaking, "
+        "sensing, disarming, persuading against resistance — CALL the ability_check tool: you choose "
+        "the ability and a DC from 5 (trivial) to 20 (near-impossible). The check's result is "
+        "AUTHORITATIVE: narrate the SUCCESS or FAILURE it returns, never a different outcome. For a "
+        "trivial or purely descriptive action, just narrate — no check.\n"
+        "Stay physically consistent: keep the player where they are unless the action clearly moves "
+        "them, and never invent an exit from this place that isn't there.")
 
 
 class DM:
-    def __init__(self, rules: RulesEngine, *, model: str | None = None) -> None:
+    def __init__(self, rules: RulesEngine, *, model: str | None = None, setting: str | None = None) -> None:
         self.rules = rules
         self.model = model or "claude-haiku-4-5"
+        self.system = _system(setting or "a grim, torch-lit dungeon crawl")
         # The DM is a GAME-layer narrator, not an engine Character — it owns its own Anthropic client
         # rather than reaching into the engine's LLM adapter internals (keeps the game/engine seam clean).
         self.client = anthropic.AsyncAnthropic(api_key=get_settings().anthropic_api_key)
@@ -41,7 +45,7 @@ class DM:
     async def narrate_scene(self, scene: str) -> str:
         """Atmospheric narration of the current surroundings (no check) — used on arrival / look."""
         resp = await self.client.messages.create(
-            model=self.model, max_tokens=220, system=_SYSTEM,
+            model=self.model, max_tokens=220, system=self.system,
             messages=[{"role": "user", "content": f"{scene}\n\nDescribe this moment to the player in "
                                                    f"2-3 sentences. No check — just set the scene."}])
         return "".join(b.text for b in resp.content if b.type == "text").strip()
@@ -66,7 +70,7 @@ class DM:
             f"SCENE:\n{scene}\n\nThe player attempts: \"{action_text}\"\n\nNarrate what happens."}]
         for _ in range(3):                       # bounded tool loop
             resp = await self.client.messages.create(
-                model=self.model, max_tokens=380, system=_SYSTEM, tools=tools, messages=messages)
+                model=self.model, max_tokens=380, system=self.system, tools=tools, messages=messages)
             if resp.stop_reason != "tool_use":
                 return "".join(b.text for b in resp.content if b.type == "text").strip() or "..."
             messages.append({"role": "assistant", "content": resp.content})

@@ -55,6 +55,10 @@ class Combatant(BaseModel):
     pos: Pos | None = None
     initiative: int | None = None
     mind_slug: str | None = None             # engine character slug IF this combatant has a mind
+    # Attack PROFILE — data, not hard-coded in the loop, so a slice can field a brute (1d12 STR), an
+    # archer (1d6 DEX), a biter (1d4), etc. The combat loop reads these; it names no dice itself.
+    damage_dice: str = "1d4"
+    attack_ability: str = "STR"
 
     @property
     def alive(self) -> bool:
@@ -89,6 +93,8 @@ class NpcPlacement(BaseModel):
     handle: str = ""                         # how strangers refer to them before a name is learned
     pos: Pos | None = None
     game_data: dict = Field(default_factory=dict)
+    on_recruit_grant: Item | None = None     # item this NPC hands the player IF they choose to join
+    on_recruit_line: str = ""                # what they say handing it over (their voice, not the DM's)
 
 
 class Encounter(BaseModel):
@@ -165,12 +171,20 @@ class WorldMap(BaseModel):
 
 class Door(BaseModel):
     """An interactive world feature that blocks a cell until opened. A locked door needs a specific
-    key item in the player's inventory — that gating is GAME-enforced, never the DM's to hand-wave."""
+    key item in the player's inventory — that gating is GAME-enforced, never the DM's to hand-wave.
+    All narration is DATA (authored per slice) so the core substitutes text without naming keystones,
+    stairs, or a Vault: a slice's 'door' could be a warded gate, a sealed airlock, or a barred hatch."""
     id: str
     pos: Pos
     name: str = "a heavy door"
     locked: bool = True
     key_item: str = ""                        # item id that opens it ('' = openable by hand)
+    force_dc: int = 18                        # STR DC to force it WITHOUT the key (0 = unforceable)
+    opens_quest: str = ""                     # quest id this door completes when opened
+    open_text: str = ""                       # narrated when it opens with the key (falls back generic)
+    locked_text: str = ""                     # narrated when it won't budge without the key
+    force_text: str = ""                      # narrated when it's forced open by a STR check
+    outro: str = ""                           # optional slice-completion line emitted after it opens
 
 
 class CombatState(BaseModel):
@@ -184,12 +198,35 @@ class CombatState(BaseModel):
         return self.order[self.turn_index] if self.order else None
 
 
+class WorldFlavor(BaseModel):
+    """Per-SLICE narrative flavor the CORE reads instead of authoring any prose itself. This is what
+    lets an entirely different slice (biome, enemies, objective) be built as pure DATA: the game-core
+    never says 'the Sunken Vault' or 'goblins' — it interpolates from here. `{enemies}` in the combat
+    lines is filled with the live encounter's enemy label so a slice never mis-names its foes.
+
+    All fields default to a neutral dungeon so an un-flavored slice still reads sensibly."""
+    theme: str = "a dark place"                           # short tag, e.g. "the Sunken Vault"
+    world_frame: str = ("You are in a dangerous place of stone and shadow, no easy way out. This is a "
+                        "world of blades and lantern-light, not of any modern place.")  # fed to each NPC mind
+    location_label: str = "a dark chamber"                # Situation.location for the minds
+    time_label: str = "in the dark"                       # Situation.game_time (display only)
+    scene_prose: str = "The player stands in the dark, a guttering torch the only light."  # base the DM narrates from
+    dm_setting: str = "a grim, torch-lit dungeon crawl"   # one-line setting the DM system prompt keys off
+    combat_start: str = ("Steel rings out — {enemies} rush from the dark! "
+                         "(move into one to attack · g: toggle their HP)")
+    combat_victory: str = "The {enemies} are down. Quiet settles back over the dark."
+    combat_alarm: str = "{enemies} have set on the traveler — steel is out in the dark."  # recent-event to allies
+    recruit_prompt: str = "The traveler asks you to come with them, deeper into the dark."  # recent-event on recruit
+    defeat_text: str = "You fall in the dark, and it closes over you. Your story ends here. (press q to quit)"
+
+
 class GameState(BaseModel):
     """The whole durable WORLD state — the save/load target. The MIND is NOT here (each engine
     character auto-persists its own memory). This model is game-owned and never touches the mind
     store."""
     mode: Mode = Mode.exploration
     clock: GameClock = Field(default_factory=GameClock)
+    flavor: WorldFlavor = Field(default_factory=WorldFlavor)   # per-slice prose the core reads (never authors)
     player: PlayerCharacter
     world_map: WorldMap
     npcs: list[NpcPlacement] = Field(default_factory=list)

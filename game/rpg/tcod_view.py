@@ -187,7 +187,8 @@ def run(game) -> None:
     w = max(64, game.state.world_map.width)
     h = game.state.world_map.height + 1 + _LOG_ROWS
     console = tcod.console.Console(w, h, order="C")
-    with tcod.context.new(columns=w, rows=h, tileset=tileset, title="The Sunken Vault") as context:
+    title = getattr(game.state.flavor, "theme", "Dungeon").title()   # slice-provided, not hard-coded
+    with tcod.context.new(columns=w, rows=h, tileset=tileset, title=title) as context:
         if hasattr(game, "begin"):                    # opening DM scene — the world speaks first
             view.render(console); context.present(console)   # show the map immediately
             view.loop.run_until_complete(game.begin())
