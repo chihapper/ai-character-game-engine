@@ -74,6 +74,15 @@ class RpgGame(GameSession):
         while True:
             yield await self._events.get()
 
+    def drain_events(self) -> list[GameEvent]:
+        """Non-blocking: pop every event queued since the last drain. The request/response IPC seam
+        (the WebSocket server, and any renderer that polls after an action) uses this instead of the
+        blocking `events()` stream."""
+        out: list[GameEvent] = []
+        while not self._events.empty():
+            out.append(self._events.get_nowait())
+        return out
+
     # ---- state snapshot (mechanical only — no mind) ----
     def get_state(self) -> StateSnapshot:
         s = self.state
