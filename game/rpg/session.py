@@ -19,7 +19,7 @@ from .state import Mode, StateSnapshot
 class PlayerAction(BaseModel):
     """One intent from the view. `kind` selects the fields that matter; the core validates per
     kind. Free-flow in exploration; one action per turn in combat."""
-    kind: Literal["move", "talk", "attack", "use", "wait", "toggle_enemy_hp", "advance"]
+    kind: Literal["move", "talk", "recruit", "attack", "use", "wait", "toggle_enemy_hp", "advance"]
     dx: int = 0                  # move
     dy: int = 0
     target_id: str = ""          # talk / attack / use-on

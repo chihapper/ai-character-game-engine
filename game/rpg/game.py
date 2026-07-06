@@ -117,18 +117,45 @@ class RpgGame(GameSession):
             self._move_player(action.dx, action.dy)
         elif action.kind == "talk":
             await self._talk(action)
+        elif action.kind == "recruit":
+            await self._recruit(action)
         elif action.kind == "wait":
             self.state.clock.advance(0.1)
 
     def _move_player(self, dx: int, dy: int) -> None:
         s = self.state
-        px, py = s.player.pos
-        nx, ny = px + dx, py + dy
-        if not s.world_map.walkable(nx, ny) or self._npc_at((nx, ny)):
+        nx, ny = s.player.pos[0] + dx, s.player.pos[1] + dy
+        if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
             return
         s.player.pos = (nx, ny)
         s.clock.advance(0.05)               # exploration narrative time (game owns the clock)
+        self._step_followers()              # companions trail you
         self._maybe_trigger_encounter()
+
+    # ---- shared movement / occupancy helpers ----
+    def _occupied(self, pos, exclude_id: str | None = None) -> bool:
+        s = self.state
+        pos = tuple(pos)
+        if pos == tuple(s.player.pos) and exclude_id != s.player.id:
+            return True
+        if any(f.pos and tuple(f.pos) == pos and f.id != exclude_id for f in s.followers):
+            return True
+        if any(n.pos and tuple(n.pos) == pos for n in s.npcs):
+            return True
+        return any(en.alive and en.pos and tuple(en.pos) == pos and en.id != exclude_id
+                   for e in s.encounters for en in e.enemies)
+
+    def _step_toward(self, mover, dest) -> None:
+        s = self.state
+        opts = [(mover.pos[0] + dx, mover.pos[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+        opts = [c for c in opts if s.world_map.walkable(*c) and not self._occupied(c, mover.id)]
+        if opts:
+            mover.pos = min(opts, key=lambda c: self._dist(c, dest))
+
+    def _step_followers(self) -> None:
+        for f in self.state.followers:
+            if f.alive and f.pos and self._dist(f.pos, self.state.player.pos) > 1:
+                self._step_toward(f, self.state.player.pos)
 
     def _maybe_trigger_encounter(self) -> None:
         s = self.state
@@ -141,18 +168,50 @@ class RpgGame(GameSession):
 
     async def _talk(self, action: PlayerAction) -> None:
         s = self.state
-        target = None
-        if action.target_id:
-            target = next((n for n in s.npcs if n.slug == action.target_id or n.name.lower() == action.target_id.lower()), None)
-        if target is None:                  # nearest NPC in speaking range
+        slug = action.target_id
+        if not slug:                        # fall back to the nearest NPC in speaking range
             near = [n for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 2]
-            target = min(near, key=lambda n: self._dist(n.pos, s.player.pos), default=None)
-        if target is None:
+            tgt = min(near, key=lambda n: self._dist(n.pos, s.player.pos), default=None)
+            slug = tgt.slug if tgt else None
+        if not slug or slug not in self.minds.engines:   # engines are keyed by slug — works for followers too
             self._emit(NarrationEvent(text="There is no one close enough to speak to."))
             return
-        reply = await self.minds.talk(target.slug, action.text, self._situation(target.slug))
-        self._emit(DialogueEvent(npc=target.name, slug=target.slug, text=reply))
-        s.campaign_log.add(s.clock.value, f'The traveler said to {target.name}: "{action.text}"', tags=["talk", target.slug])
+        name = self.minds.characters[slug].name
+        reply = await self.minds.talk(slug, action.text, self._situation(slug))
+        self._emit(DialogueEvent(npc=name, slug=slug, text=reply))
+        s.campaign_log.add(s.clock.value, f'The traveler said to {name}: "{action.text}"', tags=["talk", slug])
+
+    async def _recruit(self, action: PlayerAction) -> None:
+        """Ask an adjacent NPC to join. The NPC DECIDES via choose_action, grounded in how they've
+        come to regard the traveler — so a Vael you've helped comes along; one you've wronged won't.
+        On yes, they become a Follower who trails you (and can fight beside you)."""
+        s = self.state
+        npc = next((n for n in s.npcs if n.slug == action.target_id), None)
+        if npc is None:
+            npc = min((n for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 1),
+                      key=lambda n: self._dist(n.pos, s.player.pos), default=None)
+        if npc is None:
+            self._emit(NarrationEvent(text="No one beside you to ask along."))
+            return
+        choice = await self.minds.act(npc.slug, self._situation(
+            npc.slug, recent=["The traveler asks you to come with them, deeper into the Vault."]),
+            ["Go with the traveler", "Stay here"])
+        self._emit(DialogueEvent(npc=npc.name, slug=npc.slug, text=choice.get("reason") or "..."))
+        if "go" in (choice.get("action") or "").lower():
+            self._make_follower(npc)
+            self._emit(NarrationEvent(text=f"{npc.name} falls in beside you."))
+
+    def _make_follower(self, npc) -> None:
+        from .state import Follower, Stats
+        char = self.minds.characters.get(npc.slug)
+        sheet = ((char.game_data if char else {}) or {}).get("dnd5e", {}).get("sheet", {})
+        hp = int(sheet.get("max_hp", 12))
+        self.state.followers.append(Follower(
+            id=npc.slug, name=npc.name, mind_slug=npc.slug, pos=npc.pos, max_hp=hp, hp=hp,
+            ac=int(sheet.get("ac", 12)),
+            stats=Stats(STR=sheet.get("STR", 10), DEX=sheet.get("DEX", 10), CON=sheet.get("CON", 10))))
+        self.state.npcs = [n for n in self.state.npcs if n.slug != npc.slug]
+        self.state.campaign_log.add(self.state.clock.value, f"{npc.name} joined the traveler.", tags=["recruit", npc.slug])
 
     async def remember_player_deed(self, fact: str, *, targets: list[str], player_role: str = "caused",
                                    magnitude: float = 0.6) -> None:
@@ -171,18 +230,91 @@ class RpgGame(GameSession):
                     name = next((n.name for n in self.state.npcs if n.slug == slug), slug)
                     self._emit(NarrationEvent(text=f"{name} {dec['world_action']}"))
 
-    # ---- combat (turn-based) — entry + scaffold; full resolution is the next step ----
+    # ---- combat (turn-based) ----
     def _enter_combat(self, encounter) -> None:
         from .state import CombatState
         encounter.triggered = True
-        combatants = [self.state.player] + [e for e in encounter.enemies if e.alive]
+        combatants = ([self.state.player] + [f for f in self.state.followers if f.alive]
+                      + [e for e in encounter.enemies if e.alive])
         order = self.rules.roll_initiative(combatants)
         self.state.combat = CombatState(order=order, round=1, turn_index=0)
         self.state.mode = Mode.combat
         self._emit(ModeChangedEvent(mode=Mode.combat))
-        self._emit(CombatEvent(text="Steel rings in the dark — the goblins are on you!",
-                               data={"order": order}))
+        self._emit(CombatEvent(text="Steel rings in the dark — goblins boil out of the shadows! "
+                                    "(move into one to attack · g: toggle their HP)"))
+
+    def _living_enemies(self) -> list:
+        return [en for e in self.state.encounters for en in e.enemies if en.alive]
+
+    def _resolve_attack(self, attacker, target, dice: str, ability: str) -> None:
+        r = self.rules.attack(attacker, target, ability=ability, damage_dice=dice)
+        self._emit(CombatEvent(text=f"{attacker.name} {'hits for %d' % r.damage if r.hit else 'misses'} {target.name}."))
+        if r.target_down:
+            self._emit(CombatEvent(text=f"{target.name} falls."))
 
     async def _combat_action(self, action: PlayerAction) -> None:
-        # Full turn-based resolution (player attack, enemy AI, named-NPC choose_action) lands next.
-        self._emit(CombatEvent(text="(combat resolution is being built — next step)"))
+        s = self.state
+        # PLAYER turn: bump-to-attack or step
+        if action.kind == "move":
+            tx, ty = s.player.pos[0] + action.dx, s.player.pos[1] + action.dy
+            tgt = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
+            if tgt:
+                self._resolve_attack(s.player, tgt, "1d8", "STR")
+            elif s.world_map.walkable(tx, ty) and not self._occupied((tx, ty), s.player.id):
+                s.player.pos = (tx, ty)
+            else:
+                return                       # bumped a wall — not a turn
+        elif action.kind != "wait":
+            return
+        if not self._living_enemies():
+            self._end_combat(victory=True); return
+        await self._ally_turns()             # the differentiator: does the ally fight for you?
+        if not self._living_enemies():
+            self._end_combat(victory=True); return
+        self._enemy_turns()
+        if not s.player.alive:
+            self._emit(CombatEvent(text="You fall in the dark of the Vault... (press q to quit)"))
+            return
+        s.combat.round += 1
+
+    async def _ally_turns(self) -> None:
+        s = self.state
+        for f in s.followers:
+            if not (f.alive and self._living_enemies()):
+                continue
+            # Decide the ally's stance ONCE per fight (an LLM call), grounded in how they regard the
+            # traveler — then just execute it each round. This is the sharpest differentiator: a Vael
+            # you've helped fights; one you've wronged guards himself, hangs back, or flees.
+            act = s.combat.ally_stance.get(f.mind_slug)
+            if act is None:
+                choice = await self.minds.act(f.mind_slug, self._situation(
+                    f.mind_slug, recent=["Goblins have set on the traveler — steel is out in the dark."]),
+                    ["Fight the goblins beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
+                act = (choice.get("action") or "").lower()
+                s.combat.ally_stance[f.mind_slug] = act
+                self._emit(CombatEvent(text=f"{f.name}: {choice.get('reason') or act}"))
+            if "fight" in act or "beside" in act:
+                tgt = min(self._living_enemies(), key=lambda e: self._dist(f.pos, e.pos))
+                if self._dist(f.pos, tgt.pos) > 1:
+                    self._step_toward(f, tgt.pos)
+                if self._dist(f.pos, tgt.pos) <= 1:
+                    self._resolve_attack(f, tgt, "1d6", "STR")
+            # guard / hang back / flee -> no attack: a wronged ally simply won't spend blood for you
+
+    def _enemy_turns(self) -> None:
+        s = self.state
+        marks = [s.player] + [f for f in s.followers if f.alive]
+        for g in self._living_enemies():
+            tgt = min(marks, key=lambda t: self._dist(g.pos, t.pos))
+            if self._dist(g.pos, tgt.pos) > 1:
+                self._step_toward(g, tgt.pos)
+            if self._dist(g.pos, tgt.pos) <= 1:
+                self._resolve_attack(g, tgt, "1d4", "DEX")
+
+    def _end_combat(self, victory: bool) -> None:
+        s = self.state
+        s.mode = Mode.exploration
+        s.combat = None
+        self._emit(ModeChangedEvent(mode=Mode.exploration))
+        if victory:
+            self._emit(CombatEvent(text="The goblins are down. Quiet settles back over the Vault."))

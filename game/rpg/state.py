@@ -168,6 +168,7 @@ class CombatState(BaseModel):
     order: list[str] = Field(default_factory=list)   # combatant ids in initiative order
     turn_index: int = 0
     show_enemy_hp: bool = False               # player-toggle — mechanical readout is allowed (guardrail #5)
+    ally_stance: dict[str, str] = Field(default_factory=dict)   # mind_slug -> chosen stance (decided ONCE / fight)
 
     def current(self) -> str | None:
         return self.order[self.turn_index] if self.order else None

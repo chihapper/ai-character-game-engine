@@ -31,7 +31,7 @@ _TILE = {
     ">": (230, 200, 80), "<": (230, 200, 80), " ": (20, 20, 20),
 }
 _ENT = {"player": (255, 255, 255), "npc": (95, 205, 225), "follower": (120, 220, 120), "enemy": (220, 90, 90)}
-_LOG_ROWS = 11
+_LOG_ROWS = 14
 _MOVE = {
     tcod.event.KeySym.UP: (0, -1), tcod.event.KeySym.DOWN: (0, 1),
     tcod.event.KeySym.LEFT: (-1, 0), tcod.event.KeySym.RIGHT: (1, 0),
@@ -59,6 +59,7 @@ class _View:
     def __init__(self, game) -> None:
         self.game = game
         self.log: list[tuple[str, tuple[int, int, int]]] = []
+        self.scroll = 0                  # log scrollback offset (0 = newest pinned to bottom)
         self.loop = asyncio.new_event_loop()
         # The map is STATIC — bake its glyphs+colours into numpy arrays ONCE, then bulk-assign per
         # frame (vs re-printing every cell each render). Entities/status/log draw on top.
@@ -70,11 +71,13 @@ class _View:
             for x, c in enumerate(row):
                 self._map_ch[y, x] = ord(c)
                 self._map_fg[y, x] = _TILE.get(c, (100, 100, 100))
-        self._note("You descend into the Sunken Vault. (t: talk  f: free/help  arrows: move  q: quit)")
+        self._note("You descend into the Sunken Vault. Keys: move=arrows/hjkl  t=talk  f=help  "
+                   "r=recruit  g=toggle enemy HP  PgUp/PgDn=scroll log  .=wait  q=quit")
 
     def _note(self, text: str, colour=(200, 200, 190)) -> None:
         self.log.append((text, colour))
-        self.log = self.log[-40:]
+        self.log = self.log[-80:]
+        self.scroll = 0                  # snap to newest whenever something new happens
 
     def _drain(self) -> None:
         g = self.game
@@ -93,12 +96,13 @@ class _View:
         self.loop.run_until_complete(self.game.submit_action(action))
         self._drain()
 
-    # --- the one NPC the player currently faces (adjacent) ---
-    def _facing_npc(self):
-        s = self.game.state
-        px, py = s.player.pos
-        near = [n for n in s.npcs if n.pos and abs(n.pos[0] - px) + abs(n.pos[1] - py) <= 1]
-        return near[0] if near else None
+    # --- the adjacent person (NPC or follower) the player faces; EntityView has .id (slug) + .name ---
+    def _facing(self):
+        snap = self.game.get_state()
+        px, py = snap.player.pos
+        near = [e for e in snap.entities if e.kind in ("npc", "follower") and e.pos
+                and abs(e.pos[0] - px) + abs(e.pos[1] - py) <= 1]
+        return min(near, key=lambda e: abs(e.pos[0] - px) + abs(e.pos[1] - py), default=None)
 
     def render(self, console: tcod.console.Console) -> None:
         console.clear()
@@ -115,15 +119,20 @@ class _View:
         p = snap.player
         status = f" HP {p.hp}/{p.max_hp}  {snap.mode.value}  t={snap.clock:.1f} "
         console.print(0, self.map_h, status.ljust(console.width), fg=(255, 255, 255), bg=(40, 40, 50))
-        # message log — wrap only enough tail entries to fill the visible rows (not the whole log)
-        lines: list[tuple[str, tuple]] = []
-        for text, col in reversed(self.log):
-            lines = [(w, col) for w in _wrap(text, console.width)] + lines
-            if len(lines) >= _LOG_ROWS:
-                break
+        # message log (scrollable): wrap the whole log, then show a window controlled by scroll
+        all_lines: list[tuple[str, tuple]] = []
+        for text, col in self.log:
+            for w in _wrap(text, console.width):
+                all_lines.append((w, col))
+        self.scroll = max(0, min(self.scroll, max(0, len(all_lines) - _LOG_ROWS)))
+        end = len(all_lines) - self.scroll
+        window = all_lines[max(0, end - _LOG_ROWS):end]
         top = self.map_h + 1
-        for i, (text, col) in enumerate(lines[-_LOG_ROWS:]):
+        for i, (text, col) in enumerate(window):
             console.print(0, top + i, text[:console.width], fg=col)
+        if self.scroll > 0:                          # scrollback indicator on the status row
+            tag = f"[+{self.scroll} PgUp/PgDn]"
+            console.print(max(0, console.width - len(tag)), self.map_h, tag, fg=(255, 220, 120), bg=(40, 40, 50))
 
 
 def _wrap(text: str, width: int) -> list[str]:
@@ -143,7 +152,10 @@ def _prompt_line(view: _View, console, context, label: str) -> str | None:
     buf = ""
     while True:
         view.render(console)
-        console.print(0, view.map_h, f"{label}{buf}_".ljust(console.width),
+        prompt = f"{label}{buf}"
+        avail = console.width - 1                     # keep the cursor visible: show the tail that fits
+        shown = prompt[-avail:] if len(prompt) > avail else prompt
+        console.print(0, view.map_h, (shown + "_").ljust(console.width),
                       fg=(255, 255, 255), bg=(30, 60, 30))
         context.present(console)
         for event in tcod.event.wait():
@@ -180,11 +192,20 @@ def run(game) -> None:
             for event in tcod.event.wait():
                 if isinstance(event, tcod.event.Quit):
                     return
+                if isinstance(event, tcod.event.MouseWheel):
+                    view.scroll = max(0, view.scroll + event.y)   # wheel up = older lines
+                    continue
                 if not isinstance(event, tcod.event.KeyDown):
                     continue
                 sym = event.sym
                 if sym == tcod.event.KeySym.q:
                     return
+                if sym == tcod.event.KeySym.PAGEUP:
+                    view.scroll += _LOG_ROWS - 1
+                    continue
+                if sym == tcod.event.KeySym.PAGEDOWN:
+                    view.scroll = max(0, view.scroll - (_LOG_ROWS - 1))
+                    continue
                 if sym in _MOVE:
                     dx, dy = _MOVE[sym]
                     view._act(PlayerAction(kind="move", dx=dx, dy=dy))
@@ -193,20 +214,26 @@ def run(game) -> None:
                 elif sym == tcod.event.KeySym.g:
                     view._act(PlayerAction(kind="toggle_enemy_hp"))
                 elif sym == tcod.event.KeySym.t:
-                    npc = view._facing_npc()
-                    if not npc:
+                    who = view._facing()
+                    if not who:
                         view._note("No one close enough to speak to.", (150, 150, 150))
                         break
-                    line = _prompt_line(view, console, context, f"Say to {npc.name}: ")
+                    line = _prompt_line(view, console, context, f"Say to {who.name}: ")
                     if line:
-                        view._act(PlayerAction(kind="talk", target_id=npc.slug, text=line))
+                        view._act(PlayerAction(kind="talk", target_id=who.id, text=line))
                 elif sym == tcod.event.KeySym.f:
-                    npc = view._facing_npc()
-                    if not npc:
+                    who = view._facing()
+                    if not who:
                         view._note("No one beside you to help.", (150, 150, 150))
                         break
-                    view._note(f"You move to help {npc.name}.", (150, 200, 150))
+                    view._note(f"You move to help {who.name}.", (150, 200, 150))
                     view.loop.run_until_complete(view.game.remember_player_deed(
-                        f"The traveler stepped in to help {npc.name}, sharing supplies and asking nothing in return.",
-                        targets=[npc.slug], player_role="caused", magnitude=0.8))
+                        f"The traveler stepped in to help {who.name}, sharing supplies and asking nothing in return.",
+                        targets=[who.id], player_role="caused", magnitude=0.8))
                     view._drain()
+                elif sym == tcod.event.KeySym.r:
+                    who = view._facing()
+                    if not who:
+                        view._note("No one beside you to ask along.", (150, 150, 150))
+                        break
+                    view._act(PlayerAction(kind="recruit", target_id=who.id))
