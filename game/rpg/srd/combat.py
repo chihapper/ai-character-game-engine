@@ -75,6 +75,19 @@ class CombatEngine:
         state.bonus_used = False
         state.movement_left = int(getattr(combatant, "speed", 30) or 30)
 
+    def begin_combat(self, state, combatants) -> None:
+        """Start the fight on the TOP of initiative: turn_index=0, round 1, and begin order[0]'s turn.
+        Thereafter the game calls `advance_turn()` at the END of each turn. This keeps `state.current()`
+        and the cursor consistent — `current()` is whoever is acting now; `advance_turn` ends that turn
+        and returns the next combatant. (Call this ONCE at combat start, not `advance_turn`, so the
+        top-of-initiative combatant is not skipped.)"""
+        state.turn_index = 0
+        state.round = 1
+        state.reacted = {}
+        first = self._by_id(combatants, state.order[0]) if state.order else None
+        if first is not None:
+            self.begin_turn(state, first)
+
     def advance_turn(self, state, combatants):
         """Advance to the next combatant still in the fight (dead are skipped; unconscious creatures
         making death saves DO get a turn). Wraps -> new round. Returns the new current combatant, or
@@ -124,16 +137,19 @@ class CombatEngine:
         mod = M.ability_mod(attacker, ability)
         bonus = mod + M.proficiency_bonus(attacker)
         total = d20 + bonus
-        crit = "hit" if d20 == 20 else "miss" if d20 == 1 else ""
         hit = d20 == 20 or (d20 != 1 and total >= target.ac)
+        # A melee hit on a creature that's paralyzed/unconscious (helpless within 5 ft) is a crit too.
+        t_eff = C.effects_of(target.conditions)
+        is_crit = bool(hit and (d20 == 20 or (not ranged and t_eff.get("melee_crit_within_5"))))
+        crit = "miss" if d20 == 1 else ("hit" if is_crit else "")
         dealt = 0
         if hit:
             r = self.dice.roll_detail(weapon)
             raw = r.total
-            if d20 == 20:
+            if is_crit:
                 raw += sum(self.dice.roll_detail(weapon).rolls)   # crit: extra dice only, never the flat mod
             raw = max(0, raw + mod)
-            dealt = self.apply_damage(target, raw, dtype, was_crit=(d20 == 20))
+            dealt = self.apply_damage(target, raw, dtype, was_crit=is_crit)
         return AttackResult(hit=hit, critical=crit, attack_roll=d20, attack_total=total,
                             target_ac=target.ac, damage=dealt, damage_type=dtype, target_id=target.id,
                             target_hp=target.hp, target_down=target.down, target_dead=target.dead)
@@ -143,16 +159,23 @@ class CombatEngine:
         unconscious (death saves) or kills a generic creature; damage taken WHILE down adds death-save
         failures; enough overflow damage is instant death. Returns the damage actually dealt."""
         dt = (damage_type or "").lower()
+        eff = C.effects_of(target.conditions)
         if dt and dt in {d.lower() for d in target.immunities}:
             amount = 0
         elif dt and dt in {d.lower() for d in target.vulnerabilities}:
             amount *= 2
-        elif dt and dt in {d.lower() for d in target.resistances}:
-            amount //= 2
+        elif (dt and dt in {d.lower() for d in target.resistances}) or eff.get("resist_all"):
+            amount //= 2                       # per-type resistance OR condition resist-all (petrified)
         amount = max(0, int(amount))
 
-        # a hit on an already-downed PC-like: a death-save failure (two if a crit) — not HP loss
+        # a hit on an already-downed PC-like (RAW: damage at 0 HP)
         if target.hp <= 0 and not target.dead and self._makes_death_saves(target):
+            if amount <= 0:                    # 0 damage is not "taking damage"
+                return 0
+            target.stable = False              # taking damage ends stability -> resume death saves
+            if amount >= target.max_hp:        # massive damage while down = instant death
+                target.dead = True
+                return amount
             target.death_save_failures = min(3, target.death_save_failures + (2 if was_crit else 1))
             if target.death_save_failures >= 3:
                 target.dead = True
@@ -204,8 +227,16 @@ class CombatEngine:
         return {"rolled": True, "roll": roll, "outcome": outcome,
                 "successes": c.death_save_successes, "failures": c.death_save_failures}
 
-    # ---- saves (delegates to the shared mechanics; the engine holds the dice) -------------------
+    # ---- saves (mechanics + combat conditions; keeps mechanics.saving_throw condition-agnostic) --
     def saving_throw(self, sheet, ability: str, dc: int, *, advantage: int = 0):
+        """A saving throw that honors combat conditions: a paralyzed/petrified/stunned/unconscious
+        creature auto-fails STR and DEX saves; a restrained creature rolls DEX saves at disadvantage."""
+        eff = C.effects_of(sheet.conditions)
+        ab = ability.strip().upper()
+        if eff.get("auto_fail_str_dex_saves") and ab in ("STR", "DEX"):
+            return M.CheckResult(roll=0, modifier=0, total=0, dc=int(dc), success=False, critical="")
+        if ab == "DEX" and eff.get("dex_save_disadvantage"):
+            advantage = _net_advantage(advantage, -1)
         return M.saving_throw(self.dice, sheet, ability, dc, advantage=advantage)
 
     # ---- end-of-fight --------------------------------------------------------------------------
