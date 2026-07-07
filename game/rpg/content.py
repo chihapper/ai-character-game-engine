@@ -15,7 +15,8 @@ from orchestrator.character_store import Character
 
 from .dungeon import generate_caverns, generate_dungeon
 from .minds import reskin
-from .state import (Door, Encounter, Enemy, GameState, Item, NpcPlacement, PlayerCharacter,
+from .srd import bestiary, encounters, progression
+from .state import (Door, Encounter, GameState, Item, NpcPlacement, PlayerCharacter,
                     QuestThread, Stats, WorldFlavor)
 
 # ==================================================================================================
@@ -143,9 +144,14 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
     sp = d.spawns
     at = lambda i: sp[i] if i < len(sp) else sp[-1]
 
-    player = PlayerCharacter(id="player", name="You", max_hp=24, hp=24, ac=14,
+    # The player is a CLASSED character now (SRD phase 6): fighter kit stamps hit dice, saves,
+    # skills, attack profile, and AC 16 — then the slice's authored VETERAN HP overrides the level-1
+    # baseline (playability tuning is slice data, same as every other number here).
+    player = PlayerCharacter(id="player", name="You",
                              stats=Stats(STR=14, DEX=13, CON=14, WIS=11, CHA=12),
-                             pos=at(0), level=1, gold=10, damage_dice="1d8", attack_ability="STR")
+                             pos=at(0), level=1, gold=10)
+    progression.apply_class(player, "fighter")
+    player.max_hp = player.hp = 24
 
     # Vael hands the keystone over ONLY if he chooses to join — authored right here as data.
     vael = NpcPlacement(slug=VAEL, name="Vael", handle="a cornered man", pos=at(1),
@@ -158,10 +164,17 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(vael.pos), tuple(lira.pos)}
-    gpos = _spread_cells(d.world_map, enc_pos, 3, taken)
-    goblins = [Enemy(id=f"goblin{i + 1}", name="Goblin", kind="goblin", max_hp=7, hp=7, ac=12,
-                     stats=Stats(STR=8, DEX=14, CON=10), damage_dice="1d4", attack_ability="DEX",
-                     pos=gpos[i % len(gpos)]) for i in range(3)]
+    # Canonical BESTIARY goblins (SRD phase 3) sized by the encounter-scaler (phase 4): the
+    # toughest goblin pack the deadly budget affords for the INTENDED level-1 pair (the game is
+    # designed around recruiting Lira first — solo it rates deadlier). A hand-authored 3-pack
+    # measured ~25% party-wipe WITH Lira in Monte-Carlo; the scaler prices that out honestly.
+    import random as _random
+    pack = encounters.build_encounter(party_level=1, party_size=2, difficulty="deadly",
+                                      palette=[("goblin", bestiary.cr("goblin"))],
+                                      rng=_random.Random(seed))
+    gpos = _spread_cells(d.world_map, enc_pos, len(pack), taken)
+    goblins = [bestiary.make_enemy(slug, id=f"goblin{i + 1}", pos=gpos[i % len(gpos)])
+               for i, slug in enumerate(pack)]
     encounter = Encounter(id="vault-guards", enemies=goblins, trigger_pos=enc_pos, region="the deep gallery")
 
     door = Door(id="inner-door", pos=_door_near(d.world_map, avoid=tuple(player.pos)),
@@ -279,9 +292,12 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
     sp = d.spawns
     at = lambda i: sp[i] if i < len(sp) else sp[-1]
 
-    player = PlayerCharacter(id="player", name="You", max_hp=26, hp=26, ac=15,
+    player = PlayerCharacter(id="player", name="You",
                              stats=Stats(STR=15, DEX=12, CON=14, WIS=11, CHA=12),
-                             pos=at(0), level=2, gold=15, damage_dice="1d8", attack_ability="STR")
+                             pos=at(0), level=2, gold=15)
+    progression.apply_class(player, "fighter")
+    player.max_hp = player.hp = 26            # authored veteran HP (slice data), as in the Vault
+    player.xp = 300                            # consistent with arriving here at level 2
 
     torvald = NpcPlacement(slug=TORVALD, name="Torvald", handle="a soot-streaked survivor", pos=at(1),
                            game_data={"srd5": {"role": "cornered survivor"}},
@@ -294,10 +310,21 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(torvald.pos), tuple(senna.pos)}
-    hpos = _spread_cells(d.world_map, enc_pos, 4, taken)
-    husks = [Enemy(id=f"husk{i + 1}", name="Cinder-husk", kind="husk", max_hp=13, hp=13, ac=13,
-                   stats=Stats(STR=15, DEX=8, CON=13), damage_dice="1d8", attack_ability="STR",
-                   pos=hpos[i % len(hpos)]) for i in range(4)]
+    # This slice's pack is CHOSEN by the encounter-scaler (SRD phase 4), live: the toughest pack
+    # the DEADLY budget affords for a level-2 pair (the game is designed around bringing a
+    # companion; the single-creature fire palette can't always reach the top of the budget, so
+    # the fielded pack may RATE a rung lower — that's the scaler being honest, not a bug). The
+    # fire tag is deliberately narrow: the slice's fiction says the husks were Torvald's crew, so
+    # only fire-touched things belong here ("cavern" is a broad terrain tag that would field
+    # goblins in a volcano). Seeded: the same seed always fields the same pack. The old authored
+    # 4-husk pack priced out far past 'deadly' (it DID kill the solo playtester).
+    import random as _random
+    palette = [(slug, bestiary.cr(slug)) for slug in bestiary.slugs(tags=["fire"])]
+    pack = encounters.build_encounter(party_level=2, party_size=2, difficulty="deadly",
+                                      palette=palette, rng=_random.Random(seed))
+    hpos = _spread_cells(d.world_map, enc_pos, len(pack), taken)
+    husks = [bestiary.make_enemy(slug, id=f"husk{i + 1}", pos=hpos[i % len(hpos)])
+             for i, slug in enumerate(pack)]
     encounter = Encounter(id="ember-husks", enemies=husks, trigger_pos=enc_pos, region="the slag gallery")
 
     gate = Door(id="ember-gate", pos=_door_near(d.world_map, avoid=tuple(player.pos)),

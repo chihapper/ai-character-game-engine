@@ -1,0 +1,137 @@
+{
+  "band0": {
+    "coins": "2d6",
+    "drop_chance": 0.55,
+    "items": [
+      {"id": "healing-draught", "name": "a healing draught", "kind": "consumable", "weight": 3,
+       "data": {"heal": "2d4+2"}},
+      {"id": "torch-stub", "name": "a stub of torch", "kind": "misc", "weight": 3, "data": {}},
+      {"id": "hempen-rope", "name": "a coil of hempen rope", "kind": "misc", "weight": 2,
+       "data": {"length_ft": 50}},
+      {"id": "oil-flask", "name": "an oil flask", "kind": "misc", "weight": 2, "data": {}},
+      {"id": "rusty-dagger", "name": "a rusty dagger", "kind": "weapon", "weight": 2,
+       "data": {"damage_dice": "1d4", "damage_type": "piercing"}},
+      {"id": "leather-sling", "name": "a leather sling", "kind": "weapon", "weight": 1,
+       "data": {"damage_dice": "1d4", "damage_type": "bludgeoning", "ranged": true}},
+      {"id": "patched-jerkin", "name": "a patched leather jerkin", "kind": "armor", "weight": 1,
+       "data": {"ac": 11}},
+      {"id": "dried-rations", "name": "a packet of dried rations", "kind": "consumable", "weight": 2,
+       "data": {"heal": "1"}},
+      {"id": "battered-tinderbox", "name": "a battered tinderbox", "kind": "misc", "weight": 2,
+       "data": {}},
+      {"id": "iron-nails", "name": "a handful of iron nails", "kind": "misc", "weight": 1, "data": {}}
+    ],
+    "trinkets": [
+      "a wolf-tooth charm on a leather cord",
+      "a cracked signet ring, crest worn smooth",
+      "a child's carved wooden horse, one leg snapped",
+      "a knot of red string tied around a copper coin",
+      "a river pebble polished to a dull shine",
+      "a tin whistle that only plays flat",
+      "a scrap of map to nowhere anyone knows"
+    ]
+  },
+  "band1": {
+    "coins": "4d6",
+    "drop_chance": 0.6,
+    "items": [
+      {"id": "healing-draught", "name": "a healing draught", "kind": "consumable", "weight": 3,
+       "data": {"heal": "2d4+2"}},
+      {"id": "soldiers-shortsword", "name": "a soldier's shortsword", "kind": "weapon", "weight": 2,
+       "data": {"damage_dice": "1d6", "damage_type": "piercing"}},
+      {"id": "bearded-handaxe", "name": "a bearded handaxe", "kind": "weapon", "weight": 2,
+       "data": {"damage_dice": "1d6", "damage_type": "slashing"}},
+      {"id": "hunting-bow", "name": "a hunting bow with a half-full quiver", "kind": "weapon",
+       "weight": 2, "data": {"damage_dice": "1d6", "damage_type": "piercing", "ranged": true}},
+      {"id": "boiled-leather-armor", "name": "a suit of boiled leather armor", "kind": "armor",
+       "weight": 1, "data": {"ac": 11}},
+      {"id": "antitoxin-vial", "name": "a vial of antitoxin", "kind": "consumable", "weight": 1,
+       "data": {"cures": "poisoned"}},
+      {"id": "clay-smoke-pot", "name": "a clay smoke-pot", "kind": "consumable", "weight": 1,
+       "data": {"effect": "obscuring smoke, one encounter"}},
+      {"id": "hooded-lantern", "name": "a hooded lantern", "kind": "misc", "weight": 2, "data": {}},
+      {"id": "caltrop-bag", "name": "a bag of iron caltrops", "kind": "consumable", "weight": 1,
+       "data": {"effect": "slows pursuers"}},
+      {"id": "whetstone-oilcloth", "name": "a whetstone and oilcloth", "kind": "misc", "weight": 2,
+       "data": {}}
+    ],
+    "trinkets": [
+      "a gambler's die that always lands on five",
+      "a pressed flower in a tin locket",
+      "a militia badge from a disbanded company",
+      "a bone comb missing half its teeth",
+      "a small brass bell, its clapper wrapped in wool",
+      "a love letter, never signed, never sent"
+    ]
+  },
+  "band2": {
+    "coins": "8d10",
+    "drop_chance": 0.7,
+    "items": [
+      {"id": "greater-healing-draught", "name": "a greater healing draught", "kind": "consumable",
+       "weight": 3, "data": {"heal": "4d4+4"}},
+      {"id": "steel-longsword", "name": "a well-kept steel longsword", "kind": "weapon", "weight": 2,
+       "data": {"damage_dice": "1d8", "damage_type": "slashing"}},
+      {"id": "horsemans-warhammer", "name": "a horseman's warhammer", "kind": "weapon", "weight": 2,
+       "data": {"damage_dice": "1d8", "damage_type": "bludgeoning"}},
+      {"id": "silvered-dagger", "name": "a silvered dagger", "kind": "weapon", "weight": 1,
+       "data": {"damage_dice": "1d4", "damage_type": "piercing", "silvered": true}},
+      {"id": "heavy-crossbow", "name": "a heavy crossbow with a case of bolts", "kind": "weapon",
+       "weight": 1, "data": {"damage_dice": "1d10", "damage_type": "piercing", "ranged": true}},
+      {"id": "riveted-chain-shirt", "name": "a riveted chain shirt", "kind": "armor", "weight": 1,
+       "data": {"ac": 13}},
+      {"id": "fire-oil-flask", "name": "a flask of clinging fire-oil", "kind": "consumable",
+       "weight": 1, "data": {"damage_dice": "2d6", "damage_type": "fire"}},
+      {"id": "healers-satchel", "name": "a field healer's satchel", "kind": "consumable", "weight": 2,
+       "data": {"heal": "2d4+2", "uses": 3}},
+      {"id": "antitoxin-vial", "name": "a vial of antitoxin", "kind": "consumable", "weight": 1,
+       "data": {"cures": "poisoned"}},
+      {"id": "brass-spyglass", "name": "a dented brass spyglass", "kind": "misc", "weight": 1,
+       "data": {}}
+    ],
+    "trinkets": [
+      "a knight chess piece carved from black horn",
+      "a dueling glove with another man's initials stitched inside",
+      "a tarnished medal for a battle nobody won",
+      "a glass eye, disturbingly lifelike",
+      "a page from a captain's log, the last entry half-finished",
+      "a silver toothpick in a velvet-lined case"
+    ]
+  },
+  "band3": {
+    "coins": "15d10",
+    "drop_chance": 0.8,
+    "items": [
+      {"id": "superior-healing-draught", "name": "a superior healing draught", "kind": "consumable",
+       "weight": 3, "data": {"heal": "8d4+8"}},
+      {"id": "keen-forged-longsword", "name": "a keen-forged longsword", "kind": "weapon",
+       "weight": 2, "data": {"damage_dice": "1d8", "damage_type": "slashing", "attack_bonus": 1}},
+      {"id": "wyrmbone-recurve-bow", "name": "a wyrmbone recurve bow", "kind": "weapon", "weight": 1,
+       "data": {"damage_dice": "1d8", "damage_type": "piercing", "ranged": true, "attack_bonus": 1}},
+      {"id": "duelists-parrying-dagger", "name": "a duelist's parrying dagger", "kind": "weapon",
+       "weight": 1, "data": {"damage_dice": "1d4", "damage_type": "piercing", "attack_bonus": 1,
+                             "ac_bonus": 1}},
+      {"id": "captains-breastplate", "name": "a captain's engraved breastplate", "kind": "armor",
+       "weight": 1, "data": {"ac": 14}},
+      {"id": "riveted-mail-hauberk", "name": "a hauberk of riveted mail", "kind": "armor",
+       "weight": 1, "data": {"ac": 16}},
+      {"id": "oaken-hide-balm", "name": "a jar of oaken-hide balm", "kind": "consumable", "weight": 1,
+       "data": {"ac_bonus": 2, "duration": "one encounter"}},
+      {"id": "giants-vigor-draught", "name": "a draught of giant's vigor", "kind": "consumable",
+       "weight": 1, "data": {"effect": "advantage on STR checks and saves",
+                             "duration": "one encounter"}},
+      {"id": "gemstone-pouch", "name": "a pouch of cut gemstones", "kind": "misc", "weight": 2,
+       "data": {"value_gold": 25}},
+      {"id": "wolf-fur-cloak", "name": "a heavy wolf-fur cloak", "kind": "misc", "weight": 1,
+       "data": {}}
+    ],
+    "trinkets": [
+      "a war-banner scrap sewn with a forgotten crest",
+      "a general's brass whistle, dented by a sword blow",
+      "a signet seal of a house that no longer exists",
+      "a dragon scale the size of a saucer, cool to the touch",
+      "a dead man's last wager, still folded in its purse",
+      "a ceremonial arrowhead of blue glass"
+    ]
+  }
+}

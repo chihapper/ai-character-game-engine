@@ -7,9 +7,14 @@ extends CanvasLayer
 ## NOTE: CanvasLayer extends Node (NOT CanvasItem), so it has a `visible` bool property but
 ## NO show()/hide() methods. Toggle visibility via `visible` only.
 
+## Fired the moment the player submits (before the reply round-trip) so main can echo the line
+## + a thinking beat in the HUD — the LLM wait reads as the character considering, not a dead UI.
+signal submitted(mode: String, target_name: String, text: String)
+
 var _open := false
 var _mode := ""       # "talk" | "do"
 var _target := ""     # target entity id (talk only)
+var _target_name := ""
 
 var _panel: Panel
 var _prompt: Label
@@ -96,6 +101,7 @@ func open_talk(target_id: String, target_name: String) -> void:
 	var who := str(target_name).strip_edges()
 	if who == "":
 		who = "them"
+	_target_name = who
 	if _prompt != null:
 		_prompt.text = "Say to %s:" % who
 	_open_common()
@@ -104,6 +110,7 @@ func open_talk(target_id: String, target_name: String) -> void:
 func open_do() -> void:
 	_mode = "do"
 	_target = ""
+	_target_name = ""
 	if _prompt != null:
 		_prompt.text = "You try to:"
 	_open_common()
@@ -131,6 +138,7 @@ func _on_submit(t: String) -> void:
 		Net.talk(_target, msg)
 	else:
 		Net.do_action(msg)
+	submitted.emit(_mode, _target_name, msg)
 	_close()
 
 

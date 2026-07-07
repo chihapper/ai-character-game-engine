@@ -254,8 +254,46 @@ class RpgGame(GameSession):
             await self._do(action.text)
         elif action.kind == "look":
             self._emit(NarrationEvent(text=await self.dm.narrate_scene(self._scene_text())))
+        elif action.kind == "use":
+            self._use_item(action.target_id)
         elif action.kind == "wait":
             self.state.clock.advance(0.1)
+
+    def _use_item(self, item_id: str = "") -> bool:
+        """Consume an inventory item (today: anything with a `heal` roll in its data — a healing
+        draught). `item_id` picks a specific one; empty = the first healing consumable carried.
+        Returns True if something was consumed (the combat path spends the ACTION on it; the
+        exploration path advances the clock). Multi-use items (`data.uses`) decrement and are
+        removed only when spent. GAME-enforced mechanics: the dice decide the healing, never
+        narration. Refuses at full HP so a stray keypress can't waste an item (or the action)."""
+        s = self.state
+        p = s.player
+        def _healable(it) -> bool:
+            return it.kind == "consumable" and bool((it.data or {}).get("heal"))
+        item = next((it for it in p.inventory
+                     if (it.id == item_id if item_id else _healable(it))), None)
+        if item is None or not _healable(item):
+            # Honest wording: non-heal consumables (antitoxin, oils...) exist but have no game
+            # effect wired yet — "yet" keeps the refusal truthful for them.
+            self._emit(NarrationEvent(text="Nothing in your pack you can use yet."))
+            return False
+        if p.hp >= p.max_hp:
+            self._emit(NarrationEvent(text="You're unhurt — no sense wasting it."))
+            return False
+        healed = max(1, self.combat_engine.dice.roll(str(item.data["heal"])))
+        before = p.hp
+        p.hp = min(p.max_hp, p.hp + healed)
+        uses = int((item.data or {}).get("uses", 1) or 1) - 1
+        if uses > 0:
+            item.data["uses"] = uses
+        else:
+            p.inventory.remove(item)
+        if s.mode != Mode.combat:                 # combat pays with the ACTION; exploration with time
+            s.clock.advance(0.05)
+        self._emit(NarrationEvent(
+            text=f"You down {item.name} — {p.hp - before} HP back ({p.hp}/{p.max_hp})."))
+        s.campaign_log.add(s.clock.value, f"The traveler used {item.name}.", tags=["item"])
+        return True
 
     def _scene_text(self) -> str:
         """The world-state the DM narrates FROM — where the player is, who's near, recent history.
@@ -448,11 +486,15 @@ class RpgGame(GameSession):
 
     def _move_to(self, tx: int, ty: int) -> None:
         """Click-to-move: walk the player toward tile (tx,ty), stepping via _move_player (which handles
-        doors, the follower trail, and encounter triggers). The path is limited to terrain explored AT
+        doors, the follower trail, and encounter triggers). A click on an UNEXPLORED tile is REJECTED
+        outright (owner feedback 2026-07-07: selecting a spot you've never seen shouldn't do anything —
+        explore by walking, not by clicking into the black). The path is limited to terrain explored AT
         CLICK TIME (frozen) — revealing new ground as you walk does NOT auto-extend the trip, so
         clicking far only takes you to the explored frontier. Stops on arrival, a blocked step, or when
         combat starts."""
         s = self.state
+        if f"{tx},{ty}" not in s.explored:        # a spot you've never seen isn't a place you can pick
+            return
         frozen = set(s.explored)                  # what was known when you clicked; don't extend it
         for _ in range(400):
             if tuple(s.player.pos) == (tx, ty) or s.mode == Mode.combat:
@@ -778,6 +820,12 @@ class RpgGame(GameSession):
             self._player_combat_to(action.tx, action.ty)
         elif action.kind == "move":
             self._player_combat_step(action.dx, action.dy)
+        elif action.kind == "use":
+            # Quaffing mid-fight is a real combat choice: it SPENDS the action.
+            if cs.action_used:
+                self._emit(CombatEvent(text=s.flavor.combat_no_time))
+            elif self._use_item(action.target_id):
+                cs.action_used = True
         else:
             # A non-combat intent (talk/do/recruit/look) mid-fight: tell the player instead of
             # swallowing it silently — they typed a whole line and nothing happened. Slice-pure
@@ -821,6 +869,8 @@ class RpgGame(GameSession):
         s = self.state
         cs = s.combat
         cell = (tx, ty)
+        if f"{tx},{ty}" not in s.explored:        # same fog rule as exploration: unseen = unclickable
+            return
         foe = next((e for e in self._fight_enemies() if e.pos and tuple(e.pos) == cell), None)
         if foe is not None and self._dist(s.player.pos, cell) == 1:
             if not cs.action_used:
@@ -970,3 +1020,40 @@ class RpgGame(GameSession):
         self._emit(ModeChangedEvent(mode=Mode.exploration))
         if victory:
             self._emit(CombatEvent(text=s.flavor.combat_victory.format(enemies=label)))
+            if enc is not None:
+                self._award_victory(enc)
+
+    def _award_victory(self, enc) -> None:
+        """The mechanical SPOILS of a won fight — XP (with level-ups) and loot, all rolled by the
+        rules layer (srd.progression / srd.loot), never narrated into existence. Mechanical readouts
+        are guardrail-permitted (the character sheet is game-owned; only the MIND is private)."""
+        from .srd import loot as srd_loot
+        from .srd import progression
+        s = self.state
+        if not enc.enemies:                        # a degenerate empty encounter pays nothing
+            return
+        # Per-enemy CR (a hand-authored foe without one defaults to 0.25 INDIVIDUALLY, so a mixed
+        # bestiary+authored pack pays for every combatant, not just the stat-blocked ones).
+        crs = [float(en.cr) if en.cr is not None else 0.25 for en in enc.enemies]
+        xp = progression.xp_for_crs(crs)
+        if xp > 0:
+            ups = progression.award_xp(s.player, xp)
+            self._emit(CombatEvent(text=f"Hard-won: {xp} exp."))
+            for up in ups:
+                self._emit(CombatEvent(
+                    text=f"You've grown — level {up['level']} (+{up['hp_gain']} HP)."))
+        spoils = srd_loot.roll_loot(crs, self.rules.rng)
+        if spoils.get("gold"):
+            s.player.gold += int(spoils["gold"])
+        from .state import Item
+        for it in spoils.get("items", []):
+            s.player.inventory.append(Item(id=it["id"], name=it["name"],
+                                           kind=it.get("kind", "misc"), data=it.get("data", {})))
+        if spoils.get("trinket"):
+            # truncate BEFORE stripping so a cut at a dash can't leave a trailing '-' run
+            tid = "".join(c if c.isalnum() else "-" for c in spoils["trinket"].lower())[:40].strip("-")
+            s.player.inventory.append(Item(id=tid or "trinket", name=spoils["trinket"], kind="misc"))
+        desc = srd_loot.describe(spoils)
+        if desc:
+            self._emit(CombatEvent(text=f"Among the fallen: {desc}."))
+            s.campaign_log.add(s.clock.value, f"The traveler claimed {desc}.", tags=["loot"])

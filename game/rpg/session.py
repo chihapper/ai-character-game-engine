@@ -20,9 +20,10 @@ class PlayerAction(BaseModel):
     """One intent from the view. `kind` selects the fields that matter; the core validates per
     kind. Free-flow in exploration; one action per turn in combat."""
     # Only kinds the core actually handles. Combat attacks are bump-to-attack (kind="move" into an
-    # enemy); "move_to" is click-to-move (pathfind to a tile). Add a kind here the moment the core
+    # enemy); "move_to" is click-to-move (pathfind to a tile); "use" consumes an inventory item
+    # (a healing draught — spends the ACTION in combat). Add a kind here the moment the core
     # handles it, not before (a declared-but-ignored kind is a silent no-op trap).
-    kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp"]
+    kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp", "use"]
     dx: int = 0                  # move (single step)
     dy: int = 0
     tx: int = 0                  # move_to (target tile)

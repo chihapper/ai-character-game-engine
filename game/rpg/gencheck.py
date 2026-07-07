@@ -58,6 +58,98 @@ def invariants(d) -> list[str]:
     return bad
 
 
+def content_invariants(n: int) -> bool:
+    """Fuzz the CONTENT-generation modules (SRD phases 3-5) the way the map generators are fuzzed:
+    every bestiary entry must build a valid, living Enemy; encounter packs must respect the party
+    budget and be seed-deterministic; loot must be seed-deterministic, well-formed, and NEVER able
+    to collide with an objective-key grant (the game refuses ids containing key/sigil/keystone)."""
+    import random
+
+    from game.rpg.srd import bestiary, encounters, loot, progression
+
+    bad: list[str] = []
+    # 1) every bestiary entry constructs a valid combatant
+    for slug in bestiary.slugs():
+        try:
+            e = bestiary.make_enemy(slug, id=f"chk-{slug}")
+            if not (e.alive and e.max_hp >= 1 and e.ac >= 5 and e.cr is not None):
+                bad.append(f"bestiary {slug}: implausible sheet (hp {e.max_hp} ac {e.ac} cr {e.cr})")
+        except Exception as exc:                            # noqa: BLE001
+            bad.append(f"bestiary {slug}: {exc}")
+    # 2) encounter packs: budget respected + deterministic per seed
+    palette = [(s, bestiary.cr(s)) for s in bestiary.slugs(max_cr=3.0)]
+    for seed in range(1, n + 1):
+        for level, diff in ((1, "easy"), (1, "deadly"), (3, "medium"), (5, "hard")):
+            a = encounters.build_encounter(party_level=level, party_size=1, difficulty=diff,
+                                           palette=palette, rng=random.Random(seed))
+            b = encounters.build_encounter(party_level=level, party_size=1, difficulty=diff,
+                                           palette=palette, rng=random.Random(seed))
+            if a != b:
+                bad.append(f"encounter seed {seed} L{level} {diff}: non-deterministic ({a} vs {b})")
+                break
+            cost = encounters.encounter_cost([bestiary.cr(s) for s in a])
+            budget = encounters.party_budget(level, 1, diff)
+            if not a or cost > budget:
+                bad.append(f"encounter seed {seed} L{level} {diff}: cost {cost} > budget {budget} ({a})")
+                break
+    # 3a) loot STATIC scan — every band's full table, straight from the data (not sampled through
+    #     roll_loot): this is the load-bearing guard, because _award_victory appends loot items
+    #     directly to the inventory, BYPASSING the DM's objective-key containment guard. Every id
+    #     (items AND slugged trinkets) must be non-empty and key-collision-safe, every entry must
+    #     construct a valid Item, and every heal string must parse.
+    from game.rpg.srd.dice import Dice
+    from game.rpg.state import Item
+
+    def _slug(text: str) -> str:
+        return "".join(c if c.isalnum() else "-" for c in text.lower())[:40].strip("-")
+
+    for band, tbl in loot.load().items():
+        for it in tbl.get("items", []):
+            iid = str(it.get("id", ""))
+            if not iid or any(w in iid for w in ("key", "sigil", "keystone")):
+                bad.append(f"loot {band}: unsafe/empty item id {iid!r}")
+            try:
+                Item(id=iid or "x", name=it.get("name", "?"), kind=it.get("kind", "misc"),
+                     data=it.get("data", {}))
+            except Exception as exc:                # noqa: BLE001
+                bad.append(f"loot {band} {iid}: not Item-constructible ({exc})")
+            heal = (it.get("data") or {}).get("heal")
+            if heal:
+                try:
+                    Dice(seed=1).roll(str(heal))
+                except Exception:                   # noqa: BLE001
+                    bad.append(f"loot {band} {iid}: unparseable heal {heal!r}")
+        for trinket in tbl.get("trinkets", []):
+            tid = _slug(str(trinket))
+            if not tid or any(w in tid for w in ("key", "sigil", "keystone")):
+                bad.append(f"loot {band}: unsafe trinket slug {tid!r} from {trinket!r}")
+    # 3b) loot rolls: deterministic + well-formed, ONE ROLL PER BAND per seed (a fixed mixed-CR
+    #     list only ever exercised one band; the second-drop branch is band2+ only).
+    for seed in range(1, n + 1):
+        for crs in ([0.25], [2.0], [4.0], [6.0]):
+            a = loot.roll_loot(crs, random.Random(seed))
+            b = loot.roll_loot(crs, random.Random(seed))
+            if a != b:
+                bad.append(f"loot seed {seed} crs {crs}: non-deterministic")
+                break
+            if not isinstance(a.get("gold"), int) or a["gold"] < 0:
+                bad.append(f"loot seed {seed} crs {crs}: bad gold {a.get('gold')}")
+            for it in a.get("items", []):
+                iid = str(it.get("id", ""))
+                if not iid or any(w in iid for w in ("key", "sigil", "keystone")):
+                    bad.append(f"loot seed {seed} crs {crs}: unsafe/empty item id {iid!r}")
+    xs = [progression.xp_for_crs([c]) for c in (0, 0.25, 0.5, 1, 2, 3, 4, 5)]
+    if xs != sorted(xs):
+        bad.append(f"xp_for_crs not monotone: {xs}")
+
+    for line in bad[:8]:
+        print(f"  [content] {line}")
+    status = "PASS" if not bad else f"FAIL ({len(bad)} problems)"
+    print(f"  [{status}] content (bestiary/encounters/loot/progression): "
+          f"{len(bestiary.slugs())} creatures, {n} seeds fuzzed")
+    return not bad
+
+
 def main(n: int = 200) -> int:
     ok = True
     for name, gen in (("rooms   (generate_dungeon)", generate_dungeon),
@@ -87,7 +179,8 @@ def main(n: int = 200) -> int:
         print(f"  [{status}] {name}: {n} seeds  avg floor ratio {avg:.2f}  "
               f"entrance<->exit spread avg {ef_avg:.2f} min {ef_min:.2f} of (w+h)")
         ok = ok and broken == 0
-    print("\n" + ("ALL GENERATORS PASS every invariant — no map can ship uncompletable."
+    ok = content_invariants(max(20, n // 10)) and ok
+    print("\n" + ("ALL GENERATORS + CONTENT PASS every invariant — no map or encounter can ship broken."
                   if ok else "INVARIANT FAILURES ABOVE."))
     return 0 if ok else 1
 

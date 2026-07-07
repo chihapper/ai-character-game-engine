@@ -1,0 +1,1172 @@
+{
+  "giant-rat": {
+    "name": "Giant Rat",
+    "cr": 0.125,
+    "ac": 12,
+    "hp": 7,
+    "hit_dice": "2d6",
+    "stats": {
+      "STR": 7,
+      "DEX": 15,
+      "CON": 11,
+      "INT": 2,
+      "WIS": 10,
+      "CHA": 4
+    },
+    "speed": 30,
+    "size": "small",
+    "creature_type": "beast",
+    "attack": {
+      "damage_dice": "1d4",
+      "ability": "DEX",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "beast"
+    ],
+    "blurb": "A dog-sized rat with matted fur and a bald tail, bold enough to gnaw at anything that stops moving."
+  },
+  "kobold": {
+    "name": "Kobold",
+    "cr": 0.125,
+    "ac": 12,
+    "hp": 5,
+    "hit_dice": "2d6-2",
+    "stats": {
+      "STR": 7,
+      "DEX": 15,
+      "CON": 9,
+      "INT": 8,
+      "WIS": 7,
+      "CHA": 8
+    },
+    "speed": 30,
+    "size": "small",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d4",
+      "ability": "DEX",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "humanoid"
+    ],
+    "blurb": "A yapping, scale-skinned scavenger that fights bravely only in numbers and bolts the instant those numbers thin."
+  },
+  "bandit": {
+    "name": "Bandit",
+    "cr": 0.125,
+    "ac": 12,
+    "hp": 11,
+    "hit_dice": "2d8+2",
+    "stats": {
+      "STR": 11,
+      "DEX": 12,
+      "CON": 12,
+      "INT": 10,
+      "WIS": 10,
+      "CHA": 10
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "DEX",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "wilds",
+      "humanoid"
+    ],
+    "blurb": "A road-cutter in patched leathers who would sooner take your purse than your life, but will settle for both."
+  },
+  "cultist": {
+    "name": "Cultist",
+    "cr": 0.125,
+    "ac": 12,
+    "hp": 9,
+    "hit_dice": "2d8",
+    "stats": {
+      "STR": 11,
+      "DEX": 12,
+      "CON": 10,
+      "INT": 10,
+      "WIS": 11,
+      "CHA": 10
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "DEX",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "deception",
+      "religion"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "humanoid"
+    ],
+    "blurb": "A hollow-eyed devotee in dark robes, murmuring promises to something that should not be listening."
+  },
+  "goblin": {
+    "name": "Goblin",
+    "cr": 0.25,
+    "ac": 15,
+    "hp": 7,
+    "hit_dice": "2d6",
+    "stats": {
+      "STR": 8,
+      "DEX": 14,
+      "CON": 10,
+      "INT": 10,
+      "WIS": 8,
+      "CHA": 8
+    },
+    "speed": 30,
+    "size": "small",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "DEX",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "humanoid"
+    ],
+    "blurb": "A wiry, sharp-toothed lurker that swarms out of the dark, all knives and spite and no stomach for a fair fight."
+  },
+  "skeleton": {
+    "name": "Skeleton",
+    "cr": 0.25,
+    "ac": 13,
+    "hp": 13,
+    "hit_dice": "2d8+4",
+    "stats": {
+      "STR": 10,
+      "DEX": 14,
+      "CON": 15,
+      "INT": 6,
+      "WIS": 8,
+      "CHA": 5
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "DEX",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [
+      "bludgeoning"
+    ],
+    "condition_immunities": [
+      "poisoned",
+      "exhaustion"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "Old bones lashed together by a stubborn spark of will, marching in silence until something knocks them apart."
+  },
+  "zombie": {
+    "name": "Zombie",
+    "cr": 0.25,
+    "ac": 8,
+    "hp": 22,
+    "hit_dice": "3d8+9",
+    "stats": {
+      "STR": 13,
+      "DEX": 6,
+      "CON": 16,
+      "INT": 3,
+      "WIS": 6,
+      "CHA": 5
+    },
+    "speed": 20,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "STR",
+      "damage_type": "bludgeoning",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [
+      "WIS"
+    ],
+    "resistances": [],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "poisoned"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A shuffling corpse that feels nothing, fears nothing, and keeps coming long after it should have fallen."
+  },
+  "wolf": {
+    "name": "Wolf",
+    "cr": 0.25,
+    "ac": 13,
+    "hp": 11,
+    "hit_dice": "2d8+2",
+    "stats": {
+      "STR": 12,
+      "DEX": 15,
+      "CON": 12,
+      "INT": 3,
+      "WIS": 12,
+      "CHA": 6
+    },
+    "speed": 40,
+    "size": "medium",
+    "creature_type": "beast",
+    "attack": {
+      "damage_dice": "2d4",
+      "ability": "DEX",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "perception",
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "beast"
+    ],
+    "blurb": "A grey pack-hunter that circles wide, waits for a stumble, and brings its family to the bite."
+  },
+  "hobgoblin": {
+    "name": "Hobgoblin",
+    "cr": 0.5,
+    "ac": 18,
+    "hp": 11,
+    "hit_dice": "2d8+2",
+    "stats": {
+      "STR": 13,
+      "DEX": 12,
+      "CON": 12,
+      "INT": 10,
+      "WIS": 10,
+      "CHA": 9
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d8",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "humanoid"
+    ],
+    "blurb": "A drilled, iron-disciplined soldier of the goblin-kin that fights in rank and file and dies without breaking formation."
+  },
+  "orc": {
+    "name": "Orc",
+    "cr": 0.5,
+    "ac": 13,
+    "hp": 15,
+    "hit_dice": "2d8+6",
+    "stats": {
+      "STR": 16,
+      "DEX": 12,
+      "CON": 16,
+      "INT": 7,
+      "WIS": 11,
+      "CHA": 10
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d12",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "intimidation"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "humanoid"
+    ],
+    "blurb": "A heavy-shouldered raider who answers every question with an axe."
+  },
+  "gnoll": {
+    "name": "Gnoll",
+    "cr": 0.5,
+    "ac": 15,
+    "hp": 22,
+    "hit_dice": "5d8",
+    "stats": {
+      "STR": 14,
+      "DEX": 12,
+      "CON": 11,
+      "INT": 6,
+      "WIS": 10,
+      "CHA": 7
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "STR",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "humanoid"
+    ],
+    "blurb": "A cackling, hyena-headed marauder driven by a hunger that never quiets."
+  },
+  "lizardfolk": {
+    "name": "Lizardfolk",
+    "cr": 0.5,
+    "ac": 15,
+    "hp": 22,
+    "hit_dice": "4d8+4",
+    "stats": {
+      "STR": 15,
+      "DEX": 10,
+      "CON": 13,
+      "INT": 7,
+      "WIS": 12,
+      "CHA": 7
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "STR",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "perception",
+      "stealth",
+      "survival"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "water",
+      "wilds",
+      "humanoid"
+    ],
+    "blurb": "A cold-blooded marsh-dweller that sorts every stranger into one of three bins: threat, tool, or meat."
+  },
+  "shadow": {
+    "name": "Shadow",
+    "cr": 0.5,
+    "ac": 12,
+    "hp": 16,
+    "hit_dice": "3d8+3",
+    "stats": {
+      "STR": 6,
+      "DEX": 14,
+      "CON": 13,
+      "INT": 6,
+      "WIS": 10,
+      "CHA": 8
+    },
+    "speed": 40,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "DEX",
+      "damage_type": "necrotic",
+      "ranged": false
+    },
+    "skills": [
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [
+      "acid",
+      "cold",
+      "fire",
+      "lightning",
+      "thunder",
+      "bludgeoning",
+      "piercing",
+      "slashing"
+    ],
+    "immunities": [
+      "necrotic",
+      "poison"
+    ],
+    "vulnerabilities": [
+      "radiant"
+    ],
+    "condition_immunities": [
+      "exhaustion",
+      "frightened",
+      "grappled",
+      "paralyzed",
+      "petrified",
+      "poisoned",
+      "prone",
+      "restrained"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A ribbon of living darkness that pours across the floor and drinks the strength out of a body."
+  },
+  "cinder-husk": {
+    "name": "Cinder-husk",
+    "cr": 0.5,
+    "ac": 13,
+    "hp": 13,
+    "hit_dice": "2d8+4",
+    "stats": {
+      "STR": 15,
+      "DEX": 8,
+      "CON": 14,
+      "INT": 4,
+      "WIS": 6,
+      "CHA": 3
+    },
+    "speed": 20,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "1d8",
+      "ability": "STR",
+      "damage_type": "bludgeoning",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [
+      "fire"
+    ],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "poisoned",
+      "exhaustion"
+    ],
+    "tags": [
+      "cavern",
+      "fire",
+      "undead"
+    ],
+    "blurb": "The charred shell of a delver who fell in the burning dark, still walking, embers seething in every crack of its skin."
+  },
+  "vault-drowned": {
+    "name": "Vault-drowned",
+    "cr": 0.5,
+    "ac": 12,
+    "hp": 18,
+    "hit_dice": "4d8",
+    "stats": {
+      "STR": 14,
+      "DEX": 8,
+      "CON": 10,
+      "INT": 4,
+      "WIS": 8,
+      "CHA": 4
+    },
+    "speed": 20,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "1d6",
+      "ability": "STR",
+      "damage_type": "bludgeoning",
+      "ranged": false
+    },
+    "skills": [
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [
+      "cold"
+    ],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [
+      "lightning"
+    ],
+    "condition_immunities": [
+      "poisoned",
+      "exhaustion"
+    ],
+    "tags": [
+      "dungeon",
+      "water",
+      "undead"
+    ],
+    "blurb": "A waterlogged corpse kept walking by old wards, waiting under black standing water for the ripple of a living step."
+  },
+  "ghoul": {
+    "name": "Ghoul",
+    "cr": 1.0,
+    "ac": 12,
+    "hp": 22,
+    "hit_dice": "5d8",
+    "stats": {
+      "STR": 13,
+      "DEX": 15,
+      "CON": 10,
+      "INT": 7,
+      "WIS": 10,
+      "CHA": 6
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "2d4",
+      "ability": "DEX",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "poisoned",
+      "charmed",
+      "exhaustion"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A crook-limbed grave-feeder whose raking claws leave a numbing chill in the wound."
+  },
+  "giant-spider": {
+    "name": "Giant Spider",
+    "cr": 1.0,
+    "ac": 14,
+    "hp": 26,
+    "hit_dice": "4d10+4",
+    "stats": {
+      "STR": 14,
+      "DEX": 16,
+      "CON": 12,
+      "INT": 2,
+      "WIS": 11,
+      "CHA": 4
+    },
+    "speed": 30,
+    "size": "large",
+    "creature_type": "beast",
+    "attack": {
+      "damage_dice": "1d8",
+      "ability": "DEX",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "beast"
+    ],
+    "blurb": "A horse-sized weaver that drops in silence from ceilings its prey never thinks to check."
+  },
+  "worg": {
+    "name": "Worg",
+    "cr": 0.5,
+    "ac": 13,
+    "hp": 26,
+    "hit_dice": "4d10+4",
+    "stats": {
+      "STR": 16,
+      "DEX": 13,
+      "CON": 13,
+      "INT": 7,
+      "WIS": 11,
+      "CHA": 8
+    },
+    "speed": 50,
+    "size": "large",
+    "creature_type": "monstrosity",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "STR",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "cavern",
+      "monstrosity"
+    ],
+    "blurb": "A wolf grown huge, cunning, and cruel — clever enough to hate, and to remember who earned it."
+  },
+  "bugbear": {
+    "name": "Bugbear",
+    "cr": 1.0,
+    "ac": 16,
+    "hp": 27,
+    "hit_dice": "5d8+5",
+    "stats": {
+      "STR": 15,
+      "DEX": 14,
+      "CON": 13,
+      "INT": 8,
+      "WIS": 11,
+      "CHA": 9
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "humanoid",
+    "attack": {
+      "damage_dice": "2d8",
+      "ability": "STR",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "stealth",
+      "survival"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "humanoid"
+    ],
+    "blurb": "A hulking, soft-footed goblin-kin that carries an ambush in its shoulders and a morningstar in its fist."
+  },
+  "specter": {
+    "name": "Specter",
+    "cr": 1.0,
+    "ac": 12,
+    "hp": 22,
+    "hit_dice": "5d8",
+    "stats": {
+      "STR": 1,
+      "DEX": 14,
+      "CON": 11,
+      "INT": 10,
+      "WIS": 10,
+      "CHA": 11
+    },
+    "speed": 50,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "3d6",
+      "ability": "DEX",
+      "damage_type": "necrotic",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [
+      "acid",
+      "cold",
+      "fire",
+      "lightning",
+      "thunder",
+      "bludgeoning",
+      "piercing",
+      "slashing"
+    ],
+    "immunities": [
+      "necrotic",
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "charmed",
+      "exhaustion",
+      "grappled",
+      "paralyzed",
+      "petrified",
+      "poisoned",
+      "prone",
+      "restrained",
+      "unconscious"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A wailing shred of a soul that drifts through stone walls and pulls the warmth out of the living."
+  },
+  "dire-wolf": {
+    "name": "Dire Wolf",
+    "cr": 1.0,
+    "ac": 14,
+    "hp": 37,
+    "hit_dice": "5d10+10",
+    "stats": {
+      "STR": 17,
+      "DEX": 15,
+      "CON": 15,
+      "INT": 3,
+      "WIS": 12,
+      "CHA": 7
+    },
+    "speed": 50,
+    "size": "large",
+    "creature_type": "beast",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "STR",
+      "damage_type": "piercing",
+      "ranged": false
+    },
+    "skills": [
+      "perception",
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "beast"
+    ],
+    "blurb": "The pack's dread elder, big as a pony, that hamstrings its prey before the rest close in."
+  },
+  "brown-bear": {
+    "name": "Brown Bear",
+    "cr": 1.0,
+    "ac": 11,
+    "hp": 34,
+    "hit_dice": "4d10+12",
+    "stats": {
+      "STR": 19,
+      "DEX": 10,
+      "CON": 16,
+      "INT": 2,
+      "WIS": 13,
+      "CHA": 7
+    },
+    "speed": 40,
+    "size": "large",
+    "creature_type": "beast",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "beast"
+    ],
+    "blurb": "A hill-country giant of fur and muscle, placid right up until something stands between it and its ground."
+  },
+  "ghast": {
+    "name": "Ghast",
+    "cr": 2.0,
+    "ac": 13,
+    "hp": 36,
+    "hit_dice": "8d8",
+    "stats": {
+      "STR": 16,
+      "DEX": 17,
+      "CON": 10,
+      "INT": 11,
+      "WIS": 10,
+      "CHA": 8
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "DEX",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [
+      "necrotic"
+    ],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "poisoned",
+      "charmed",
+      "exhaustion"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A grave-reek horror that commands lesser dead, its stench arriving a heartbeat before its claws do."
+  },
+  "ogre": {
+    "name": "Ogre",
+    "cr": 2.0,
+    "ac": 11,
+    "hp": 59,
+    "hit_dice": "7d10+21",
+    "stats": {
+      "STR": 19,
+      "DEX": 8,
+      "CON": 16,
+      "INT": 5,
+      "WIS": 7,
+      "CHA": 7
+    },
+    "speed": 40,
+    "size": "large",
+    "creature_type": "giant",
+    "attack": {
+      "damage_dice": "2d8",
+      "ability": "STR",
+      "damage_type": "bludgeoning",
+      "ranged": false
+    },
+    "skills": [],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "cavern",
+      "wilds",
+      "giant"
+    ],
+    "blurb": "A slab of dull appetite twice a man's height, swinging a club that turns cover into kindling."
+  },
+  "minotaur": {
+    "name": "Minotaur",
+    "cr": 3.0,
+    "ac": 14,
+    "hp": 76,
+    "hit_dice": "9d10+27",
+    "stats": {
+      "STR": 18,
+      "DEX": 11,
+      "CON": 16,
+      "INT": 6,
+      "WIS": 16,
+      "CHA": 9
+    },
+    "speed": 40,
+    "size": "large",
+    "creature_type": "monstrosity",
+    "attack": {
+      "damage_dice": "2d12",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "dungeon",
+      "cavern",
+      "monstrosity"
+    ],
+    "blurb": "A bull-headed stalker of winding halls that never loses its way — or the scent of its quarry."
+  },
+  "owlbear": {
+    "name": "Owlbear",
+    "cr": 3.0,
+    "ac": 13,
+    "hp": 59,
+    "hit_dice": "7d10+21",
+    "stats": {
+      "STR": 20,
+      "DEX": 12,
+      "CON": 17,
+      "INT": 3,
+      "WIS": 12,
+      "CHA": 7
+    },
+    "speed": 40,
+    "size": "large",
+    "creature_type": "monstrosity",
+    "attack": {
+      "damage_dice": "2d8",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "cavern",
+      "monstrosity"
+    ],
+    "blurb": "A feathered, beaked mountain of temper that charges first and never asks anything at all."
+  },
+  "wight": {
+    "name": "Wight",
+    "cr": 3.0,
+    "ac": 14,
+    "hp": 45,
+    "hit_dice": "6d8+18",
+    "stats": {
+      "STR": 15,
+      "DEX": 14,
+      "CON": 16,
+      "INT": 10,
+      "WIS": 13,
+      "CHA": 15
+    },
+    "speed": 30,
+    "size": "medium",
+    "creature_type": "undead",
+    "attack": {
+      "damage_dice": "1d8",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception",
+      "stealth"
+    ],
+    "saves": [],
+    "resistances": [
+      "necrotic",
+      "bludgeoning",
+      "piercing",
+      "slashing"
+    ],
+    "immunities": [
+      "poison"
+    ],
+    "vulnerabilities": [],
+    "condition_immunities": [
+      "exhaustion",
+      "poisoned"
+    ],
+    "tags": [
+      "dungeon",
+      "undead"
+    ],
+    "blurb": "A cold-eyed dead thing that remembers being someone, and hates the living for still being anyone."
+  },
+  "ettin": {
+    "name": "Ettin",
+    "cr": 4.0,
+    "ac": 12,
+    "hp": 85,
+    "hit_dice": "10d10+30",
+    "stats": {
+      "STR": 21,
+      "DEX": 8,
+      "CON": 17,
+      "INT": 6,
+      "WIS": 10,
+      "CHA": 8
+    },
+    "speed": 40,
+    "size": "large",
+    "creature_type": "giant",
+    "attack": {
+      "damage_dice": "2d8",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "wilds",
+      "cavern",
+      "giant"
+    ],
+    "blurb": "A two-headed hill-giant whose bickering heads agree on exactly one thing: dinner."
+  },
+  "troll": {
+    "name": "Troll",
+    "cr": 5.0,
+    "ac": 15,
+    "hp": 84,
+    "hit_dice": "8d10+40",
+    "stats": {
+      "STR": 18,
+      "DEX": 13,
+      "CON": 20,
+      "INT": 7,
+      "WIS": 9,
+      "CHA": 7
+    },
+    "speed": 30,
+    "size": "large",
+    "creature_type": "giant",
+    "attack": {
+      "damage_dice": "2d6",
+      "ability": "STR",
+      "damage_type": "slashing",
+      "ranged": false
+    },
+    "skills": [
+      "perception"
+    ],
+    "saves": [],
+    "resistances": [],
+    "immunities": [],
+    "vulnerabilities": [],
+    "condition_immunities": [],
+    "tags": [
+      "cavern",
+      "wilds",
+      "giant"
+    ],
+    "blurb": "A rangy green horror whose torn flesh knits itself back before your eyes; only fire convinces it to stay down."
+  }
+}

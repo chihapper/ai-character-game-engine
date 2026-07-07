@@ -205,8 +205,13 @@ func _update_status(snap: Dictionary) -> void:
 		item_count = (inv as Array).size()
 	var objective := str(snap.get("objective", ""))
 
-	var line1 := "HP %d/%d   %s   t=%.1f   items:%d" % [
-		hp, max_hp, mode.to_upper(), clock, item_count
+	# Level / XP / gold are MECHANICAL stats (guardrail #5 permits the character sheet — it's the
+	# mind that stays private). Shown once progression data exists on the sheet.
+	var level := _to_int(player.get("level", 1), 1)
+	var xp := _to_int(player.get("xp", 0), 0)
+	var gold := _to_int(player.get("gold", 0), 0)
+	var line1 := "HP %d/%d   L%d  xp %d   %dg   %s   t=%.1f   items:%d" % [
+		hp, max_hp, level, xp, gold, mode.to_upper(), clock, item_count
 	]
 	var lines: PackedStringArray = [line1]
 	if objective != "":
@@ -363,8 +368,8 @@ func _update_controls(snap: Dictionary) -> void:
 
 func _controls_text(mode: String) -> String:
 	if mode == "combat":
-		return "click a foe to attack · a tile to move (5ft/step)   [.] end turn   G toggle enemy HP"
-	return "click to move   T talk   X do   R recruit   F help   L look   . wait   N new game"
+		return "click a foe to attack · a tile to move (5ft/step)   H drink   [.] end turn   G enemy HP"
+	return "click to move   T talk   X do   R recruit   F help   H drink   L look   . wait   N new game"
 
 
 func _update_banner(snap: Dictionary) -> void:

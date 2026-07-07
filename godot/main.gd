@@ -39,6 +39,7 @@ func _ready() -> void:
 	_dialogue.name = "Dialogue"
 	_dialogue.set_script(load("res://dialogue.gd"))
 	add_child(_dialogue)
+	_dialogue.submitted.connect(_on_dialogue_submitted)
 
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
@@ -164,10 +165,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _dialogue != null and _dialogue.is_open():
 		return
 	# Click-to-move: left-click a tile to walk toward it (in combat: step/attack toward it).
+	# A click on an UNEXPLORED tile is rejected with feedback (the server enforces the same rule
+	# authoritatively — this check just keeps the refusal from being silent).
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _world != null:
 			var t: Vector2i = _world.tile_at_mouse()
-			Net.send_action("move_to", {"tx": t.x, "ty": t.y})
+			var key := str(t.x) + "," + str(t.y)
+			var explored = _snapshot.get("explored", [])
+			if typeof(explored) == TYPE_ARRAY and not explored.has(key):
+				if _hud != null:
+					_hud.log_line("Too dark to see there.")
+			else:
+				Net.send_action("move_to", {"tx": t.x, "ty": t.y})
 		get_viewport().set_input_as_handled()
 		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
@@ -200,6 +209,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_recruit_nearest()
 		KEY_F:
 			_help_nearest()
+		KEY_H:
+			# Quaff a healing draught (first drinkable in the pack). In combat this spends the action.
+			Net.send_action("use")
 		KEY_N:
 			# New expedition: restart THIS slice+seed fresh (resume=false overwrites the save on
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
@@ -214,6 +226,22 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # -- Interaction helpers ------------------------------------------------------
+
+## Instant feedback on submit: echo the player's line and show a thinking beat, so the
+## LLM round-trip reads as the character considering rather than a frozen UI. In COMBAT the
+## beat is suppressed — the server rejects mid-fight talk ("No time for that"), so promising
+## that someone is considering would be a lie.
+func _on_dialogue_submitted(mode: String, target_name: String, text: String) -> void:
+	if _hud == null:
+		return
+	if mode == "talk":
+		_hud.log_line('You: "%s"' % text)
+		if str(_snapshot.get("mode", "")) != "combat":
+			var who := target_name if target_name != "" else "They"
+			_hud.log_line("%s considers…" % who)
+	else:
+		_hud.log_line("You try to: %s" % text)
+
 
 func _open_talk_on_nearest() -> void:
 	var target: Dictionary = _nearest_interactable()

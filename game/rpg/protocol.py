@@ -38,7 +38,8 @@ class StartMsg(BaseModel):
 
 
 class ActionMsg(BaseModel):
-    """Apply one player intent (move / talk / recruit / do / look / wait / toggle_enemy_hp)."""
+    """Apply one player intent (move / move_to / talk / recruit / do / look / wait /
+    toggle_enemy_hp / use — the authoritative list is session.PlayerAction.kind)."""
     t: Literal["action"] = "action"
     action: PlayerAction
 

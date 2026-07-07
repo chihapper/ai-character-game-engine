@@ -44,10 +44,17 @@ class DM:
         # rather than reaching into the engine's LLM adapter internals (keeps the game/engine seam clean).
         self.client = anthropic.AsyncAnthropic(api_key=get_settings().anthropic_api_key)
 
+    def _system_blocks(self) -> list[dict]:
+        """The system prompt as a CACHED block: it is identical for every call this session, so
+        cache_control lets the API reuse the processed prefix — cuts DM time-to-first-token on
+        every narration/adjudication after the first (the engine's own adapter already does this
+        for NPC minds; the DM's separate client needs it too)."""
+        return [{"type": "text", "text": self.system, "cache_control": {"type": "ephemeral"}}]
+
     async def narrate_scene(self, scene: str) -> str:
         """Atmospheric narration of the current surroundings (no check) — used on arrival / look."""
         resp = await self.client.messages.create(
-            model=self.model, max_tokens=220, system=self.system,
+            model=self.model, max_tokens=220, system=self._system_blocks(),
             messages=[{"role": "user", "content": f"{scene}\n\nDescribe this moment to the player in "
                                                    f"2-3 sentences. No check — just set the scene."}])
         return "".join(b.text for b in resp.content if b.type == "text").strip()
@@ -70,9 +77,14 @@ class DM:
                     "required": ["name"]}})
         messages: list[dict] = [{"role": "user", "content":
             f"SCENE:\n{scene}\n\nThe player attempts: \"{action_text}\"\n\nNarrate what happens."}]
+        # Cache the stable prefix: tools + system are identical across calls, so mark the LAST
+        # tool with cache_control (tools precede system in the prompt; one marker covers both
+        # tool schemas and everything cached before it) plus the system block itself.
+        if tools:
+            tools = [*tools[:-1], {**tools[-1], "cache_control": {"type": "ephemeral"}}]
         for _ in range(3):                       # bounded tool loop
             resp = await self.client.messages.create(
-                model=self.model, max_tokens=380, system=self.system, tools=tools, messages=messages)
+                model=self.model, max_tokens=380, system=self._system_blocks(), tools=tools, messages=messages)
             if resp.stop_reason != "tool_use":
                 return "".join(b.text for b in resp.content if b.type == "text").strip() or "..."
             messages.append({"role": "assistant", "content": resp.content})

@@ -1,0 +1,84 @@
+{
+  "_comment": "Sprite mapping over Kenney Tiny Dungeon (CC0 — see tiny-dungeon/License.txt). Tile indices are row-major on tilemap_packed.png (12 columns, 16px tiles). Renderers resolve an entity's sprite by: player -> by_class (parsed from creature_type 'humanoid (fighter)'); NPCs/followers -> by_id (engine slug); enemies -> by_name (lowercased display name). Anything unmapped falls back to the classic colored-circle token, so new bestiary creatures never break rendering.",
+  "atlas": "res://assets/tiny-dungeon/Tilemap/tilemap_packed.png",
+  "tile_size": 16,
+  "columns": 12,
+  "by_class": {
+    "fighter": 97,
+    "rogue": 112,
+    "cleric": 85,
+    "wizard": 84
+  },
+  "by_id": {
+    "player": 97,
+    "rpg-vael": 86,
+    "rpg-lira": 99,
+    "rpg-torvald": 87,
+    "rpg-senna": 100
+  },
+  "by_name": {
+    "goblin": 108,
+    "cinder-husk": 110,
+    "vault-drowned": 121,
+    "orc": 111,
+    "hobgoblin": 111,
+    "bugbear": 111,
+    "gnoll": 111,
+    "lizardfolk": 112,
+    "bandit": 112,
+    "cultist": 84,
+    "kobold": 108,
+    "zombie": 109,
+    "ghoul": 109,
+    "ghast": 109,
+    "ogre": 109,
+    "ettin": 109,
+    "troll": 109,
+    "skeleton": 121,
+    "shadow": 121,
+    "specter": 121,
+    "wight": 121,
+    "ghost": 121,
+    "giant rat": 123,
+    "wolf": 123,
+    "worg": 123,
+    "dire wolf": 123,
+    "giant spider": 122,
+    "bat": 120,
+    "brown bear": 111,
+    "minotaur": 111,
+    "owlbear": 111,
+    "mimic": 92
+  },
+  "props": {
+    "door": 45,
+    "chest": 89,
+    "potion_red": 115,
+    "potion_green": 114,
+    "potion_blue": 116,
+    "torch": 127
+  },
+  "terrain": {
+    "vault": {
+      "floor": [57, 58, 59],
+      "wall": 40,
+      "stairs_down": 65,
+      "stairs_up": 64,
+      "tint": "#aebfd4"
+    },
+    "emberdeep": {
+      "floor": [0, 1, 12, 13],
+      "wall": 4,
+      "stairs_down": 65,
+      "stairs_up": 64,
+      "tint": "#e0a878"
+    },
+    "default": {
+      "floor": [48, 49, 50],
+      "wall": 40,
+      "stairs_down": 65,
+      "stairs_up": 64,
+      "tint": "#ffffff"
+    }
+  }
+}
