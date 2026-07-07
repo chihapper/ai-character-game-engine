@@ -61,10 +61,15 @@ Why this premise fits the engine:
 - The wildcard baker develops a real arc without authored pressure.
 - Two playthroughs with opposite social styles produce visibly different Accords.
 
-## Open questions for the owner
+## Locked decisions (owner, 2026-07-09)
 
-1. **Tone**: grounded-grim (current vault mood) vs warmer frontier-town? Affects all casting.
-2. **Session length target**: 30–60 min acts OK?
-3. **Player character**: keep the blank knight, or give them a stated reason to be in Graywater
-   (a letter, a debt)? Recommendation: a light hook — total blankness wastes the DM.
-4. Names/factions above are placeholders — react freely.
+1. **Tone: warm town, grim vault.** Graywater is alive and likable — warmth, betrayal, and
+   change hit harder against it — while expeditions keep the established oppressive vault
+   mood. Casting, palettes, and ambience contrast per act.
+2. **Acts: 30–45 minutes each.** Three tight acts, finishable in an evening apiece.
+3. **PC: light hook.** One sentence the player can't contradict — they carry a sealed letter
+   addressed to someone in Graywater (recipient chosen at casting; discovering WHY is Act 1
+   fuel). Everything else stays the player's to roleplay.
+4. **Combat: social-forward.** Conversations and faction pressure are the game; each vault
+   expedition carries ~1 fight, and several fights can be avoided or triggered through
+   relationships. Names/factions remain placeholders — owner reacts as content lands.
