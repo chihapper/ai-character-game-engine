@@ -337,7 +337,10 @@ class RpgGame(GameSession):
             gain = min(c.max_hp - c.hp, max(1, roll))
             c.hp += gain
             healed.append(f"{c.name} +{gain}")
-        self._emit(NarrationEvent(text=f"{s.flavor.rest_text} ({', '.join(healed)} HP)"))
+        # sfx is a presentation HINT (renderers may honor or ignore): the 3D view sits the
+        # party down around the moment; there is deliberately no audio file for it.
+        self._emit(NarrationEvent(text=f"{s.flavor.rest_text} ({', '.join(healed)} HP)",
+                                  data={"sfx": "rest"}))
         s.campaign_log.add(s.clock.value, "The party rested.", tags=["rest"])
         # Noise: resting can draw a nearby pack that hasn't been dealt with yet (seeded).
         if self.rules.rng.random() < 0.35:

@@ -143,8 +143,9 @@ func _stage_combat_demo(shot: String) -> void:
 	var snap3: Dictionary = snap2.duplicate(true)
 	snap3["entities"] = [snap2["entities"][0], snap2["entities"][2]]
 	_world.render(snap3)
+	_world.combat_fx({"sfx": "victory"})         # the party cheers over the fallen goblin
 	await get_tree().create_timer(1.0).timeout
-	_save_screenshot(base + "_4.png")            # goblin fallen, not vanished
+	_save_screenshot(base + "_4.png")            # goblin fallen + party mid-cheer
 	await get_tree().create_timer(1.6).timeout
 	_save_screenshot(base + "_5.png")            # corpse sunk away; survivors idle
 	_save_screenshot(shot)
@@ -226,13 +227,13 @@ func _on_game_event(ev: Dictionary) -> void:
 	# and queues below. (Dialogue-attached audio kept as a fallback path.)
 	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):
 		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
-	# Semantic sound hints (combat beats, loot, doors...) — the server tags, we play.
+	# Semantic sound hints (combat beats, loot, doors, drinking, resting...) — the server tags,
+	# we play. The SAME hints drive visible acting in the world (lunges, dodges, cheers, the
+	# party sitting down to rest): every sfx-tagged event is forwarded; unknown keys no-op.
 	var data = ev.get("data", {})
 	if typeof(data) == TYPE_DICTIONARY and data.has("sfx"):
 		_play_sfx(str(data["sfx"]))
-		# Visible combat beats (lunge / flash / damage numbers / death fade / crit shake) —
-		# the world stages them from the same event data, staggered so a round reads as blows.
-		if t == "combat" and _world != null:
+		if _world != null:
 			_world.combat_fx(data)
 
 

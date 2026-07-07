@@ -887,8 +887,8 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 	var root := Node3D.new()
 	_ent_root.add_child(root)
 	root.position = _being_pos(at.x, at.y)
-	var ent := {"node": root, "ap": null, "sprite": false, "state": "idle",
-				"down": bool(e.get("down", false)), "label": null, "bar": null}
+	var ent := {"node": root, "ap": null, "sprite": false, "state": "idle", "kind": kind,
+				"caster": false, "down": bool(e.get("down", false)), "label": null, "bar": null}
 	var loaded := false
 	# The locked Door entity (the slice's objective) is ARCHITECTURE, not a creature: a BARRED
 	# gate segment (reads "locked" — the open doorway hole read as a passage), seated like a wall
@@ -922,9 +922,14 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 				# cinder-husk: the skeleton smolders from inside (translucent ember overlay)
 				for m in body.find_children("*", "MeshInstance3D", true, false):
 					(m as MeshInstance3D).material_overlay = _husk_overlay
+			ent["caster"] = model_path.contains("Mage")   # spellcasters swing spells, not swords
 			var aps := body.find_children("*", "AnimationPlayer", true)
 			if not aps.is_empty():
 				ent["ap"] = aps[0]
+				# KayKit-rigged characters get the shared 161-clip library on top of their
+				# embedded set (sneak, lockpick, crouch, bow-work... — the acting vocabulary).
+				if model_path.begins_with(ADVENTURERS) or model_path.begins_with(SKELETONS):
+					(ent["ap"] as AnimationPlayer).add_animation_library("kk", _kaykit_library())
 				_play_anim(ent, ["Idle"], true)
 			loaded = true
 	if not loaded:
@@ -966,6 +971,45 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 	root.add_child(lbl)
 	ent["label"] = lbl
 	_ents[id] = ent
+
+
+## The KayKit Character Animations 1.1 library (assets/kaykit/animations, CC0): 161 clips —
+## Sneaking/Crouching/Lockpicking/bow-work and more that the characters' embedded sets lack.
+## Authored against a scene rooted "Rig_Medium"; our character GLBs root the same skeleton at
+## "Rig", so each clip is duplicated with its track paths rewritten before joining the shared
+## AnimationLibrary. Built once, added to every KayKit-rigged AnimationPlayer as "kk/<name>"
+## (the exact->prefix->contains matcher finds those transparently).
+var _kk_lib_cache: AnimationLibrary = null
+
+const KK_ANIM_DIR := "res://assets/kaykit/animations/"
+const KK_ANIM_FILES := ["Rig_Medium_General.glb", "Rig_Medium_Tools.glb",
+	"Rig_Medium_MovementBasic.glb", "Rig_Medium_MovementAdvanced.glb",
+	"Rig_Medium_CombatMelee.glb", "Rig_Medium_CombatRanged.glb",
+	"Rig_Medium_Simulation.glb", "Rig_Medium_Special.glb"]
+
+func _kaykit_library() -> AnimationLibrary:
+	if _kk_lib_cache != null:
+		return _kk_lib_cache
+	_kk_lib_cache = AnimationLibrary.new()
+	for f in KK_ANIM_FILES:
+		var scene = load(KK_ANIM_DIR + f) if ResourceLoader.exists(KK_ANIM_DIR + f) else null
+		if not (scene is PackedScene):
+			continue
+		var inst: Node = (scene as PackedScene).instantiate()
+		var aps := inst.find_children("*", "AnimationPlayer", true, false)
+		if not aps.is_empty():
+			var ap := aps[0] as AnimationPlayer
+			for aname in ap.get_animation_list():
+				if str(aname) == "T-Pose" or _kk_lib_cache.has_animation(aname):
+					continue
+				var anim: Animation = ap.get_animation(aname).duplicate()
+				for t in anim.get_track_count():
+					var path := str(anim.track_get_path(t))
+					if path.begins_with("Rig_Medium/"):
+						anim.track_set_path(t, NodePath("Rig/" + path.trim_prefix("Rig_Medium/")))
+				_kk_lib_cache.add_animation(aname, anim)
+		inst.free()
+	return _kk_lib_cache
 
 
 ## World-space bounding box of an instantiated body, expressed in the body's own local frame —
@@ -1064,6 +1108,9 @@ func combat_fx(data: Dictionary) -> void:
 				if sfx == "miss":
 					_fx.append({"kind": "float", "pos": Vector2(_last_pos[target]), "text": "miss",
 						"color": Color(0.7, 0.7, 0.75), "delay": _fx_stagger + 0.18, "t": 0.0, "dur": 0.9})
+					# a miss isn't nothing happening — the target visibly DODGES the blow
+					_fx.append({"kind": "react", "id": target, "anims": ["Dodge_Backward", "Dodge_Left", "Dodge"],
+						"delay": _fx_stagger + 0.10, "t": 0.0, "dur": 0.55})
 				else:
 					var from: Vector2 = Vector2(_last_pos[attacker]) if _last_pos.has(attacker) \
 						else Vector2(_last_pos[target]) + Vector2(0, 1)
@@ -1087,6 +1134,42 @@ func combat_fx(data: Dictionary) -> void:
 			if _last_pos.has(pid):
 				_fx.append({"kind": "float", "pos": Vector2(_last_pos[pid]), "text": "LEVEL UP!",
 					"color": Color("f5d020"), "delay": 0.2, "t": 0.0, "dur": 1.5})
+				_fx.append({"kind": "react", "id": pid, "anims": ["Cheer"],
+					"delay": 0.2, "t": 0.0, "dur": 1.2})
+		"victory":
+			# the party celebrates — staggered so it reads as people, not a chorus line
+			var vi := 0
+			for id in _ents:
+				if str(_ents[id]["kind"]) in ["player", "follower"]:
+					_fx.append({"kind": "react", "id": id, "anims": ["Cheer"],
+						"delay": 0.25 + 0.18 * vi, "t": 0.0, "dur": 1.3})
+					vi += 1
+		"drink":
+			_fx.append({"kind": "react", "id": "player", "anims": ["Use_Item", "Interact"],
+				"delay": 0.0, "t": 0.0, "dur": 1.0})
+		"door":
+			_fx.append({"kind": "react", "id": "player", "anims": ["Interact", "Use_Item"],
+				"delay": 0.0, "t": 0.0, "dur": 0.9})
+		"loot":
+			_fx.append({"kind": "react", "id": "player", "anims": ["PickUp", "Interact"],
+				"delay": 0.3, "t": 0.0, "dur": 1.0})
+		"rest":
+			# the whole party settles at the fire: sit down, stay seated, stand back up
+			var ri := 0
+			for id in _ents:
+				if str(_ents[id]["kind"]) in ["player", "follower"]:
+					_fx.append({"kind": "rest", "id": id, "seated": false,
+						"delay": 0.15 * ri, "t": 0.0, "dur": 3.6})
+					ri += 1
+		"alarm":
+			# combat interrupts any camp: cancel rest beats and get everyone on their feet
+			for i in range(_fx.size() - 1, -1, -1):
+				if str(_fx[i].get("kind", "")) == "rest":
+					var rid := str(_fx[i].get("id", ""))
+					if _ents.has(rid) and str(_ents[rid]["state"]) == "rest":
+						_ents[rid]["state"] = "idle"
+						_play_anim(_ents[rid], ["Idle"], true)
+					_fx.remove_at(i)
 
 
 func _spawn_float(tile_pos: Vector2, text: String, color: Color) -> void:
@@ -1167,12 +1250,22 @@ func _process(delta: float) -> void:
 						var dirv: Vector2 = (Vector2(f["toward"]) - Vector2(f["at"]))
 						_facing[fid] = atan2(dirv.x, dirv.y)   # eased turn, same path as walking
 						ent["state"] = "attack"
-						_play_anim(ent, ["1H_Melee_Attack_Slice", "2H_Melee_Attack", "Attack", "Unarmed_Melee_Attack"])
+						_play_anim(ent, ["Spellcast_Shoot", "Spellcasting", "Attack"] if bool(ent.get("caster", false))
+							else ["1H_Melee_Attack_Slice", "2H_Melee_Attack", "Attack", "Unarmed_Melee_Attack"])
 				"hurt":
 					if _ents.has(fid):
 						var ent2: Dictionary = _ents[fid]
 						_play_anim(ent2, ["Hit_A", "Hit"])
 						ent2["state"] = "hurt"
+				"react":
+					# a one-shot acting beat (dodge, cheer, drink, pick up, interact...)
+					if _ents.has(fid) and str(_ents[fid]["state"]) in ["idle", "walk"]:
+						_play_anim(_ents[fid], f.get("anims", ["Interact"]))
+						_ents[fid]["state"] = "react"
+				"rest":
+					if _ents.has(fid) and str(_ents[fid]["state"]) in ["idle", "walk"]:
+						_play_anim(_ents[fid], ["Sit_Floor_Down", "Sit_Floor_Idle"])
+						_ents[fid]["state"] = "rest"
 				"death":
 					if _ents.has(fid):
 						var ent3: Dictionary = _ents[fid]
@@ -1200,15 +1293,25 @@ func _process(delta: float) -> void:
 				+ Vector3(hdir.x, 0.0, hdir.y) * hamp
 		elif kind == "corpse" and _ents.has(fid):
 			_ents[fid]["node"].position.y -= delta * 1.4   # the fallen sink away
+		elif kind == "rest" and _ents.has(fid) and str(_ents[fid]["state"]) == "rest" \
+				and not bool(f.get("seated", false)) and float(f["t"]) >= 1.0:
+			f["seated"] = true                             # settled: hold the seated idle
+			_play_anim(_ents[fid], ["Sit_Floor_Idle"], true)
 		if float(f["t"]) >= float(f["dur"]):
-			if kind == "attack" or kind == "hurt":
+			if kind == "attack" or kind == "hurt" or kind == "react":
 				if _ents.has(fid):
 					if _last_pos.has(fid) and not _anim.has(fid):
 						var rp: Vector2 = _last_pos[fid]
 						_ents[fid]["node"].position = _being_pos(rp.x, rp.y)
-					if str(_ents[fid]["state"]) != "dead":
+					if not (str(_ents[fid]["state"]) in ["dead", "rest"]):
 						_ents[fid]["state"] = "idle"
 						_play_anim(_ents[fid], ["Idle"], true)
+			elif kind == "rest":
+				# rested: chain into a stand-up beat, whose own completion returns to Idle
+				if _ents.has(fid) and str(_ents[fid]["state"]) == "rest":
+					_ents[fid]["state"] = "idle"
+					_fx.append({"kind": "react", "id": fid, "anims": ["Sit_Floor_StandUp"],
+						"delay": 0.0, "t": 0.0, "dur": 0.8})
 			elif kind == "death" and bool(f.get("fatal", false)):
 				# linger a beat on the fallen pose, then sink and free the node
 				_fx.append({"kind": "corpse", "id": fid, "delay": 0.5, "t": 0.0, "dur": 0.9})
