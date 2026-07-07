@@ -37,17 +37,32 @@ var _turn_id := ""
 # -- scene plumbing --
 var _camera: Camera3D
 var _torch: OmniLight3D
+var _sun: DirectionalLight3D
 var _env_node: WorldEnvironment
 var _map_root: Node3D                          # static dungeon pieces (built incrementally)
 var _ent_root: Node3D
 var _fx_root: Node3D
 var _shroud: MultiMeshInstance3D               # explored-but-unseen dim quads
+var _zoom := 1.0                               # camera dolly factor (mouse wheel), 0.65..1.5
+var _slice_name := "vault"
+var _decor := "wet"                            # per-slice floor decor: "wet" | "ember" | ""
+var _puddle_mat: StandardMaterial3D = null     # vault: still black water catching the torch
+var _ember_mat: StandardMaterial3D = null      # emberdeep: glowing cracks in the stone
+var _husk_overlay: StandardMaterial3D = null   # cinder-husk: ember glow over charred bone
 
 # -- meshes / scenes (lazily loaded) --
-var _floor_scenes: Array = []
+var _floor_sets := {}                          # "wet"/"ember" -> Array[PackedScene]
+var _floor_scenes: Array = []                  # the ACTIVE set (selected by palette)
 var _wall_scene: PackedScene = null
+var _wall_variants: Array = []                 # cracked/broken — monotony breakers
 var _door_scene: PackedScene = null
+var _gate_scene: PackedScene = null            # barred wall segment — the LOCKED door look
 var _stairs_scene: PackedScene = null
+var _torch_scene: PackedScene = null           # wall-mounted torch (with its own small light)
+var _banner_scenes := {}                       # "wet"/"ember" -> PackedScene
+var _prop_sets := {}                           # "wet"/"ember" -> Array[PackedScene]
+var _torch_lights := 0                         # per-map light budget (unshadowed omnis are cheap,
+                                               # but Forward+ still deserves a ceiling)
 var _placed := {}                              # "x,y" -> true (cell already built)
 var _map_sig := ""                             # rebuild guard (N-key restart / new slice)
 var _wall_len := 4.0                           # wall piece native length/thickness (measured at load)
@@ -77,6 +92,7 @@ const KAYKIT := "res://assets/kaykit/"
 const DUNGEON := KAYKIT + "KayKit-Dungeon-Remastered-1.0-main/addons/kaykit_dungeon_remastered/Assets/gltf/"
 const ADVENTURERS := KAYKIT + "KayKit-Character-Pack-Adventures-1.0-main/addons/kaykit_character_pack_adventures/Characters/gltf/"
 const SKELETONS := KAYKIT + "KayKit-Character-Pack-Skeletons-1.0-main/addons/kaykit_character_pack_skeletons/Characters/gltf/"
+const QUAT := "res://assets/quaternius/"
 
 ## Which GLB carries each cast member / class (Stage-1 approximations; polish later).
 var CAST_MODELS := {
@@ -91,16 +107,28 @@ var CLASS_MODELS := {
 	"cleric": ADVENTURERS + "Knight.glb",
 	"wizard": ADVENTURERS + "Mage.glb",
 }
+## Enemy specs keyed by LOWERCASED bestiary display name. `h` > 0 = normalize the model to that
+## height in world units (Quaternius FBX exports carry arbitrary armature scale — measure, don't
+## trust); h = 0 = KayKit grid scaling. `ember` = charred-glow overlay (the cinder-husk is a
+## burnt corpse: a KayKit skeleton smoldering from inside reads exactly right).
 var ENEMY_MODELS := {
-	"skeleton": SKELETONS + "Skeleton_Warrior.glb",
-	"zombie": SKELETONS + "Skeleton_Minion.glb",
-	"shadow": SKELETONS + "Skeleton_Rogue.glb",
-	"specter": SKELETONS + "Skeleton_Mage.glb",
-	"wight": SKELETONS + "Skeleton_Warrior.glb",
-	"ghost": SKELETONS + "Skeleton_Mage.glb",
-	"ghast": SKELETONS + "Skeleton_Minion.glb",
-	"ghoul": SKELETONS + "Skeleton_Minion.glb",
-	"vault-drowned": SKELETONS + "Skeleton_Minion.glb",
+	"goblin": {"path": QUAT + "Goblin.glb", "h": 1.35},
+	"cinder-husk": {"path": SKELETONS + "Skeleton_Minion.glb", "h": 0.0, "ember": true},
+	"vault-drowned": {"path": SKELETONS + "Skeleton_Minion.glb", "h": 0.0},
+	"skeleton": {"path": SKELETONS + "Skeleton_Warrior.glb", "h": 0.0},
+	"zombie": {"path": SKELETONS + "Skeleton_Minion.glb", "h": 0.0},
+	"shadow": {"path": SKELETONS + "Skeleton_Rogue.glb", "h": 0.0},
+	"specter": {"path": SKELETONS + "Skeleton_Mage.glb", "h": 0.0},
+	"wight": {"path": SKELETONS + "Skeleton_Warrior.glb", "h": 0.0},
+	"ghast": {"path": SKELETONS + "Skeleton_Minion.glb", "h": 0.0},
+	"ghoul": {"path": SKELETONS + "Skeleton_Minion.glb", "h": 0.0},
+	"wolf": {"path": QUAT + "Wolf.glb", "h": 1.1},
+	"dire wolf": {"path": QUAT + "Wolf.glb", "h": 1.55},
+	"worg": {"path": QUAT + "Wolf.glb", "h": 1.4},
+	"giant spider": {"path": QUAT + "Spider.glb", "h": 0.95},
+	"giant rat": {"path": QUAT + "Rat.glb", "h": 0.7},
+	"bandit": {"path": ADVENTURERS + "Rogue_Hooded.glb", "h": 0.0},
+	"cultist": {"path": ADVENTURERS + "Rogue_Hooded.glb", "h": 0.0},
 }
 
 
@@ -159,12 +187,33 @@ func _build_scene() -> void:
 	_env_node.environment = env
 	add_child(_env_node)
 
-	var sun := DirectionalLight3D.new()
-	sun.light_color = Color(0.55, 0.6, 0.8)
-	sun.light_energy = 0.12                      # a whisper of cool fill; the torch owns the scene
-	sun.rotation_degrees = Vector3(-55.0, 35.0, 0.0)
-	sun.shadow_enabled = true
-	add_child(sun)
+	_sun = DirectionalLight3D.new()
+	_sun.light_color = Color(0.55, 0.6, 0.8)
+	_sun.light_energy = 0.12                     # a whisper of cool fill; the torch owns the scene
+	_sun.rotation_degrees = Vector3(-55.0, 35.0, 0.0)
+	_sun.shadow_enabled = true
+	add_child(_sun)
+
+	# Floor decor materials (per-slice): the vault's fiction is shin-deep black water — flat
+	# metallic puddles catch the torch as broken specular patches; emberdeep gets glowing cracks.
+	_puddle_mat = StandardMaterial3D.new()
+	_puddle_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_puddle_mat.albedo_color = Color(0.02, 0.04, 0.06, 0.55)
+	_puddle_mat.metallic = 1.0
+	_puddle_mat.roughness = 0.12
+	_ember_mat = StandardMaterial3D.new()
+	_ember_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_ember_mat.albedo_color = Color(0.35, 0.08, 0.01, 0.6)   # smolder, not a glowing plate
+	_ember_mat.emission_enabled = true
+	_ember_mat.emission = Color(0.9, 0.25, 0.04)
+	_ember_mat.emission_energy_multiplier = 0.7
+	_ember_mat.roughness = 0.9
+	_husk_overlay = StandardMaterial3D.new()   # cinder-husk: charred body, lit from within
+	_husk_overlay.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_husk_overlay.albedo_color = Color(0.25, 0.05, 0.0, 0.5)
+	_husk_overlay.emission_enabled = true
+	_husk_overlay.emission = Color(1.0, 0.30, 0.05)
+	_husk_overlay.emission_energy_multiplier = 0.9
 
 	_torch = OmniLight3D.new()                 # the player's torch — follows them, flickers
 	_torch.light_color = Color(1.0, 0.72, 0.45)
@@ -190,20 +239,44 @@ func _build_scene() -> void:
 
 
 func _load_dungeon_pieces() -> void:
-	for n in ["floor_tile_small.gltf.glb", "floor_tile_small_broken_A.gltf.glb",
-			"floor_tile_large_rocks.gltf.glb"]:
-		var s = load(DUNGEON + n)
-		if s is PackedScene:
-			_floor_scenes.append(s)
+	# Floors per slice mood: worked stone (with broken/mossy variants) for the vault,
+	# scorched dirt for the ember caverns.
+	_floor_sets["wet"] = _load_set(["floor_tile_small.gltf.glb", "floor_tile_small_broken_A.gltf.glb",
+			"floor_tile_large_rocks.gltf.glb", "floor_tile_small_broken_B.gltf.glb",
+			"floor_tile_small_weeds_A.gltf.glb"])
+	_floor_sets["ember"] = _load_set(["floor_dirt_small_A.gltf.glb", "floor_dirt_small_B.gltf.glb",
+			"floor_dirt_small_C.gltf.glb", "floor_dirt_small_D.gltf.glb"])
+	_floor_scenes = _floor_sets["wet"]
 	var w = load(DUNGEON + "wall.gltf.glb")
 	if w is PackedScene:
 		_wall_scene = w
+	_wall_variants = _load_set(["wall_cracked.gltf.glb", "wall_broken.gltf.glb"])
 	var d = load(DUNGEON + "wall_doorway.glb")
 	if d is PackedScene:
 		_door_scene = d
+	var g = load(DUNGEON + "wall_gated.gltf.glb")
+	if g is PackedScene:
+		_gate_scene = g
 	var st = load(DUNGEON + "stairs.gltf.glb")
 	if st is PackedScene:
 		_stairs_scene = st
+	var tm = load(DUNGEON + "torch_mounted.gltf.glb")
+	if tm is PackedScene:
+		_torch_scene = tm
+	var bw = load(DUNGEON + "banner_white.gltf.glb")
+	if bw is PackedScene:
+		_banner_scenes["wet"] = bw
+	var br = load(DUNGEON + "banner_red.gltf.glb")
+	if br is PackedScene:
+		_banner_scenes["ember"] = br
+	# Scatter props: waterlogged storage + rubble + spilled treasure for the vault; kegs,
+	# charred barricades and candle clusters for the ember caverns.
+	_prop_sets["wet"] = _load_set(["rubble_half.gltf.glb", "rubble_large.gltf.glb",
+			"barrel_small.gltf.glb", "box_small.gltf.glb", "trunk_small_A.gltf.glb",
+			"candle_melted.gltf.glb", "bottle_C_green.gltf.glb", "coin_stack_small.gltf.glb"])
+	_prop_sets["ember"] = _load_set(["keg.gltf.glb", "barrier_half.gltf.glb",
+			"candle_triple.gltf.glb", "rubble_half.gltf.glb", "box_small_decorated.gltf.glb",
+			"coin_stack_medium.gltf.glb"])
 	# Measure the kit's native sizes from the meshes themselves so grid mapping is exact:
 	# the floor gives the tile size AND the true walk-surface height; the wall gives its
 	# length/thickness (needed to seat segments flush with the corridor edge).
@@ -224,6 +297,15 @@ func _load_dungeon_pieces() -> void:
 			_stairs_size = sab.size
 
 
+func _load_set(names: Array) -> Array:
+	var out: Array = []
+	for n in names:
+		var s = load(DUNGEON + str(n))
+		if s is PackedScene:
+			out.append(s)
+	return out
+
+
 func _probe_aabb(scene: PackedScene) -> AABB:
 	var probe: Node3D = scene.instantiate()
 	add_child(probe)
@@ -235,8 +317,12 @@ func _probe_aabb(scene: PackedScene) -> AABB:
 	return aabb
 
 
-func set_slice(_slice_name: String) -> void:
+func set_slice(slice_name: String) -> void:
 	# A fresh world: drop every built cell + entity + effect (ids are re-used at new positions).
+	# ("" = same slice, new map — render()'s signature guard — so the palette carries over.)
+	if slice_name != "":
+		_slice_name = slice_name
+		_apply_palette(slice_name)
 	_placed.clear()
 	_map_sig = ""
 	for c in _map_root.get_children():
@@ -252,6 +338,37 @@ func set_slice(_slice_name: String) -> void:
 	_fx.clear()
 	_fx_stagger = 0.0
 	_shake = 0.0
+	_torch_lights = 0
+
+
+## Per-slice mood: the SAME dungeon geometry reads as a different place through light alone.
+## The vault is cold drowned stone under a warm torch; emberdeep is heat — ember ambience, a
+## furnace-red fill, glowing floor cracks. Slices the client doesn't know default to the vault look.
+func _apply_palette(slice_name: String) -> void:
+	var env: Environment = _env_node.environment
+	match slice_name:
+		"emberdeep":
+			env.background_color = Color(0.045, 0.015, 0.008)
+			env.ambient_light_color = Color(0.55, 0.34, 0.22)
+			env.ambient_light_energy = 0.5
+			env.fog_light_color = Color(0.10, 0.03, 0.01)
+			_torch.light_color = Color(1.0, 0.55, 0.25)
+			_sun.light_color = Color(0.9, 0.45, 0.25)
+			_sun.light_energy = 0.10
+			_decor = "ember"
+			if _floor_sets.has("ember"):
+				_floor_scenes = _floor_sets["ember"]
+		_:
+			env.background_color = Color(0.02, 0.02, 0.03)
+			env.ambient_light_color = Color(0.35, 0.38, 0.48)
+			env.ambient_light_energy = 0.55
+			env.fog_light_color = Color(0.05, 0.05, 0.08)
+			_torch.light_color = Color(1.0, 0.72, 0.45)
+			_sun.light_color = Color(0.55, 0.6, 0.8)
+			_sun.light_energy = 0.12
+			_decor = "wet"
+			if _floor_sets.has("wet"):
+				_floor_scenes = _floor_sets["wet"]
 
 
 func _world_pos(tx: float, ty: float) -> Vector3:
@@ -266,6 +383,31 @@ func _being_pos(tx: float, ty: float) -> Vector3:
 		var lift := clampf(1.4 - 1.4 * Vector2(tx, ty).distance_to(c), 0.0, 1.0)
 		base.y += _tile * 0.30 * lift
 	return base
+
+
+## Click feedback: a cyan ring blooms on the tile you picked, so the walk that follows visibly
+## belongs to YOUR order (main.gd calls this alongside sending move_to).
+func mark_destination(t: Vector2i) -> void:
+	var ring := MeshInstance3D.new()
+	var tor := TorusMesh.new()
+	tor.inner_radius = _tile * 0.28
+	tor.outer_radius = _tile * 0.36
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.37, 0.82, 0.88, 0.9)
+	ring.mesh = tor
+	ring.material_override = m
+	ring.scale = Vector3(1.0, 0.10, 1.0)
+	ring.position = _world_pos(float(t.x), float(t.y)) + Vector3(0.0, _floor_top + 0.03, 0.0)
+	ring.set_meta("life", 0.6)
+	ring.set_meta("ring", true)
+	_fx_root.add_child(ring)
+
+
+## Mouse-wheel dolly: same view angle, closer or further (clamped so the room stays readable).
+func zoom_step(d: float) -> void:
+	_zoom = clampf(_zoom + d, 0.65, 1.5)
 
 
 func tile_at_mouse() -> Vector2i:
@@ -329,13 +471,70 @@ func _build_explored(tiles: Array) -> void:
 func _place_floor(x: int, y: int) -> void:
 	if _floor_scenes.is_empty():
 		return
+	# Mostly the plain tile; every few cells one of the character variants (broken, mossy, rocky).
 	var pick: int = (x * 7 + y * 13) % 10
 	var scene: PackedScene = _floor_scenes[0]
-	if pick == 7 and _floor_scenes.size() > 1:
-		scene = _floor_scenes[1]
-	elif pick == 3 and _floor_scenes.size() > 2:
-		scene = _floor_scenes[2]
+	if pick >= 7 and _floor_scenes.size() > 1:
+		scene = _floor_scenes[(pick + x + y) % (_floor_scenes.size() - 1) + 1]
 	_place_scene(scene, x, y, 0.0)
+	_maybe_decor(x, y)
+
+
+## Deterministic floor decor (cell-hash keyed): still black puddles (vault) or glowing cracks
+## (emberdeep) on ~1 in 7 open cells, plus scatter PROPS (rubble, barrels, spilled treasure) on
+## wall-adjacent cells — nudged toward the wall so walkways stay visually clear. Pure dressing.
+func _maybe_decor(x: int, y: int) -> void:
+	if _decor == "":
+		return
+	_maybe_prop(x, y)
+	var h := (x * 131 + y * 197) % 100
+	if h >= 14:
+		return
+	var q := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	# puddles spread wide; ember cracks stay narrow slivers
+	var base_w := 0.40 if _decor == "wet" else 0.22
+	var side := _tile * (base_w + 0.05 * float(h % 6))
+	pm.size = Vector2(side, side * (0.65 + 0.08 * float(h % 4)))
+	q.mesh = pm
+	q.material_override = _puddle_mat if _decor == "wet" else _ember_mat
+	q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	q.position = _world_pos(float(x), float(y)) \
+		+ Vector3(0.18 * float(h % 3 - 1), _floor_top + 0.012, 0.14 * float(h % 5 - 2))
+	q.rotation.y = float(h) * 0.6
+	_map_root.add_child(q)
+
+
+## A prop against the wall on ~1 in 6 wall-adjacent floor cells (deterministic). The offset toward
+## the wall keeps the cell's center — where beings actually stand — visually free.
+func _maybe_prop(x: int, y: int) -> void:
+	var props: Array = _prop_sets.get(_decor, [])
+	if props.is_empty():
+		return
+	var h := (x * 89 + y * 271) % 100
+	if h >= 16:
+		return
+	var tiles = _snap.get("tiles", [])
+	if typeof(tiles) != TYPE_ARRAY:
+		return
+	var wall_dir := Vector2i.ZERO
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
+		var ny: int = y + d.y
+		if ny < 0 or ny >= tiles.size():
+			continue
+		var row: String = str(tiles[ny])
+		var nx: int = x + d.x
+		if nx >= 0 and nx < row.length() and row[nx] == "#":
+			wall_dir = d
+			break
+	if wall_dir == Vector2i.ZERO:
+		return
+	var n: Node3D = (props[(h + x) % props.size()] as PackedScene).instantiate()
+	_map_root.add_child(n)
+	n.position = _world_pos(float(x), float(y)) \
+		+ Vector3(float(wall_dir.x), 0.0, float(wall_dir.y)) * (_tile * 0.30) \
+		+ Vector3(0.0, _floor_top, 0.0)
+	n.rotation.y = float(h) * 1.3
 
 
 func _place_scene(scene: PackedScene, x: int, y: int, yaw: float) -> Node3D:
@@ -361,7 +560,12 @@ func _place_walls(tiles: Array, x: int, y: int) -> void:
 		if nx < 0 or nx >= row.length():
 			continue
 		if row[nx] in [".", "+", ">", "<"] and _exp.has(str(nx) + "," + str(ny)):
-			var n: Node3D = _wall_scene.instantiate()
+			# Variety: ~1 in 6 segments is a cracked/broken variant (deterministic per edge).
+			var wh := (x * 31 + y * 57 + int(d[0]) * 3 + int(d[1]) * 7) % 12
+			var wall_scene := _wall_scene
+			if wh < 2 and _wall_variants.size() > wh:
+				wall_scene = _wall_variants[wh]
+			var n: Node3D = wall_scene.instantiate()
 			_map_root.add_child(n)
 			# Seat the segment so its INNER FACE lies exactly on the shared edge — the mesh is
 			# thick (half a tile) and Z-symmetric, so centering it on the edge would eat a
@@ -375,6 +579,35 @@ func _place_walls(tiles: Array, x: int, y: int) -> void:
 			n.rotation.y = float(d[2])
 			n.scale.x = _tile / _wall_len
 			n.scale.y = 0.55
+			_maybe_wall_dressing(x, y, dirv, float(d[2]), wh)
+
+
+## Torches and banners live on the corridor-facing side of wall segments (deterministic, sparse).
+## Each torch carries its OWN small unshadowed light — the rooms stop depending on the player's
+## torch alone, and light pools give distant corridors somewhere to lead the eye. Budgeted.
+func _maybe_wall_dressing(x: int, y: int, dirv: Vector3, yaw: float, wh: int) -> void:
+	# The corridor-facing wall surface sits ON the tile boundary (walls are inset into their
+	# cell) — mount dressing a hair proud of it so brackets and cloth read against the stone.
+	var edge := _world_pos(float(x), float(y)) + dirv * (_tile * 0.5 + 0.04)
+	if wh == 4 and _torch_scene != null and _torch_lights < 36:
+		_torch_lights += 1
+		var t: Node3D = _torch_scene.instantiate()
+		_map_root.add_child(t)
+		t.position = edge + Vector3(0.0, 1.35, 0.0)
+		t.rotation.y = yaw
+		var l := OmniLight3D.new()
+		l.light_color = Color(1.0, 0.62, 0.3) if _decor == "ember" else Color(1.0, 0.68, 0.38)
+		l.light_energy = 1.15
+		l.omni_range = 4.5
+		l.shadow_enabled = false
+		l.position = Vector3(0.0, 0.35, 0.0)
+		t.add_child(l)
+	elif wh == 9 and _banner_scenes.has(_decor):
+		var b: Node3D = (_banner_scenes[_decor] as PackedScene).instantiate()
+		_map_root.add_child(b)
+		b.position = edge + Vector3(0.0, 0.9, 0.0)
+		b.rotation.y = yaw
+		b.scale = Vector3(0.6, 0.6, 0.6)
 
 
 ## The stairs piece is scenery the player can climb VISUALLY (the game core treats the tile as
@@ -423,20 +656,21 @@ func _update_shroud(tiles: Array) -> void:
 
 # ---------------------------------------------------------------- entities
 
-func _model_for(e: Dictionary, kind: String) -> String:
+## Resolve an entity to a model spec {path, h, ember} — empty Dictionary = billboard fallback.
+func _model_for(e: Dictionary, kind: String) -> Dictionary:
 	var id := str(e.get("id", ""))
 	if kind == "player":
 		var ct := str(e.get("creature_type", ""))
 		var cls := "fighter"
 		if "(" in ct and ")" in ct:
 			cls = ct.substr(ct.find("(") + 1, ct.rfind(")") - ct.find("(") - 1).strip_edges()
-		return str(CLASS_MODELS.get(cls, CLASS_MODELS["fighter"]))
+		return {"path": str(CLASS_MODELS.get(cls, CLASS_MODELS["fighter"])), "h": 0.0}
 	if CAST_MODELS.has(id):
-		return str(CAST_MODELS[id])
+		return {"path": str(CAST_MODELS[id]), "h": 0.0}
 	var nm := str(e.get("name", "")).to_lower()
 	if ENEMY_MODELS.has(nm):
-		return str(ENEMY_MODELS[nm])
-	return ""                                   # billboard fallback
+		return ENEMY_MODELS[nm]
+	return {}                                   # billboard fallback
 
 
 func _sprite_idx(e: Dictionary, kind: String) -> int:
@@ -626,23 +860,38 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 	var ent := {"node": root, "ap": null, "sprite": false, "state": "idle",
 				"down": bool(e.get("down", false)), "label": null, "bar": null}
 	var loaded := false
-	# The locked Door entity (the slice's objective) is ARCHITECTURE, not a creature: give it the
-	# kit's doorway piece, seated like a wall segment and aligned with the wall line it sits in.
-	if kind == "door" and _door_scene != null:
-		var door: Node3D = _door_scene.instantiate()
-		root.add_child(door)
-		door.scale = Vector3(_tile / _wall_len, 0.55, 1.0)
-		door.rotation.y = 0.0 if _wall_runs_ew(at) else PI * 0.5
-		loaded = true
-	var model_path := _model_for(e, kind)
+	# The locked Door entity (the slice's objective) is ARCHITECTURE, not a creature: a BARRED
+	# gate segment (reads "locked" — the open doorway hole read as a passage), seated like a wall
+	# and aligned with the wall line it sits in.
+	if kind == "door":
+		var gate := _gate_scene if _gate_scene != null else _door_scene
+		if gate != null:
+			var door: Node3D = gate.instantiate()
+			root.add_child(door)
+			door.scale = Vector3(_tile / _wall_len, 0.55, 1.0)
+			door.rotation.y = 0.0 if _wall_runs_ew(at) else PI * 0.5
+			loaded = true
+	var spec := _model_for(e, kind)
+	var model_path := str(spec.get("path", ""))
 	if not loaded and model_path != "" and ResourceLoader.exists(model_path):
 		var scene = load(model_path)
 		if scene is PackedScene:
 			var body: Node3D = scene.instantiate()
 			root.add_child(body)
-			# KayKit characters are authored for a 2-unit grid: scale to whatever the measured
-			# tile actually is so people fit their cells (2u tile -> native size).
-			body.scale = Vector3.ONE * (_tile * 0.5)
+			var want_h := float(spec.get("h", 0.0))
+			if want_h > 0.0:
+				# Third-party rigs (Quaternius FBX exports) carry arbitrary armature scale:
+				# measure the assembled body in world space and normalize to the target height.
+				var ab := _body_aabb(body)
+				body.scale = Vector3.ONE * (want_h / maxf(ab.size.y, 0.05))
+			else:
+				# KayKit characters are authored for a 2-unit grid: scale to whatever the
+				# measured tile actually is so people fit their cells (2u tile -> native size).
+				body.scale = Vector3.ONE * (_tile * 0.5)
+			if bool(spec.get("ember", false)):
+				# cinder-husk: the skeleton smolders from inside (translucent ember overlay)
+				for m in body.find_children("*", "MeshInstance3D", true, false):
+					(m as MeshInstance3D).material_overlay = _husk_overlay
 			var aps := body.find_children("*", "AnimationPlayer", true)
 			if not aps.is_empty():
 				ent["ap"] = aps[0]
@@ -664,19 +913,44 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 		spr.position.y = _tile * 0.45
 		root.add_child(spr)
 		ent["sprite"] = true
-	# floating name
+	# floating name — color-coded by allegiance so a crowded room parses at a glance
 	var lbl := Label3D.new()
 	lbl.text = str(e.get("name", ""))
 	lbl.font_size = 40
 	lbl.pixel_size = 0.005
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.no_depth_test = true
-	lbl.modulate = Color(0.95, 0.95, 0.95, 0.9)
+	match kind:
+		"enemy":
+			lbl.modulate = Color(1.0, 0.6, 0.55, 0.95)
+		"follower":
+			lbl.modulate = Color(0.65, 1.0, 0.72, 0.95)
+		"npc":
+			lbl.modulate = Color(0.95, 0.88, 0.68, 0.95)
+		"door":
+			lbl.modulate = Color(0.72, 0.76, 0.85, 0.8)
+		_:
+			lbl.modulate = Color(0.95, 0.95, 0.95, 0.9)
 	lbl.outline_size = 8
 	lbl.position.y = _tile * 1.05
 	root.add_child(lbl)
 	ent["label"] = lbl
 	_ents[id] = ent
+
+
+## World-space bounding box of an instantiated body, expressed in the body's own local frame —
+## robust against rigs whose scale lives on an armature node above the mesh (skinned FBX exports).
+func _body_aabb(body: Node3D) -> AABB:
+	var total := AABB()
+	var first := true
+	var inv := body.global_transform.affine_inverse()
+	for m in body.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		var rel := inv * mi.global_transform
+		var ab := rel * mi.get_aabb()
+		total = ab if first else total.merge(ab)
+		first = false
+	return total
 
 
 ## Does the wall line through this cell run east-west? (Used to align the doorway piece.)
@@ -837,8 +1111,9 @@ func _process(delta: float) -> void:
 			if str(ent["state"]) != "walk":
 				ent["state"] = "walk"
 				var run := float(a["speed"]) > 8.0
-				_play_anim(ent, ["Running_A", "Running", "Walking_A", "Walking"] if run
-					else ["Walking_A", "Walking", "Walk", "Running_A"], true)
+				# short bare keys ("Run"/"Walk") cover third-party rigs with prefixed clip names
+				_play_anim(ent, ["Running_A", "Running", "Run", "Walking_A"] if run
+					else ["Walking_A", "Walking", "Walk", "Running_A", "Run"], true)
 	# smooth yaw toward the facing target — ALL modeled entities, not just movers (an attacker
 	# turning toward its target eases through this same path instead of snapping)
 	for id in _facing.keys():
@@ -914,7 +1189,7 @@ func _process(delta: float) -> void:
 			_fx[i] = f
 	if _fx.is_empty():
 		_fx_stagger = 0.0
-	# floating labels rise + fade
+	# floating labels rise + fade; destination rings bloom + fade
 	for c in _fx_root.get_children():
 		if c is Label3D:
 			var life := float(c.get_meta("life", 0.0)) - delta
@@ -924,6 +1199,16 @@ func _process(delta: float) -> void:
 			m.a = clampf(life, 0.0, 1.0)
 			c.modulate = m
 			if life <= 0.0:
+				c.queue_free()
+		elif c is MeshInstance3D and c.has_meta("ring"):
+			var rlife := float(c.get_meta("life", 0.0)) - delta
+			c.set_meta("life", rlife)
+			var k := 1.0 - clampf(rlife / 0.6, 0.0, 1.0)
+			c.scale = Vector3(1.0 + 0.5 * k, 0.10, 1.0 + 0.5 * k)
+			var rm := c.material_override as StandardMaterial3D
+			if rm != null:
+				rm.albedo_color.a = clampf(rlife / 0.6, 0.0, 1.0) * 0.9
+			if rlife <= 0.0:
 				c.queue_free()
 	# torch flicker + follow
 	_follow_player(delta)
@@ -954,6 +1239,6 @@ func _follow_player(delta: float) -> void:
 					" sprite=", ent["sprite"], " anim=", (ap.current_animation if ap != null else "-"))
 	_torch.position = _torch.position.lerp(target + Vector3(0, _tile * 0.9, 0), minf(1.0, delta * 8.0))
 	_torch.light_energy = 2.4 + 0.35 * sin(_time * 9.0) + 0.18 * sin(_time * 23.0)
-	var want := target + CAM_OFFSET_TILES * _tile
+	var want := target + CAM_OFFSET_TILES * _tile * _zoom
 	_camera.position = _camera.position.lerp(want, minf(1.0, delta * 6.0))
 	_camera.look_at(target + Vector3(0, _tile * 0.3, 0))

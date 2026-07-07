@@ -120,7 +120,9 @@ func _stage_combat_demo(shot: String) -> void:
 		]}
 	_world.render(snap)
 	await get_tree().create_timer(0.4).timeout
-	# 1) the player walks a real route (waypoints, not a straight lerp)
+	# 1) the player walks a real route (waypoints, not a straight lerp) toward a marked tile
+	if _world.has_method("mark_destination"):
+		_world.mark_destination(Vector2i(6, 2))
 	_world.follow_path("player", [[2, 2], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [6, 2]])
 	var snap2: Dictionary = snap.duplicate(true)
 	snap2["player"]["pos"] = [6, 2]
@@ -376,7 +378,16 @@ func _unhandled_input(event: InputEvent) -> void:
 					_hud.log_line("Too dark to see there.")
 			else:
 				Net.send_action("move_to", {"tx": t.x, "ty": t.y})
+				if _world.has_method("mark_destination"):
+					_world.mark_destination(t)   # click feedback: the walk belongs to YOUR order
 		get_viewport().set_input_as_handled()
+		return
+	# Mouse-wheel camera dolly (3D view only; the 2D view has no zoom_step).
+	if event is InputEventMouseButton and event.pressed \
+			and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		if _world != null and _world.has_method("zoom_step"):
+			_world.zoom_step(-0.1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.1)
+			get_viewport().set_input_as_handled()
 		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
