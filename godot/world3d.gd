@@ -1090,6 +1090,42 @@ func _play_anim(ent: Dictionary, prefer: Array, loop: bool = false) -> void:
 					return
 
 
+# ------------------------------------------------------- dev: animation browser
+## Backing for the F10 animation test panel (dev_anim.gd) — inspect and fire any clip on any
+## live entity. Read-only against game state; playing a clip just drives the AnimationPlayer.
+
+func debug_entities() -> Array:
+	var out: Array = []
+	for id in _ents:
+		if _ents[id].get("ap") != null:
+			out.append(id)
+	out.sort()
+	return out
+
+
+func debug_clips(id: String) -> Array:
+	if not _ents.has(id) or _ents[id].get("ap") == null:
+		return []
+	var names := Array((_ents[id]["ap"] as AnimationPlayer).get_animation_list())
+	names.sort()
+	return names
+
+
+func debug_play(id: String, clip: String) -> void:
+	if not _ents.has(id) or _ents[id].get("ap") == null:
+		return
+	var ap: AnimationPlayer = _ents[id]["ap"]
+	if ap.has_animation(clip):
+		_ents[id]["state"] = "react"   # keep the idle/walk machine from instantly overriding
+		ap.play(clip)
+
+
+func debug_idle(id: String) -> void:
+	if _ents.has(id):
+		_ents[id]["state"] = "idle"
+		_play_anim(_ents[id], ["Idle"], true)
+
+
 # ------------------------------------------------------- stage-direction acting
 
 ## The engine ships every NPC line with third-person stage business (DialogueEvent.action),

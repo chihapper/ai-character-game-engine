@@ -14,6 +14,7 @@ var _world: Node          # World3D (default) or the classic 2D view (RPG_2D=1) 
 var _hud: CanvasLayer
 var _dialogue: CanvasLayer
 var _speech: CanvasLayer        # the portrait speech card (speech.gd)
+var _anim_panel: CanvasLayer    # dev animation browser (dev_anim.gd, F10)
 var _voice: AudioStreamPlayer   # plays Hume-voiced NPC lines (PCM streamed from the server)
 
 ## Last snapshot received from the server; drives the nearest-interactable helper.
@@ -52,6 +53,14 @@ func _ready() -> void:
 	_speech.name = "Speech"
 	_speech.set_script(load("res://speech.gd"))
 	add_child(_speech)
+
+	# Dev animation browser (F10): click any clip on any live entity — for testing the acting
+	# vocabulary without engineering game situations that trigger each verb.
+	_anim_panel = CanvasLayer.new()
+	_anim_panel.name = "AnimBrowser"
+	_anim_panel.set_script(load("res://dev_anim.gd"))
+	add_child(_anim_panel)
+	_anim_panel.setup(_world)
 
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
@@ -153,6 +162,11 @@ func _stage_combat_demo(shot: String) -> void:
 	_save_screenshot(base + "_4.png")            # goblin fallen + party mid-cheer
 	await get_tree().create_timer(1.6).timeout
 	_save_screenshot(base + "_5.png")            # corpse sunk away; survivors idle
+	if _anim_panel != null:                      # the F10 browser renders over the scene
+		_anim_panel.toggle()
+		await get_tree().create_timer(0.3).timeout
+		_save_screenshot(base + "_6.png")
+		_anim_panel.toggle()
 	_save_screenshot(shot)
 
 
@@ -435,6 +449,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Z:
 			# Camp rest: party heals a hit die each, real time passes, and the noise can draw danger.
 			Net.send_action("rest")
+		KEY_F10:
+			# dev animation browser: click through every clip on any live entity
+			if _anim_panel != null:
+				_anim_panel.toggle()
 		KEY_F12:
 			_save_screenshot(OS.get_environment("RPG_SHOT") if OS.get_environment("RPG_SHOT") != "" else "user://rpg_shot.png")
 		KEY_N:
@@ -481,6 +499,10 @@ func _held_move_dir() -> Vector2i:
 func _poll_held_movement(delta: float) -> void:
 	_move_cd = maxf(0.0, _move_cd - delta)
 	if _move_cd > 0.0 or _dialogue != null and _dialogue.is_open():
+		return
+	# Input.is_key_pressed is GLOBAL: typing "w" into a focused text field (the anim browser's
+	# filter, any future UI) must not also walk the player.
+	if get_viewport().gui_get_focus_owner() != null:
 		return
 	var dir := _held_move_dir()
 	if dir == Vector2i.ZERO:
