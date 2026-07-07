@@ -130,6 +130,8 @@ func _stage_combat_demo(shot: String) -> void:
 		"creature_type": "humanoid (fighter)", "hp": 20, "max_hp": 20}
 	var snap := {"tiles": tiles, "explored": cells, "visible": cells, "mode": "combat",
 		"player": player,
+		"combat_turn": "player", "combat_movement": 30, "combat_round": 1,
+		"combat_order": ["player", "goblin1", "rpg-lira", "skel1"],
 		"entities": [
 			{"id": "rpg-lira", "name": "Lira", "pos": [5, 3], "kind": "follower", "hp": 15, "max_hp": 18},
 			{"id": "goblin1", "name": "Goblin", "pos": [7, 2], "kind": "enemy"},
@@ -541,7 +543,7 @@ var _move_cd := 0.0
 
 func _send_move(dx: int, dy: int) -> void:
 	Net.send_action("move", {"dx": dx, "dy": dy})
-	_move_cd = 0.12
+	_move_cd = 0.10
 
 
 func _held_move_dir() -> Vector2i:
@@ -570,7 +572,9 @@ func _poll_held_movement(delta: float) -> void:
 	var remaining := 0.0
 	if _world != null and _world.has_method("player_glide_remaining"):
 		remaining = _world.player_glide_remaining()
-	if remaining <= 0.35:      # current step nearly landed — chain the next one seamlessly
+	# Send the next step EARLY (over half a tile out): its route concatenates onto the current
+	# glide before it lands, so held-key walking is one continuous motion with no seam per tile.
+	if remaining <= 0.6:
 		_send_move(dir.x, dir.y)
 
 

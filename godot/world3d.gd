@@ -18,7 +18,7 @@ extends Node3D
 # player, a client-side BFS replay for followers/enemies) — never a straight lerp to the snapshot
 # position, which read as teleporting and cut through wall corners. Constant speed across the whole
 # polyline; long treks hustle (speed scales up) so a far click never means watching a 20-second walk.
-const WALK_TILES_PER_S := 5.5
+const WALK_TILES_PER_S := 6.2
 const RUN_TILES_PER_S := 16.0
 const TREK_MAX_S := 2.5        # a route is paced to land within this many seconds
 const SNAP_BEYOND_TILES := 40.0  # longer than this (new game repositioning) just snaps
@@ -43,8 +43,11 @@ var _map_root: Node3D                          # static dungeon pieces (built in
 var _ent_root: Node3D
 var _fx_root: Node3D
 var _shroud: MultiMeshInstance3D               # explored-but-unseen dim quads
+var _range_mm: MultiMeshInstance3D             # combat: tiles reachable with remaining movement
+var _turn_ring: MeshInstance3D                 # combat: gold ring under whoever is acting NOW
 var _zoom := 1.0                               # camera dolly factor (mouse wheel), 0.65..1.5
 var _slice_name := "vault"
+var _last_mode := ""                           # stance switching on combat start/end
 var _decor := "wet"                            # per-slice floor decor: "wet" | "ember" | ""
 var _puddle_mat: StandardMaterial3D = null     # vault: still black water catching the torch
 var _ember_mat: StandardMaterial3D = null      # emberdeep: glowing cracks in the stone
@@ -236,6 +239,37 @@ func _build_scene() -> void:
 	_shroud.multimesh = mm
 	_shroud.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_shroud)
+
+	# Combat legibility (the VTT conventions — visible budget, visible turn): a green overlay on
+	# every tile the CURRENT movement allowance can reach, and a gold ring under whoever acts now.
+	var rmm := MultiMesh.new()
+	rmm.transform_format = MultiMesh.TRANSFORM_3D
+	var rquad := PlaneMesh.new()
+	rquad.size = Vector2(0.86, 0.86)           # inset so tile edges stay readable
+	var rmat := StandardMaterial3D.new()
+	rmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	rmat.albedo_color = Color(0.30, 0.85, 0.45, 0.28)
+	rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rquad.material = rmat
+	rmm.mesh = rquad
+	_range_mm = MultiMeshInstance3D.new()
+	_range_mm.multimesh = rmm
+	_range_mm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_range_mm)
+
+	_turn_ring = MeshInstance3D.new()
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.42
+	ring.outer_radius = 0.52
+	var ringmat := StandardMaterial3D.new()
+	ringmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ringmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ringmat.albedo_color = Color(0.96, 0.82, 0.25, 0.85)
+	_turn_ring.mesh = ring
+	_turn_ring.material_override = ringmat
+	_turn_ring.scale = Vector3(1.0, 0.12, 1.0)
+	_turn_ring.visible = false
+	add_child(_turn_ring)
 
 
 func _load_dungeon_pieces() -> void:
@@ -446,6 +480,15 @@ func render(s: Dictionary) -> void:
 		_build_explored(tiles)
 		_update_shroud(tiles)
 	_sync_entities()
+	_update_range_overlay()
+	# Combat starting/ending re-poses everyone standing: weapons come UP when initiative rolls
+	# and drop when the fight ends (_idle_prefer() is the situational pick).
+	var mode := str(_snap.get("mode", ""))
+	if mode != _last_mode:
+		_last_mode = mode
+		for id in _ents:
+			if str(_ents[id]["state"]) == "idle":
+				_play_anim(_ents[id], _idle_prefer(), true)
 
 
 ## Build newly-explored cells: floors under '.'/'+'/stairs, wall segments on wall-cell edges that
@@ -668,6 +711,59 @@ func _place_stairs(tiles: Array, x: int, y: int) -> void:
 	# pull it back so the scaled footprint is centered in the cell.
 	n.position = _world_pos(float(x), float(y)) - fwd * (_stairs_size.z * s * 0.5)
 	_stair_cells[str(x) + "," + str(y)] = Vector2(float(x), float(y))
+
+
+## The movement-range overlay (green tiles = where THIS turn's remaining feet can take you) —
+## rebuilt on every snapshot, shown only on the player's combat turn. Same rules the server
+## enforces: 5 ft per orthogonal step, living enemies are walls, occupied cells excluded.
+func _update_range_overlay() -> void:
+	var mm := _range_mm.multimesh
+	if str(_snap.get("mode", "")) != "combat" or _turn_id != str(_snap.get("player", {}).get("id", "")):
+		mm.instance_count = 0
+		return
+	var steps := int(float(_snap.get("combat_movement", 0)) / 5.0)
+	var player = _snap.get("player", {})
+	var pos = player.get("pos", null)
+	if steps <= 0 or typeof(pos) != TYPE_ARRAY or pos.size() < 2:
+		mm.instance_count = 0
+		return
+	var tiles = _snap.get("tiles", [])
+	if typeof(tiles) != TYPE_ARRAY or tiles.is_empty():
+		mm.instance_count = 0
+		return
+	var blocked := {}
+	for e in _snap.get("entities", []):
+		if typeof(e) == TYPE_DICTIONARY and typeof(e.get("pos", null)) == TYPE_ARRAY:
+			var ep: Array = e["pos"]
+			blocked[Vector2i(int(ep[0]), int(ep[1]))] = true
+	var src := Vector2i(int(pos[0]), int(pos[1]))
+	var dist := {src: 0}
+	var q: Array = [src]
+	var head := 0
+	var cells: Array = []
+	while head < q.size():
+		var c: Vector2i = q[head]
+		head += 1
+		if int(dist[c]) >= steps:
+			continue
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var nb: Vector2i = c + d
+			if dist.has(nb) or nb.y < 0 or nb.y >= tiles.size():
+				continue
+			var row: String = str(tiles[nb.y])
+			if nb.x < 0 or nb.x >= row.length() or not (row[nb.x] in [".", "+", ">", "<"]):
+				continue
+			if blocked.has(nb):
+				continue
+			dist[nb] = int(dist[c]) + 1
+			q.append(nb)
+			cells.append(nb)
+	mm.instance_count = cells.size()
+	for i in cells.size():
+		var wp := _world_pos(float(cells[i].x), float(cells[i].y))
+		var xf := Transform3D(Basis.from_scale(Vector3(_tile, 1.0, _tile)),
+			wp + Vector3(0.0, _floor_top + 0.02, 0.0))
+		mm.set_instance_transform(i, xf)
 
 
 func _update_shroud(tiles: Array) -> void:
@@ -1058,6 +1154,39 @@ func _update_bars(id: String, e: Dictionary, kind: String) -> void:
 		lbl.text = base
 
 
+## Idle depends on the situation: relaxed out of combat, a FIGHTING STANCE inside it (weapons up,
+## Idle_Combat/2H_Melee_Idle) — half of what made fights read as "alpha" was everyone standing
+## around casually mid-battle.
+func _idle_prefer() -> Array:
+	if str(_snap.get("mode", "")) == "combat":
+		return ["Idle_Combat", "2H_Melee_Idle", "Unarmed_Idle", "Idle"]
+	return ["Idle"]
+
+
+## Variety: play a RANDOM clip whose name contains `key` (skipping static poses and other
+## excluded fragments) — attack/hit/death repeats stop looking identical. Falls back to the
+## ordered prefer list when nothing matches.
+func _play_random(ent: Dictionary, key: String, exclude: Array, fallback: Array) -> void:
+	var ap: AnimationPlayer = ent.get("ap")
+	if ap == null:
+		return
+	var picks: Array = []
+	for a in ap.get_animation_list():
+		var al := str(a).to_lower()
+		if not al.contains(key):
+			continue
+		var bad := al.contains("pose")
+		for ex in exclude:
+			if al.contains(str(ex)):
+				bad = true
+		if not bad:
+			picks.append(a)
+	if picks.is_empty():
+		_play_anim(ent, fallback)
+	else:
+		ap.play(picks[randi() % picks.size()])
+
+
 func _play_anim(ent: Dictionary, prefer: Array, loop: bool = false) -> void:
 	var ap: AnimationPlayer = ent.get("ap")
 	if ap == null:
@@ -1200,8 +1329,12 @@ func combat_fx(data: Dictionary) -> void:
 				if sfx == "miss":
 					_fx.append({"kind": "float", "pos": Vector2(_last_pos[target]), "text": "miss",
 						"color": Color(0.7, 0.7, 0.75), "delay": _fx_stagger + 0.18, "t": 0.0, "dur": 0.9})
-					# a miss isn't nothing happening — the target visibly DODGES the blow
-					_fx.append({"kind": "react", "id": target, "anims": ["Dodge_Backward", "Dodge_Left", "Dodge"],
+					# a miss isn't nothing happening — the target DODGES it (shield-bearers BLOCK)
+					var shielded := _ents.has(target) and (str(_ents[target].get("model_path", "")).contains("Knight")
+						or str(_ents[target].get("model_path", "")).contains("Warrior"))
+					_fx.append({"kind": "react", "id": target,
+						"anims": ["Block_Hit", "Block", "Dodge_Backward"] if shielded
+							else ["Dodge_Backward", "Dodge_Left", "Dodge"],
 						"delay": _fx_stagger + 0.10, "t": 0.0, "dur": 0.55})
 				else:
 					var from: Vector2 = Vector2(_last_pos[attacker]) if _last_pos.has(attacker) \
@@ -1254,6 +1387,15 @@ func combat_fx(data: Dictionary) -> void:
 						"delay": 0.15 * ri, "t": 0.0, "dur": 3.6})
 					ri += 1
 		"alarm":
+			# enemies ANSWER the call to arms: a taunt where the rig has one, a menacing hop
+			# where it doesn't (the goblin) — combat starts as an event, not a mode flag
+			var ai := 0
+			for id in _ents:
+				if str(_ents[id]["kind"]) == "enemy":
+					_fx.append({"kind": "react", "id": id,
+						"anims": ["Taunt", "Jump_Full_Short", "Jump"],
+						"delay": 0.2 + 0.15 * ai, "t": 0.0, "dur": 1.1})
+					ai += 1
 			# combat interrupts any camp: cancel rest beats and get everyone on their feet
 			for i in range(_fx.size() - 1, -1, -1):
 				if str(_fx[i].get("kind", "")) == "rest":
@@ -1305,7 +1447,7 @@ func _process(delta: float) -> void:
 			ent["node"].position = _being_pos(dest.x, dest.y)
 			if str(ent["state"]) == "walk":
 				ent["state"] = "idle"
-				_play_anim(ent, ["Idle"], true)
+				_play_anim(ent, _idle_prefer(), true)
 		else:
 			a["d"] = d
 			_anim[id] = a
@@ -1342,12 +1484,14 @@ func _process(delta: float) -> void:
 						var dirv: Vector2 = (Vector2(f["toward"]) - Vector2(f["at"]))
 						_facing[fid] = atan2(dirv.x, dirv.y)   # eased turn, same path as walking
 						ent["state"] = "attack"
-						_play_anim(ent, ["Spellcast_Shoot", "Spellcasting", "Attack"] if bool(ent.get("caster", false))
-							else ["1H_Melee_Attack_Slice", "2H_Melee_Attack", "Attack", "Unarmed_Melee_Attack"])
+						if bool(ent.get("caster", false)):
+							_play_random(ent, "spellcast", ["summon"], ["Spellcasting", "Attack"])
+						else:
+							_play_random(ent, "attack", ["jump", "spin"], ["Attack"])
 				"hurt":
 					if _ents.has(fid):
 						var ent2: Dictionary = _ents[fid]
-						_play_anim(ent2, ["Hit_A", "Hit"])
+						_play_random(ent2, "hit", ["jump"], ["Hit_A", "Hit"])
 						ent2["state"] = "hurt"
 				"react":
 					# a one-shot acting beat (dodge, cheer, drink, pick up, interact...)
@@ -1361,7 +1505,7 @@ func _process(delta: float) -> void:
 				"death":
 					if _ents.has(fid):
 						var ent3: Dictionary = _ents[fid]
-						_play_anim(ent3, ["Death_A", "Death"])
+						_play_random(ent3, "death", ["resurrect", "awaken"], ["Death_A", "Death"])
 						ent3["state"] = "dead"
 				"float":
 					_spawn_float(Vector2(f["pos"]), str(f["text"]), Color(f["color"]))
@@ -1397,7 +1541,7 @@ func _process(delta: float) -> void:
 						_ents[fid]["node"].position = _being_pos(rp.x, rp.y)
 					if not (str(_ents[fid]["state"]) in ["dead", "rest"]):
 						_ents[fid]["state"] = "idle"
-						_play_anim(_ents[fid], ["Idle"], true)
+						_play_anim(_ents[fid], _idle_prefer(), true)
 			elif kind == "rest":
 				# rested: chain into a stand-up beat, whose own completion returns to Idle
 				if _ents.has(fid) and str(_ents[fid]["state"]) == "rest":
@@ -1435,6 +1579,17 @@ func _process(delta: float) -> void:
 				rm.albedo_color.a = clampf(rlife / 0.6, 0.0, 1.0) * 0.9
 			if rlife <= 0.0:
 				c.queue_free()
+	# gold ring under the active combatant (combat only) — the turn is a visible PLACE
+	if str(_snap.get("mode", "")) == "combat" and _turn_id != "" and _ents.has(_turn_id):
+		var tp: Vector3 = _ents[_turn_id]["node"].position
+		var want_ring := Vector3(tp.x, _floor_top + 0.04, tp.z)
+		if not _turn_ring.visible:
+			_turn_ring.visible = true
+			_turn_ring.position = want_ring
+		else:
+			_turn_ring.position = _turn_ring.position.lerp(want_ring, minf(1.0, delta * 10.0))
+	else:
+		_turn_ring.visible = false
 	# torch flicker + follow
 	_follow_player(delta)
 	# crit shake

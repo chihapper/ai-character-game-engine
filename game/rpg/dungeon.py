@@ -72,22 +72,29 @@ def _carve_room(grid: list[list[str]], room: Room) -> None:
 
 def _carve_corridor(grid: list[list[str]], a: Pos, b: Pos, rng: random.Random) -> None:
     (x1, y1), (x2, y2) = a, b
+    # Corridor WIDTH varies (owner feedback 2026-07-08 — everything 1 tile wide read as
+    # squeeze-throughs): roughly half the connections are dug 2 tiles wide.
+    wide = rng.random() < 0.5
     if rng.random() < 0.5:                       # horizontal then vertical, or vice versa
-        _h_line(grid, x1, x2, y1); _v_line(grid, y1, y2, x2)
+        _h_line(grid, x1, x2, y1, wide); _v_line(grid, y1, y2, x2, wide)
     else:
-        _v_line(grid, y1, y2, x1); _h_line(grid, x1, x2, y2)
+        _v_line(grid, y1, y2, x1, wide); _h_line(grid, x1, x2, y2, wide)
 
 
-def _h_line(grid, x1, x2, y):
+def _h_line(grid, x1, x2, y, wide: bool = False):
+    h = len(grid)
     for x in range(min(x1, x2), max(x1, x2) + 1):
-        if grid[y][x] == WALL:
-            grid[y][x] = FLOOR
+        for yy in ((y, y + 1) if wide else (y,)):
+            if 1 <= yy < h - 1 and grid[yy][x] == WALL:
+                grid[yy][x] = FLOOR
 
 
-def _v_line(grid, y1, y2, x):
+def _v_line(grid, y1, y2, x, wide: bool = False):
+    w = len(grid[0])
     for y in range(min(y1, y2), max(y1, y2) + 1):
-        if grid[y][x] == WALL:
-            grid[y][x] = FLOOR
+        for xx in ((x, x + 1) if wide else (x,)):
+            if 1 <= xx < w - 1 and grid[y][xx] == WALL:
+                grid[y][xx] = FLOOR
 
 
 @dataclass
@@ -101,16 +108,25 @@ class Dungeon:
         return [r.center for r in self.rooms]
 
 
-def generate_dungeon(*, width: int = 64, height: int = 32, seed: int | None = None,
-                     max_rooms: int = 10, room_min: int = 4, room_max: int = 9,
-                     tries: int = 120) -> Dungeon:
+def generate_dungeon(*, width: int = 88, height: int = 44, seed: int | None = None,
+                     max_rooms: int = 14, room_min: int = 5, room_max: int = 12,
+                     tries: int = 220) -> Dungeon:
+    """Defaults re-scaled 2026-07-08 (owner feedback: rooms felt uniformly small, no big spaces):
+    a larger canvas, more rooms, wider size range, and roughly one attempt in five tries for a
+    GREAT HALL beyond room_max — dungeons read as places with small chambers AND large spaces."""
     rng = random.Random(seed)
     grid = [[WALL] * width for _ in range(height)]
     rooms: list[Room] = []
 
     for _ in range(tries):
-        w = rng.randint(room_min, room_max)
-        h = rng.randint(room_min, room_max)
+        if rng.random() < 0.2:                   # a great hall: half again to nearly double room_max
+            w = rng.randint(room_max + 2, room_max + 6)
+            h = rng.randint(room_max - 2, room_max + 2)
+        else:
+            w = rng.randint(room_min, room_max)
+            h = rng.randint(room_min, room_max)
+        w = min(w, width - 3)
+        h = min(h, height - 3)
         x = rng.randint(1, width - w - 1)
         y = rng.randint(1, height - h - 1)
         room = Room(x, y, w, h)
@@ -220,7 +236,7 @@ def _spread_anchors(cells: list[Pos], n: int) -> list[Pos]:
     return anchors
 
 
-def generate_caverns(*, width: int = 72, height: int = 36, seed: int | None = None,
+def generate_caverns(*, width: int = 88, height: int = 44, seed: int | None = None,
                      fill_prob: float = 0.46, steps: int = 5, anchors: int = 8) -> Dungeon:
     """An organic cave system (cellular automata). Same signature/return contract as
     `generate_dungeon`, so content can request it and the core never knows the difference."""
