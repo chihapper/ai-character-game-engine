@@ -130,7 +130,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			Net.send_action("move", {"dx": -1, "dy": 0})
 		KEY_RIGHT, KEY_D:
 			Net.send_action("move", {"dx": 1, "dy": 0})
-		KEY_PERIOD:
+		KEY_PERIOD, KEY_SPACE:
+			# "wait" — in combat this ENDS the player's turn; in exploration it passes time.
 			Net.send_action("wait")
 		KEY_L:
 			Net.send_action("look")

@@ -85,30 +85,38 @@ async def _walk_to(game, target, *, within=0, max_steps=1200):
     return False
 
 
-async def _fight(game, *, max_actions=600):
-    """Bump-to-attack the nearest living enemy until the fight ends. A SMOKE TEST of the combat
+async def _fight(game, *, max_actions=800):
+    """Play the player's turns in the turn-based engine until the fight ends. A SMOKE TEST of the combat
     machinery, not a balance test: the harness makes the player unkillable so the mechanical loop
-    (attack -> ally turn -> enemy turn -> victory -> loot) runs to completion regardless of whether
-    a solo level-1 could actually survive 3-4 foes (in the real game you'd bring a recruited ally).
-    The DEFEAT path is proven separately (see the death soft-lock test)."""
+    (initiative -> the player's turn -> NPC turns auto-resolve -> death saves -> victory -> loot) runs to
+    completion regardless of whether a solo level-1 could actually survive 3-4 foes (in the real game
+    you'd bring a recruited ally). NPC turns resolve inside `submit_action`; the harness only drives the
+    PLAYER's turn: close on the nearest foe with movement, bump-attack when adjacent, then `wait` to end
+    the turn. The DEFEAT path is proven separately (see the death soft-lock test)."""
     game.state.player.hp = game.state.player.max_hp = 10**6      # harness affordance: survive to victory
     for _ in range(max_actions):
         if game.state.mode != Mode.combat:
             return True
+        cs = game.state.combat
+        if cs is None or cs.current() != game.state.player.id:   # not our turn (shouldn't happen) -> nudge
+            await game.submit_action(PlayerAction(kind="wait"))
+            continue
         living = [en for e in game.state.encounters for en in e.enemies if en.alive]
         if not living:
             await game.submit_action(PlayerAction(kind="wait"))
             continue
         px, py = game.state.player.pos
         tgt = min(living, key=lambda e: abs(e.pos[0] - px) + abs(e.pos[1] - py))
-        if abs(tgt.pos[0] - px) + abs(tgt.pos[1] - py) == 1:
-            step = (tgt.pos[0] - px, tgt.pos[1] - py)          # adjacent -> bump = attack
-        else:
+        dist = abs(tgt.pos[0] - px) + abs(tgt.pos[1] - py)
+        if dist == 1 and not cs.action_used:                     # adjacent + action free -> bump = attack
+            await game.submit_action(PlayerAction(kind="move", dx=tgt.pos[0] - px, dy=tgt.pos[1] - py))
+            continue
+        if dist > 1 and cs.movement_left >= 5:                    # not adjacent -> spend movement closing in
             step = _bfs_toward(game.state.world_map, (px, py), tgt.pos, _blocked_cells(game, exclude=tgt.pos))
-            if step is None:
-                await game.submit_action(PlayerAction(kind="wait"))
+            if step is not None:
+                await game.submit_action(PlayerAction(kind="move", dx=step[0], dy=step[1]))
                 continue
-        await game.submit_action(PlayerAction(kind="move", dx=step[0], dy=step[1]))
+        await game.submit_action(PlayerAction(kind="wait"))       # attacked / can't reach -> end the turn
     return game.state.mode != Mode.combat
 
 
@@ -193,6 +201,9 @@ async def run_slice(name: str, *, seed: int = 1) -> bool:
         checks.append((f"save/load round-trip ({e})", False))
 
     # 2) reach + trigger the encounter
+    #    Make the player unkillable BEFORE the trigger: the very first NPC turns resolve inside the
+    #    triggering submit_action (if an enemy won initiative), so the boost has to precede it.
+    game.state.player.hp = game.state.player.max_hp = 10**6
     trig = game.state.encounters[0].trigger_pos
     reached = await _walk_to(game, trig)
     in_combat = game.state.mode == Mode.combat

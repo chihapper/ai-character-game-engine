@@ -39,7 +39,10 @@ func _ready() -> void:
 	_status_label.offset_left = 12.0
 	_status_label.offset_top = 8.0
 	_status_label.offset_right = 620.0
-	_status_label.offset_bottom = 64.0
+	# Tall enough for the combat readout (round / turn order / action economy / death saves) to grow
+	# downward without clipping; the label is transparent, so the extra height is invisible when the
+	# status is just two lines out of combat.
+	_status_label.offset_bottom = 240.0
 	_status_label.add_theme_color_override("default_color", _col_text)
 	add_child(_status_label)
 
@@ -205,10 +208,87 @@ func _update_status(snap: Dictionary) -> void:
 	var line1 := "HP %d/%d   %s   t=%.1f   items:%d" % [
 		hp, max_hp, mode.to_upper(), clock, item_count
 	]
+	var lines: PackedStringArray = [line1]
 	if objective != "":
-		_status_label.text = line1 + "\n" + objective
-	else:
-		_status_label.text = line1
+		lines.append(objective)
+	var combat := _combat_readout(snap)
+	if combat != "":
+		lines.append(combat)
+	_status_label.text = "\n".join(lines)
+
+
+# ---- combat readout (only when in combat): round, initiative order with the live cursor, the
+#      player's action economy, and any death-save pips. All data comes from the snapshot's combat_*
+#      fields + entities — the HUD invents nothing.
+func _combat_readout(snap: Dictionary) -> String:
+	if str(snap.get("mode", "exploration")) != "combat":
+		return ""
+	var names := _id_names(snap)
+	var order = snap.get("combat_order", [])
+	var turn := str(snap.get("combat_turn", ""))
+	var rnd := _to_int(snap.get("combat_round", 0), 0)
+	var player: Dictionary = snap.get("player", {})
+	if typeof(player) != TYPE_DICTIONARY:
+		player = {}
+	var player_id := str(player.get("id", ""))
+
+	var lines: PackedStringArray = []
+	var turn_name: String = str(names.get(turn, "…"))
+	if turn == player_id:
+		turn_name += " (you)"
+	lines.append("Round %d — %s's turn" % [rnd, turn_name])
+
+	if turn == player_id:
+		var mv := _to_int(snap.get("combat_movement", 0), 0)
+		var act_used := bool(snap.get("combat_action_used", false))
+		lines.append("move %d ft  ·  action %s  ·  [.] end turn" % [mv, ("SPENT" if act_used else "ready")])
+
+	# initiative strip: names in order, the active one marked, dead/hidden ids dropped
+	var strip: PackedStringArray = []
+	if typeof(order) == TYPE_ARRAY:
+		for cid in order:
+			var id := str(cid)
+			if not names.has(id):
+				continue
+			var nm := str(names[id])
+			if id == turn:
+				nm = "[" + nm + "]"
+			strip.append(nm)
+	if strip.size() > 0:
+		lines.append("  " + "  ".join(strip))
+
+	var pips := _death_pips_for(player)
+	if pips != "":
+		lines.append("death saves  " + pips)
+	return "\n".join(lines)
+
+
+func _id_names(snap: Dictionary) -> Dictionary:
+	var m := {}
+	var p: Dictionary = snap.get("player", {})
+	if typeof(p) == TYPE_DICTIONARY and p.has("id"):
+		m[str(p.get("id", ""))] = str(p.get("name", "You"))
+	var ents = snap.get("entities", [])
+	if typeof(ents) == TYPE_ARRAY:
+		for e in ents:
+			if typeof(e) == TYPE_DICTIONARY and e.has("id"):
+				m[str(e.get("id", ""))] = str(e.get("name", "?"))
+	return m
+
+
+# ASCII pips (fallback font may lack ✓/✗ glyphs): successes as '+', failures as 'x', empty as '-'.
+func _death_pips_for(e: Dictionary) -> String:
+	if not bool(e.get("down", false)):
+		return ""
+	var succ := _to_int(e.get("death_successes", 0), 0)
+	var fail := _to_int(e.get("death_failures", 0), 0)
+	var s := ""
+	for i in range(3):
+		s += ("+" if i < succ else "-")
+	s += "  /  "
+	for i in range(3):
+		s += ("x" if i < fail else "-")
+	return s
 
 
 func _update_party(snap: Dictionary) -> void:
@@ -257,6 +337,14 @@ func _make_party_row(e: Dictionary) -> Control:
 	bar.set_hp(hp, max_hp, _col_follower, _col_hp_back)
 	bar.custom_minimum_size = Vector2(200, 8)
 	row.add_child(bar)
+
+	# A downed companion (0 HP, not dead) shows death-save pips instead of a live bar readout.
+	var pips := _death_pips_for(e)
+	if pips != "":
+		var ds := Label.new()
+		ds.text = "down  " + pips
+		ds.add_theme_color_override("font_color", _col_enemy)
+		row.add_child(ds)
 	return row
 
 
@@ -268,14 +356,18 @@ func _update_controls(snap: Dictionary) -> void:
 
 func _controls_text(mode: String) -> String:
 	if mode == "combat":
-		return "click a foe to attack, a tile to move   G toggle enemy HP   . wait"
+		return "click a foe to attack · a tile to move (5ft/step)   [.] end turn   G toggle enemy HP"
 	return "click to move   T talk   X do   R recruit   F help   L look   . wait"
 
 
 func _update_banner(snap: Dictionary) -> void:
 	if _combat_banner == null:
 		return
-	_combat_banner.visible = str(snap.get("mode", "exploration")) == "combat"
+	var in_combat := str(snap.get("mode", "exploration")) == "combat"
+	_combat_banner.visible = in_combat
+	if in_combat:
+		var rnd := _to_int(snap.get("combat_round", 0), 0)
+		_combat_banner.text = "  COMBAT  —  Round %d  " % rnd if rnd > 0 else "  COMBAT  "
 
 
 # =====================================================================

@@ -16,6 +16,7 @@ from game import policy
 from .dm import DM
 from .minds import Minds
 from .rules import D20Rules
+from .srd.combat import CombatEngine
 from .session import (
     CombatEvent,
     DialogueEvent,
@@ -87,6 +88,9 @@ class RpgGame(GameSession):
         self.minds = minds
         self.rules = rules
         self.dm = dm
+        # The turn-based combat engine shares the rules' RNG so the whole game is one deterministic
+        # stream (initiative, attacks, saves, death saves).
+        self.combat_engine = CombatEngine(rng=getattr(self.rules, "rng", None))
         self._events: asyncio.Queue[GameEvent] = asyncio.Queue()
         self._visible: set = set()              # tiles the player can see right now (fog of war)
         self._recompute_fov()                   # light up the starting area
@@ -148,7 +152,9 @@ class RpgGame(GameSession):
             if seen(n.pos):
                 ents.append(EntityView(id=n.slug, name=n.name, pos=n.pos, kind="npc"))
         for f in s.followers:
-            ents.append(EntityView(id=f.id, name=f.name, pos=f.pos, kind="follower", hp=f.hp, max_hp=f.max_hp))
+            ents.append(EntityView(id=f.id, name=f.name, pos=f.pos, kind="follower", hp=f.hp, max_hp=f.max_hp,
+                                   down=f.down, death_successes=f.death_save_successes,
+                                   death_failures=f.death_save_failures))
         show_hp = bool(s.combat and s.combat.show_enemy_hp)   # HP hidden unless toggled (guardrail #5)
         for e in s.encounters:
             for en in e.enemies:
@@ -160,15 +166,18 @@ class RpgGame(GameSession):
             if d.locked and explored(d.pos):
                 ents.append(EntityView(id=d.id, name="Door", pos=d.pos, kind="door"))
         objective = next((q.title for q in s.quests if q.state in ("open", "active")), "")
+        cs = s.combat
         return StateSnapshot(
             mode=s.mode, clock=s.clock.value, player=s.player, objective=objective,
             inventory=[it.name for it in s.player.inventory],
             map_width=s.world_map.width, map_height=s.world_map.height, tiles=s.world_map.tiles,
-            entities=ents, combat_order=(s.combat.order if s.combat else []),
-            # This loop resolves player -> all allies -> all enemies per action rather than stepping a
-            # single initiative cursor, so there is no one "current" combatant to report (turn_index
-            # is not advanced). Leave combat_turn None instead of always claiming order[0].
-            combat_turn=None, show_enemy_hp=show_hp,
+            entities=ents, combat_order=(cs.order if cs else []),
+            # The initiative cursor is real now: begin_combat/advance_turn keep it in sync, so
+            # combat_turn is whoever is acting this instant (the view highlights them + gates input).
+            combat_turn=(cs.current() if cs else None), show_enemy_hp=show_hp,
+            combat_round=(cs.round if cs else 0),
+            combat_movement=(cs.movement_left if cs else 0),
+            combat_action_used=(cs.action_used if cs else False),
             visible=[f"{x},{y}" for (x, y) in vis], explored=list(s.explored))
 
     # ---- world helpers ----
@@ -207,6 +216,11 @@ class RpgGame(GameSession):
             await self._combat_action(action)
         else:
             await self._explore_action(action)
+            # If moving tripped an encounter, the setup is done but no one has acted yet: let the
+            # combat engine run NPC turns until it's the (living) player's turn — the player may not
+            # win initiative. Idempotent when the player IS first (returns immediately).
+            if self.state.mode == Mode.combat:
+                await self._resume_combat()
         self._emit(StateChangedEvent())
 
     # ---- exploration (free-flow) ----
@@ -550,111 +564,278 @@ class RpgGame(GameSession):
                     self._emit(NarrationEvent(text=f"{name} {dec['world_action']}"))
 
     # ---- combat (turn-based) ----
+    # ---- combat (turn-based, driven by srd.combat.CombatEngine) -----------------------------------
+    def _all_combatants(self) -> list:
+        """Everyone the initiative order can name — player + ALL followers + ALL enemies (including the
+        down/dead, so `advance_turn` can look them up by id and skip corpses). The order itself is fixed
+        at combat start; the engine reads `.dead` to skip."""
+        s = self.state
+        return [s.player] + list(s.followers) + [en for e in s.encounters for en in e.enemies]
+
+    def _living_enemies(self) -> list:
+        return [en for e in self.state.encounters for en in e.enemies if en.alive]
+
+    def _is_enemy(self, c) -> bool:
+        return any(en.id == c.id for e in self.state.encounters for en in e.enemies)
+
     def _enter_combat(self, encounter) -> None:
+        """Spring an encounter: roll initiative over player + living followers + living enemies, and open
+        the turn on the TOP of the order. This is setup ONLY — `submit_action` calls `_resume_combat()`
+        immediately after, which runs any NPC turns that precede the player's (the player may not win
+        initiative)."""
         from .state import CombatState
         encounter.triggered = True
         combatants = ([self.state.player] + [f for f in self.state.followers if f.alive]
                       + [e for e in encounter.enemies if e.alive])
-        order = self.rules.roll_initiative(combatants)
-        self.state.combat = CombatState(order=order, round=1, turn_index=0)
+        order = self.combat_engine.roll_initiative(combatants)
+        self.state.combat = CombatState(order=order)
+        self.combat_engine.begin_combat(self.state.combat, combatants)
         self.state.mode = Mode.combat
         self._emit(ModeChangedEvent(mode=Mode.combat))
         label = _enemy_label([e for e in encounter.enemies])
         self._emit(CombatEvent(text=self.state.flavor.combat_start.format(enemies=label)))
 
-    def _living_enemies(self) -> list:
-        return [en for e in self.state.encounters for en in e.enemies if en.alive]
+    def _attack(self, attacker, target) -> None:
+        """One attack through the combat engine (the attacker's own weapon profile = data). Narrates the
+        beat: hit/crit/miss, damage, and whether the target drops (unconscious) or is slain."""
+        r = self.combat_engine.attack(attacker, target)
+        if r.hit:
+            verb = "crits" if r.critical == "hit" else "hits"
+            self._emit(CombatEvent(text=f"{attacker.name} {verb} {target.name} for {r.damage}."))
+        else:
+            self._emit(CombatEvent(text=f"{attacker.name} misses {target.name}."))
+        if r.target_dead:
+            self._emit(CombatEvent(text=f"{target.name} is slain."))
+        elif r.target_down:
+            self._emit(CombatEvent(text=f"{target.name} drops."))
 
-    def _resolve_attack(self, attacker, target, dice: str | None = None, ability: str | None = None) -> None:
-        """Resolve one attack. Dice/ability come from the ATTACKER's profile by default (data), so a
-        slice's archer or brute fights as authored; callers may still override for a special strike."""
-        r = self.rules.attack(attacker, target, ability=ability or attacker.attack_ability,
-                              damage_dice=dice or attacker.damage_dice)
-        self._emit(CombatEvent(text=f"{attacker.name} {'hits for %d' % r.damage if r.hit else 'misses'} {target.name}."))
-        if r.target_down:
-            self._emit(CombatEvent(text=f"{target.name} falls."))
+    def _advance_combat_turn(self):
+        """End the current turn and open the next (engine authority). When the order wraps to a new round,
+        advance the game clock: a multi-round fight IS elapsed narrative time, which the engine differences
+        for temporal decay — a fight followed by a conversation must not read as simultaneous. (state.py:
+        the clock 'advances in rounds during combat'.)"""
+        cs = self.state.combat
+        before = cs.round
+        nxt = self.combat_engine.advance_turn(cs, self._all_combatants())
+        if cs.round > before:
+            self.state.clock.advance(0.1)          # narrative time gained per completed combat round
+        return nxt
+
+    async def _resume_combat(self) -> None:
+        """Run the initiative order until it's the (conscious) player's turn or the fight is over. Enemies
+        and followers act on their turns; a downed PC-like rolls a death save on its. Everything that
+        happens between two of the player's turns resolves here — the player only ever acts on THEIR
+        turn (handed back to the view when `current()` is the conscious player)."""
+        s = self.state
+        eng = self.combat_engine
+        for _ in range(500):                       # guard against a pathological non-terminating order
+            if s.mode != Mode.combat or s.combat is None:
+                return
+            if not self._living_enemies():
+                self._end_combat(victory=True); return
+            combatants = self._all_combatants()
+            cur = eng.current(s.combat, combatants)
+            if cur is None:
+                self._end_combat(victory=True); return
+            if cur.dead:
+                self._advance_combat_turn(); continue
+            if cur.down:                           # unconscious but not dead -> death save on its turn
+                self._death_save_turn(cur)
+                if cur.id == s.player.id and s.player.dead:
+                    self._on_player_death(); return
+                self._advance_combat_turn(); continue
+            if cur.id == s.player.id:
+                return                             # the conscious player's turn: hand control to the view
+            await self._npc_turn(cur)              # an enemy or a follower takes its whole turn
+            if s.player.dead:                      # e.g. an enemy's blow was massive-damage instant death
+                self._on_player_death(); return
+            self._advance_combat_turn()
+        # Guard exhausted — only reachable if the player has been unconscious for 500 straight turns with
+        # the fight unable to resolve (e.g. the whole party is downed-stable and the last enemies are
+        # physically walled off from every body, so they can never land a finishing blow). NEVER strand
+        # the player in `combat` with no turn to act on: resolve deterministically. Resolution is
+        # PARTY-AWARE, not player-only: a stalemate is a DEFEAT only when the WHOLE party has fallen —
+        # keying on the player alone would read as "you died" while a conscious ally still stands (and
+        # would be an outright wrong-defeat if an ally-revival mechanic is ever added). If anyone on the
+        # party is still up, just end the unwinnable fight instead.
+        if s.mode == Mode.combat:
+            party_up = s.player.alive or any(f.alive for f in s.followers)
+            if not party_up:
+                self._on_player_death()
+            else:
+                self._end_combat(victory=not self._living_enemies())
 
     async def _combat_action(self, action: PlayerAction) -> None:
+        """Apply the player's intent on THEIR turn only, spending the action economy. Movement is 5 ft
+        per tile from `movement_left`; attacking an adjacent foe spends the action. The turn ends on an
+        explicit `wait`/space, or automatically once no full step of movement remains AND there is nothing
+        left to attack (the action is spent, or no foe is adjacent to spend it on). While a bump-attack is
+        still possible the turn stays open. `wait` always ends the turn. Then `_resume_combat` runs the
+        NPC turns."""
         s = self.state
-        # Click-to-move in combat: an adjacent enemy tile = attack it; otherwise step toward the tile.
-        if action.kind == "move_to":
-            cell = (action.tx, action.ty)
-            px, py = s.player.pos
-            foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == cell), None)
-            if foe is not None and self._dist((px, py), cell) == 1:
-                action = PlayerAction(kind="move", dx=cell[0] - px, dy=cell[1] - py)   # bump-attack
-            else:
-                step = self._step_toward_tile((px, py), cell)
-                if step is None:
-                    return
-                action = PlayerAction(kind="move", dx=step[0], dy=step[1])
-        # PLAYER turn: bump-to-attack or step
-        if action.kind == "move":
-            tx, ty = s.player.pos[0] + action.dx, s.player.pos[1] + action.dy
-            tgt = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
-            if tgt:
-                self._resolve_attack(s.player, tgt)      # player's own weapon profile (data)
-            elif s.world_map.walkable(tx, ty) and not self._occupied((tx, ty), s.player.id):
-                s.player.pos = (tx, ty)
-            else:
-                return                       # bumped a wall — not a turn
-        elif action.kind != "wait":
+        cs = s.combat
+        if cs is None:
+            return
+        cur = self.combat_engine.current(cs, self._all_combatants())
+        if cur is None or cur.id != s.player.id or not s.player.alive:
+            return                                 # stray input outside the player's turn — ignore it
+        ended = False
+        if action.kind == "wait":
+            ended = True
+        elif action.kind == "move_to":
+            self._player_combat_to(action.tx, action.ty)
+        elif action.kind == "move":
+            self._player_combat_step(action.dx, action.dy)
+        else:
             return
         if not self._living_enemies():
             self._end_combat(victory=True); return
-        await self._ally_turns()             # the differentiator: does the ally fight for you?
-        if not self._living_enemies():
-            self._end_combat(victory=True); return
-        self._enemy_turns()
-        if not s.player.alive:
-            self._on_player_death()
+        if not ended and cs.movement_left < 5:
+            # No full step of movement remains: auto-end only once there's nothing left to attack either
+            # (action spent, or no adjacent foe). Keeps the turn open while a bump-attack is still viable.
+            adjacent_foe = any(e.pos and self._dist(s.player.pos, e.pos) == 1 for e in self._living_enemies())
+            if cs.action_used or not adjacent_foe:
+                ended = True
+        if ended:
+            self._advance_combat_turn()
+            await self._resume_combat()
+
+    def _player_combat_step(self, dx: int, dy: int) -> None:
+        """A single orthogonal step for the player in combat: bump an adjacent foe to attack it (spends
+        the action), else walk one tile (spends 5 ft of movement)."""
+        s = self.state
+        cs = s.combat
+        tx, ty = s.player.pos[0] + dx, s.player.pos[1] + dy
+        foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
+        if foe is not None:
+            if not cs.action_used:
+                self._attack(s.player, foe)
+                cs.action_used = True
             return
-        s.combat.round += 1
+        if cs.movement_left >= 5 and s.world_map.walkable(tx, ty) and not self._occupied((tx, ty), s.player.id):
+            s.player.pos = (tx, ty)
+            cs.movement_left -= 5
+            self._recompute_fov()
+
+    def _player_combat_to(self, tx: int, ty: int) -> None:
+        """Click-to-move in combat: a foe on the tile = attack it when adjacent (else close on it); an
+        empty tile = walk toward it, spending 5 ft per step until movement runs out or the path blocks.
+        Stops one tile short of a foe (click the foe again to bump-attack). Movement caps the reach, so
+        clicking far never teleports."""
+        s = self.state
+        cs = s.combat
+        cell = (tx, ty)
+        foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == cell), None)
+        if foe is not None and self._dist(s.player.pos, cell) == 1:
+            if not cs.action_used:
+                self._attack(s.player, foe)
+                cs.action_used = True
+            return
+        for _ in range(40):
+            if cs.movement_left < 5 or tuple(s.player.pos) == cell:
+                return
+            step = self._step_toward_tile(s.player.pos, cell)
+            if step is None:
+                return
+            nx, ny = s.player.pos[0] + step[0], s.player.pos[1] + step[1]
+            if any(e.pos and tuple(e.pos) == (nx, ny) for e in self._living_enemies()):
+                return                             # next cell is the foe — stop adjacent, don't walk in
+            if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
+                return
+            s.player.pos = (nx, ny)
+            cs.movement_left -= 5
+            self._recompute_fov()
+
+    async def _npc_turn(self, cur) -> None:
+        """Resolve one non-player combatant's whole turn — an enemy stat-block or a companion mind."""
+        if self._is_enemy(cur):
+            self._enemy_act(cur)
+        else:
+            await self._follower_act(cur)
+
+    def _enemy_act(self, enemy) -> None:
+        """A generic enemy: close on the nearest CONSCIOUS mark (up to its speed) and attack if adjacent.
+        If nothing conscious remains, it finishes the nearest downed mark (a melee hit on the helpless is
+        an auto-crit) — which ends the fight instead of stalling on a party that's already fallen."""
+        s = self.state
+        if not enemy.pos:
+            return
+        candidates = [s.player] + [f for f in s.followers]
+        # Only ever target a mark that has a position (defensive — _dist would blow up on pos=None).
+        marks = ([m for m in candidates if m.alive and m.pos]
+                 or [m for m in candidates if m.down and not m.dead and m.pos])
+        if not marks:
+            return
+        tgt = min(marks, key=lambda t: self._dist(enemy.pos, t.pos))
+        for _ in range(max(1, int(getattr(enemy, "speed", 30) or 30) // 5)):
+            if self._dist(enemy.pos, tgt.pos) <= 1:
+                break
+            before = tuple(enemy.pos)
+            self._step_toward(enemy, tgt.pos)
+            if tuple(enemy.pos) == before:
+                break
+        if self._dist(enemy.pos, tgt.pos) <= 1:
+            self._attack(enemy, tgt)
+
+    async def _follower_act(self, follower) -> None:
+        """A companion's turn. Their STANCE (fight / guard / hang back / flee) is decided ONCE per fight
+        by their engine mind — grounded in how they regard the traveler — and VOICED (emitted through
+        `_say`, which the server synthesizes via Hume). It's the sharpest differentiator: an ally you've
+        helped spends blood for you; one you've wronged won't. Executing the stance each turn is
+        deterministic; only the one-time decision is a mind call."""
+        s = self.state
+        cs = s.combat
+        if not follower.alive or not follower.pos:
+            return
+        stance = cs.ally_stance.get(follower.mind_slug)
+        if stance is None:
+            alarm = s.flavor.combat_alarm.format(enemies=_enemy_label(self._living_enemies()))
+            choice = await self.minds.act(follower.mind_slug, self._situation(follower.mind_slug, recent=[alarm]),
+                ["Fight beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
+            stance = (choice.get("action") or "").lower()
+            cs.ally_stance[follower.mind_slug] = stance
+            self._say(follower.name, follower.mind_slug, choice.get("reason") or stance)   # voiced downstream
+        foes = [e for e in self._living_enemies() if e.pos]
+        if ("fight" in stance or "beside" in stance) and foes:
+            tgt = min(foes, key=lambda e: self._dist(follower.pos, e.pos))
+            for _ in range(max(1, int(getattr(follower, "speed", 30) or 30) // 5)):
+                if self._dist(follower.pos, tgt.pos) <= 1:
+                    break
+                before = tuple(follower.pos)
+                self._step_toward(follower, tgt.pos)
+                if tuple(follower.pos) == before:
+                    break
+            if self._dist(follower.pos, tgt.pos) <= 1:
+                self._attack(follower, tgt)
+        # guard / hang back / flee -> the follower holds: a wronged ally simply won't fight for you
+
+    def _death_save_turn(self, c) -> None:
+        """A downed PC-like spends its turn on a death saving throw; narrate the swing (and the pips)."""
+        res = self.combat_engine.death_save(c)
+        if not res.get("rolled"):
+            return
+        outcome = res.get("outcome")
+        if outcome == "revive":
+            self._emit(CombatEvent(text=f"{c.name} gasps back to consciousness!"))
+        elif outcome == "dead":
+            self._emit(CombatEvent(text=f"{c.name} goes still — gone."))
+        elif outcome == "stable":
+            self._emit(CombatEvent(text=f"{c.name} steadies, clinging to life."))
+        else:
+            self._emit(CombatEvent(
+                text=f"{c.name} fights for life ({res.get('successes', 0)}✓/{res.get('failures', 0)}✗)."))
 
     def _on_player_death(self) -> None:
-        """Defeat is a TERMINAL state, not a stuck combat: leave combat mode, set game_over, and
-        stop accepting further actions (submit_action guards on the flag). Without this the player
-        is trapped in combat forever — a corpse that can still 'act' while enemies keep rolling."""
+        """Defeat is a TERMINAL state, not a stuck combat: leave combat mode, set game_over, and stop
+        accepting further actions (submit_action guards on the flag). Without this the player is trapped
+        in combat forever — a corpse that can still 'act' while enemies keep rolling."""
         s = self.state
         s.flags["game_over"] = True
         s.mode = Mode.exploration
         s.combat = None
+        s.clock.advance(0.1)                       # credit the fight's final (partial) round of time
         self._emit(ModeChangedEvent(mode=Mode.exploration))
         self._emit(CombatEvent(text=s.flavor.defeat_text))
-
-    async def _ally_turns(self) -> None:
-        s = self.state
-        for f in s.followers:
-            if not (f.alive and self._living_enemies()):
-                continue
-            # Decide the ally's stance ONCE per fight (an LLM call), grounded in how they regard the
-            # traveler — then just execute it each round. This is the sharpest differentiator: an ally
-            # you've helped fights; one you've wronged guards itself, hangs back, or flees.
-            act = s.combat.ally_stance.get(f.mind_slug)
-            if act is None:
-                alarm = s.flavor.combat_alarm.format(enemies=_enemy_label(self._living_enemies()))
-                choice = await self.minds.act(f.mind_slug, self._situation(f.mind_slug, recent=[alarm]),
-                    ["Fight beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
-                act = (choice.get("action") or "").lower()
-                s.combat.ally_stance[f.mind_slug] = act
-                self._emit(CombatEvent(text=f"{f.name}: {choice.get('reason') or act}"))
-            if "fight" in act or "beside" in act:
-                tgt = min(self._living_enemies(), key=lambda e: self._dist(f.pos, e.pos))
-                if self._dist(f.pos, tgt.pos) > 1:
-                    self._step_toward(f, tgt.pos)
-                if self._dist(f.pos, tgt.pos) <= 1:
-                    self._resolve_attack(f, tgt)         # follower's own weapon profile (data)
-            # guard / hang back / flee -> no attack: a wronged ally simply won't spend blood for you
-
-    def _enemy_turns(self) -> None:
-        s = self.state
-        marks = [s.player] + [f for f in s.followers if f.alive]
-        for g in self._living_enemies():
-            tgt = min(marks, key=lambda t: self._dist(g.pos, t.pos))
-            if self._dist(g.pos, tgt.pos) > 1:
-                self._step_toward(g, tgt.pos)
-            if self._dist(g.pos, tgt.pos) <= 1:
-                self._resolve_attack(g, tgt)             # enemy's own attack profile (data)
 
     def _end_combat(self, victory: bool) -> None:
         s = self.state
@@ -662,6 +843,10 @@ class RpgGame(GameSession):
         label = _enemy_label([en for e in s.encounters for en in e.enemies])
         s.mode = Mode.exploration
         s.combat = None
+        # Credit the fight's final (partial) round: per-round ticks land on a wrap, but victory/defeat
+        # returns before the last wrap, so a one-round skirmish would otherwise register zero elapsed
+        # time. The clock is only ever differenced monotonically, so a small over-credit is harmless.
+        s.clock.advance(0.1)
         self._emit(ModeChangedEvent(mode=Mode.exploration))
         if victory:
             self._emit(CombatEvent(text=s.flavor.combat_victory.format(enemies=label)))

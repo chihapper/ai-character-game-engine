@@ -12,6 +12,7 @@ const CELL := 24
 var snap: Dictionary = {}
 var _vis := {}   # "x,y" -> true : tiles lit right now
 var _exp := {}   # "x,y" -> true : tiles ever seen (dim, remembered)
+var _turn_id := ""   # id of the combatant whose turn it is (empty out of combat)
 
 var _camera: Camera2D
 var _font: Font
@@ -36,6 +37,8 @@ var ENT_COLORS := {
 
 var BG_COLOR := Color("161616")
 var VOID_COLOR := Color("161616")
+var TURN_RING := Color("f5d020")   # highlight ring around the combatant whose turn it is
+var DOWN_COLOR := Color("6b3535")  # a downed (0 HP, unconscious) combatant token
 var TILE_BORDER := Color(0, 0, 0, 0.35)
 var LABEL_COLOR := Color(0.92, 0.92, 0.92)
 var TOKEN_LETTER_COLOR := Color(0.08, 0.08, 0.08)
@@ -56,6 +59,7 @@ func _ready() -> void:
 ## main.gd calls this on every snapshot. We never talk back to Net.
 func render(s: Dictionary) -> void:
 	snap = s if typeof(s) == TYPE_DICTIONARY else {}
+	_turn_id = str(snap.get("combat_turn", "")) if typeof(snap) == TYPE_DICTIONARY else ""
 	_vis.clear()
 	_exp.clear()
 	for k in snap.get("visible", []):
@@ -150,8 +154,11 @@ func _draw_entities() -> void:
 			continue
 		var kind := str(e.get("kind", "enemy"))
 		var col: Color = ENT_COLORS.get(kind, Color(0.85, 0.85, 0.85))
+		if bool(e.get("down", false)):
+			col = DOWN_COLOR
 		var ent_name := str(e.get("name", ""))
-		_draw_token(int(pos[0]), int(pos[1]), col, ent_name)
+		var active := _turn_id != "" and str(e.get("id", "")) == _turn_id
+		_draw_token(int(pos[0]), int(pos[1]), col, ent_name, active)
 
 		# HP bars: under followers ALWAYS; under enemies only when show_enemy_hp and hp!=null.
 		var hp = e.get("hp", null)
@@ -173,15 +180,20 @@ func _draw_player() -> void:
 	if typeof(pos) != TYPE_ARRAY or pos.size() < 2:
 		return
 	var pname := str(player.get("name", ""))
-	_draw_token(int(pos[0]), int(pos[1]), ENT_COLORS["player"], pname)
+	var active := _turn_id != "" and str(player.get("id", "")) == _turn_id
+	_draw_token(int(pos[0]), int(pos[1]), ENT_COLORS["player"], pname, active)
 
 
 ## A rounded token filling most of the cell, its first letter centred, and a small
-## name label floating above it.
-func _draw_token(gx: int, gy: int, col: Color, ent_name: String) -> void:
+## name label floating above it. `active` draws a highlight ring (whose turn it is in combat).
+func _draw_token(gx: int, gy: int, col: Color, ent_name: String, active: bool = false) -> void:
 	var origin := Vector2(gx * CELL, gy * CELL)
 	var centre := origin + Vector2(CELL * 0.5, CELL * 0.5)
 	var radius := CELL * 0.40
+
+	# Turn highlight: a bright ring just outside the token (drawn under it so the token sits on top).
+	if active:
+		draw_arc(centre, radius + 3.0, 0.0, TAU, 24, TURN_RING, 2.5, true)
 
 	# Rounded token = a filled circle (Godot's cheapest rounded shape).
 	draw_circle(centre, radius, col)

@@ -293,6 +293,11 @@ class EntityView(BaseModel):
     kind: str                                 # player | npc | follower | enemy
     hp: int | None = None
     max_hp: int | None = None
+    # combat readout (mechanical, allowed): who's down + their death-save pips (shown for a downed
+    # follower/PC-like so the view can draw ✓/✗ tallies). 0/False out of combat or when up.
+    down: bool = False
+    death_successes: int = 0
+    death_failures: int = 0
 
 
 class StateSnapshot(BaseModel):
@@ -309,7 +314,10 @@ class StateSnapshot(BaseModel):
     tiles: list[str]
     entities: list[EntityView] = Field(default_factory=list)
     combat_order: list[str] = Field(default_factory=list)
-    combat_turn: str | None = None
+    combat_turn: str | None = None            # id of the combatant acting right now (None out of combat)
+    combat_round: int = 0                     # 1-based round counter (0 out of combat)
+    combat_movement: int = 0                  # feet of movement the current combatant has left
+    combat_action_used: bool = False          # has the current combatant spent its action this turn
     show_enemy_hp: bool = False
     visible: list[str] = Field(default_factory=list)       # "x,y" tiles lit right now (fog of war)
     explored: list[str] = Field(default_factory=list)      # "x,y" tiles ever seen (dim, remembered)
