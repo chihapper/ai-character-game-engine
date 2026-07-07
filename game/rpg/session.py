@@ -23,7 +23,8 @@ class PlayerAction(BaseModel):
     # enemy); "move_to" is click-to-move (pathfind to a tile); "use" consumes an inventory item
     # (a healing draught — spends the ACTION in combat). Add a kind here the moment the core
     # handles it, not before (a declared-but-ignored kind is a silent no-op trap).
-    kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp", "use"]
+    kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp",
+                  "use", "rest"]
     dx: int = 0                  # move (single step)
     dy: int = 0
     tx: int = 0                  # move_to (target tile)

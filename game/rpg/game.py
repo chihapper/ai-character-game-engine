@@ -256,6 +256,8 @@ class RpgGame(GameSession):
             self._emit(NarrationEvent(text=await self.dm.narrate_scene(self._scene_text())))
         elif action.kind == "use":
             self._use_item(action.target_id)
+        elif action.kind == "rest":
+            self._rest()
         elif action.kind == "wait":
             self.state.clock.advance(0.1)
 
@@ -294,6 +296,36 @@ class RpgGame(GameSession):
             text=f"You down {item.name} — {p.hp - before} HP back ({p.hp}/{p.max_hp})."))
         s.campaign_log.add(s.clock.value, f"The traveler used {item.name}.", tags=["item"])
         return True
+
+    def _rest(self) -> None:
+        """A costed camp rest (completes the fight/loot/heal survival loop): the whole party heals
+        a hit-die + CON each (dice decide, never narration), REAL time passes, and settling down in
+        hostile dark is LOUD — a seeded chance that a nearby untriggered encounter comes to see
+        (the same noise pattern as door-forcing; all prose is the slice's WorldFlavor data)."""
+        s = self.state
+        party = [s.player] + [f for f in s.followers if f.alive]
+        if all(c.hp >= c.max_hp for c in party):
+            self._emit(NarrationEvent(text="No one needs the rest — better to keep moving."))
+            return
+        s.clock.advance(0.5)                     # a rest is the most expensive time purchase there is
+        healed: list[str] = []
+        for c in party:
+            if c.hp >= c.max_hp:
+                continue
+            roll = self.combat_engine.dice.roll(c.hit_dice or "1d8") + c.stats.mod("CON")
+            gain = min(c.max_hp - c.hp, max(1, roll))
+            c.hp += gain
+            healed.append(f"{c.name} +{gain}")
+        self._emit(NarrationEvent(text=f"{s.flavor.rest_text} ({', '.join(healed)} HP)"))
+        s.campaign_log.add(s.clock.value, "The party rested.", tags=["rest"])
+        # Noise: resting can draw a nearby pack that hasn't been dealt with yet (seeded).
+        if self.rules.rng.random() < 0.35:
+            noisy = next((e for e in s.encounters
+                          if not e.triggered and e.trigger_pos
+                          and self._dist(s.player.pos, e.trigger_pos) <= 20), None)
+            if noisy is not None:
+                self._emit(NarrationEvent(text=s.flavor.rest_ambush))
+                self._enter_combat(noisy)        # submit_action resumes NPC turns right after
 
     def _scene_text(self) -> str:
         """The world-state the DM narrates FROM — where the player is, who's near, recent history.
@@ -570,12 +602,18 @@ class RpgGame(GameSession):
         name = self.minds.characters[slug].name
         reply = await self.minds.talk(slug, action.text, self._situation(slug))
         self._say(name, slug, reply)
+        s.talk_counts[slug] = s.talk_counts.get(slug, 0) + 1   # the recruit gate reads this
         s.campaign_log.add(s.clock.value, f'The traveler said to {name}: "{action.text}"', tags=["talk", slug])
 
     async def _recruit(self, action: PlayerAction) -> None:
-        """Ask an adjacent NPC to join. The NPC DECIDES via choose_action, grounded in how they've
-        come to regard the traveler — so one you've helped comes along; one you've wronged won't.
-        On yes, they become a Follower who trails you (and can fight beside you)."""
+        """Ask an adjacent NPC to join — a social flow, not a command (owner design 2026-07-06):
+        the ASK only truly lands once you've genuinely talked (per-NPC `recruit_min_talks`, plus an
+        optional quest flag — both observable WORLD facts, authored as data). Asked too soon, the
+        world affords no join yet: the mind still answers IN CHARACTER (and remembers being asked),
+        it just isn't offered the choice to come — the offer hasn't been earned. Once earned, the
+        NPC DECIDES via choose_action, grounded in how they've come to regard the traveler — one
+        you've helped comes along; one you've wronged won't. The gate bounds the AFFORDANCE, never
+        the mind's answer (that stays the engine's — never deterministic)."""
         s = self.state
         npc = next((n for n in s.npcs if n.slug == action.target_id), None)
         # Server-side range gate: an explicit target must actually be BESIDE you — the view's
@@ -587,6 +625,25 @@ class RpgGame(GameSession):
                       key=lambda n: self._dist(n.pos, s.player.pos), default=None)
         if npc is None:
             self._emit(NarrationEvent(text="No one beside you to ask along."))
+            return
+        talks = s.talk_counts.get(npc.slug, 0)
+        gate_met = talks >= max(0, int(npc.recruit_min_talks)) and (
+            not npc.recruit_requires_flag or s.flags.get(npc.recruit_requires_flag, False))
+        if not gate_met:
+            # Premature ask: a real conversational beat. The afforded options carry no join —
+            # the mind picks how to hold the stranger at arm's length, in its own voice, and the
+            # moment is planted in its memory (an early ask can COLOR how trust grows).
+            choice = await self.minds.act(npc.slug, self._situation(
+                npc.slug, recent=[s.flavor.recruit_prompt]),
+                ["Wave the request off — you two have barely spoken",
+                 "Hear the traveler out, but promise nothing yet"])
+            self._say(npc.name, npc.slug, choice.get("reason") or "...")
+            await self.minds.remember(
+                npc.slug, "The traveler asked me to come along before we'd hardly spoken.",
+                kind="player_event", actor="player", player_role="caused", magnitude=0.3,
+                t=s.clock.value)
+            s.campaign_log.add(s.clock.value, f"The traveler asked {npc.name} along too soon.",
+                               tags=["recruit", npc.slug])
             return
         choice = await self.minds.act(npc.slug, self._situation(
             npc.slug, recent=[self.state.flavor.recruit_prompt]),

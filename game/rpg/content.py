@@ -154,13 +154,17 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
     player.max_hp = player.hp = 24
 
     # Vael hands the keystone over ONLY if he chooses to join — authored right here as data.
+    # Recruit gates are DATA per character: guarded Vael needs real conversation before an ask
+    # even lands (3 exchanges); quick-bonding Lira opens up faster (2).
     vael = NpcPlacement(slug=VAEL, name="Vael", handle="a cornered man", pos=at(1),
                         game_data={"srd5": {"role": "cornered scavenger"}},
+                        recruit_min_talks=3,
                         on_recruit_grant=keystone_item(),
                         on_recruit_line=("If we're in this together — here. The thing my crew died for. "
                                          "It opens the inner door. Don't make me sorry I trusted you with it."))
     lira = NpcPlacement(slug=LIRA, name="Lira", handle="a lively sellsword", pos=at(2),
-                        game_data={"srd5": {"role": "recruitable companion"}})
+                        game_data={"srd5": {"role": "recruitable companion"}},
+                        recruit_min_talks=2)
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(vael.pos), tuple(lira.pos)}
@@ -299,14 +303,18 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
     player.max_hp = player.hp = 26            # authored veteran HP (slice data), as in the Vault
     player.xp = 300                            # consistent with arriving here at level 2
 
+    # Recruit gates as data: proud Torvald won't hear a join ask until you've truly talked (3);
+    # watchful Senna warms a little quicker (2) but is steadfast once she does.
     torvald = NpcPlacement(slug=TORVALD, name="Torvald", handle="a soot-streaked survivor", pos=at(1),
                            game_data={"srd5": {"role": "cornered survivor"}},
+                           recruit_min_talks=3,
                            on_recruit_grant=sigil_item(),
                            on_recruit_line=("If we walk out of here together — take it. The sigil my "
                                             "crew burned for. It keys the Ember Gate. Don't make me "
                                             "regret handing it over."))
     senna = NpcPlacement(slug=SENNA, name="Senna", handle="a wary mapmaker", pos=at(2),
-                         game_data={"srd5": {"role": "recruitable companion"}})
+                         game_data={"srd5": {"role": "recruitable companion"}},
+                         recruit_min_talks=2)
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(torvald.pos), tuple(senna.pos)}

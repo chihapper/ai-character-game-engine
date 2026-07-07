@@ -264,6 +264,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_H:
 			# Quaff a healing draught (first drinkable in the pack). In combat this spends the action.
 			Net.send_action("use")
+		KEY_Z:
+			# Camp rest: party heals a hit die each, real time passes, and the noise can draw danger.
+			Net.send_action("rest")
 		KEY_F12:
 			_save_screenshot(OS.get_environment("RPG_SHOT") if OS.get_environment("RPG_SHOT") != "" else "user://rpg_shot.png")
 		KEY_N:

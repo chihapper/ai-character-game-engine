@@ -123,6 +123,12 @@ class NpcPlacement(BaseModel):
     game_data: dict = Field(default_factory=dict)
     on_recruit_grant: Item | None = None     # item this NPC hands the player IF they choose to join
     on_recruit_line: str = ""                # what they say handing it over (their voice, not the DM's)
+    # The SOCIAL GATE on asking them to join (owner design: companionship is earned through
+    # conversation, not commanded). These gate the ASK's availability — an observable world fact
+    # (how much you've actually talked; an optional quest flag) — never the mind's ANSWER, which
+    # stays the engine's to make. A guarded character needs more talk than a warm one (data).
+    recruit_min_talks: int = 2               # real exchanges required before a join ask lands
+    recruit_requires_flag: str = ""          # optional quest/world flag that must be set ('' = none)
 
 
 class Encounter(BaseModel):
@@ -256,6 +262,8 @@ class WorldFlavor(BaseModel):
     defeat_text: str = "You fall in the dark, and it closes over you. Your story ends here. (press q to quit)"
     combat_no_time: str = "No time for that — steel is out."   # feedback for a non-combat action mid-fight
     force_noise: str = "The clamor rings out into the dark."   # a failed door-forcing draws attention
+    rest_text: str = "You make a cold camp and take what rest the dark allows."   # narrated on a rest
+    rest_ambush: str = "Something heard you settle — shapes move at the edge of the light."  # rest drew danger
 
 
 class GameState(BaseModel):
@@ -273,6 +281,7 @@ class GameState(BaseModel):
     doors: list[Door] = Field(default_factory=list)
     quests: list[QuestThread] = Field(default_factory=list)
     flags: dict[str, bool] = Field(default_factory=dict)   # game/quest flags (e.g. inner_door_open)
+    talk_counts: dict[str, int] = Field(default_factory=dict)  # slug -> real exchanges (the recruit gate reads this)
     explored: set[str] = Field(default_factory=set)        # "x,y" tiles the player has ever seen (fog of war)
     campaign_log: CampaignLog = Field(default_factory=CampaignLog)
     combat: CombatState | None = None
