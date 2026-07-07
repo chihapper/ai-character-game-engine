@@ -78,7 +78,9 @@ func _ready() -> void:
 		t.timeout.connect(func():
 			if OS.get_environment("RPG_SHOT_DEMO") != "" and _speech != null:
 				_speech.show_line("Lira", "Stick close — the dark down here has teeth.", "rpg-lira")
-				await get_tree().create_timer(1.2).timeout
+				if _world != null:   # fake a crit beat so flash/float/shake are visible in the shot
+					_world.combat_fx({"sfx": "crit", "attacker": "player", "target": "player", "damage": 7, "crit": true})
+				await get_tree().create_timer(0.55).timeout
 			_save_screenshot(shot))
 		t.start()
 
@@ -159,6 +161,10 @@ func _on_game_event(ev: Dictionary) -> void:
 	var data = ev.get("data", {})
 	if typeof(data) == TYPE_DICTIONARY and data.has("sfx"):
 		_play_sfx(str(data["sfx"]))
+		# Visible combat beats (lunge / flash / damage numbers / death fade / crit shake) —
+		# the world stages them from the same event data, staggered so a round reads as blows.
+		if t == "combat" and _world != null:
+			_world.combat_fx(data)
 
 
 ## Streamed voice playback: every arriving chunk's s16le PCM is converted to frames and appended
@@ -291,6 +297,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A click on an UNEXPLORED tile is rejected with feedback (the server enforces the same rule
 	# authoritatively — this check just keeps the refusal from being silent).
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _speech != null:
+			_speech.dismiss()   # a map click means the player moved on — clear the speech card
 		if _world != null:
 			var t: Vector2i = _world.tile_at_mouse()
 			var key := str(t.x) + "," + str(t.y)

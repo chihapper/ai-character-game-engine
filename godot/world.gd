@@ -36,6 +36,17 @@ var _tint := Color(1, 1, 1)
 # --- movement tweening: id -> {from: Vector2, to: Vector2, t: float} (tile coords) ---
 var _anim := {}
 var _last_pos := {}                   # id -> Vector2i last snapshot tile
+var _facing := {}                     # id -> -1.0 (left) / 1.0 (right), from the last horizontal move
+var _last_sprite := {}                # id -> last drawn sprite idx (death ghosts use it)
+
+# --- transient combat effects (lunge / flash / floating text / death ghost / shake) ---
+var _fx: Array = []                   # {kind, delay, t, dur, id?/pos?/text?/color?/dir?/sprite?}
+var _fx_stagger := 0.0                # incoming beats space themselves out so a round reads as beats
+var _shake := 0.0                     # crit screen-shake seconds remaining
+var _time := 0.0                      # frame clock for jitter/hop phases
+var FLOAT_COLOR := Color(1, 1, 1)
+var FLOAT_CRIT := Color("f5d020")
+var FLOAT_MISS := Color(0.65, 0.65, 0.7)
 
 # Runtime Color() values must live in `var`, never `const` (contract / Godot rule).
 var TILE_COLORS := {
@@ -96,9 +107,14 @@ func _load_sheet() -> void:
 ## main.gd tells us which slice is playing so terrain + tint match the biome.
 func set_slice(slice_name: String) -> void:
 	# A fresh world (connect or N-key restart) re-uses entity ids at new positions — stale
-	# tween state would streak tokens across the map, so drop it wholesale.
+	# tween/fx state would streak tokens or replay old beats, so drop it all wholesale.
 	_anim.clear()
 	_last_pos.clear()
+	_facing.clear()
+	_last_sprite.clear()
+	_fx.clear()
+	_fx_stagger = 0.0
+	_shake = 0.0
 	var terrains = _sheet.get("terrain", {})
 	if typeof(terrains) != TYPE_DICTIONARY:
 		terrains = {}
@@ -144,6 +160,8 @@ func _update_anims() -> void:
 				_anim[id] = {"from": prev, "to": now, "t": 0.0}
 			elif prev != now:
 				_anim.erase(id)
+			if now.x != prev.x:                                # face the way you walk
+				_facing[id] = 1.0 if now.x > prev.x else -1.0
 		_last_pos[id] = now
 	# drop anims/positions for anything gone from the snapshot (died, left)
 	for id in _anim.keys().duplicate():
@@ -167,10 +185,53 @@ func _all_drawables() -> Array:
 	return out
 
 
+## Queue a combat beat from the server's event data (main.gd forwards CombatEvent.data). Beats
+## STAGGER themselves (~0.28s apart) so a whole resolved round reads as blows landing in sequence
+## rather than one simultaneous blur. Positions come from _last_pos (captured pre-turn — where
+## everyone stood when the blow landed).
+func combat_fx(data: Dictionary) -> void:
+	var sfx := str(data.get("sfx", ""))
+	var target := str(data.get("target", ""))
+	var attacker := str(data.get("attacker", ""))
+	match sfx:
+		"hit", "crit", "miss":
+			if attacker != "" and _last_pos.has(attacker) and _last_pos.has(target):
+				var dirv: Vector2 = (Vector2(_last_pos[target]) - Vector2(_last_pos[attacker]))
+				_fx.append({"kind": "lunge", "id": attacker, "delay": _fx_stagger,
+					"t": 0.0, "dur": 0.18,
+					"dir": dirv.normalized() if dirv.length() > 0.01 else Vector2.RIGHT})
+			if _last_pos.has(target):
+				if sfx == "miss":
+					_fx.append({"kind": "float", "pos": Vector2(_last_pos[target]), "text": "miss",
+						"color": FLOAT_MISS, "delay": _fx_stagger + 0.10, "t": 0.0, "dur": 0.8})
+				else:
+					var crit := sfx == "crit"
+					_fx.append({"kind": "flash", "id": target, "delay": _fx_stagger + 0.10,
+						"t": 0.0, "dur": 0.30 if crit else 0.22,
+						"color": Color(1, 0.9, 0.5) if crit else Color(1, 1, 1)})
+					_fx.append({"kind": "float", "pos": Vector2(_last_pos[target]),
+						"text": "-" + str(int(data.get("damage", 0))),
+						"color": FLOAT_CRIT if crit else FLOAT_COLOR,
+						"delay": _fx_stagger + 0.10, "t": 0.0, "dur": 0.9})
+					if crit:
+						_fx.append({"kind": "shake", "delay": _fx_stagger + 0.10, "t": 0.0, "dur": 0.01})
+			_fx_stagger += 0.28
+		"dead", "down":
+			if _last_pos.has(target):
+				_fx.append({"kind": "ghost", "pos": Vector2(_last_pos[target]),
+					"sprite": int(_last_sprite.get(target, -1)),
+					"delay": _fx_stagger, "t": 0.0, "dur": 0.6})
+		"levelup":
+			var pid := str(snap.get("player", {}).get("id", "player")) if typeof(snap.get("player")) == TYPE_DICTIONARY else "player"
+			if _last_pos.has(pid):
+				_fx.append({"kind": "float", "pos": Vector2(_last_pos[pid]), "text": "LEVEL UP!",
+					"color": FLOAT_CRIT, "delay": 0.2, "t": 0.0, "dur": 1.4})
+
+
 func _process(delta: float) -> void:
-	if _anim.is_empty():
-		return
-	var moved := false
+	_time += delta
+	var busy := false
+	# movement tweens
 	for id in _anim.keys().duplicate():
 		var a: Dictionary = _anim[id]
 		a["t"] = float(a["t"]) + delta * TWEEN_TILES_PER_S / max(0.001, Vector2(a["from"]).distance_to(a["to"]))
@@ -178,8 +239,38 @@ func _process(delta: float) -> void:
 			_anim.erase(id)
 		else:
 			_anim[id] = a
-		moved = true
-	if moved:
+		busy = true
+	# combat effects
+	for i in range(_fx.size() - 1, -1, -1):
+		var f: Dictionary = _fx[i]
+		if float(f.get("delay", 0.0)) > 0.0:
+			f["delay"] = float(f["delay"]) - delta
+			_fx[i] = f
+			busy = true
+			continue
+		if str(f["kind"]) == "shake":
+			_shake = maxf(_shake, 0.25)
+			_fx.remove_at(i)
+			busy = true
+			continue
+		f["t"] = float(f["t"]) + delta
+		if float(f["t"]) >= float(f["dur"]):
+			_fx.remove_at(i)
+		else:
+			_fx[i] = f
+		busy = true
+	if _fx.is_empty():
+		_fx_stagger = 0.0
+	# crit screen shake (deterministic jitter, no rng)
+	if _shake > 0.0:
+		_shake = maxf(0.0, _shake - delta)
+		var k := _shake / 0.25
+		if _camera != null:
+			_camera.offset = Vector2(sin(_time * 71.0), cos(_time * 53.0)) * 3.5 * k
+		busy = true
+	elif _camera != null and _camera.offset != Vector2.ZERO:
+		_camera.offset = Vector2.ZERO
+	if busy:
 		_move_camera_to_player()
 		queue_redraw()
 
@@ -224,6 +315,32 @@ func _draw() -> void:
 	_draw_tiles()
 	_draw_entities()
 	_draw_player()
+	_draw_fx()
+
+
+## Transient overlays: floating damage/miss text (rises + fades) and death ghosts (the fallen
+## sprite fading out where it stood — the snapshot removes the entity the moment it dies).
+func _draw_fx() -> void:
+	for f in _fx:
+		if float(f.get("delay", 0.0)) > 0.0:
+			continue
+		var kind := str(f.get("kind", ""))
+		var k: float = clampf(float(f["t"]) / float(f["dur"]), 0.0, 1.0)
+		if kind == "float" and _font != null:
+			var pos: Vector2 = Vector2(f["pos"])
+			var col: Color = Color(f["color"])
+			col.a = 1.0 - k * k
+			var txt := str(f["text"])
+			var w := _text_width(txt, _font_size + 2)
+			draw_string(_font, Vector2(pos.x * CELL + CELL * 0.5 - w * 0.5,
+				pos.y * CELL - 4.0 - 16.0 * k), txt,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size + 2, col)
+		elif kind == "ghost" and _atlas != null and int(f.get("sprite", -1)) >= 0:
+			var gpos: Vector2 = Vector2(f["pos"])
+			var mod := Color(0.7, 0.4, 0.4, 1.0 - k)
+			draw_texture_rect_region(_atlas,
+				Rect2(Vector2(gpos.x * CELL, gpos.y * CELL + 3.0 * k), Vector2(CELL, CELL)),
+				_src_rect(int(f["sprite"])), mod)
 
 
 ## Per-tile brightness: slice tint x radial light falloff around the player (lit tiles only).
@@ -365,10 +482,39 @@ func _draw_player() -> void:
 	_draw_being(p, player, "player", false, active)
 
 
+## Walk-cycle offset: a little pixel hop while gliding (one arc per tile) — single-frame sprites
+## read as WALKING with just this. Returns pixels of vertical lift.
+func _hop(id: String) -> float:
+	if not _anim.has(id):
+		return 0.0
+	var a: Dictionary = _anim[id]
+	var tiles: float = max(1.0, Vector2(a["from"]).distance_to(a["to"]))
+	return -3.0 * abs(sin(float(a["t"]) * PI * tiles))
+
+
+## Active lunge offset (pixels) for an attacker mid-beat, and flash color override for a victim.
+func _fx_offset(id: String) -> Vector2:
+	for f in _fx:
+		if str(f.get("kind", "")) == "lunge" and str(f.get("id", "")) == id and float(f.get("delay", 0.0)) <= 0.0:
+			var k: float = sin(float(f["t"]) / float(f["dur"]) * PI)
+			return Vector2(f["dir"]) * 7.0 * k
+	return Vector2.ZERO
+
+
+func _fx_flash(id: String) -> Color:
+	for f in _fx:
+		if str(f.get("kind", "")) == "flash" and str(f.get("id", "")) == id and float(f.get("delay", 0.0)) <= 0.0:
+			var k: float = 1.0 - float(f["t"]) / float(f["dur"])
+			return Color(f["color"]).lerp(Color(1, 1, 1), 1.0 - k) * Color(1.6, 1.6, 1.6)   # bright pop
+	return Color(1, 1, 1)
+
+
 ## One being: its mapped sprite (preferred) or the classic circle token (fallback). `p` is the
-## tween-aware TILE position (float).
+## tween-aware TILE position (float). Movement hops; attackers lunge; victims flash; walkers face
+## their direction (negative-width source region = horizontal flip).
 func _draw_being(p: Vector2, e: Dictionary, kind: String, down: bool, active: bool) -> void:
-	var origin := Vector2(p.x * CELL, p.y * CELL)
+	var id := str(e.get("id", ""))
+	var origin := Vector2(p.x * CELL, p.y * CELL) + Vector2(0, _hop(id)) + _fx_offset(id)
 	var centre := origin + Vector2(CELL * 0.5, CELL * 0.5)
 	var ent_name := str(e.get("name", ""))
 
@@ -377,10 +523,14 @@ func _draw_being(p: Vector2, e: Dictionary, kind: String, down: bool, active: bo
 
 	var idx := _sprite_for(e, kind)
 	if idx >= 0:
-		var mod := Color(1, 1, 1)
+		_last_sprite[id] = idx            # death ghosts reuse the last look
+		var mod := _fx_flash(id)
 		if down:
 			mod = Color(0.55, 0.3, 0.3)   # crumpled: dark red, no separate sprite needed
-		draw_texture_rect_region(_atlas, Rect2(origin, Vector2(CELL, CELL)), _src_rect(idx), mod)
+		var src := _src_rect(idx)
+		if float(_facing.get(id, 1.0)) < 0.0:
+			src = Rect2(src.position.x + src.size.x, src.position.y, -src.size.x, src.size.y)
+		draw_texture_rect_region(_atlas, Rect2(origin, Vector2(CELL, CELL)), src, mod)
 	else:
 		var col: Color = ENT_COLORS.get(kind, Color(0.85, 0.85, 0.85))
 		if down:

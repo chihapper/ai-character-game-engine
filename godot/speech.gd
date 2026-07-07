@@ -178,6 +178,41 @@ func set_speaking(on: bool) -> void:
 	_speaking = on
 
 
+## Player skip/dismiss (owner feedback: you can click out of the card if you don't want to read).
+## Mid-reveal -> complete the text instantly; fully revealed -> next queued line or dismiss.
+## Dismissing never cuts the VOICE — the audio pipeline is independent of the card.
+func skip_or_dismiss() -> void:
+	if not visible:
+		return
+	var total := _text_label.text.length()
+	if _text_label.visible_characters < total:
+		_text_label.visible_characters = total       # first click: reveal it all
+		_reveal = float(total)
+		return
+	if not _queue.is_empty():                         # next click: advance the queue
+		var next: Dictionary = _queue.pop_front()
+		_display(str(next["name"]), str(next["speech"]), str(next["slug"]))
+		return
+	visible = false                                   # nothing left: dismiss
+
+
+## Instant dismissal (a map click means the player has moved on): clear everything pending.
+func dismiss() -> void:
+	_queue.clear()
+	visible = false
+
+
+func _input(event: InputEvent) -> void:
+	# A left-click ON the card skips/advances/dismisses it. _input (not gui_input) because every
+	# child Control deliberately ignores the mouse; clicks elsewhere fall through to the world.
+	if not visible or _card == null:
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _card.get_global_rect().has_point(_card.get_global_mouse_position()):
+			skip_or_dismiss()
+			get_viewport().set_input_as_handled()
+
+
 func _process(delta: float) -> void:
 	if not visible:
 		return

@@ -822,16 +822,23 @@ class RpgGame(GameSession):
         """One attack through the combat engine (the attacker's own weapon profile = data). Narrates the
         beat: hit/crit/miss, damage, and whether the target drops (unconscious) or is slain."""
         r = self.combat_engine.attack(attacker, target)
+        # data carries WHO/WHOM/HOW MUCH so the renderer can stage visible effects (lunge, hit
+        # flash, floating damage) — mechanical facts already narrated in the text, never the mind.
+        beat = {"attacker": attacker.id, "target": target.id, "damage": r.damage,
+                "crit": r.critical == "hit"}
         if r.hit:
             verb = "crits" if r.critical == "hit" else "hits"
             self._emit(CombatEvent(text=f"{attacker.name} {verb} {target.name} for {r.damage}.",
-                                   data={"sfx": "crit" if r.critical == "hit" else "hit"}))
+                                   data={"sfx": "crit" if r.critical == "hit" else "hit", **beat}))
         else:
-            self._emit(CombatEvent(text=f"{attacker.name} misses {target.name}.", data={"sfx": "miss"}))
+            self._emit(CombatEvent(text=f"{attacker.name} misses {target.name}.",
+                                   data={"sfx": "miss", **beat}))
         if r.target_dead:
-            self._emit(CombatEvent(text=f"{target.name} is slain.", data={"sfx": "dead"}))
+            self._emit(CombatEvent(text=f"{target.name} is slain.",
+                                   data={"sfx": "dead", "target": target.id}))
         elif r.target_down:
-            self._emit(CombatEvent(text=f"{target.name} drops.", data={"sfx": "down"}))
+            self._emit(CombatEvent(text=f"{target.name} drops.",
+                                   data={"sfx": "down", "target": target.id}))
 
     def _advance_combat_turn(self):
         """End the current turn and open the next (engine authority). When the order wraps to a new round,
