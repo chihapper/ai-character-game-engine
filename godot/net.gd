@@ -19,27 +19,53 @@ signal snapshot(snap: Dictionary)
 signal game_event(ev: Dictionary)
 signal link_status(state: String)
 
-const URL := "ws://127.0.0.1:8787"
+const DEFAULT_URL := "ws://127.0.0.1:8787"
 
+## A voiced dialogue event carries the WHOLE utterance as base64 PCM (24 kHz s16le) in ONE text
+## frame — easily hundreds of KB. Godot's WebSocketPeer default inbound buffer is 64 KB, and an
+## oversized frame doesn't just drop: the peer CLOSES the connection with 1009 ("message too big"),
+## which killed the first voiced reply in live trial. 8 MiB ≈ two minutes of speech — ample.
+const INBOUND_BUFFER := 8 * 1024 * 1024
+
+## Seconds between reconnect attempts after the link drops. A bare WebSocketPeer never reconnects
+## by itself; without this, one dropped frame permanently killed the session (silent dead socket).
+const RETRY_DELAY := 2.0
+
+var _url := DEFAULT_URL
 var _ws := WebSocketPeer.new()
 var _last_state: String = ""
 var _connect_ok := false
-var _closed_final := false   # latch once the socket reaches CLOSED so we stop polling a dead peer.
+var _retry_accum := 0.0
 
 
 func _ready() -> void:
-	var err := _ws.connect_to_url(URL)
+	# Optional override so the same client can point at a LAN host (RPG_WS_URL=ws://host:port).
+	var env_url := OS.get_environment("RPG_WS_URL")
+	if env_url != "":
+		_url = env_url
+	_connect_ws()
+
+
+func _connect_ws() -> void:
+	_ws = WebSocketPeer.new()
+	_ws.inbound_buffer_size = INBOUND_BUFFER   # MUST be set before connect_to_url
+	var err := _ws.connect_to_url(_url)
 	if err != OK:
 		_connect_ok = false
-		push_warning("Net: connect_to_url(%s) failed: %d" % [URL, err])
+		push_warning("Net: connect_to_url(%s) failed: %d" % [_url, err])
 		_set_link_status("error")
 	else:
 		_connect_ok = true
 		_set_link_status("connecting")
 
 
-func _process(_delta: float) -> void:
-	if not _connect_ok or _closed_final:
+func _process(delta: float) -> void:
+	if not _connect_ok:
+		# Initial connect failed (e.g. server not up yet) — keep retrying on the same cadence.
+		_retry_accum += delta
+		if _retry_accum >= RETRY_DELAY:
+			_retry_accum = 0.0
+			_connect_ws()
 		return
 	_ws.poll()
 	var rs := _ws.get_ready_state()
@@ -55,10 +81,14 @@ func _process(_delta: float) -> void:
 			# Draining — keep polling; a CLOSED state will follow.
 			pass
 		WebSocketPeer.STATE_CLOSED:
-			# Terminal for this peer. Emit once, then stop polling forever
-			# (a bare WebSocketPeer does not auto-reconnect).
-			_closed_final = true
+			# Dropped. Surface it, then reconnect after a short delay — main.gd sees the
+			# "closed" -> "open" transition and starts a fresh game on the new connection
+			# (the server is one-game-per-connection).
 			_set_link_status("closed")
+			_retry_accum += delta
+			if _retry_accum >= RETRY_DELAY:
+				_retry_accum = 0.0
+				_connect_ws()
 
 
 # --- Public API (see the shared contract) --------------------------------------------------
@@ -103,7 +133,7 @@ func request_state() -> void:
 # --- Internals -----------------------------------------------------------------------------
 
 func _send(d: Dictionary) -> void:
-	if not _connect_ok or _closed_final:
+	if not _connect_ok:
 		return
 	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
 		# Not connected (yet / anymore) — drop rather than crash.
@@ -131,7 +161,10 @@ func _handle_packet(text: String) -> void:
 			if typeof(ev) == TYPE_DICTIONARY:
 				game_event.emit(ev)
 		"error":
+			# Surface server-side failures IN the game log (hud logs any event with a `text`) —
+			# a silent push_warning left live failures invisible to the player.
 			push_warning("Net: server error: %s" % str(msg.get("message", "")))
+			game_event.emit({"type": "error", "text": "[server error] " + str(msg.get("message", ""))})
 		_:
 			# Unknown message type — ignore, forward nothing.
 			pass

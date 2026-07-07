@@ -53,15 +53,24 @@ func _ready() -> void:
 
 # -- Net signal handlers ------------------------------------------------------
 
+var _link_dropped := false   # so we can tell a reconnect from the first connect
+
 func _on_link_status(state: String) -> void:
 	# Net does NOT auto-start; main kicks off the game once the link is open.
 	if state == "open":
 		if not _started:
 			_started = true
+			if _link_dropped and _hud != null:
+				_hud.log_line("— link restored — starting a fresh expedition —")
+			_link_dropped = false
 			Net.start_game("vault", 1337)
 	elif state == "closed" or state == "error":
-		# Allow a fresh start if the link comes back up after dropping.
+		# Allow a fresh start when the link comes back up (Net auto-reconnects), and SAY SO —
+		# a silent dead socket looked like 'the NPC just ignores me' in live trial.
+		if _started and _hud != null:
+			_hud.log_line("— connection lost — reconnecting… —")
 		_started = false
+		_link_dropped = true
 
 
 func _on_snapshot(s: Dictionary) -> void:
