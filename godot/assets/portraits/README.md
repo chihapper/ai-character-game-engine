@@ -25,16 +25,22 @@ portrait, so this whole directory is optional.
 | Source | Files | License | Notes |
 |---|---|---|---|
 | AssetSmithy sampler (two individually-reviewed images only) | `rpg-lira.png`, `rpg-vael.png` | Royalty-free, commercial OK, no redistribution | Interim placeholders ONLY. **The rest of that pack was removed — it contained content unsuitable for this project (owner-flagged 2026-07-08). Do not re-download this vendor's packs.** Replace these two the moment better art lands. |
+| "Young knight portrait" by **David Revoy** (davidrevoy.com), via OpenGameArt | `player.png` | **CC-BY 3.0** — attribution required (keep this row!) | Hand-painted knight, individually reviewed 2026-07-08. Re-fetch: https://opengameart.org/content/young-knight-portrait (resized from the 2400x3263 original). Attribution line for credits screens: “Young knight portrait” by David Revoy, CC-BY 3.0, via OpenGameArt.org. |
 
 ## Content policy for this directory
 
 Every image dropped here must be INDIVIDUALLY REVIEWED before use — never bulk-import a pack
 sight-unseen. SFW, fantasy-appropriate, portfolio-presentable.
 
-## Planned headline art (owner purchase)
+## Planned headline art (owner purchase) — ⚠ vendor caution added 2026-07-08
 
 CrimsonDelightGames — "300+ Medieval & Fantasy Portraits" (hand-painted, explicit **no-AI**
 declaration; ~$2.49–$15): https://crimsondelightgames.itch.io/crimsondelightgames-medieval-and-fantasy-portrait-packs
+**CAUTION:** this vendor's catalog is otherwise ADULT games ("Tales of Legendary Lust…").
+The portrait pack itself may be fine, but after the AssetSmithy incident treat it as
+high-risk: if purchased, EVERY image gets individually reviewed before any lands here, and
+suggestive ones are discarded. Consider safer-catalog alternatives first (OpenGameArt's
+classic painted portrait sets, e.g. Justin Nichol's CC portraits, are SFW-curated).
 Commercial OK, no redistribution → buy, review each face, drop the chosen ones here under the
 naming convention above, archive the license text alongside (itch pages vanish).
 

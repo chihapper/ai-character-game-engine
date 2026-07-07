@@ -32,6 +32,8 @@ var _name_plate: Label
 var _text_panel: PanelContainer     # the spoken line (left)
 var _text: RichTextLabel
 var _hint: Label
+var _you_frame: PanelContainer      # the PLAYER's painted portrait, small, top-left — the
+var _you_portrait: TextureRect      # conversation has two sides (shown only when art exists)
 
 var _portrait_cache := {}           # slug -> {base: Texture2D|null, mouth: Texture2D|null}
 
@@ -68,6 +70,10 @@ func open(slug: String, display_name: String, model_path: String) -> void:
 		_mouth.visible = false
 		_bust_holder.visible = true
 		_set_bust(model_path)
+	var you := _painted("player")
+	_you_frame.visible = you["base"] != null and slug != "player"
+	if you["base"] != null:
+		_you_portrait.texture = you["base"]
 	visible = true
 
 
@@ -231,8 +237,8 @@ func _build_ui() -> void:
 	_text_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_text_panel.anchor_left = 0.05
 	_text_panel.anchor_right = 0.55
-	_text_panel.anchor_top = 0.22
-	_text_panel.anchor_bottom = 0.62
+	_text_panel.anchor_top = 0.27
+	_text_panel.anchor_bottom = 0.64
 	_text_panel.set_offsets_preset(Control.PRESET_FULL_RECT)
 	var tb := StyleBoxFlat.new()
 	tb.bg_color = Color(0.05, 0.05, 0.08, 0.94)
@@ -252,6 +258,30 @@ func _build_ui() -> void:
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text_panel.add_child(_text)
 
+	# the player's side of the table: a smaller framed portrait, top-left
+	_you_frame = PanelContainer.new()
+	_you_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_you_frame.anchor_left = 0.05
+	_you_frame.anchor_right = 0.19
+	_you_frame.anchor_top = 0.045
+	_you_frame.anchor_bottom = 0.25
+	_you_frame.set_offsets_preset(Control.PRESET_FULL_RECT)
+	var yb := StyleBoxFlat.new()
+	yb.bg_color = Color(0.06, 0.06, 0.10, 0.97)
+	yb.border_color = Color(0.45, 0.5, 0.6)
+	yb.set_border_width_all(2)
+	yb.set_corner_radius_all(8)
+	yb.set_content_margin_all(6)
+	_you_frame.add_theme_stylebox_override("panel", yb)
+	_you_frame.visible = false
+	add_child(_you_frame)
+	_you_portrait = TextureRect.new()
+	_you_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_you_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_you_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_you_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_you_frame.add_child(_you_portrait)
+
 	_hint = Label.new()
 	_hint.text = "T — reply        Esc / click away — leave"
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -261,8 +291,8 @@ func _build_ui() -> void:
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_hint.anchor_left = 0.05
 	_hint.anchor_right = 0.55
-	_hint.anchor_top = 0.63
-	_hint.anchor_bottom = 0.67
+	_hint.anchor_top = 0.65
+	_hint.anchor_bottom = 0.69
 	_hint.set_offsets_preset(Control.PRESET_FULL_RECT)
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hint)
@@ -293,19 +323,18 @@ func _process(delta: float) -> void:
 	if _text.visible_characters < total:
 		_reveal += delta * TYPE_CHARS_PER_S
 		_text.visible_characters = mini(total, int(_reveal))
-	# painted portrait: breathe softly; flap the mouth layer on speech syllables when art exists
+	# Painted portrait: STABLE (owner feedback 2026-07-08 — the scale "breathing" read as the
+	# art hovering). Speech shows as a gentle brightness lift + the frame glow; the mouth layer
+	# (when the art ships one) still flaps on syllables.
 	if _portrait.visible:
-		var s := 1.0 + 0.006 * sin(_time * 1.7) + 0.010 * _level
-		_portrait.scale = Vector2(s, s)
-		_portrait.pivot_offset = _portrait.size * 0.5
+		_portrait.modulate = Color(1, 1, 1).lerp(Color(1.06, 1.04, 1.0), _level)
 		if _mouth.texture != null:
-			_mouth.scale = _portrait.scale
-			_mouth.pivot_offset = _mouth.pivot_offset if false else _portrait.pivot_offset
 			_mouth.visible = _level > 0.22 and fmod(_time * 9.0, 1.0) < 0.62
-	# 3D bust: idle sway + speech drives a nod (the whole chibi head IS the mouth at this scale)
+	# 3D bust: rock-steady base pose; speech drives one SMOOTH nod component (no fast sine —
+	# jitter reads as instability at portrait scale).
 	if _bust_holder.visible and _bust_model != null:
-		_bust_model.rotation.y = 0.35 + 0.05 * sin(_time * 0.9)
-		_bust_model.rotation.x = -0.10 * _level * (0.6 + 0.4 * sin(_time * 12.0))
+		_bust_model.rotation.y = 0.35 + 0.03 * sin(_time * 0.6)
+		_bust_model.rotation.x = -0.06 * _level
 	# frame glow while the voice is audible
 	var fsb: StyleBoxFlat = _frame.get_theme_stylebox("panel")
 	if fsb != null:
