@@ -604,6 +604,17 @@ class RpgGame(GameSession):
         self._say(name, slug, reply)
         s.talk_counts[slug] = s.talk_counts.get(slug, 0) + 1   # the recruit gate reads this
         s.campaign_log.add(s.clock.value, f'The traveler said to {name}: "{action.text}"', tags=["talk", slug])
+        # Stage directions -> the DM narrates them IF a storyteller would (owner design): the
+        # action beats are never shown as text, but a substantial visible gesture is offered to
+        # the narrator, who describes it aloud or stays silent. Narrative relevance only.
+        _, gesture = _split_speech(reply)
+        if len(gesture) > 15:
+            try:
+                told = await self.dm.narrate_gesture(name, gesture, scene=self._scene_text())
+                if told:
+                    self._emit(NarrationEvent(text=told))
+            except Exception:                    # noqa: BLE001 — narration is an enhancement
+                pass
 
     async def _recruit(self, action: PlayerAction) -> None:
         """Ask an adjacent NPC to join — a social flow, not a command (owner design 2026-07-06):

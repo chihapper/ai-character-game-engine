@@ -59,6 +59,27 @@ class DM:
                                                    f"2-3 sentences. No check — just set the scene."}])
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
+    async def narrate_gesture(self, npc_name: str, gesture: str, *, scene: str) -> str:
+        """An NPC's visible stage business, offered to the narrator (owner design 2026-07-06):
+        speak it aloud ONLY if a watchful storyteller would bother — a hand drifting to a knife
+        matters; shifting weight doesn't. Returns '' to stay silent. NARRATIVE relevance only:
+        the GM describes visible behavior and never interprets inner states (the system prompt
+        already forbids reading minds — this must stay an ordinary narrator function, not a
+        psychology readout)."""
+        resp = await self.client.messages.create(
+            model=self.model, max_tokens=80, system=self._system_blocks(),
+            messages=[{"role": "user", "content":
+                f"SCENE:\n{scene}\n\nWhile speaking, {npc_name} visibly does this: \"{gesture}\"\n\n"
+                "If — and only if — that visible behavior is worth the player's attention (a threat, "
+                "a tell, a reach for something, a meaningful retreat or approach), narrate it in ONE "
+                "short sentence, third person, present tense, describing only what can be SEEN. "
+                "If it is ordinary business (shifting weight, a shrug, glancing about), reply with "
+                "exactly: SKIP"}])
+        out = "".join(b.text for b in resp.content if b.type == "text").strip()
+        if not out or out.upper().startswith("SKIP"):
+            return ""
+        return out
+
     async def adjudicate(self, action_text: str, *, scene: str, player: Combatant, grant_item=None) -> str:
         """Resolve a free-form player action. The DM may call ability_check (rules core decides pass/
         fail) and, if provided, grant_item (loot becomes REAL), then narrates the authoritative
