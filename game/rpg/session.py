@@ -47,8 +47,8 @@ class DialogueEvent(GameEvent):
     `speech` is just the quoted words (the SPOKEN/voiced line) and `action` is the third-person stage
     business — carried as DATA for the voice layer (Hume ACTS it) and possible DM narration, NEVER
     rendered as player-visible text (owner directive). `audio` is optional Hume-voiced PCM the
-    renderer plays (in-process only; over IPC the server attaches `audio_b64` + `rate` to the JSON
-    event instead)."""
+    renderer plays (in-process only; over IPC the audio follows as its own `voice` message so the
+    text is never held back by synthesis)."""
     type: Literal["dialogue"] = "dialogue"
     npc: str                     # display name
     slug: str

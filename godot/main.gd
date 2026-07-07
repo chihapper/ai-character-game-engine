@@ -102,8 +102,10 @@ func _on_game_event(ev: Dictionary) -> void:
 		return
 	if _hud != null:
 		_hud.log_event(ev)
-	# Dialogue replies surface in the HUD log (the overlay closes on submit); audio queues below.
-	if str(ev.get("type", "")) == "dialogue" and ev.has("audio_b64"):
+	# Dialogue TEXT surfaces in the HUD log immediately; the line's audio arrives as a follow-up
+	# "voice" event and queues below. (Dialogue-attached audio kept as a fallback path.)
+	var t := str(ev.get("type", ""))
+	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):
 		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
 
 

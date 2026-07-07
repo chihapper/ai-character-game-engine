@@ -5,14 +5,19 @@ core stays transport-agnostic (swap to stdio/pipes later without touching game l
 is a JSON object with a `t` (type) tag.
 
   Client -> Server:  start | action | deed | state
-  Server -> Client:  snapshot | event | error
+  Server -> Client:  snapshot | event | voice | error
 
 `snapshot` carries a full `StateSnapshot` (mechanical only — no mind readout, guardrail #5). `event`
 carries one game event (narration / dialogue / combat / mode_changed / state_changed). A batch of
 server messages always ENDS with a `snapshot`, so a client can read until it sees one.
+
+`voice` rides OUTSIDE the batch: dialogue TEXT goes out immediately with its batch, and the Hume
+audio for each line follows as its own `voice` message once synthesis finishes (in spoken order) —
+so the world never freezes waiting on TTS. A client that ignores `voice` is simply silent.
 """
 from __future__ import annotations
 
+import base64
 from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
@@ -70,9 +75,16 @@ def snapshot_msg(snap: StateSnapshot) -> dict:
 
 def event_msg(ev: GameEvent) -> dict:
     # `audio` (raw PCM on an in-process DialogueEvent) is excluded from JSON; over the wire the
-    # server attaches voice as `audio_b64` + `rate` ON the dialogue event itself (see server.py) —
-    # the client sizes its inbound buffer for that (net.gd, 8 MiB).
+    # voice for a dialogue line follows as its own `voice` message (see voice_msg below) so the
+    # TEXT is never held back by synthesis.
     return {"t": "event", "event": ev.model_dump(mode="json", exclude={"audio"})}
+
+
+def voice_msg(*, slug: str, npc: str, pcm: bytes, rate: int) -> dict:
+    """The Hume audio for one already-delivered dialogue line — sent as a follow-up, outside the
+    action batch. base64 PCM (s16le mono); the client sizes its inbound buffer for this (8 MiB)."""
+    return {"t": "voice", "slug": slug, "npc": npc,
+            "audio_b64": base64.b64encode(pcm).decode("ascii"), "rate": int(rate)}
 
 
 def error_msg(message: str) -> dict:

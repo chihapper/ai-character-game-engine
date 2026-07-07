@@ -3,7 +3,9 @@
 Godot connects here and drives the SAME `RpgGame` GameSession the tcod dev view drove in-process.
 All game logic + the engine stay in Python; Godot is a pure renderer over the wire. One connection =
 one game. Each client message yields a batch of server messages that always ENDS with a `snapshot`
-(errors included — the batch invariant holds on every path once a game exists).
+(errors included — the batch invariant holds on every path once a game exists). VOICE rides outside
+the batch: dialogue text ships immediately; each line's Hume audio follows as its own `voice`
+message once synthesis lands (a per-connection worker, in spoken order) — the world never waits on TTS.
 
 WORLD persistence: the world autosaves to `.saves/<slice>-<seed>.json` after each action (in
 exploration only — never mid-combat), and a `start` with `resume=true` continues from that save.
@@ -17,7 +19,6 @@ Env: RPG_HOST (127.0.0.1), RPG_PORT (8787), RPG_MODEL (claude-haiku-4-5),
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import os
 import sys
@@ -40,6 +41,7 @@ from .protocol import (  # noqa: E402
     event_msg,
     parse_client,
     snapshot_msg,
+    voice_msg,
 )
 from .state import GameState, Mode  # noqa: E402
 from .voice import synth_line  # noqa: E402
@@ -133,20 +135,11 @@ class RpgConnection:
         return outs
 
     async def _emit_events(self) -> list[dict]:
-        """Serialize the queued events, and (if voice is on) synthesize Hume audio for each NPC line,
-        attaching it as base64 PCM + sample rate. Voice is best-effort — a synth failure just yields a
-        text-only dialogue event."""
-        out: list[dict] = []
-        for ev in self.game.drain_events():
-            msg = event_msg(ev)
-            e = msg["event"]
-            if self.voice and e.get("type") == "dialogue" and (e.get("text") or "").strip():
-                pcm, rate = await synth_line(e["text"], e.get("slug", ""))
-                if pcm:
-                    e["audio_b64"] = base64.b64encode(pcm).decode("ascii")
-                    e["rate"] = rate
-            out.append(msg)
-        return out
+        """Serialize the queued events. Voice is NOT synthesized here (it used to be, serially —
+        which froze the reply text and the snapshot behind a multi-second Hume round-trip, the
+        owner-felt latency issue): dialogue text ships immediately, and the connection's voice
+        worker sends the audio as follow-up `voice` messages once synthesis lands."""
+        return [event_msg(ev) for ev in self.game.drain_events()]
 
 
 async def serve(host: str = "127.0.0.1", port: int = 8787, *,
@@ -154,15 +147,45 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                 voice: bool = False) -> None:
     async def handler(ws) -> None:
         conn = RpgConnection(reply_model=reply_model, dm_model=dm_model, voice=voice)
+        send_lock = asyncio.Lock()                    # one writer at a time (batch vs voice worker)
+        voice_q: asyncio.Queue = asyncio.Queue()
+
+        async def voice_worker() -> None:
+            """Synthesize + send voice AFTER the text is already on the wire — one line at a time,
+            in spoken order. Best-effort with a hard cap: a hung TTS request skips that line's
+            voice instead of freezing the queue (voice skipped > world frozen)."""
+            while True:
+                e = await voice_q.get()
+                try:
+                    pcm, rate = await asyncio.wait_for(
+                        synth_line(e["text"], e.get("slug", "")), timeout=30)
+                    if pcm:
+                        async with send_lock:
+                            await ws.send(json.dumps(voice_msg(
+                                slug=e.get("slug", ""), npc=e.get("npc", ""), pcm=pcm, rate=rate)))
+                except websockets.exceptions.ConnectionClosed:
+                    return
+                except Exception as exc:              # noqa: BLE001 — voice is an enhancement
+                    print(f"[rpg-server] voice line skipped: {exc}")
+
+        vtask = asyncio.create_task(voice_worker()) if voice else None
         try:
             async for raw in ws:
                 try:
                     outs = await conn.handle(json.loads(raw))
                 except Exception as e:                # never drop the connection on one bad message
                     outs = await conn.recover(e)
-                for o in outs:
-                    await ws.send(json.dumps(o))
+                async with send_lock:
+                    for o in outs:
+                        await ws.send(json.dumps(o))
+                if voice:                             # queue synth AFTER the text batch went out
+                    for o in outs:
+                        ev = o.get("event", {}) if o.get("t") == "event" else {}
+                        if ev.get("type") == "dialogue" and (ev.get("text") or "").strip():
+                            voice_q.put_nowait(ev)
         finally:
+            if vtask is not None:
+                vtask.cancel()
             # Land the mind side of persistence on disconnect: in-flight background reflections
             # flush to each character's own store (the world already autosaved per action).
             if conn.game is not None:

@@ -162,6 +162,13 @@ func _handle_packet(text: String) -> void:
 			var ev = msg.get("event", {})
 			if typeof(ev) == TYPE_DICTIONARY:
 				game_event.emit(ev)
+		"voice":
+			# A dialogue line's audio, arriving AFTER its text (synthesis runs server-side in the
+			# background so the world never freezes on TTS). Re-emit as a game event; main.gd
+			# queues it for playback in arrival (= spoken) order.
+			game_event.emit({"type": "voice", "npc": str(msg.get("npc", "")),
+				"slug": str(msg.get("slug", "")), "audio_b64": str(msg.get("audio_b64", "")),
+				"rate": int(msg.get("rate", 24000))})
 		"error":
 			# Surface server-side failures IN the game log (hud logs any event with a `text`) —
 			# a silent push_warning left live failures invisible to the player.
