@@ -59,6 +59,21 @@ class Combatant(BaseModel):
     # archer (1d6 DEX), a biter (1d4), etc. The combat loop reads these; it names no dice itself.
     damage_dice: str = "1d4"
     attack_ability: str = "STR"
+    # --- 5e sheet (SRD-based rules system) — all optional so existing content stays valid. The
+    # srd.mechanics functions read these; monsters set `cr`, characters use `level` (subclass). ---
+    saving_throw_profs: list[str] = Field(default_factory=list)   # abilities proficient in saves
+    skill_profs: list[str] = Field(default_factory=list)          # proficient skills
+    expertise: list[str] = Field(default_factory=list)            # skills with DOUBLE proficiency
+    resistances: list[str] = Field(default_factory=list)          # damage types taken at half
+    immunities: list[str] = Field(default_factory=list)           # damage types ignored
+    vulnerabilities: list[str] = Field(default_factory=list)      # damage types taken double
+    condition_immunities: list[str] = Field(default_factory=list)
+    speed: int = 30                          # feet per turn
+    size: str = "medium"                     # tiny | small | medium | large | huge | gargantuan
+    creature_type: str = ""                  # humanoid | undead | beast | construct | ...
+    cr: float | None = None                  # monster Challenge Rating (drives PB + XP); None = uses level
+    hit_dice: str = ""                       # e.g. "2d6" — for HP generation
+    prof_bonus: int | None = None            # explicit proficiency-bonus override (else from level/cr)
 
     @property
     def alive(self) -> bool:
