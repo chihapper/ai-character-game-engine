@@ -60,7 +60,7 @@
   },
   "terrain": {
     "vault": {
-      "floor": [57, 58, 59],
+      "floor": [42, 42, 42, 48],
       "wall": 40,
       "stairs_down": 65,
       "stairs_up": 64,

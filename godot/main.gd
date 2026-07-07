@@ -13,6 +13,7 @@ extends Node2D
 var _world: Node2D
 var _hud: CanvasLayer
 var _dialogue: CanvasLayer
+var _speech: CanvasLayer        # the portrait speech card (speech.gd)
 var _voice: AudioStreamPlayer   # plays Hume-voiced NPC lines (PCM streamed from the server)
 
 ## Last snapshot received from the server; drives the nearest-interactable helper.
@@ -41,6 +42,11 @@ func _ready() -> void:
 	add_child(_dialogue)
 	_dialogue.submitted.connect(_on_dialogue_submitted)
 
+	_speech = CanvasLayer.new()
+	_speech.name = "Speech"
+	_speech.set_script(load("res://speech.gd"))
+	add_child(_speech)
+
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
 	add_child(_voice)
@@ -57,6 +63,30 @@ func _ready() -> void:
 	Net.snapshot.connect(_on_snapshot)
 	Net.game_event.connect(_on_game_event)
 	Net.link_status.connect(_on_link_status)
+
+	# Dev verification hook: RPG_SHOT=<abs path.png> auto-captures the viewport a few seconds
+	# after startup (RPG_SHOT_DEMO=1 additionally fakes a speech-card line first, so the card's
+	# visuals can be checked without a live LLM round-trip). F12 saves a shot any time.
+	var shot := OS.get_environment("RPG_SHOT")
+	if shot != "":
+		var t := Timer.new()
+		t.wait_time = 4.0
+		t.one_shot = true
+		add_child(t)
+		t.timeout.connect(func():
+			if OS.get_environment("RPG_SHOT_DEMO") != "" and _speech != null:
+				_speech.show_line("Lira", "Stick close — the dark down here has teeth.", "rpg-lira")
+				await get_tree().create_timer(1.2).timeout
+			_save_screenshot(shot))
+		t.start()
+
+
+func _save_screenshot(path: String) -> void:
+	var img := get_viewport().get_texture().get_image()
+	if img != null:
+		img.save_png(path)
+		if _hud != null:
+			_hud.log_line("[screenshot saved]")
 
 
 # -- Net signal handlers ------------------------------------------------------
@@ -83,6 +113,8 @@ func _on_link_status(state: String) -> void:
 			if _link_dropped and _hud != null:
 				_hud.log_line("— link restored — picking up where you left off —")
 			_link_dropped = false
+			if _world != null:
+				_world.set_slice(_slice())   # biome palette (terrain sprites + tint)
 			Net.start_game(_slice(), _seed(), true)
 	elif state == "closed" or state == "error":
 		# Only a session that had actually STARTED counts as a drop — initial connect failures
@@ -109,9 +141,16 @@ func _on_game_event(ev: Dictionary) -> void:
 		return
 	if _hud != null:
 		_hud.log_event(ev)
-	# Dialogue TEXT surfaces in the HUD log immediately; the line's audio arrives as a follow-up
-	# "voice" event and queues below. (Dialogue-attached audio kept as a fallback path.)
 	var t := str(ev.get("type", ""))
+	# Speech card: the personable face of a spoken line — portrait + name + typewriter reveal.
+	# Only the QUOTED speech is shown (stage directions are never player-visible text).
+	if t == "dialogue" and _speech != null:
+		var line := str(ev.get("speech", ""))
+		if line.strip_edges() == "":
+			line = str(ev.get("text", ""))
+		_speech.show_line(str(ev.get("npc", "")), line, str(ev.get("slug", "")))
+	# Dialogue TEXT surfaces immediately; the line's audio arrives as a follow-up "voice" event
+	# and queues below. (Dialogue-attached audio kept as a fallback path.)
 	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):
 		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
 
@@ -142,6 +181,14 @@ func _play_voice(b64: String, _rate: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	# Speech-card glow: "speaking" = audio frames still queued or recently pushed. The generator
+	# player itself never stops, so track our own tail: frames pushed are audible for roughly
+	# (pushed - consumed) time; approximate with pending + a short linger after the last push.
+	if _speech != null:
+		var audible := not _pending.is_empty() or (_voice_tail > 0.0)
+		_speech.set_speaking(audible)
+	if _voice_tail > 0.0:
+		_voice_tail = maxf(0.0, _voice_tail - _delta)
 	if _voice == null or _pending.is_empty():
 		return
 	if not _voice.playing:
@@ -155,6 +202,11 @@ func _process(_delta: float) -> void:
 	var take: int = mini(avail, _pending.size())
 	_voice_playback.push_buffer(_pending.slice(0, take))
 	_pending = _pending.slice(take)
+	_voice_tail = float(take) / 24000.0 + 0.25      # what we just pushed is audible for ~this long
+
+
+## Seconds of already-pushed audio still (approximately) sounding — drives the speaking glow.
+var _voice_tail := 0.0
 
 
 # -- Input routing ------------------------------------------------------------
@@ -212,6 +264,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_H:
 			# Quaff a healing draught (first drinkable in the pack). In combat this spends the action.
 			Net.send_action("use")
+		KEY_F12:
+			_save_screenshot(OS.get_environment("RPG_SHOT") if OS.get_environment("RPG_SHOT") != "" else "user://rpg_shot.png")
 		KEY_N:
 			# New expedition: restart THIS slice+seed fresh (resume=false overwrites the save on
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
