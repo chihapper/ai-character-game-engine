@@ -241,9 +241,11 @@ func _build_scene() -> void:
 func _load_dungeon_pieces() -> void:
 	# Floors per slice mood: worked stone (with broken/mossy variants) for the vault,
 	# scorched dirt for the ember caverns.
+	# NOTE: the BULKY variant (rocks piled on the tile) must stay LAST — _place_floor bans it
+	# from corridors, where a rock pile reads as a blocked passage even though it's walkable.
 	_floor_sets["wet"] = _load_set(["floor_tile_small.gltf.glb", "floor_tile_small_broken_A.gltf.glb",
-			"floor_tile_large_rocks.gltf.glb", "floor_tile_small_broken_B.gltf.glb",
-			"floor_tile_small_weeds_A.gltf.glb"])
+			"floor_tile_small_broken_B.gltf.glb", "floor_tile_small_weeds_A.gltf.glb",
+			"floor_tile_large_rocks.gltf.glb"])
 	_floor_sets["ember"] = _load_set(["floor_dirt_small_A.gltf.glb", "floor_dirt_small_B.gltf.glb",
 			"floor_dirt_small_C.gltf.glb", "floor_dirt_small_D.gltf.glb"])
 	_floor_scenes = _floor_sets["wet"]
@@ -475,9 +477,33 @@ func _place_floor(x: int, y: int) -> void:
 	var pick: int = (x * 7 + y * 13) % 10
 	var scene: PackedScene = _floor_scenes[0]
 	if pick >= 7 and _floor_scenes.size() > 1:
-		scene = _floor_scenes[(pick + x + y) % (_floor_scenes.size() - 1) + 1]
+		var vi: int = (pick + x + y) % (_floor_scenes.size() - 1) + 1
+		# The bulky rock-pile variant (kept LAST in the set) never lands in a corridor: props
+		# and piles are dressing, but anything volumetric in a 1-tile passage reads as an
+		# obstacle the game doesn't actually have (owner feedback 2026-07-08).
+		if vi == _floor_scenes.size() - 1 and _orth_walls(x, y) >= 2:
+			vi = 1
+		scene = _floor_scenes[vi]
 	_place_scene(scene, x, y, 0.0)
 	_maybe_decor(x, y)
+
+
+## Orthogonal wall-cell count around a floor cell: 0 = open room, 1 = along a room wall,
+## 2+ = corridor or corner pocket (anything bulky placed there reads as a blocker).
+func _orth_walls(x: int, y: int) -> int:
+	var tiles = _snap.get("tiles", [])
+	if typeof(tiles) != TYPE_ARRAY:
+		return 0
+	var n := 0
+	for d: Vector2i in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
+		var ny: int = y + d.y
+		if ny < 0 or ny >= tiles.size():
+			continue
+		var row: String = str(tiles[ny])
+		var nx: int = x + d.x
+		if nx >= 0 and nx < row.length() and row[nx] == "#":
+			n += 1
+	return n
 
 
 ## Deterministic floor decor (cell-hash keyed): still black puddles (vault) or glowing cracks
@@ -510,6 +536,10 @@ func _maybe_decor(x: int, y: int) -> void:
 func _maybe_prop(x: int, y: int) -> void:
 	var props: Array = _prop_sets.get(_decor, [])
 	if props.is_empty():
+		return
+	# Room-edge cells ONLY (exactly one orthogonal wall): a 1-tile corridor touches walls on
+	# both sides, so without this test every passage collected clutter that read as blockage.
+	if _orth_walls(x, y) != 1:
 		return
 	var h := (x * 89 + y * 271) % 100
 	if h >= 16:
