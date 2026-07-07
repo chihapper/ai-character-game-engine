@@ -18,9 +18,12 @@ extends Node3D
 # player, a client-side BFS replay for followers/enemies) — never a straight lerp to the snapshot
 # position, which read as teleporting and cut through wall corners. Constant speed across the whole
 # polyline; long treks hustle (speed scales up) so a far click never means watching a 20-second walk.
-const WALK_TILES_PER_S := 6.2
-const RUN_TILES_PER_S := 16.0
-const TREK_MAX_S := 2.5        # a route is paced to land within this many seconds
+# 2D-RPG feel (owner direction 2026-07-09): grounded walk cadence, a firm cap on the hustle
+# (16 t/s read as ice-skating), and a small per-tile step-hop below — crisp tile-to-tile
+# STEPS, not a glide.
+const WALK_TILES_PER_S := 5.0
+const RUN_TILES_PER_S := 10.0
+const TREK_MAX_S := 3.0        # a route is paced to land within this many seconds
 const SNAP_BEYOND_TILES := 40.0  # longer than this (new game repositioning) just snaps
 # Camera vantage in TILES (converted via _tile at runtime): ~36° pitch — low enough that chibi
 # characters read as PEOPLE (faces/bodies, not hat-tops), high enough to read the room; the
@@ -1453,7 +1456,10 @@ func _process(delta: float) -> void:
 			_anim[id] = a
 			var dirv := (Vector2(pts[1]) - Vector2(pts[0]))
 			var p: Vector2 = Vector2(pts[0]) + dirv.normalized() * d
-			ent["node"].position = _being_pos(p.x, p.y)
+			# STEP-HOP: a small arc per tile (the 2D view's bounce, in 3D) — reads as footsteps
+			var frac := d / maxf(0.001, dirv.length())
+			var hop := absf(sin(frac * PI)) * _tile * 0.035
+			ent["node"].position = _being_pos(p.x, p.y) + Vector3(0.0, hop, 0.0)
 			_facing[id] = atan2(dirv.x, dirv.y)
 			if str(ent["state"]) != "walk":
 				ent["state"] = "walk"
@@ -1466,7 +1472,7 @@ func _process(delta: float) -> void:
 	for id in _facing.keys():
 		if _ents.has(id) and not bool(_ents[id]["sprite"]):
 			var node: Node3D = _ents[id]["node"]
-			node.rotation.y = lerp_angle(node.rotation.y, float(_facing[id]), minf(1.0, delta * 10.0))
+			node.rotation.y = lerp_angle(node.rotation.y, float(_facing[id]), minf(1.0, delta * 22.0))
 	# combat fx
 	for i in range(_fx.size() - 1, -1, -1):
 		var f: Dictionary = _fx[i]

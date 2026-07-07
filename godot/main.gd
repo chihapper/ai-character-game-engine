@@ -460,7 +460,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if typeof(explored) == TYPE_ARRAY and not explored.has(key):
 				if _hud != null:
 					_hud.log_line("Too dark to see there.")
-			else:
+			elif not _try_click_talk(t):
+				# not a person (or mid-combat): the click is a movement/attack order
 				Net.send_action("move_to", {"tx": t.x, "ty": t.y})
 				if _world.has_method("mark_destination"):
 					_world.mark_destination(t)   # click feedback: the walk belongs to YOUR order
@@ -509,6 +510,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Z:
 			# Camp rest: party heals a hit die each, real time passes, and the noise can draw danger.
 			Net.send_action("rest")
+		KEY_F1:
+			if _hud != null:
+				_hud.toggle_help()
 		KEY_F10:
 			# dev animation browser: click through every clip on any live entity
 			if _anim_panel != null:
@@ -594,6 +598,47 @@ func _on_dialogue_submitted(mode: String, target_name: String, text: String) -> 
 			_hud.log_line("%s considers…" % who)
 	else:
 		_hud.log_line("You try to: %s" % text)
+
+
+## Click a PERSON to talk to them (owner feedback 2026-07-09 — T-nearest wasn't discoverable).
+## Within reach -> the conversation opens on the spot; farther -> walk toward them with a hint.
+## Combat clicks stay combat orders. Returns true when the click was handled as social.
+func _try_click_talk(t: Vector2i) -> bool:
+	if str(_snapshot.get("mode", "")) == "combat":
+		return false
+	var ent := _entity_at(t)
+	if ent.is_empty() or not (str(ent.get("kind", "")) in ["npc", "follower"]):
+		return false
+	var id := str(ent.get("id", ""))
+	var who := str(ent.get("name", ""))
+	var pp = _snapshot.get("player", {}).get("pos", [0, 0])
+	var dist: int = absi(int(pp[0]) - t.x) + absi(int(pp[1]) - t.y)
+	if dist <= 2:
+		if _dialogue != null:
+			_dialogue.open_talk(id, who)
+		if _talk != null:
+			_talk.open(id, who, _model_path_for(id))
+	else:
+		Net.send_action("move_to", {"tx": t.x, "ty": t.y})
+		if _world != null and _world.has_method("mark_destination"):
+			_world.mark_destination(t)
+		if _hud != null:
+			_hud.log_line("You approach %s — click them again to talk." % who)
+	return true
+
+
+func _entity_at(t: Vector2i) -> Dictionary:
+	var ents = _snapshot.get("entities", [])
+	if typeof(ents) != TYPE_ARRAY:
+		return {}
+	for e in ents:
+		if typeof(e) != TYPE_DICTIONARY:
+			continue
+		var pos = e.get("pos", null)
+		if typeof(pos) == TYPE_ARRAY and pos.size() >= 2 \
+				and int(pos[0]) == t.x and int(pos[1]) == t.y:
+			return e
+	return {}
 
 
 func _model_path_for(slug: String) -> String:

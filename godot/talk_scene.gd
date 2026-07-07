@@ -32,8 +32,6 @@ var _name_plate: Label
 var _text_panel: PanelContainer     # the spoken line (left)
 var _text: RichTextLabel
 var _hint: Label
-var _you_frame: PanelContainer      # the PLAYER's painted portrait, small, top-left — the
-var _you_portrait: TextureRect      # conversation has two sides (shown only when art exists)
 
 var _portrait_cache := {}           # slug -> {base: Texture2D|null, mouth: Texture2D|null}
 
@@ -70,10 +68,6 @@ func open(slug: String, display_name: String, model_path: String) -> void:
 		_mouth.visible = false
 		_bust_holder.visible = true
 		_set_bust(model_path)
-	var you := _painted("player")
-	_you_frame.visible = you["base"] != null and slug != "player"
-	if you["base"] != null:
-		_you_portrait.texture = you["base"]
 	visible = true
 
 
@@ -257,30 +251,6 @@ func _build_ui() -> void:
 	_text.add_theme_font_size_override("normal_font_size", 17)
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text_panel.add_child(_text)
-
-	# the player's side of the table: a smaller framed portrait, top-left
-	_you_frame = PanelContainer.new()
-	_you_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_you_frame.anchor_left = 0.05
-	_you_frame.anchor_right = 0.19
-	_you_frame.anchor_top = 0.045
-	_you_frame.anchor_bottom = 0.25
-	_you_frame.set_offsets_preset(Control.PRESET_FULL_RECT)
-	var yb := StyleBoxFlat.new()
-	yb.bg_color = Color(0.06, 0.06, 0.10, 0.97)
-	yb.border_color = Color(0.45, 0.5, 0.6)
-	yb.set_border_width_all(2)
-	yb.set_corner_radius_all(8)
-	yb.set_content_margin_all(6)
-	_you_frame.add_theme_stylebox_override("panel", yb)
-	_you_frame.visible = false
-	add_child(_you_frame)
-	_you_portrait = TextureRect.new()
-	_you_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_you_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_you_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	_you_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_you_frame.add_child(_you_portrait)
 
 	_hint = Label.new()
 	_hint.text = "T — reply        Esc / click away — leave"

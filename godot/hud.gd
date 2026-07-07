@@ -370,8 +370,45 @@ func _update_controls(snap: Dictionary) -> void:
 
 func _controls_text(mode: String) -> String:
 	if mode == "combat":
-		return "click a foe to attack · a tile to move (5ft/step)   H drink   [.] end turn   G enemy HP"
-	return "click to move   T talk   X do   R ask along   F help   H drink   Z rest   L look   N new game"
+		return "click a foe to attack · a green tile to move   H drink   [.] end turn   G enemy HP   F1 help"
+	return "click: move / talk to people   WASD walk   X do   Z rest   H drink   F1 all controls"
+
+
+## F1 help card — the full control reference (owner feedback: navigation wasn't discoverable).
+var _help_panel: PanelContainer = null
+
+func toggle_help() -> void:
+	if _help_panel == null:
+		_help_panel = PanelContainer.new()
+		_help_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.05, 0.05, 0.08, 0.97)
+		sb.border_color = Color("5fd0e0")
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(8)
+		sb.set_content_margin_all(16)
+		_help_panel.add_theme_stylebox_override("panel", sb)
+		var lbl := Label.new()
+		lbl.text = "HOW TO PLAY\n\n" + \
+			"Move        click a tile · WASD/arrows (hold to walk)\n" + \
+			"Talk        click a person (or T for nearest)\n" + \
+			"Act         X — try anything, in your own words\n" + \
+			"Recruit     R — ask the nearest person to join you\n" + \
+			"Aid         F — ask them for help\n" + \
+			"Drink       H    Rest at camp   Z    Look around   L\n" + \
+			"Camera      mouse wheel zoom\n\n" + \
+			"COMBAT (turn-based)\n" + \
+			"Green tiles show how far you can still move this turn.\n" + \
+			"The gold ring marks whose turn it is.\n" + \
+			"Click a foe to attack (adjacent) · [.] or Space ends your turn\n" + \
+			"G toggles enemy HP\n\n" + \
+			"Esc leaves a conversation · N new expedition · F1 closes this"
+		lbl.add_theme_font_size_override("font_size", 15)
+		lbl.add_theme_color_override("font_color", _col_text)
+		_help_panel.add_child(lbl)
+		add_child(_help_panel)
+	else:
+		_help_panel.visible = not _help_panel.visible
 
 
 func _update_banner(snap: Dictionary) -> void:
