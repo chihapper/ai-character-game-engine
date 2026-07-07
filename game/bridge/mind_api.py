@@ -97,8 +97,17 @@ class MindSession:
         self.voice_inworld = {c["slug"]: (c.get("voice_inworld") or "").strip() for c in self.scenario["cast"]}
         self.voice_ids: dict = {}
         st = get_settings()
-        self.voice_ready = bool(st.inworld_api_key if _tts_provider() == "inworld"
-                                else st.elevenlabs_api_key)
+        # Readiness keys on the ACTIVE provider's own credential — the old inworld-or-elevenlabs
+        # check left a Hume-only box reporting voice_ready=False (every /speak 404ing despite Hume
+        # being fully configured) and an elevenlabs-key-only box claiming ready while HumeTTS
+        # raised at synthesis. chatterbox runs locally: always ready.
+        self.voice_ready = {
+            "inworld": bool(st.inworld_api_key),
+            "elevenlabs": bool(st.elevenlabs_api_key),
+            "hume": bool(st.hume_api_key),
+            "fish": bool(getattr(st, "fish_api_key", "")),
+            "chatterbox": True,
+        }.get(_tts_provider(), False)
         book = get_settings().salience_model
         self.run_id = experiment_log.start_run(
             condition="TREAT-EMBODIED-3D", scenario=self.scenario["id"], characters=self.cast,

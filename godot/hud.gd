@@ -188,7 +188,9 @@ func log_event(ev: Dictionary) -> void:
 func _update_status(snap: Dictionary) -> void:
 	if _status_label == null:
 		return
-	var player: Dictionary = snap.get("player", {})
+	# untyped on purpose (world.gd pattern): a hard-typed Dictionary local would throw at
+	# assignment on a malformed snapshot, making the typeof guard below dead code
+	var player = snap.get("player", {})
 	if typeof(player) != TYPE_DICTIONARY:
 		player = {}
 	# hp / max_hp may be null on a partial snapshot — coerce to a safe display int.
@@ -232,7 +234,7 @@ func _combat_readout(snap: Dictionary) -> String:
 	var order = snap.get("combat_order", [])
 	var turn := str(snap.get("combat_turn", ""))
 	var rnd := _to_int(snap.get("combat_round", 0), 0)
-	var player: Dictionary = snap.get("player", {})
+	var player = snap.get("player", {})   # untyped so the guard below can actually fire
 	if typeof(player) != TYPE_DICTIONARY:
 		player = {}
 	var player_id := str(player.get("id", ""))
@@ -270,7 +272,7 @@ func _combat_readout(snap: Dictionary) -> String:
 
 func _id_names(snap: Dictionary) -> Dictionary:
 	var m := {}
-	var p: Dictionary = snap.get("player", {})
+	var p = snap.get("player", {})   # untyped so the guard below can actually fire
 	if typeof(p) == TYPE_DICTIONARY and p.has("id"):
 		m[str(p.get("id", ""))] = str(p.get("name", "You"))
 	var ents = snap.get("entities", [])

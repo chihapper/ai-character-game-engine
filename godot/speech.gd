@@ -10,6 +10,7 @@ extends CanvasLayer
 
 const TYPE_CHARS_PER_S := 42.0
 const HIDE_AFTER_S := 6.0
+const NEXT_LINE_BEAT_S := 0.6   # idle beat between a landed line and the next queued one
 
 var _card: PanelContainer
 var _portrait: TextureRect
@@ -26,6 +27,7 @@ var _reveal := 0.0            # characters revealed so far (float accumulator)
 var _idle := 0.0              # seconds since the line finished revealing (for auto-hide)
 var _speaking := false
 var _glow_t := 0.0
+var _queue: Array = []        # pending lines ({name, speech, slug}) — one batch can carry two dialogues
 
 # Palette (runtime Color() -> var, never const).
 var _COL_PANEL := Color(0.05, 0.05, 0.08, 0.98)   # near-opaque: the HUD log must not bleed through
@@ -146,6 +148,15 @@ func show_line(npc_name: String, speech: String, slug: String = "") -> void:
 	var line := speech.strip_edges()
 	if line == "":
 		return
+	# One server batch can carry TWO dialogue events (e.g. a recruit's join line + their
+	# on_recruit grant) — queue behind the visible line instead of clobbering it mid-reveal.
+	if visible:
+		_queue.append({"name": npc_name, "speech": line, "slug": slug})
+		return
+	_display(npc_name, line, slug)
+
+
+func _display(npc_name: String, line: String, slug: String) -> void:
 	_name_label.text = npc_name
 	_text_label.text = line
 	_text_label.visible_characters = 0
@@ -156,6 +167,7 @@ func show_line(npc_name: String, speech: String, slug: String = "") -> void:
 		if idx >= 0:
 			var at := AtlasTexture.new()
 			at.atlas = _atlas
+			@warning_ignore("integer_division")
 			at.region = Rect2((idx % _cols) * _ts, (idx / _cols) * _ts, _ts, _ts)
 			_portrait.texture = at
 	visible = true
@@ -176,7 +188,12 @@ func _process(delta: float) -> void:
 		_text_label.visible_characters = mini(total, int(_reveal))
 	elif not _speaking:
 		_idle += delta
-		if _idle >= HIDE_AFTER_S:
+		if not _queue.is_empty():
+			# Current line fully landed (revealed + voice done): a short beat, then the next.
+			if _idle >= NEXT_LINE_BEAT_S:
+				var next: Dictionary = _queue.pop_front()
+				_display(str(next["name"]), str(next["speech"]), str(next["slug"]))
+		elif _idle >= HIDE_AFTER_S:
 			visible = false
 	else:
 		_idle = 0.0

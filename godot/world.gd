@@ -95,6 +95,10 @@ func _load_sheet() -> void:
 
 ## main.gd tells us which slice is playing so terrain + tint match the biome.
 func set_slice(slice_name: String) -> void:
+	# A fresh world (connect or N-key restart) re-uses entity ids at new positions — stale
+	# tween state would streak tokens across the map, so drop it wholesale.
+	_anim.clear()
+	_last_pos.clear()
 	var terrains = _sheet.get("terrain", {})
 	if typeof(terrains) != TYPE_DICTIONARY:
 		terrains = {}
@@ -105,6 +109,7 @@ func set_slice(slice_name: String) -> void:
 
 
 func _src_rect(idx: int) -> Rect2:
+	@warning_ignore("integer_division")
 	return Rect2((idx % _cols) * _ts, (idx / _cols) * _ts, _ts, _ts)
 
 
@@ -144,6 +149,9 @@ func _update_anims() -> void:
 	for id in _anim.keys().duplicate():
 		if not seen_ids.has(id):
 			_anim.erase(id)
+	for id in _last_pos.keys().duplicate():
+		if not seen_ids.has(id):
+			_last_pos.erase(id)
 
 
 func _all_drawables() -> Array:

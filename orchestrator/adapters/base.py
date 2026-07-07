@@ -24,12 +24,18 @@ class LLMAdapter(ABC):
     """Large language model: a list of chat messages in, a stream of text deltas out."""
 
     @abstractmethod
-    def stream_reply(self, messages: list[dict], system: str = "") -> AsyncIterator[str]:
+    def stream_reply(
+        self, messages: list[dict], system: str | list = "", *, cache_messages: bool = False
+    ) -> AsyncIterator[str]:
         """Yield text deltas as they are generated.
 
         `messages` is a list of {"role": "user"|"assistant", "content": str} dicts.
         `system` is the system prompt, passed separately (most chat APIs, including
-        Anthropic's, treat the system prompt as a distinct field, not a message).
+        Anthropic's, treat the system prompt as a distinct field, not a message); a
+        list opts its FIRST segment (the stable prefix) into provider-side prompt
+        caching where supported.
+        `cache_messages` asks the provider to cache the conversation-history prefix —
+        a cost/latency hint only, and a no-op for providers without prompt caching.
         """
         raise NotImplementedError
 

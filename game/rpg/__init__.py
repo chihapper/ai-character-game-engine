@@ -6,11 +6,14 @@ over local IPC (Phase B) — the logic never changes, only the thin renderer.
 
 See docs/godot-game-build-plan.md (the spec) and docs/godot-build-step0-inspection.md.
 
-Current state: Phase A complete (state model, deterministic rules core, reskinned cast, engine
-integration — one Engine per named NPC with a per-Engine caps override — DM orchestrator,
-procedural dungeon gen, tcod dev view); Phase B live (local WebSocket server + Godot 4.7 client,
-Hume-voiced NPC dialogue); SRD rules phases 1-2 wired (turn-based combat). Remaining: SRD rules
-phases 3-6; runtime world save/load is in progress (being wired now).
+Current state: Phase A complete (state model, rules core, reskinned cast, engine integration —
+one Engine per named NPC with a per-Engine caps override — GM narrator, procedural dungeon gen,
+tcod dev view); Phase B live (local WebSocket server + Godot 4.7 client: sprites, portrait speech
+card, streamed Hume voice, synthesized SFX/ambience); ALL SIX SRD rules phases wired (mechanics,
+turn-based combat, bestiary, encounter scaling, loot, progression to level 6); world autosave +
+resume live (.saves/<slice>-<seed>.json via game/rpg/server.py); recruit-through-conversation,
+camp rest, and GM-narrated stage directions shipped. Known-deferred RAW/equip/ranged items are
+task-tracked.
 """
 from __future__ import annotations
 

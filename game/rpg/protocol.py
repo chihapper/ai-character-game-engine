@@ -39,19 +39,20 @@ class StartMsg(BaseModel):
 
 class ActionMsg(BaseModel):
     """Apply one player intent (move / move_to / talk / recruit / do / look / wait /
-    toggle_enemy_hp / use — the authoritative list is session.PlayerAction.kind)."""
+    toggle_enemy_hp / use / rest — the authoritative list is session.PlayerAction.kind)."""
     t: Literal["action"] = "action"
     action: PlayerAction
 
 
 class DeedMsg(BaseModel):
     """A consequential player deed toward named NPCs (the 'help/free/rob' seam the tcod view's 'f'
-    key uses) — world->mind, then the reaction recipe runs game-side."""
+    key uses) — world->mind, then the reaction recipe runs game-side. Field caps keep a raw wire
+    client from feeding multi-megabyte strings into LLM prompts and the save file."""
     t: Literal["deed"] = "deed"
-    fact: str
-    targets: list[str]
-    player_role: str = "caused"
-    magnitude: float = 0.6
+    fact: str = Field(max_length=2000)
+    targets: list[str] = Field(max_length=8)
+    player_role: str = Field(default="caused", max_length=40)
+    magnitude: float = Field(default=0.6, ge=0.0, le=1.0)
 
 
 class StateReqMsg(BaseModel):

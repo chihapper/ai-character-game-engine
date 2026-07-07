@@ -55,7 +55,8 @@ func _ready() -> void:
 	# PCM in ~0.5s+ chunks as Hume synthesizes it, and we push frames into one generator so chunks
 	# butt together gaplessly (per-clip playback had an audible seam at every chunk boundary).
 	var gen := AudioStreamGenerator.new()
-	gen.mix_rate = 24000.0            # the wire's fixed PCM rate (s16le mono, AUDIO_SAMPLE_RATE)
+	gen.mix_rate = float(_voice_rate) # the wire's default PCM rate (s16le mono, AUDIO_SAMPLE_RATE);
+	                                  # rebuilt in _play_voice if a message carries a different rate
 	gen.buffer_length = 4.0           # generous ring buffer; _process tops it up from _pending
 	_voice.stream = gen
 
@@ -166,11 +167,26 @@ func _on_game_event(ev: Dictionary) -> void:
 ## just reads as a breath of silence — never a click or a cut-off line.
 var _pending := PackedVector2Array()
 var _voice_playback: AudioStreamGeneratorPlayback = null
+var _voice_rate := 24000              # current generator mix rate; the protocol carries `rate` per message
+var _voice_buf_frames := 0            # the generator ring's true capacity, measured while empty
 
-func _play_voice(b64: String, _rate: int) -> void:
+func _play_voice(b64: String, rate: int) -> void:
 	if b64 == "" or _voice == null:
 		return
+	# The protocol deliberately carries `rate` per message; if it changes, rebuild the
+	# generator to match (a mismatched mix_rate would play every line pitch-shifted).
+	if rate > 0 and rate != _voice_rate:
+		_voice.stop()
+		var gen := AudioStreamGenerator.new()
+		gen.mix_rate = float(rate)
+		gen.buffer_length = 4.0
+		_voice.stream = gen
+		_pending = PackedVector2Array()
+		_voice_playback = null
+		_voice_buf_frames = 0
+		_voice_rate = rate
 	var pcm := Marshalls.base64_to_raw(b64)
+	@warning_ignore("integer_division")
 	var n := pcm.size() / 2
 	if n <= 0:
 		return
@@ -187,8 +203,8 @@ func _play_voice(b64: String, _rate: int) -> void:
 
 func _process(_delta: float) -> void:
 	# Speech-card glow: "speaking" = audio frames still queued or recently pushed. The generator
-	# player itself never stops, so track our own tail: frames pushed are audible for roughly
-	# (pushed - consumed) time; approximate with pending + a short linger after the last push.
+	# player itself never stops, so track our own tail: seconds still occupied in the generator
+	# ring after each push (see below) plus a short linger; _pending covers the not-yet-pushed rest.
 	if _speech != null:
 		var audible := not _pending.is_empty() or (_voice_tail > 0.0)
 		_speech.set_speaking(audible)
@@ -199,6 +215,10 @@ func _process(_delta: float) -> void:
 	if not _voice.playing:
 		_voice.play()                               # lazy-start; playback object exists after play()
 		_voice_playback = _voice.get_stream_playback()
+		if _voice_playback != null:
+			# An empty ring's free space IS its capacity (Godot rounds buffer_length * mix_rate
+			# up to a power of two internally, so measure rather than assume).
+			_voice_buf_frames = _voice_playback.get_frames_available()
 	if _voice_playback == null:
 		return
 	var avail := _voice_playback.get_frames_available()
@@ -207,7 +227,11 @@ func _process(_delta: float) -> void:
 	var take: int = mini(avail, _pending.size())
 	_voice_playback.push_buffer(_pending.slice(0, take))
 	_pending = _pending.slice(take)
-	_voice_tail = float(take) / 24000.0 + 0.25      # what we just pushed is audible for ~this long
+	# The glow tail covers EVERYTHING still queued in the generator ring (up to 4s), not just
+	# this push: occupied frames = capacity - free space after the push.
+	var cap := _voice_buf_frames if _voice_buf_frames > 0 else int(4.0 * _voice_rate)
+	var occupied := float(cap - _voice_playback.get_frames_available()) / float(_voice_rate)
+	_voice_tail = maxf(occupied, 0.0) + 0.25
 
 
 ## Seconds of already-pushed audio still (approximately) sounding — drives the speaking glow.
@@ -321,6 +345,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
 			if _hud != null:
 				_hud.log_line("— starting a fresh expedition —")
+			if _world != null:
+				_world.set_slice(_slice())   # also drops stale movement tweens (fresh map re-uses ids)
 			Net.start_game(_slice(), _seed(), false)
 		_:
 			handled = false

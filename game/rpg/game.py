@@ -127,8 +127,21 @@ class RpgGame(GameSession):
         builder = SLICES.get(slice)
         if builder is None:
             raise ValueError(f"unknown slice {slice!r}; known: {', '.join(sorted(SLICES))}")
-        _, chars = builder(seed=seed)            # throwaway world — only the cast matters here
+        fresh, chars = builder(seed=seed)        # throwaway world — the cast + AUTHORED data source
         rules = D20Rules(seed=seed)
+        # Re-stamp AUTHOR-OWNED content from the current slice onto the saved world: prose and
+        # social gates are the author's to evolve between sessions (a save from before a balance
+        # pass must not freeze Vael's gate at an old default), while WORLD PROGRESS (positions,
+        # inventory, flags, talk counts, who joined) stays exactly as saved.
+        state.flavor = fresh.flavor
+        fresh_npcs = {n.slug: n for n in fresh.npcs}
+        for n in state.npcs:
+            src = fresh_npcs.get(n.slug)
+            if src is not None:
+                n.recruit_min_talks = src.recruit_min_talks
+                n.recruit_requires_flag = src.recruit_requires_flag
+                n.on_recruit_grant = src.on_recruit_grant
+                n.on_recruit_line = src.on_recruit_line
         return cls(state, Minds(chars, reply_model=reply_model), rules,
                    DM(rules, model=dm_model, setting=state.flavor.dm_setting))
 
@@ -212,10 +225,16 @@ class RpgGame(GameSession):
 
     def _situation(self, for_slug: str, *, recent: list[str] | None = None):
         """Build the perceiving NPC's `Situation` from the world — location + who's present + the
-        numeric clock + light grounding. The engine owns everything about the mind."""
-        others = [self.state.player.name] + [n.name for n in self.state.npcs
-                                             if n.slug != for_slug and n.pos
-                                             and self._dist(n.pos, self.state.player.pos) <= 6]
+        numeric clock + light grounding. The engine owns everything about the mind. PRESENT includes
+        party followers (recruits leave s.npcs when they join, so without this a companion standing
+        right there was invisible to every mind — talking past someone the scene says is present)."""
+        s = self.state
+        others = [s.player.name] + [n.name for n in s.npcs
+                                    if n.slug != for_slug and n.pos
+                                    and self._dist(n.pos, s.player.pos) <= 6]
+        others += [f.name for f in s.followers
+                   if f.alive and f.pos and f.mind_slug != for_slug
+                   and self._dist(f.pos, s.player.pos) <= 6]
         flavor = self.state.flavor
         extra = {"The world you live in": flavor.world_frame, "Performance": policy.PERFORMANCE_RULES}
         return self.minds.situation(clock=self.state.clock.value, location=flavor.location_label,
@@ -357,6 +376,8 @@ class RpgGame(GameSession):
 
     def _move_player(self, dx: int, dy: int) -> None:
         s = self.state
+        if abs(dx) + abs(dy) != 1:          # server authority: one orthogonal step, never a teleport
+            return                          # (a raw wire client could otherwise jump walls/doors)
         old = tuple(s.player.pos)
         nx, ny = old[0] + dx, old[1] + dy
         door = next((d for d in s.doors if d.locked and tuple(d.pos) == (nx, ny)), None)
@@ -611,7 +632,10 @@ class RpgGame(GameSession):
         _, gesture = _split_speech(reply)
         if len(gesture) > 15:
             try:
-                told = await self.dm.narrate_gesture(name, gesture, scene=self._scene_text())
+                # Hard cap: a hung narrator call must never hold the reply batch hostage (the
+                # same latency class the voice pipeline was rebuilt to eliminate).
+                told = await asyncio.wait_for(
+                    self.dm.narrate_gesture(name, gesture, scene=self._scene_text()), timeout=6)
                 if told:
                     self._emit(NarrationEvent(text=told))
             except Exception:                    # noqa: BLE001 — narration is an enhancement
@@ -630,9 +654,12 @@ class RpgGame(GameSession):
         npc = next((n for n in s.npcs if n.slug == action.target_id), None)
         # Server-side range gate: an explicit target must actually be BESIDE you — the view's
         # adjacency check is a convenience, not the authority (a raw wire client could name anyone).
+        # An EXPLICIT target out of range REFUSES outright (mirroring _talk) — silently redirecting
+        # to whoever happens to be adjacent would plant the "asked me along" memory in the WRONG mind.
         if npc is not None and (not npc.pos or self._dist(npc.pos, s.player.pos) > 1):
-            npc = None
-        if npc is None:
+            self._emit(NarrationEvent(text="No one beside you to ask along."))
+            return
+        if npc is None:                     # no explicit target: fall back to whoever is adjacent
             npc = min((n for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 1),
                       key=lambda n: self._dist(n.pos, s.player.pos), default=None)
         if npc is None:
@@ -919,6 +946,8 @@ class RpgGame(GameSession):
         the action), else walk one tile (spends 5 ft of movement)."""
         s = self.state
         cs = s.combat
+        if abs(dx) + abs(dy) != 1:          # server authority: unit steps only (no ranged "bumps")
+            return
         tx, ty = s.player.pos[0] + dx, s.player.pos[1] + dy
         foe = next((e for e in self._fight_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
         if foe is not None:
@@ -1012,7 +1041,11 @@ class RpgGame(GameSession):
             cs.ally_stance[follower.mind_slug] = stance
             self._say(follower.name, follower.mind_slug, choice.get("reason") or stance)   # voiced downstream
         foes = [e for e in self._fight_enemies() if e.pos]
-        if ("fight" in stance or "beside" in stance) and foes:
+        # Dispatch the HOLD stances first: "Flee the fight" CONTAINS the word "fight", so the old
+        # substring test sent a fleeing ally into melee every round while they voiced refusal —
+        # inverting the differentiator. A wronged ally who won't fight must actually not fight.
+        holds = "flee" in stance or "hang" in stance or "guard" in stance
+        if not holds and ("fight" in stance or "beside" in stance) and foes:
             tgt = min(foes, key=lambda e: self._dist(follower.pos, e.pos))
             for _ in range(max(1, int(getattr(follower, "speed", 30) or 30) // 5)):
                 if self._dist(follower.pos, tgt.pos) <= 1:

@@ -14,6 +14,9 @@ env/
 chroma_db/
 .memory/
 *.wav
+# ...except the game's own generated SFX/ambience set (small, original, regenerable via
+# tools/gen_rpg_sfx.py) — their .import descriptors are tracked, so the wavs must be too.
+!godot/assets/sfx/*.wav
 *.webm
 
 # Per-speaker voice/cadence profiles (local user data)

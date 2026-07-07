@@ -130,8 +130,17 @@ class DM:
                     ability = str(inp.get("ability", "WIS")).upper()
                     if ability not in ABILITIES:
                         ability = "WIS"
-                    r = self.rules.ability_check(player, ability,
-                                                 int(inp.get("dc", 12)), advantage=int(inp.get("advantage", 0) or 0))
+                    # dc/advantage get the same defensive coercion as ability — tool-use inputs
+                    # aren't hard-validated, and a model emitting "moderate" or 12.0 must not crash.
+                    try:
+                        dc = int(float(inp.get("dc", 12)))
+                    except (TypeError, ValueError):
+                        dc = 12
+                    try:
+                        adv = int(float(inp.get("advantage", 0) or 0))
+                    except (TypeError, ValueError):
+                        adv = 0
+                    r = self.rules.ability_check(player, ability, dc, advantage=max(-1, min(1, adv)))
                     verdict = "SUCCESS" if r.success else "FAILURE"
                     crit = f" (natural {'20' if r.critical == 'hit' else '1'})" if r.critical else ""
                     results.append({"type": "tool_result", "tool_use_id": block.id,

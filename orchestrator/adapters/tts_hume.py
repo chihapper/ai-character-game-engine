@@ -80,6 +80,24 @@ def _speed_for(description: str) -> float | None:
     return None
 
 
+def _consume_lead_tag(text: str) -> tuple[str | None, str]:
+    """Consume a leading [tag] as an acting direction — EXCEPT pause marks, which are
+    Octave-native inline markers kept verbatim in the text (module contract), never a
+    description. A pause mark is skipped over (left in place) so a real tag right behind
+    it still directs: "[pause] [warm] Easy now." -> ("warm", "[pause] Easy now.")."""
+    kept = ""
+    rest = text
+    while True:
+        m = _LEAD_TAG.match(rest)
+        if not m:
+            return None, text
+        if _PAUSE_MARK.fullmatch(f"[{m.group(1).strip()}]"):
+            kept += rest[: m.end()]
+            rest = rest[m.end():]
+            continue
+        return m.group(1).strip(), kept + rest[m.end():]
+
+
 def _compact_direction(narration: str) -> str:
     """Stage business -> a short acting instruction (Octave wants <=100 chars): keep the
     LAST sentence of the narration (the beat closest to the words) and trim."""
@@ -175,21 +193,27 @@ class HumeTTS(TTSAdapter):
                 # the PREVIOUS utterance holds while it happens
                 beat_boosts[len(out) - 1] = max(beat_boosts.get(len(out) - 1, 0.0),
                                                 _beat_silence(narration_raw))
-            m = _LEAD_TAG.match(spoken)
-            if m:  # an explicit [tag] outranks inferred stage business
-                direction = m.group(1).strip()
-                spoken = spoken[m.end():]
+            tag, spoken = _consume_lead_tag(spoken)
+            if tag:  # an explicit [tag] outranks inferred stage business
+                direction = tag
             if direction:
                 active_desc = direction
             desc_new = bool(direction)
             for s in (x for x in _SENTENCE_END.split(spoken) if x.strip()):
-                m = _LEAD_TAG.match(s)
-                if m:
-                    active_desc = m.group(1).strip()
+                tag, s = _consume_lead_tag(s)
+                if tag:
+                    active_desc = tag
                     desc_new = True
-                    s = s[m.end():]
-                pauses = {p.span(): p.group(0) for p in _PAUSE_MARK.finditer(s)}
-                s = render_tags(s, "hume") if not pauses else s
+                pauses = [p.group(0) for p in _PAUSE_MARK.finditer(s)]
+                if pauses:
+                    # pause marks stay verbatim (Octave-native) — but the REST of the
+                    # sentence still passes the drop-risky-tags safety net: shield the
+                    # pauses behind a placeholder, render, then put them back.
+                    s = render_tags(_PAUSE_MARK.sub("\x00", s), "hume")
+                    for mark in pauses:
+                        s = s.replace("\x00", mark, 1)
+                else:
+                    s = render_tags(s, "hume")
                 if not has_speakable(s) and not pauses:
                     continue
                 utt: dict = {"text": s.strip()}

@@ -25,12 +25,14 @@ class PlayerAction(BaseModel):
     # handles it, not before (a declared-but-ignored kind is a silent no-op trap).
     kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp",
                   "use", "rest"]
-    dx: int = 0                  # move (single step)
+    dx: int = 0                  # move (single step; the core rejects non-unit deltas)
     dy: int = 0
     tx: int = 0                  # move_to (target tile)
     ty: int = 0
-    target_id: str = ""          # talk / recruit target (NPC slug)
-    text: str = ""               # the player's spoken line (talk) or free-form action text (do)
+    target_id: str = Field(default="", max_length=120)   # talk / recruit / use target
+    # The player's spoken line (talk) or free-form action text (do). Capped so a raw wire client
+    # can't feed multi-megabyte strings into LLM prompts and the save file.
+    text: str = Field(default="", max_length=2000)
 
 
 # ---- events (to the view) -----------------------------------------------------

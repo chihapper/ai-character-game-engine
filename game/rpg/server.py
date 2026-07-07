@@ -31,6 +31,8 @@ load_dotenv(".env")
 
 import websockets  # noqa: E402
 
+from orchestrator.memory.base_store import atomic_write_text, quarantine  # noqa: E402
+
 from .game import RpgGame  # noqa: E402
 from .protocol import (  # noqa: E402
     ActionMsg,
@@ -47,6 +49,12 @@ from .state import GameState, Mode  # noqa: E402
 from .voice import stream_line, wire_rate  # noqa: E402
 
 SAVE_DIR = Path(".saves")
+
+# One ACTIVE game per save file, process-wide: the client's auto-reconnect (or a second client)
+# can otherwise race two RpgGames onto the same .saves file with interleaved last-writer-wins
+# autosaves (world divergence while the minds remember everything). Newest claimant WINS — a
+# reconnect IS the same player coming back — and the old connection stops autosaving.
+_ACTIVE_GAMES: dict[str, object] = {}
 
 
 def _save_path(slice_name: str, seed: int) -> Path:
@@ -67,41 +75,68 @@ class RpgConnection:
         self._save_to: Path | None = None            # set on start; autosave target for this session
 
     def _load_save(self, msg: StartMsg) -> GameState | None:
-        """The saved world for this slice+seed, or None (missing / unreadable — fall back to fresh)."""
+        """The saved world for this slice+seed, or None (missing / unreadable). An unreadable save
+        is QUARANTINED (moved aside loudly) rather than left in place to be silently overwritten by
+        the next autosave — the evidence survives."""
         p = _save_path(msg.slice, msg.seed)
         if not p.exists():
             return None
         try:
             return GameState.from_json(p.read_text(encoding="utf-8"))
         except Exception as exc:                     # noqa: BLE001 — a corrupt save must not brick starts
-            print(f"[rpg-server] ignoring unreadable save {p}: {exc}")
+            print(f"[rpg-server] unreadable save {p}: {exc}")
+            quarantine(p, str(exc))
             return None
 
     def _autosave(self) -> None:
         """Persist the WORLD after a handled message — exploration only (never a mid-combat or
-        game-over snapshot), best-effort (a full disk must not kill the session)."""
+        game-over snapshot), best-effort (a full disk must not kill the session). ATOMIC (tmp +
+        fsync + replace): a crash mid-write can no longer truncate the only save — the mind stores
+        got this guarantee long ago; the world save deserves the same. Skipped when another
+        connection has since claimed this save file (adopt-newest)."""
         g = self.game
         if g is None or self._save_to is None:
             return
+        if _ACTIVE_GAMES.get(str(self._save_to)) is not self:
+            return                                   # a newer connection owns this save now
         if g.state.mode != Mode.exploration or g.state.flags.get("game_over"):
             return
         try:
-            self._save_to.parent.mkdir(parents=True, exist_ok=True)
-            self._save_to.write_text(g.state.to_json(), encoding="utf-8")
+            atomic_write_text(self._save_to, g.state.to_json())
         except Exception as exc:                     # noqa: BLE001
             print(f"[rpg-server] autosave failed: {exc}")
+
+    def _autosave_fresh(self) -> None:
+        """Unconditional first save of a brand-new world (mode gating doesn't apply — the game
+        hasn't started yet; we just need the fresh state ON DISK so resume can't resurrect the
+        abandoned one)."""
+        if self.game is None or self._save_to is None:
+            return
+        try:
+            atomic_write_text(self._save_to, self.game.state.to_json())
+        except Exception as exc:                     # noqa: BLE001
+            print(f"[rpg-server] fresh-start save failed: {exc}")
 
     async def handle(self, data: dict) -> list[dict]:
         msg = parse_client(data)                     # raises ValidationError on a bad shape
         if isinstance(msg, StartMsg):
-            self._save_to = _save_path(msg.slice, msg.seed)
+            save_to = _save_path(msg.slice, msg.seed)
             loaded = self._load_save(msg) if msg.resume else None
             if loaded is not None:
-                self.game = RpgGame.resume(slice=msg.slice, seed=msg.seed, state=loaded,
-                                           reply_model=self.reply_model, dm_model=self.dm_model)
+                game = RpgGame.resume(slice=msg.slice, seed=msg.seed, state=loaded,
+                                      reply_model=self.reply_model, dm_model=self.dm_model)
             else:
-                self.game = RpgGame.new(slice=msg.slice, seed=msg.seed,
-                                        reply_model=self.reply_model, dm_model=self.dm_model)
+                game = RpgGame.new(slice=msg.slice, seed=msg.seed,
+                                   reply_model=self.reply_model, dm_model=self.dm_model)
+            # Commit the switch ONLY after construction succeeded — a failed start (unknown slice)
+            # must leave the old game and its save target untouched.
+            self.game = game
+            self._save_to = save_to
+            _ACTIVE_GAMES[str(save_to)] = self       # newest claimant wins; older ones stop saving
+            if not msg.resume:
+                # A FRESH start replaces the old save IMMEDIATELY — otherwise a link drop before
+                # the first action would silently resurrect the world the player just abandoned.
+                self._autosave_fresh()
             await self.game.begin()                  # the world speaks first (recaps on a resume)
             return await self._emit_events() + [snapshot_msg(self.game.get_state())]
         if self.game is None:
@@ -145,8 +180,16 @@ class RpgConnection:
 async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                 reply_model: str | None = None, dm_model: str | None = None,
                 voice: bool = False) -> None:
+    # Session hardening: a shared token is REQUIRED when binding beyond loopback (any LAN peer
+    # could otherwise drive the game, burn LLM/TTS credits, and pollute persistent NPC minds).
+    token = os.environ.get("RPG_TOKEN", "")
+    if host not in ("127.0.0.1", "localhost", "::1") and not token:
+        print("[rpg-server] WARNING: binding beyond loopback without RPG_TOKEN — any LAN peer "
+              "can drive this game. Set RPG_TOKEN and pass it as the first message's `token`.")
+
     async def handler(ws) -> None:
         conn = RpgConnection(reply_model=reply_model, dm_model=dm_model, voice=voice)
+        authed = not token                            # loopback default: no token configured
         send_lock = asyncio.Lock()                    # one writer at a time (batch vs voice worker)
         voice_q: asyncio.Queue = asyncio.Queue()
 
@@ -172,8 +215,8 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                                 pcm=bytes(buf), rate=rate)))
                         buf.clear()
 
+                agen = stream_line(e["text"], e.get("slug", ""))
                 try:
-                    agen = stream_line(e["text"], e.get("slug", ""))
                     while True:
                         try:
                             chunk = await asyncio.wait_for(agen.__anext__(), timeout=30)
@@ -187,12 +230,28 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                     return
                 except Exception as exc:              # noqa: BLE001 — voice is an enhancement
                     print(f"[rpg-server] voice line cut short: {exc}")
+                finally:
+                    # Deterministic cleanup on EVERY exit (timeout/close/error): an abandoned
+                    # async generator can hold the Hume HTTP stream open until GC gets to it.
+                    try:
+                        await agen.aclose()
+                    except Exception:                 # noqa: BLE001
+                        pass
 
         vtask = asyncio.create_task(voice_worker()) if voice else None
         try:
             async for raw in ws:
                 try:
-                    outs = await conn.handle(json.loads(raw))
+                    data = json.loads(raw)
+                    if not authed:
+                        if isinstance(data, dict) and data.get("token") == token:
+                            authed = True
+                        else:
+                            await ws.send(json.dumps(error_msg("unauthorized: send the RPG_TOKEN "
+                                                               "as `token` on your first message")))
+                            await ws.close(code=4401, reason="unauthorized")
+                            return
+                    outs = await conn.handle(data)
                 except Exception as e:                # never drop the connection on one bad message
                     outs = await conn.recover(e)
                 async with send_lock:
@@ -214,7 +273,10 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                 except Exception as exc:              # noqa: BLE001
                     print(f"[rpg-server] mind flush on disconnect failed: {exc}")
 
-    async with websockets.serve(handler, host, port, max_size=2 ** 22):
+    # origins=[None]: reject BROWSER handshakes outright (a webpage open on this machine could
+    # otherwise hijack the session via cross-site WebSocket — Godot's WebSocketPeer sends no
+    # Origin header, so the real client passes; browsers always send one and are refused).
+    async with websockets.serve(handler, host, port, max_size=2 ** 22, origins=[None]):
         print(f"[rpg-server] listening on ws://{host}:{port}  (one game per connection; voice={voice})")
         await asyncio.Future()                        # run forever
 

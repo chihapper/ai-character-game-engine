@@ -23,7 +23,7 @@ import re
 
 from .character_store import Character
 from .config import get_settings
-from .judgment import complete
+from .judgment import complete, salvage_json
 from .salience import _character_summary
 
 logger = logging.getLogger(__name__)
@@ -42,16 +42,23 @@ _SYSTEM = (
 )
 
 
-def _parse_beliefs(text: str) -> list[str]:
+def _parse_beliefs(text: str) -> list[str] | None:
+    """The beliefs in an LLM reply: [] only for a WELL-FORMED empty result ({"beliefs": []}),
+    None when nothing parses — a truncated/malformed reply must read as FAILURE (the caller
+    keeps its window and retries), not as "no beliefs formed" (which would clear it)."""
+    data = None
     m = re.search(r"\{.*\}", text or "", re.DOTALL)
-    if not m:
-        return []
-    try:
-        data = json.loads(m.group())
-    except (ValueError, TypeError):
-        return []
+    if m:
+        try:
+            data = json.loads(m.group())
+        except (ValueError, TypeError):
+            data = None
+    if not isinstance(data, dict) or not isinstance(data.get("beliefs"), list):
+        data = salvage_json(text or "")  # a truncated reply may still carry complete beliefs
+    if not isinstance(data, dict) or not isinstance(data.get("beliefs"), list):
+        return None
     out: list[str] = []
-    for b in data.get("beliefs", []) if isinstance(data, dict) else []:
+    for b in data["beliefs"]:
         s = str(b).strip()
         if s:
             out.append(s)
@@ -64,8 +71,9 @@ async def consolidate_beliefs(
 ) -> list[str] | None:
     """Synthesize 1-3 durable beliefs from `recent` events (and, if given, the beliefs already
     held, so convictions can deepen or shift). Returns [] when nothing rises above the noise,
-    None on a transient error — so the caller keeps its accumulated window and retries later
-    instead of silently losing those exchanges. Never raises (must not break a turn)."""
+    None on a transient error OR an unparseable reply — so the caller keeps its accumulated
+    window and retries later instead of silently losing those exchanges. Never raises (must
+    not break a turn)."""
     if not recent:
         return []
     prompt = (
