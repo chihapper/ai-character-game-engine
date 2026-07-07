@@ -923,6 +923,7 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 				for m in body.find_children("*", "MeshInstance3D", true, false):
 					(m as MeshInstance3D).material_overlay = _husk_overlay
 			ent["caster"] = model_path.contains("Mage")   # spellcasters swing spells, not swords
+			ent["model_path"] = model_path                # the talk scene's bust uses the same GLB
 			var aps := body.find_children("*", "AnimationPlayer", true)
 			if not aps.is_empty():
 				ent["ap"] = aps[0]
@@ -1124,6 +1125,12 @@ func debug_idle(id: String) -> void:
 	if _ents.has(id):
 		_ents[id]["state"] = "idle"
 		_play_anim(_ents[id], ["Idle"], true)
+
+
+## The GLB an entity renders with ("" for billboard sprites) — the talk scene builds its live
+## 3D bust from the SAME model, so the face you talk to is the person you saw in the world.
+func model_path_for(id: String) -> String:
+	return str(_ents[id].get("model_path", "")) if _ents.has(id) else ""
 
 
 # ------------------------------------------------------- stage-direction acting

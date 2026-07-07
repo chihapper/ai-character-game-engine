@@ -14,6 +14,7 @@ var _world: Node          # World3D (default) or the classic 2D view (RPG_2D=1) 
 var _hud: CanvasLayer
 var _dialogue: CanvasLayer
 var _speech: CanvasLayer        # the portrait speech card (speech.gd)
+var _talk: CanvasLayer          # the Civ 5-style talk scene (talk_scene.gd)
 var _anim_panel: CanvasLayer    # dev animation browser (dev_anim.gd, F10)
 var _voice: AudioStreamPlayer   # plays Hume-voiced NPC lines (PCM streamed from the server)
 
@@ -61,6 +62,13 @@ func _ready() -> void:
 	_anim_panel.set_script(load("res://dev_anim.gd"))
 	add_child(_anim_panel)
 	_anim_panel.setup(_world)
+
+	# Talk scene: the Civ 5-style conversation stage (whole portrait / live 3D bust + voice-
+	# synced motion). Opens on T-talk; dialogue events route here while it's up.
+	_talk = CanvasLayer.new()
+	_talk.name = "TalkScene"
+	_talk.set_script(load("res://talk_scene.gd"))
+	add_child(_talk)
 
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
@@ -167,6 +175,17 @@ func _stage_combat_demo(shot: String) -> void:
 		await get_tree().create_timer(0.3).timeout
 		_save_screenshot(base + "_6.png")
 		_anim_panel.toggle()
+	if _talk != null:                            # the Civ 5-style talk scene, both portrait paths
+		_talk.open("rpg-lira", "Lira", _model_path_for("rpg-lira"))
+		_talk.show_line("Lira", "Stick close — the dark down here has teeth, and it knows our names.", "rpg-lira", _model_path_for("rpg-lira"))
+		await get_tree().create_timer(0.9).timeout
+		_save_screenshot(base + "_7.png")        # painted-art path (Lira has placeholder art)
+		_talk.close()
+		_talk.open("player", "You", _model_path_for("player"))
+		_talk.show_line("You", "Testing the live bust: no painted art, so the world model takes the stage.", "player", _model_path_for("player"))
+		await get_tree().create_timer(0.9).timeout
+		_save_screenshot(base + "_8.png")        # live 3D bust path (knight has no painted art)
+		_talk.close()
 	_save_screenshot(shot)
 
 
@@ -237,15 +256,24 @@ func _on_game_event(ev: Dictionary) -> void:
 		_world.follow_path(str(ev.get("entity", "player")), ev.get("tiles", []))
 	# Speech card: the personable face of a spoken line — portrait + name + typewriter reveal.
 	# Only the QUOTED speech is shown (stage directions are never player-visible text).
-	if t == "dialogue" and _speech != null:
+	if t == "dialogue":
 		var line := str(ev.get("speech", ""))
 		if line.strip_edges() == "":
 			line = str(ev.get("text", ""))
-		_speech.show_line(str(ev.get("npc", "")), line, str(ev.get("slug", "")))
+		var slug := str(ev.get("slug", ""))
+		# While the talk scene is up, lines take the STAGE (whole portrait / live bust);
+		# otherwise the compact speech card handles them (ambient lines, walk-by grants).
+		if _talk != null and _talk.is_open():
+			_talk.show_line(str(ev.get("npc", "")), line, slug, _model_path_for(slug))
+		elif _speech != null:
+			_speech.show_line(str(ev.get("npc", "")), line, slug)
 		# The line's stage business (mind-authored, never shown as text) is PERFORMED: the
 		# speaker turns to you and acts it out — sneaking, crouching, drawing steel...
 		if _world != null and _world.has_method("act_direction"):
-			_world.act_direction(str(ev.get("slug", "")), str(ev.get("action", "")))
+			_world.act_direction(slug, str(ev.get("action", "")))
+	# Combat tearing into a conversation ends the audience — the stage clears immediately.
+	if t == "mode_changed" and str(ev.get("mode", "")) == "combat" and _talk != null:
+		_talk.close()
 	# Dialogue TEXT surfaces immediately; the line's audio arrives as a follow-up "voice" event
 	# and queues below. (Dialogue-attached audio kept as a fallback path.)
 	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):
@@ -268,6 +296,8 @@ var _pending := PackedVector2Array()
 var _voice_playback: AudioStreamGeneratorPlayback = null
 var _voice_rate := 24000              # current generator mix rate; the protocol carries `rate` per message
 var _voice_buf_frames := 0            # the generator ring's true capacity, measured while empty
+var _amp_chunks: Array = []           # ~80ms amplitude windows [{end: abs frame idx, amp}] awaiting playback
+var _pushed_frames := 0               # total frames ever pushed into the ring (playhead anchor)
 
 func _play_voice(b64: String, rate: int) -> void:
 	if b64 == "" or _voice == null:
@@ -284,6 +314,8 @@ func _play_voice(b64: String, rate: int) -> void:
 		_voice_playback = null
 		_voice_buf_frames = 0
 		_voice_rate = rate
+		_amp_chunks = []
+		_pushed_frames = 0
 	var pcm := Marshalls.base64_to_raw(b64)
 	@warning_ignore("integer_division")
 	var n := pcm.size() / 2
@@ -310,6 +342,20 @@ func _process(_delta: float) -> void:
 		_speech.set_speaking(audible)
 	if _voice_tail > 0.0:
 		_voice_tail = maxf(0.0, _voice_tail - _delta)
+	# Voice PLAYHEAD amplitude -> the talk scene's mouth/motion. Playhead = frames pushed minus
+	# frames still queued in the ring, so the level tracks what's AUDIBLE right now, not what
+	# just arrived (the ring buffers up to 4s ahead — feeding arrival amplitude would flap the
+	# mouth seconds early).
+	var level := 0.0
+	if _voice_playback != null and _voice_tail > 0.0:
+		var capn := _voice_buf_frames if _voice_buf_frames > 0 else int(4.0 * _voice_rate)
+		var played := _pushed_frames - (capn - _voice_playback.get_frames_available())
+		while _amp_chunks.size() > 0 and int(_amp_chunks[0]["end"]) <= played:
+			_amp_chunks.pop_front()
+		if not _amp_chunks.is_empty():
+			level = float(_amp_chunks[0]["amp"])
+	if _talk != null:
+		_talk.set_level(level)
 	if _voice == null or _pending.is_empty():
 		return
 	if not _voice.playing:
@@ -326,6 +372,18 @@ func _process(_delta: float) -> void:
 		return
 	var take: int = mini(avail, _pending.size())
 	_voice_playback.push_buffer(_pending.slice(0, take))
+	# ~80ms amplitude windows over the pushed block — the playhead lookup above consumes these
+	var win := maxi(1, int(_voice_rate / 12.0))
+	var i := 0
+	while i < take:
+		var n2: int = mini(win, take - i)
+		var s := 0.0
+		for j in range(i, i + n2):
+			s += absf(_pending[j].x)
+		_amp_chunks.append({"end": _pushed_frames + i + n2,
+			"amp": clampf(s / float(n2) * 4.0, 0.0, 1.0)})
+		i += n2
+	_pushed_frames += take
 	_pending = _pending.slice(take)
 	# The glow tail covers EVERYTHING still queued in the generator ring (up to 4s), not just
 	# this push: occupied frames = capacity - free space after the push.
@@ -460,6 +518,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
 			if _hud != null:
 				_hud.log_line("— starting a fresh expedition —")
+			if _talk != null:
+				_talk.close()
 			if _world != null:
 				_world.set_slice(_slice())   # also drops stale movement tweens (fresh map re-uses ids)
 			Net.start_game(_slice(), _seed(), false)
@@ -532,13 +592,23 @@ func _on_dialogue_submitted(mode: String, target_name: String, text: String) -> 
 		_hud.log_line("You try to: %s" % text)
 
 
+func _model_path_for(slug: String) -> String:
+	if _world != null and _world.has_method("model_path_for"):
+		return _world.model_path_for(slug)
+	return ""
+
+
 func _open_talk_on_nearest() -> void:
 	var target: Dictionary = _nearest_interactable()
 	if target.is_empty():
 		_log_no_one()
 		return
+	var id := str(target.get("id", ""))
+	var who := str(target.get("name", ""))
 	if _dialogue != null:
-		_dialogue.open_talk(str(target.get("id", "")), str(target.get("name", "")))
+		_dialogue.open_talk(id, who)
+	if _talk != null:                     # the conversation takes the stage
+		_talk.open(id, who, _model_path_for(id))
 
 
 func _recruit_nearest() -> void:

@@ -9,6 +9,10 @@ documented re-fetch path.)
 ## Naming convention (what speech.gd looks for)
 
 - `<slug>.png` — the base portrait for an engine character (e.g. `rpg-lira.png`).
+- `<slug>_mouth_open.png` — OPTIONAL mouth-open layer (same canvas/framing as the base): when
+  present, the talk scene (talk_scene.gd) flaps it over the base in sync with the live voice
+  amplitude — the Civ 5 "their mouth moves" effect. Without it the portrait breathes/glows on
+  speech; characters without any painted art get a live 3D bust of their in-world model instead.
 - `<slug>_<emotion>.png` — expression variants for the emotion-sync stage
   (`neutral | smile | sad | angry | surprised | thoughtful`).
 
