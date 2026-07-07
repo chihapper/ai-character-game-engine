@@ -58,6 +58,13 @@ func render(s: Dictionary) -> void:
 	queue_redraw()
 
 
+## The tile (x,y) under the mouse right now — get_global_mouse_position() accounts for the
+## camera transform, so a click maps straight to a grid cell (world pixel = tile * CELL).
+func tile_at_mouse() -> Vector2i:
+	var wp := get_global_mouse_position()
+	return Vector2i(int(floor(wp.x / float(CELL))), int(floor(wp.y / float(CELL))))
+
+
 func _move_camera_to_player() -> void:
 	if _camera == null:
 		return

@@ -268,8 +268,8 @@ func _update_controls(snap: Dictionary) -> void:
 
 func _controls_text(mode: String) -> String:
 	if mode == "combat":
-		return "move into a foe to attack   G toggle enemy HP   . wait"
-	return "move: arrows/WASD   T talk   X do   R recruit   F help   L look   . wait"
+		return "click a foe to attack, a tile to move   G toggle enemy HP   . wait"
+	return "click to move   T talk   X do   R recruit   F help   L look   . wait"
 
 
 func _update_banner(snap: Dictionary) -> void:

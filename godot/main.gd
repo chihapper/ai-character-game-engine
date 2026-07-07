@@ -109,6 +109,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	# movement keys leak through to the world.
 	if _dialogue != null and _dialogue.is_open():
 		return
+	# Click-to-move: left-click a tile to walk toward it (in combat: step/attack toward it).
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _world != null:
+			var t: Vector2i = _world.tile_at_mouse()
+			Net.send_action("move_to", {"tx": t.x, "ty": t.y})
+		get_viewport().set_input_as_handled()
+		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 

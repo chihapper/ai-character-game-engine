@@ -182,6 +182,8 @@ class RpgGame(GameSession):
     async def _explore_action(self, action: PlayerAction) -> None:
         if action.kind == "move":
             self._move_player(action.dx, action.dy)
+        elif action.kind == "move_to":
+            self._move_to(action.tx, action.ty)
         elif action.kind == "talk":
             await self._talk(action)
         elif action.kind == "recruit":
@@ -327,6 +329,52 @@ class RpgGame(GameSession):
                 self._enter_combat(e)
                 return
 
+    def _step_toward_tile(self, src, dst):
+        """First step (dx,dy) toward the REACHABLE cell nearest `dst` on walkable tiles, treating
+        living enemies as blockers (the player can't path through a foe). Robust when `dst` is a wall
+        or occupied — the player still closes the distance. Returns None if boxed in / already there."""
+        from collections import deque
+        s = self.state
+        src, dst = tuple(src), tuple(dst)
+        blocked = {tuple(en.pos) for e in s.encounters for en in e.enemies if en.alive and en.pos}
+        prev = {src: None}
+        order = [src]
+        q = deque([src])
+        while q:
+            cx, cy = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nb = (cx + dx, cy + dy)
+                if nb in prev or not s.world_map.walkable(*nb):
+                    continue
+                if nb in blocked and nb != dst:
+                    continue
+                prev[nb] = (cx, cy)
+                order.append(nb)
+                q.append(nb)
+        best = min(order, key=lambda c: self._dist(c, dst))
+        if best == src:
+            return None
+        cur = best
+        while prev[cur] != src:
+            cur = prev[cur]
+        return (cur[0] - src[0], cur[1] - src[1])
+
+    def _move_to(self, tx: int, ty: int) -> None:
+        """Click-to-move: walk the player toward tile (tx,ty), stepping via _move_player (which handles
+        doors, the follower trail, and encounter triggers). Stops on arrival, a blocked step (wall /
+        door), or when combat starts."""
+        s = self.state
+        for _ in range(400):
+            if tuple(s.player.pos) == (tx, ty) or s.mode == Mode.combat:
+                return
+            step = self._step_toward_tile(s.player.pos, (tx, ty))
+            if step is None:
+                return
+            before = tuple(s.player.pos)
+            self._move_player(*step)
+            if tuple(s.player.pos) == before:     # bumped a door/wall or nothing changed — stop
+                return
+
     async def _talk(self, action: PlayerAction) -> None:
         s = self.state
         slug = action.target_id
@@ -456,6 +504,18 @@ class RpgGame(GameSession):
 
     async def _combat_action(self, action: PlayerAction) -> None:
         s = self.state
+        # Click-to-move in combat: an adjacent enemy tile = attack it; otherwise step toward the tile.
+        if action.kind == "move_to":
+            cell = (action.tx, action.ty)
+            px, py = s.player.pos
+            foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == cell), None)
+            if foe is not None and self._dist((px, py), cell) == 1:
+                action = PlayerAction(kind="move", dx=cell[0] - px, dy=cell[1] - py)   # bump-attack
+            else:
+                step = self._step_toward_tile((px, py), cell)
+                if step is None:
+                    return
+                action = PlayerAction(kind="move", dx=step[0], dy=step[1])
         # PLAYER turn: bump-to-attack or step
         if action.kind == "move":
             tx, ty = s.player.pos[0] + action.dx, s.player.pos[1] + action.dy
