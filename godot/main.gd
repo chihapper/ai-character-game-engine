@@ -43,7 +43,13 @@ func _ready() -> void:
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
 	add_child(_voice)
-	_voice.finished.connect(_play_next_voice)   # drain the voiced-line queue in order
+	# Voice is a CONTINUOUS generator stream, not per-clip WAVs: the server STREAMS each line's
+	# PCM in ~0.5s+ chunks as Hume synthesizes it, and we push frames into one generator so chunks
+	# butt together gaplessly (per-clip playback had an audible seam at every chunk boundary).
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = 24000.0            # the wire's fixed PCM rate (s16le mono, AUDIO_SAMPLE_RATE)
+	gen.buffer_length = 4.0           # generous ring buffer; _process tops it up from _pending
+	_voice.stream = gen
 
 	# Wire the Net autoload. `Net` is a global autoload (extends Node) that owns the
 	# WebSocket; it emits these three signals and exposes the action methods we call.
@@ -109,31 +115,45 @@ func _on_game_event(ev: Dictionary) -> void:
 		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
 
 
-## Voiced lines QUEUE instead of clobbering: one server batch can carry several voiced events
-## (every recruit-with-grant sends the joining line AND the handover line), and replacing the
-## playing stream cut the first one off mid-word. Play in arrival order; next starts on `finished`.
-var _voice_queue: Array = []
+## Streamed voice playback: every arriving chunk's s16le PCM is converted to frames and appended
+## to `_pending`; _process feeds the generator's ring buffer as space frees. Arrival order IS
+## playback order (the server streams one line at a time), chunks are gapless, and a network gap
+## just reads as a breath of silence — never a click or a cut-off line.
+var _pending := PackedVector2Array()
+var _voice_playback: AudioStreamGeneratorPlayback = null
 
-func _play_voice(b64: String, rate: int) -> void:
+func _play_voice(b64: String, _rate: int) -> void:
 	if b64 == "" or _voice == null:
 		return
 	var pcm := Marshalls.base64_to_raw(b64)
-	if pcm.size() == 0:
+	var n := pcm.size() / 2
+	if n <= 0:
 		return
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = maxi(rate, 8000)
-	wav.stereo = false
-	wav.data = pcm
-	_voice_queue.append(wav)
-	if not _voice.playing:
-		_play_next_voice()
+	# s16le mono -> float stereo frames (StreamPeerBuffer.get_16 = signed little-endian).
+	var spb := StreamPeerBuffer.new()
+	spb.data_array = pcm
+	var frames := PackedVector2Array()
+	frames.resize(n)
+	for i in n:
+		var f := float(spb.get_16()) / 32768.0
+		frames[i] = Vector2(f, f)
+	_pending.append_array(frames)
 
-func _play_next_voice() -> void:
-	if _voice == null or _voice_queue.is_empty():
+
+func _process(_delta: float) -> void:
+	if _voice == null or _pending.is_empty():
 		return
-	_voice.stream = _voice_queue.pop_front()
-	_voice.play()
+	if not _voice.playing:
+		_voice.play()                               # lazy-start; playback object exists after play()
+		_voice_playback = _voice.get_stream_playback()
+	if _voice_playback == null:
+		return
+	var avail := _voice_playback.get_frames_available()
+	if avail <= 0:
+		return
+	var take: int = mini(avail, _pending.size())
+	_voice_playback.push_buffer(_pending.slice(0, take))
+	_pending = _pending.slice(take)
 
 
 # -- Input routing ------------------------------------------------------------

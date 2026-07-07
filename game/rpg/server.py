@@ -44,7 +44,7 @@ from .protocol import (  # noqa: E402
     voice_msg,
 )
 from .state import GameState, Mode  # noqa: E402
-from .voice import synth_line  # noqa: E402
+from .voice import stream_line, wire_rate  # noqa: E402
 
 SAVE_DIR = Path(".saves")
 
@@ -152,21 +152,41 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
 
         async def voice_worker() -> None:
             """Synthesize + send voice AFTER the text is already on the wire — one line at a time,
-            in spoken order. Best-effort with a hard cap: a hung TTS request skips that line's
-            voice instead of freezing the queue (voice skipped > world frozen)."""
+            in spoken order, STREAMED: chunks go out as Hume produces them (coalesced to >=~0.5s
+            per message so the client isn't spammed), so the first sentence is playing while the
+            rest is still synthesizing. Best-effort with a per-chunk cap: a hung TTS request skips
+            the REST of that line's voice instead of freezing the queue (voice skipped > world
+            frozen). The client pushes chunks into one continuous audio stream — arrival order is
+            playback order, which this worker's one-line-at-a-time loop guarantees."""
+            rate = wire_rate()
+            min_send = rate * 2 // 2                  # ~0.5 s of s16le mono per message, minimum
             while True:
                 e = await voice_q.get()
-                try:
-                    pcm, rate = await asyncio.wait_for(
-                        synth_line(e["text"], e.get("slug", "")), timeout=30)
-                    if pcm:
+                buf = bytearray()
+
+                async def _flush() -> None:
+                    if buf:
                         async with send_lock:
                             await ws.send(json.dumps(voice_msg(
-                                slug=e.get("slug", ""), npc=e.get("npc", ""), pcm=pcm, rate=rate)))
+                                slug=e.get("slug", ""), npc=e.get("npc", ""),
+                                pcm=bytes(buf), rate=rate)))
+                        buf.clear()
+
+                try:
+                    agen = stream_line(e["text"], e.get("slug", ""))
+                    while True:
+                        try:
+                            chunk = await asyncio.wait_for(agen.__anext__(), timeout=30)
+                        except StopAsyncIteration:
+                            break
+                        buf += chunk
+                        if len(buf) >= min_send:
+                            await _flush()
+                    await _flush()                    # the tail below the coalesce threshold
                 except websockets.exceptions.ConnectionClosed:
                     return
                 except Exception as exc:              # noqa: BLE001 — voice is an enhancement
-                    print(f"[rpg-server] voice line skipped: {exc}")
+                    print(f"[rpg-server] voice line cut short: {exc}")
 
         vtask = asyncio.create_task(voice_worker()) if voice else None
         try:
