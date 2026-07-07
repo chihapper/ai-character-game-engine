@@ -50,6 +50,7 @@ func _ready() -> void:
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
 	add_child(_voice)
+	_setup_audio()
 	# Voice is a CONTINUOUS generator stream, not per-clip WAVs: the server STREAMS each line's
 	# PCM in ~0.5s+ chunks as Hume synthesizes it, and we push frames into one generator so chunks
 	# butt together gaplessly (per-clip playback had an audible seam at every chunk boundary).
@@ -153,6 +154,10 @@ func _on_game_event(ev: Dictionary) -> void:
 	# and queues below. (Dialogue-attached audio kept as a fallback path.)
 	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):
 		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
+	# Semantic sound hints (combat beats, loot, doors...) — the server tags, we play.
+	var data = ev.get("data", {})
+	if typeof(data) == TYPE_DICTIONARY and data.has("sfx"):
+		_play_sfx(str(data["sfx"]))
 
 
 ## Streamed voice playback: every arriving chunk's s16le PCM is converted to frames and appended
@@ -207,6 +212,48 @@ func _process(_delta: float) -> void:
 
 ## Seconds of already-pushed audio still (approximately) sounding — drives the speaking glow.
 var _voice_tail := 0.0
+
+
+# -- Audio: original synthesized SFX + per-slice ambience ----------------------
+## Events carry semantic hints (data.sfx = "hit"/"loot"/...); the client maps them to the
+## generated chip-style samples (assets/sfx, tools/gen_rpg_sfx.py — all original, no licenses).
+## A small player pool lets overlapping hits ring without cutting each other off. Ambience is a
+## slice-keyed 12s loop (loop-crafted tails) restarted on `finished`.
+
+var _sfx: Dictionary = {}                 # key -> AudioStream
+var _sfx_pool: Array = []                 # rotating AudioStreamPlayers
+var _sfx_next := 0
+var _ambience: AudioStreamPlayer = null
+
+func _setup_audio() -> void:
+	for key in ["hit", "crit", "miss", "down", "dead", "victory", "levelup", "loot",
+			"drink", "door", "alarm", "save"]:
+		var path := "res://assets/sfx/%s.wav" % key
+		if ResourceLoader.exists(path):
+			_sfx[key] = load(path)
+	for i in 4:
+		var p := AudioStreamPlayer.new()
+		p.volume_db = -8.0
+		add_child(p)
+		_sfx_pool.append(p)
+	var amb_path := "res://assets/sfx/amb_%s.wav" % _slice()
+	if not ResourceLoader.exists(amb_path):
+		amb_path = "res://assets/sfx/amb_vault.wav"
+	if ResourceLoader.exists(amb_path):
+		_ambience = AudioStreamPlayer.new()
+		_ambience.stream = load(amb_path)
+		_ambience.volume_db = -18.0
+		add_child(_ambience)
+		_ambience.finished.connect(_ambience.play)   # seamless-enough loop (tails are loop-crafted)
+		_ambience.play()
+
+func _play_sfx(key: String) -> void:
+	if not _sfx.has(key) or _sfx_pool.is_empty():
+		return
+	var p: AudioStreamPlayer = _sfx_pool[_sfx_next % _sfx_pool.size()]
+	_sfx_next += 1
+	p.stream = _sfx[key]
+	p.play()
 
 
 # -- Input routing ------------------------------------------------------------

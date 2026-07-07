@@ -293,7 +293,8 @@ class RpgGame(GameSession):
         if s.mode != Mode.combat:                 # combat pays with the ACTION; exploration with time
             s.clock.advance(0.05)
         self._emit(NarrationEvent(
-            text=f"You down {item.name} — {p.hp - before} HP back ({p.hp}/{p.max_hp})."))
+            text=f"You down {item.name} — {p.hp - before} HP back ({p.hp}/{p.max_hp}).",
+            data={"sfx": "drink"}))
         s.campaign_log.add(s.clock.value, f"The traveler used {item.name}.", tags=["item"])
         return True
 
@@ -411,7 +412,7 @@ class RpgGame(GameSession):
     def _open_door(self, door, how: str) -> None:
         s = self.state
         door.locked = False
-        self._emit(NarrationEvent(text=how))
+        self._emit(NarrationEvent(text=how, data={"sfx": "door"}))
         if door.opens_quest:                               # data-linked objective, not a literal id
             for q in s.quests:
                 if q.id == door.opens_quest:
@@ -788,7 +789,7 @@ class RpgGame(GameSession):
         self.state.mode = Mode.combat
         self._emit(ModeChangedEvent(mode=Mode.combat))
         label = _enemy_label([e for e in encounter.enemies])
-        self._emit(CombatEvent(text=self.state.flavor.combat_start.format(enemies=label)))
+        self._emit(CombatEvent(text=self.state.flavor.combat_start.format(enemies=label), data={"sfx": "alarm"}))
 
     def _attack(self, attacker, target) -> None:
         """One attack through the combat engine (the attacker's own weapon profile = data). Narrates the
@@ -796,13 +797,14 @@ class RpgGame(GameSession):
         r = self.combat_engine.attack(attacker, target)
         if r.hit:
             verb = "crits" if r.critical == "hit" else "hits"
-            self._emit(CombatEvent(text=f"{attacker.name} {verb} {target.name} for {r.damage}."))
+            self._emit(CombatEvent(text=f"{attacker.name} {verb} {target.name} for {r.damage}.",
+                                   data={"sfx": "crit" if r.critical == "hit" else "hit"}))
         else:
-            self._emit(CombatEvent(text=f"{attacker.name} misses {target.name}."))
+            self._emit(CombatEvent(text=f"{attacker.name} misses {target.name}.", data={"sfx": "miss"}))
         if r.target_dead:
-            self._emit(CombatEvent(text=f"{target.name} is slain."))
+            self._emit(CombatEvent(text=f"{target.name} is slain.", data={"sfx": "dead"}))
         elif r.target_down:
-            self._emit(CombatEvent(text=f"{target.name} drops."))
+            self._emit(CombatEvent(text=f"{target.name} drops.", data={"sfx": "down"}))
 
     def _advance_combat_turn(self):
         """End the current turn and open the next (engine authority). When the order wraps to a new round,
@@ -1039,7 +1041,8 @@ class RpgGame(GameSession):
             self._emit(CombatEvent(text=f"{c.name} steadies, clinging to life."))
         else:
             self._emit(CombatEvent(
-                text=f"{c.name} fights for life ({res.get('successes', 0)}+/{res.get('failures', 0)}x)."))
+                text=f"{c.name} fights for life ({res.get('successes', 0)}+/{res.get('failures', 0)}x).",
+                data={"sfx": "save"}))
         return outcome
 
     def _on_player_death(self) -> None:
@@ -1087,7 +1090,7 @@ class RpgGame(GameSession):
         s.clock.advance(0.1)
         self._emit(ModeChangedEvent(mode=Mode.exploration))
         if victory:
-            self._emit(CombatEvent(text=s.flavor.combat_victory.format(enemies=label)))
+            self._emit(CombatEvent(text=s.flavor.combat_victory.format(enemies=label), data={"sfx": "victory"}))
             if enc is not None:
                 self._award_victory(enc)
 
@@ -1109,7 +1112,7 @@ class RpgGame(GameSession):
             self._emit(CombatEvent(text=f"Hard-won: {xp} exp."))
             for up in ups:
                 self._emit(CombatEvent(
-                    text=f"You've grown — level {up['level']} (+{up['hp_gain']} HP)."))
+                    text=f"You've grown — level {up['level']} (+{up['hp_gain']} HP).", data={"sfx": "levelup"}))
         spoils = srd_loot.roll_loot(crs, self.rules.rng)
         if spoils.get("gold"):
             s.player.gold += int(spoils["gold"])
@@ -1123,5 +1126,5 @@ class RpgGame(GameSession):
             s.player.inventory.append(Item(id=tid or "trinket", name=spoils["trinket"], kind="misc"))
         desc = srd_loot.describe(spoils)
         if desc:
-            self._emit(CombatEvent(text=f"Among the fallen: {desc}."))
+            self._emit(CombatEvent(text=f"Among the fallen: {desc}.", data={"sfx": "loot"}))
             s.campaign_log.add(s.clock.value, f"The traveler claimed {desc}.", tags=["loot"])

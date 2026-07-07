@@ -39,9 +39,11 @@ class GameEvent(BaseModel):
 
 
 class NarrationEvent(GameEvent):
-    """DM narration — the world's voice (text in the MVP)."""
+    """DM narration — the world's voice (text in the MVP). `data` carries presentation hints
+    (e.g. {"sfx": "door"}) the renderer may honor or ignore."""
     type: Literal["narration"] = "narration"
     text: str
+    data: dict = Field(default_factory=dict)
 
 
 class DialogueEvent(GameEvent):
