@@ -1,4 +1,4 @@
-"""Renderer-agnostic game state (Pydantic v2) for the D&D-style RPG game-core.
+"""Renderer-agnostic game state (Pydantic v2) for the SRD-based (d20-system) RPG game-core.
 
 Pure DATA — no pixels, no rendering, and NO engine imports. Both the tcod dev view (Phase A)
 and the Godot client (Phase B) consume this through `GameSession`. The engine owns the MIND;

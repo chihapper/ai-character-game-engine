@@ -1,12 +1,12 @@
 <!-- AUTHORITATIVE BUILD PLAN for the game layer (owner-authored, 2026-07-06).
-     This is the reference spec for the D&D-style AI-DM game (Python game-core → tcod dev
+     This is the reference spec for the SRD-style AI-DM game (Python game-core → tcod dev
      view → Godot 4.x native desktop). A Step-0 inspection/gap report lives alongside at
      docs/godot-build-step0-inspection.md. Docs + code win where they disagree with this. -->
 
 # Claude Code Build Prompt — Living-World AI Dungeon Master (game layer)
 
 ## What you're building
-The **game layer** — the *world* — that drives an existing character engine (the *mind*). A 2D, **D&D-style RPG** with an AI Dungeon Master, procedurally generated dungeons, and NPCs whose personalities **evolve over a campaign**. The engine already delivers the evolving-NPC behavior; the game's job is to feed it a campaign's worth of consequential, attributable events and to render the result. The end target is a **downloadable, Steam-shippable native desktop game** (see Phase B) — not a web app.
+The **game layer** — the *world* — that drives an existing character engine (the *mind*). A 2D, **SRD-style RPG** with an AI Dungeon Master, procedurally generated dungeons, and NPCs whose personalities **evolve over a campaign**. The engine already delivers the evolving-NPC behavior; the game's job is to feed it a campaign's worth of consequential, attributable events and to render the result. The end target is a **downloadable, Steam-shippable native desktop game** (see Phase B) — not a web app.
 
 **Read these first (they are the contract, in the repo):** `docs/engine-game-contract.md`, `docs/architecture-seams.md`, `docs/engine-overview.md`, `docs/relevance-scoring.md`. When they and this prompt disagree, the docs + code win. *(Note: the engine's chosen voice runtime is now **Hume** — EVI/Octave; if docs still name a previous provider, treat Hume as current.)*
 
@@ -14,7 +14,7 @@ The **game layer** — the *world* — that drives an existing character engine 
 
 **Architecture in one line:** a **renderer-agnostic Python game-core** (durable logic) with a **swappable renderer** — a disposable tcod/ASCII dev view first (Phase A), then a **Godot 4.x native desktop client** over local IPC (Phase B). The logic is built and proven once; only the thin rendering layer changes.
 
-**Pacing — two modes (this is a D&D campaign, not a turn-based game):**
+**Pacing — two modes (this is a SRD campaign, not a turn-based game):**
 - **Exploration & social — free-flow (real-time):** the default. The player moves freely, talks to NPCs conversationally (each player line → `respond`), and explores. *Not* turn-based. Dialogue runs at conversational cadence; NPC on-map behavior (`choose_action`) fires on events/cadence, not every frame — so cost stays bounded even in free-flow.
 - **Combat — turn-based:** begins when combat commences (encounter/aggression). Initiative, rounds, and actions resolved by the rules core; returns to free-flow when combat ends.
 - The **clock** advances in the game's own opaque unit across both modes (narrative time in exploration, rounds in combat); the engine only differences it.

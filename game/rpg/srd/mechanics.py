@@ -83,8 +83,9 @@ def ability_check(dice: Dice, sheet, ability: str, dc: int, *, proficient: bool 
 
 
 def saving_throw(dice: Dice, sheet, ability: str, dc: int, *, advantage: int = 0) -> CheckResult:
-    profs = {a.upper() for a in getattr(sheet, "saving_throw_profs", [])}
-    return ability_check(dice, sheet, ability, dc, proficient=ability.upper() in profs, advantage=advantage)
+    profs = {a.strip().upper() for a in getattr(sheet, "saving_throw_profs", [])}
+    return ability_check(dice, sheet, ability, dc, proficient=ability.strip().upper() in profs,
+                         advantage=advantage)
 
 
 def skill_check(dice: Dice, sheet, skill: str, dc: int, *, advantage: int = 0) -> CheckResult:

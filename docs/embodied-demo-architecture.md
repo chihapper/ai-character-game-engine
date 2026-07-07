@@ -78,11 +78,11 @@ instead of narrating it. The seam is the same; the world behind it becomes real.
 Ground truth, engine-agnostic, renderer-agnostic:
 
 - **Space.** A **grid (tiles)** under the hood — cells with (x,y) for distance / line-of-sight /
-  pathfinding, a D&D-native and procedural-ready foundation — but **presented as NAMED LOCATIONS**,
+  pathfinding, a SRD-native and procedural-ready foundation — but **presented as NAMED LOCATIONS**,
   never raw coordinates. Labelled regions/landmarks ("the hearth", "the bar", "the door") overlay the
   grid, so perception and narration say *"by the hearth,"* not *"(12,4)."* Grid mechanics, human-legible
   place. (A small authored inn-map whose regions are its spots is enough to start; the grid earns its
-  keep later for D&D exploration/combat and procedural maps.)
+  keep later for SRD exploration/combat and procedural maps.)
 - **Entities.** Each NPC, the player, and objects have a position, and (for agents) a facing/attention.
 - **Objects & fixtures.** The fire, the bar, the door, the nailed warrant, a cup — with **affordances**
   (what can be done with them: `take`, `open`, `read`, `sit`, `warm-at`).
@@ -142,7 +142,7 @@ pattern**: the engine gains a *general* ability to emit a **structured action ch
 the GAME supplies**; it never names any game's actions.
 
 - The **game registers its action vocabulary** (a schema: `move(to)`, `give(object, who)`, `hide`, … for
-  a social scene; `attack`, `cast`, … for D&D combat) through a **seam** — the same shape as the
+  a social scene; `attack`, `cast`, … for SRD combat) through a **seam** — the same shape as the
   existing `register_game_extension(namespace, renderer)` / `game_data` point already in the engine.
 - The **engine** (`deliberate()` / reactions) picks a valid action from what the arena currently
   affords + the registered schema, and returns it structured.
@@ -241,7 +241,7 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
 
 ## 12. Decisions — SETTLED (review 2026-07-02)
 
-1. **Space model → GRID (tiles), presented as NAMED LOCATIONS.** Grid under the hood (D&D-native,
+1. **Space model → GRID (tiles), presented as NAMED LOCATIONS.** Grid under the hood (SRD-native,
    procedural-ready); the player only ever sees labelled places ("the hearth"), never coordinates (§3).
 2. **Action intent → STRUCTURED, via an agnostic action seam (§5.1).** No prose+resolver — not
    product-grade. Structured actions are the priority; they're what the real product needs and what
@@ -283,12 +283,12 @@ required.** (Still Bet 1 only; a sim body isn't autopoietic, so this probes, nev
 - **Grid-tactical / open-exploration duality (BG3-style).** A resolution switch on the *same* world
   model: a fine grid for tactical / dungeon play, coarser/open movement for exploration. (BG3 itself is
   hand-authored; the pattern we want is the combat-grid + open-exploration duality.)
-- **Thread the needle — metamorphosis *and* D&D.** The thesis lives in social/relational depth; a D&D
+- **Thread the needle — metamorphosis *and* SRD.** The thesis lives in social/relational depth; a SRD
   frame adds tactical/exploration. The goal to attempt (not now): procedural *world/dungeons* as the
   stage **+** persistent, embodied, evolving *authored NPCs* carrying the soul — so the campaign has
   both. Flagged to watch that tactical/procedural breadth never buries the character depth we're proving.
-- **Action economy (turn budget).** When action becomes tactical (D&D combat especially), agents need an
-  **action economy** — a per-turn budget: e.g. D&D's *action + bonus action + movement + reaction* — so a
+- **Action economy (turn budget).** When action becomes tactical (SRD combat especially), agents need an
+  **action economy** — a per-turn budget: e.g. SRD's *action + bonus action + movement + reaction* — so a
   turn is a bounded set of choices, not unlimited. Not built now (the social ferry demo is free-form), but
   the **action seam (§5.1) is designed economy-ready**: a structured action can carry a `type`/`cost`
   (action / bonus / move / reaction), and a future turn-manager spends the budget. Leaving room for it now

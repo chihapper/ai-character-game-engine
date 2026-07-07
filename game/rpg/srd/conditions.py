@@ -26,15 +26,21 @@ class Condition(str, Enum):
     unconscious = "unconscious"
 
 
-# Flag vocabulary (the combat engine consumes these):
-#   incapacitated        — can take no actions or reactions
-#   speed_zero           — movement is 0
-#   self_attack_disadv   — this creature's own attacks have disadvantage
-#   attacked_advantage   — attack rolls AGAINST this creature have advantage
-#   attacked_disadvantage— attack rolls against it have disadvantage
-#   auto_fail_str_dex_saves — automatically fails STR and DEX saving throws
-#   melee_crit_within_5  — a melee attack that hits from within 5 ft is a critical hit
-#   self_check_disadv    — ability checks have disadvantage
+# Flag vocabulary — the COMPLETE set the combat engine (Phase 2) consumes. Keep this in sync with
+# EFFECTS below (every flag used there is listed here).
+#   incapacitated             — can take no actions or reactions
+#   speed_zero                — movement is 0
+#   self_attack_disadv        — this creature's own attacks have disadvantage
+#   self_attack_advantage     — this creature's own attacks have advantage (e.g. invisible)
+#   self_check_disadv         — this creature's ability checks have disadvantage
+#   attacked_advantage        — attack rolls AGAINST this creature have advantage
+#   attacked_disadvantage     — attack rolls against it have disadvantage (e.g. invisible)
+#   melee_attacked_advantage  — MELEE attacks against it have advantage (prone, within 5 ft)
+#   ranged_attacked_disadvantage — RANGED attacks against it have disadvantage (prone)
+#   auto_fail_str_dex_saves   — automatically fails STR and DEX saving throws
+#   dex_save_disadvantage     — DEX saving throws have disadvantage (restrained)
+#   melee_crit_within_5       — a melee attack that hits from within 5 ft is a critical hit
+#   resist_all                — resistance to all damage (petrified)
 EFFECTS: dict[Condition, dict] = {
     Condition.blinded: {"self_attack_disadv": True, "attacked_advantage": True},
     Condition.charmed: {},

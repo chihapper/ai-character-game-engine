@@ -251,7 +251,7 @@ sandbox/games turn it on, but salience scoring, time decay, foregrounding, and t
 - Invent world events (it only appraises + remembers what the game feeds it).
 - Enact a `world_action` (it returns it; the game acts).
 - Run its own clock or loop (cadence is 100% the game's calls).
-- Name a game concept in engine code (quests, factions, D&D classes, calendars) — those live
+- Name a game concept in engine code (quests, factions, SRD classes, calendars) — those live
   in `game_data` + a registered renderer (see architecture-seams §2).
 - Surface state as UI. Change is meant to be *felt through behavior and words*, never read off
   a stats panel. (The sandbox's bars are a **dev** instrument, not a game surface.)

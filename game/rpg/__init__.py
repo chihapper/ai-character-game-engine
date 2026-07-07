@@ -1,4 +1,4 @@
-"""`game/rpg/` — the renderer-agnostic Python game-core for the D&D-style AI-DM RPG.
+"""`game/rpg/` — the renderer-agnostic Python game-core for the SRD-based (d20-system) AI-DM RPG.
 
 Drives the character engine (the MIND) through its public seam; owns the WORLD. Built and proven
 once with a disposable tcod dev view (Phase A), then rendered by a Godot 4.x native desktop client

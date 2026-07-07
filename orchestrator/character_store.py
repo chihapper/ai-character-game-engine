@@ -6,7 +6,7 @@ of *dramatic* mechanics that apply to any character-driven game — goals, secre
 (with reveal conditions), boundaries, relationships, disposition. The engine
 COMPILES these structured fields into the system prompt (`build_prompt`).
 
-Game-specific data (e.g. a D&D 5e sheet) lives in `game_data`, an open namespaced
+Game-specific data (e.g. an SRD 5e sheet) lives in `game_data`, an open namespaced
 bag the engine stores and round-trips but never interprets — that's the seam a
 game layer plugs into, so the engine itself stays game-agnostic.
 

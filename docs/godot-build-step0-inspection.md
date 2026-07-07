@@ -18,7 +18,7 @@ the character-clone approach is feasible. Nothing in the spec is blocked.
 | Seam: `choose_action(percept, afforded_options)` | ✅ exists, ⚠ naming | Real signature is `choose_action(situation, options: list[str])` (engine.py:227). Build a `Situation` (the "percept") + pass a list of option strings (the "afforded_options"). Functionally identical. |
 | `Situation(clock, location, present)` numeric clock | ✅ | `context.py`: `location`, `game_time` (display string), `present`, `recent_events`, `extra`, and numeric `clock`. Pass `clock`; `game_time` is display-only. |
 | Applied-vs-returned semantics; reaction = recipe (no `engine.react`) | ✅ | Contract holds; `remember`→salience→`deliberate`→enact is composed game-side. |
-| `register_game_extension` + `game_data` | ✅ exists | `orchestrator/character_extensions.py` — and its own docstring example is literally `register_game_extension("dnd5e", render_dnd5e)`. The D&D game-data hook is already anticipated. |
+| `register_game_extension` + `game_data` | ✅ exists | `orchestrator/character_extensions.py` — and its own docstring example is literally `register_game_extension("srd5", render_srd5)`. The SRD game-data hook is already anticipated. |
 | Character clone → reskin → fresh `memory_namespace` | ✅ feasible | `load_character(slug)` + `Character.memory_namespace` (defaults to slug, overridable) + `game/casting.py: situate(character, scenario, cast_entry)`. Load, override identity + namespace, situate into the world. |
 | All depth flags default ON | ⚠ decision | 6 of the 10 default **OFF** today (see below). |
 

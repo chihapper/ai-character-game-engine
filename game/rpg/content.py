@@ -106,7 +106,7 @@ def make_vael() -> Character:
         knows=["the way deeper into the Vault is warded", "the Ashen Hand will kill him if he returns empty-handed"],
         doesnt_know=["who the traveler is or why they're down here"],
         relationships={}, sample_lines=[], greeting="",
-        game_data={"dnd5e": {"role": "cornered scavenger", "faction": "the Ashen Hand (debtor)",
+        game_data={"srd5": {"role": "cornered scavenger", "faction": "the Ashen Hand (debtor)",
                              "sheet": {"max_hp": 16, "ac": 13, "STR": 12, "DEX": 14, "CON": 12}}},
     )
 
@@ -130,7 +130,7 @@ def make_lira() -> Character:
         knows=["her way around a fight", "the goblins nesting deeper in the Vault are skittish but many"],
         doesnt_know=["what the traveler wants down here"],
         relationships={}, sample_lines=[], greeting="",
-        game_data={"dnd5e": {"role": "recruitable companion",
+        game_data={"srd5": {"role": "recruitable companion",
                              "sheet": {"max_hp": 18, "ac": 15, "STR": 13, "DEX": 15, "CON": 13}}},
     )
 
@@ -149,12 +149,12 @@ def build_first_slice(*, seed: int = 1337) -> tuple[GameState, dict[str, Charact
 
     # Vael hands the keystone over ONLY if he chooses to join — authored right here as data.
     vael = NpcPlacement(slug=VAEL, name="Vael", handle="a cornered man", pos=at(1),
-                        game_data={"dnd5e": {"role": "cornered scavenger"}},
+                        game_data={"srd5": {"role": "cornered scavenger"}},
                         on_recruit_grant=keystone_item(),
                         on_recruit_line=("If we're in this together — here. The thing my crew died for. "
                                          "It opens the inner door. Don't make me sorry I trusted you with it."))
     lira = NpcPlacement(slug=LIRA, name="Lira", handle="a lively sellsword", pos=at(2),
-                        game_data={"dnd5e": {"role": "recruitable companion"}})
+                        game_data={"srd5": {"role": "recruitable companion"}})
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(vael.pos), tuple(lira.pos)}
@@ -242,7 +242,7 @@ def make_torvald() -> Character:
         knows=["the Ember Gate is keyed to a forge-sigil", "the husks in the deep were once his crew"],
         doesnt_know=["who the traveler is or why they've come down into the fire"],
         relationships={}, sample_lines=[], greeting="",
-        game_data={"dnd5e": {"role": "cornered survivor", "faction": "lost salvage crew",
+        game_data={"srd5": {"role": "cornered survivor", "faction": "lost salvage crew",
                              "sheet": {"max_hp": 20, "ac": 15, "STR": 15, "DEX": 11, "CON": 14}}},
     )
 
@@ -266,7 +266,7 @@ def make_senna() -> Character:
         knows=["the layout of the nearer galleries", "the husks shy away from running water"],
         doesnt_know=["what the traveler is really after down here"],
         relationships={}, sample_lines=[], greeting="",
-        game_data={"dnd5e": {"role": "recruitable companion",
+        game_data={"srd5": {"role": "recruitable companion",
                              "sheet": {"max_hp": 16, "ac": 14, "STR": 12, "DEX": 14, "CON": 12}}},
     )
 
@@ -284,13 +284,13 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
                              pos=at(0), level=2, gold=15, damage_dice="1d8", attack_ability="STR")
 
     torvald = NpcPlacement(slug=TORVALD, name="Torvald", handle="a soot-streaked survivor", pos=at(1),
-                           game_data={"dnd5e": {"role": "cornered survivor"}},
+                           game_data={"srd5": {"role": "cornered survivor"}},
                            on_recruit_grant=sigil_item(),
                            on_recruit_line=("If we walk out of here together — take it. The sigil my "
                                             "crew burned for. It keys the Ember Gate. Don't make me "
                                             "regret handing it over."))
     senna = NpcPlacement(slug=SENNA, name="Senna", handle="a wary mapmaker", pos=at(2),
-                         game_data={"dnd5e": {"role": "recruitable companion"}})
+                         game_data={"srd5": {"role": "recruitable companion"}})
 
     enc_pos = sp[-2] if len(sp) > 3 else sp[-1]
     taken = {tuple(player.pos), tuple(torvald.pos), tuple(senna.pos)}

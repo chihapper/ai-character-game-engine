@@ -403,7 +403,7 @@ class RpgGame(GameSession):
     def _make_follower(self, npc) -> None:
         from .state import Follower, Stats
         char = self.minds.characters.get(npc.slug)
-        sheet = ((char.game_data if char else {}) or {}).get("dnd5e", {}).get("sheet", {})
+        sheet = ((char.game_data if char else {}) or {}).get("srd5", {}).get("sheet", {})
         hp = int(sheet.get("max_hp", 12))
         self.state.followers.append(Follower(
             id=npc.slug, name=npc.name, mind_slug=npc.slug, pos=npc.pos, max_hp=hp, hp=hp,

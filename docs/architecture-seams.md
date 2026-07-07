@@ -161,11 +161,11 @@ but never interprets. This is already the cleanest engine/game seam in the codeb
   renderer that throws is skipped, never fatal.
 
 ```
-character.game_data = { "dnd5e": { "level": 5, "class": "rogue", ... } }
+character.game_data = { "srd5": { "level": 5, "class": "rogue", ... } }
                               │
-        register_game_extension("dnd5e", render_dnd5e)   ← game layer, at startup
+        register_game_extension("srd5", render_srd5)   ← game layer, at startup
                               │
-        build_prompt() ──► appends render_dnd5e(sheet) as an instructions section
+        build_prompt() ──► appends render_srd5(sheet) as an instructions section
 ```
 
 **Why it matters here:** this is the template for every other engine/game seam below.
@@ -380,7 +380,7 @@ the new `remember`) — a one-module job.
 
 Design rule for every new seam: **the engine exposes a registration point and a neutral
 data channel; the game supplies meaning at runtime.** No game concept (quests, factions,
-D&D classes, clocks) is ever named in engine code.
+SRD classes, clocks) is ever named in engine code.
 
 ---
 

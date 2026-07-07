@@ -44,6 +44,8 @@ class Dice:
                 raise ValueError(f"bad dice spec: {spec!r}") from e
         n = int(m.group(1) or 1)
         faces = int(m.group(2))
+        if faces < 1:                                    # 'd0' / 'Nd0' -> clean error, not a randint crash
+            raise ValueError(f"bad dice spec: {spec!r} (faces must be >= 1)")
         mod = int((m.group(3) or "0").replace(" ", ""))
         rolls = [self.die(faces) for _ in range(max(0, n))]
         return Roll(total=sum(rolls) + mod, rolls=rolls, modifier=mod, spec=s)
