@@ -21,7 +21,7 @@ extends Node3D
 # 2D-RPG feel (owner direction 2026-07-09): grounded walk cadence, a firm cap on the hustle
 # (16 t/s read as ice-skating), and a small per-tile step-hop below — crisp tile-to-tile
 # STEPS, not a glide.
-const WALK_TILES_PER_S := 5.0
+const WALK_TILES_PER_S := 4.6
 const RUN_TILES_PER_S := 10.0
 const TREK_MAX_S := 3.0        # a route is paced to land within this many seconds
 const SNAP_BEYOND_TILES := 40.0  # longer than this (new game repositioning) just snaps
@@ -1458,7 +1458,7 @@ func _process(delta: float) -> void:
 			var p: Vector2 = Vector2(pts[0]) + dirv.normalized() * d
 			# STEP-HOP: a small arc per tile (the 2D view's bounce, in 3D) — reads as footsteps
 			var frac := d / maxf(0.001, dirv.length())
-			var hop := absf(sin(frac * PI)) * _tile * 0.035
+			var hop := absf(sin(frac * PI)) * _tile * 0.055
 			ent["node"].position = _being_pos(p.x, p.y) + Vector3(0.0, hop, 0.0)
 			_facing[id] = atan2(dirv.x, dirv.y)
 			if str(ent["state"]) != "walk":
