@@ -10,7 +10,7 @@ extends Node2D
 ## for actions (except Dialogue, which calls Net.talk / Net.do_action on submit).
 ## World and Hud never send to Net.
 
-var _world: Node2D
+var _world: Node          # World3D (default) or the classic 2D view (RPG_2D=1) — same surface
 var _hud: CanvasLayer
 var _dialogue: CanvasLayer
 var _speech: CanvasLayer        # the portrait speech card (speech.gd)
@@ -26,9 +26,15 @@ var _started: bool = false
 func _ready() -> void:
 	# Instance the three modules by loading their scripts and attaching them to fresh
 	# nodes of the type each one `extends`. (World=Node2D, Hud/Dialogue=CanvasLayer.)
-	_world = Node2D.new()
+	# The 2.5D view is the DEFAULT (owner direction 2026-07-08); RPG_2D=1 launches the classic
+	# 2D renderer. Both expose the identical surface: set_slice / render / combat_fx / tile_at_mouse.
+	if OS.get_environment("RPG_2D") != "":
+		_world = Node2D.new()
+		_world.set_script(load("res://world.gd"))
+	else:
+		_world = Node3D.new()
+		_world.set_script(load("res://world3d.gd"))
 	_world.name = "World"
-	_world.set_script(load("res://world.gd"))
 	add_child(_world)
 
 	_hud = CanvasLayer.new()

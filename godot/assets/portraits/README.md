@@ -20,11 +20,24 @@ portrait, so this whole directory is optional.
 
 | Source | Files | License | Notes |
 |---|---|---|---|
-| AssetSmithy — "3 Free Fantasy Characters (6 expressions)" sampler | `sampler/`, cast copies `rpg-lira*`, `rpg-vael*` | Royalty-free, commercial OK, no redistribution | PROTOTYPE art. Disclosed by the author as AI-assisted + Photoshop-finished — fine for trials, replace before any public/commercial release. Re-fetch: https://assetsmithy.itch.io/3-free-fantasy-characters-with-6-expressions-each-visual-novel-rpg-sprites-sa |
+| AssetSmithy sampler (two individually-reviewed images only) | `rpg-lira.png`, `rpg-vael.png` | Royalty-free, commercial OK, no redistribution | Interim placeholders ONLY. **The rest of that pack was removed — it contained content unsuitable for this project (owner-flagged 2026-07-08). Do not re-download this vendor's packs.** Replace these two the moment better art lands. |
+
+## Content policy for this directory
+
+Every image dropped here must be INDIVIDUALLY REVIEWED before use — never bulk-import a pack
+sight-unseen. SFW, fantasy-appropriate, portfolio-presentable.
 
 ## Planned headline art (owner purchase)
 
 CrimsonDelightGames — "300+ Medieval & Fantasy Portraits" (hand-painted, explicit **no-AI**
 declaration; ~$2.49–$15): https://crimsondelightgames.itch.io/crimsondelightgames-medieval-and-fantasy-portrait-packs
-Commercial OK, no redistribution → buy, drop the chosen faces here under the naming convention
-above, archive the license text alongside (itch pages vanish).
+Commercial OK, no redistribution → buy, review each face, drop the chosen ones here under the
+naming convention above, archive the license text alongside (itch pages vanish).
+
+## Owner north star (circle back): Civ 5-style diplomacy presentation
+
+When you TALK to someone, their large/full portrait takes the scene and speaks to you — mouth
+movement synced to the voice. Implementation path when we return: layered portrait (base +
+2-3 mouth states) flapped by live audio amplitude from the voice stream (v1, cheap, reads
+great), upgradeable to a NeuroSync-driven 2D rig later (the blendshape pipeline already exists
+in the engine, currently paused).
