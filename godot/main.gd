@@ -82,13 +82,70 @@ func _ready() -> void:
 		t.one_shot = true
 		add_child(t)
 		t.timeout.connect(func():
-			if OS.get_environment("RPG_SHOT_DEMO") != "" and _speech != null:
+			var demo := OS.get_environment("RPG_SHOT_DEMO")
+			if demo == "combat":
+				await _stage_combat_demo(shot)   # serverless movement + combat verification reel
+				return
+			if demo != "" and _speech != null:
 				_speech.show_line("Lira", "Stick close — the dark down here has teeth.", "rpg-lira")
 				if _world != null:   # fake a crit beat so flash/float/shake are visible in the shot
 					_world.combat_fx({"sfx": "crit", "attacker": "player", "target": "player", "damage": 7, "crit": true})
 				await get_tree().create_timer(0.55).timeout
 			_save_screenshot(shot))
 		t.start()
+
+
+## Serverless verification reel (RPG_SHOT_DEMO=combat): a synthetic snapshot populates the world,
+## the player waypoint-walks a staged route, then a scripted round of combat beats plays out —
+## timed screenshots capture walking / lunge / damage floats / the death-and-sink phases. Run with
+## RPG_WS_URL pointed at a dead port so a live server can't clobber the stage.
+func _stage_combat_demo(shot: String) -> void:
+	if _world == null or not _world.has_method("follow_path"):
+		_save_screenshot(shot)
+		return
+	var base := shot.get_basename()
+	var tiles := ["##########", "#........#", "#........#", "#........#", "##########"]
+	var cells: Array = []
+	for y in 5:
+		for x in 10:
+			cells.append(str(x) + "," + str(y))
+	var player := {"id": "player", "name": "You", "pos": [2, 2], "kind": "player",
+		"creature_type": "humanoid (fighter)", "hp": 20, "max_hp": 20}
+	var snap := {"tiles": tiles, "explored": cells, "visible": cells, "mode": "combat",
+		"player": player,
+		"entities": [
+			{"id": "rpg-lira", "name": "Lira", "pos": [1, 3], "kind": "follower", "hp": 15, "max_hp": 18},
+			{"id": "goblin1", "name": "Goblin", "pos": [7, 2], "kind": "enemy"},
+			{"id": "skel1", "name": "Skeleton", "pos": [8, 3], "kind": "enemy"},
+		]}
+	_world.render(snap)
+	await get_tree().create_timer(0.4).timeout
+	# 1) the player walks a real route (waypoints, not a straight lerp)
+	_world.follow_path("player", [[2, 2], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [6, 2]])
+	var snap2: Dictionary = snap.duplicate(true)
+	snap2["player"]["pos"] = [6, 2]
+	_world.render(snap2)
+	await get_tree().create_timer(0.6).timeout
+	_save_screenshot(base + "_1.png")            # mid-walk: Walking clip, between tiles
+	await get_tree().create_timer(1.2).timeout
+	# 2) a scripted round of blows (same data shapes the server emits)
+	_world.combat_fx({"sfx": "hit", "attacker": "player", "target": "goblin1", "damage": 5, "crit": false})
+	_world.combat_fx({"sfx": "crit", "attacker": "skel1", "target": "player", "damage": 7, "crit": true})
+	_world.combat_fx({"sfx": "miss", "attacker": "goblin1", "target": "rpg-lira"})
+	_world.combat_fx({"sfx": "dead", "target": "goblin1"})
+	await get_tree().create_timer(0.35).timeout
+	_save_screenshot(base + "_2.png")            # player mid-lunge at the goblin
+	await get_tree().create_timer(0.5).timeout
+	_save_screenshot(base + "_3.png")            # crit float + shake, miss float
+	# 3) the killing snapshot lands while the death animation plays — the corpse must linger
+	var snap3: Dictionary = snap2.duplicate(true)
+	snap3["entities"] = [snap2["entities"][0], snap2["entities"][2]]
+	_world.render(snap3)
+	await get_tree().create_timer(1.0).timeout
+	_save_screenshot(base + "_4.png")            # goblin fallen, not vanished
+	await get_tree().create_timer(1.6).timeout
+	_save_screenshot(base + "_5.png")            # corpse sunk away; survivors idle
+	_save_screenshot(shot)
 
 
 func _save_screenshot(path: String) -> void:
@@ -152,6 +209,10 @@ func _on_game_event(ev: Dictionary) -> void:
 	if _hud != null:
 		_hud.log_event(ev)
 	var t := str(ev.get("type", ""))
+	# The route the player actually walked this action — the world animates the walk along it
+	# (the snapshot alone only carries the final position, which read as teleporting).
+	if t == "path" and _world != null and _world.has_method("follow_path"):
+		_world.follow_path(str(ev.get("entity", "player")), ev.get("tiles", []))
 	# Speech card: the personable face of a spoken line — portrait + name + typewriter reveal.
 	# Only the QUOTED speech is shown (stage directions are never player-visible text).
 	if t == "dialogue" and _speech != null:
@@ -214,6 +275,7 @@ func _play_voice(b64: String, rate: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	_poll_held_movement(_delta)
 	# Speech-card glow: "speaking" = audio frames still queued or recently pushed. The generator
 	# player itself never stops, so track our own tail: seconds still occupied in the generator
 	# ring after each push (see below) plus a short linger; _pending covers the not-yet-pushed rest.
@@ -323,13 +385,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	match event.keycode:
 		KEY_UP, KEY_W:
-			Net.send_action("move", {"dx": 0, "dy": -1})
+			_send_move(0, -1)
 		KEY_DOWN, KEY_S:
-			Net.send_action("move", {"dx": 0, "dy": 1})
+			_send_move(0, 1)
 		KEY_LEFT, KEY_A:
-			Net.send_action("move", {"dx": -1, "dy": 0})
+			_send_move(-1, 0)
 		KEY_RIGHT, KEY_D:
-			Net.send_action("move", {"dx": 1, "dy": 0})
+			_send_move(1, 0)
 		KEY_PERIOD, KEY_SPACE:
 			# "wait" — in combat this ENDS the player's turn; in exploration it passes time.
 			Net.send_action("wait")
@@ -367,6 +429,46 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if handled:
 		get_viewport().set_input_as_handled()
+
+
+# -- Held-key movement --------------------------------------------------------
+# One press = one step (via _unhandled_input); HOLDING a movement key keeps walking (owner
+# feedback 2026-07-08). _process polls the held direction and sends the next step just before the
+# current glide lands, so held movement chains into one continuous walk. Pacing is the glide
+# itself: at most one step is in flight beyond what's animating, so releasing the key stops within
+# a tile.
+
+var _move_cd := 0.0
+
+func _send_move(dx: int, dy: int) -> void:
+	Net.send_action("move", {"dx": dx, "dy": dy})
+	_move_cd = 0.12
+
+
+func _held_move_dir() -> Vector2i:
+	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
+		return Vector2i(0, -1)
+	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
+		return Vector2i(0, 1)
+	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
+		return Vector2i(-1, 0)
+	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
+		return Vector2i(1, 0)
+	return Vector2i.ZERO
+
+
+func _poll_held_movement(delta: float) -> void:
+	_move_cd = maxf(0.0, _move_cd - delta)
+	if _move_cd > 0.0 or _dialogue != null and _dialogue.is_open():
+		return
+	var dir := _held_move_dir()
+	if dir == Vector2i.ZERO:
+		return
+	var remaining := 0.0
+	if _world != null and _world.has_method("player_glide_remaining"):
+		remaining = _world.player_glide_remaining()
+	if remaining <= 0.35:      # current step nearly landed — chain the next one seamlessly
+		_send_move(dir.x, dir.y)
 
 
 # -- Interaction helpers ------------------------------------------------------

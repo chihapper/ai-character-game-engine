@@ -24,6 +24,7 @@ from .session import (
     GameSession,
     ModeChangedEvent,
     NarrationEvent,
+    PathEvent,
     PlayerAction,
     StateChangedEvent,
 )
@@ -550,16 +551,22 @@ class RpgGame(GameSession):
         if f"{tx},{ty}" not in s.explored:        # a spot you've never seen isn't a place you can pick
             return
         frozen = set(s.explored)                  # what was known when you clicked; don't extend it
+        walked = [tuple(s.player.pos)]            # the route actually taken, start tile included
         for _ in range(400):
             if tuple(s.player.pos) == (tx, ty) or s.mode == Mode.combat:
-                return
+                break
             step = self._step_toward_tile(s.player.pos, (tx, ty), explored=frozen)
             if step is None:
-                return
+                break
             before = tuple(s.player.pos)
             self._move_player(*step)
             if tuple(s.player.pos) == before:     # bumped a door/wall or nothing changed — stop
-                return
+                break
+            walked.append(tuple(s.player.pos))
+        if len(walked) > 1:
+            # Presentation: the renderer animates the walk along the real route instead of
+            # teleporting to the snapshot's final position (owner feedback 2026-07-08).
+            self._emit(PathEvent(entity=s.player.id, tiles=[list(p) for p in walked]))
 
     # ---- fog of war (FOV) ----
     def _recompute_fov(self) -> None:
@@ -983,20 +990,24 @@ class RpgGame(GameSession):
                 self._attack(s.player, foe)
                 cs.action_used = True
             return
+        walked = [tuple(s.player.pos)]
         for _ in range(40):
             if cs.movement_left < 5 or tuple(s.player.pos) == cell:
-                return
+                break
             step = self._step_toward_tile(s.player.pos, cell)
             if step is None:
-                return
+                break
             nx, ny = s.player.pos[0] + step[0], s.player.pos[1] + step[1]
             if any(e.pos and tuple(e.pos) == (nx, ny) for e in self._fight_enemies()):
-                return                             # next cell is the foe — stop adjacent, don't walk in
+                break                              # next cell is the foe — stop adjacent, don't walk in
             if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
-                return
+                break
             s.player.pos = (nx, ny)
             cs.movement_left -= 5
             self._recompute_fov()
+            walked.append((nx, ny))
+        if len(walked) > 1:
+            self._emit(PathEvent(entity=s.player.id, tiles=[list(p) for p in walked]))
 
     async def _npc_turn(self, cur) -> None:
         """Resolve one non-player combatant's whole turn — an enemy stat-block or a companion mind."""

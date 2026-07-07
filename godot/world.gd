@@ -283,6 +283,17 @@ func _draw_pos(id: String, pos) -> Vector2:
 	return Vector2(float(pos[0]), float(pos[1]))
 
 
+## Contract parity with world3d.gd (main.gd calls these on whichever view is active). The 2D view
+## keeps its snapshot-to-snapshot hop tween, so the server's walked route is simply ignored, and
+## held-key pacing falls back to main.gd's cooldown alone.
+func follow_path(_id: String, _tiles: Array) -> void:
+	pass
+
+
+func player_glide_remaining() -> float:
+	return 0.0
+
+
 ## The tile (x,y) under the mouse right now — get_global_mouse_position() accounts for the
 ## camera transform, so a click maps straight to a grid cell (world pixel = tile * CELL).
 func tile_at_mouse() -> Vector2i:

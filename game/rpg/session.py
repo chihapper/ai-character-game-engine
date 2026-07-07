@@ -68,6 +68,16 @@ class MapUpdateEvent(GameEvent):
     type: Literal["map_update"] = "map_update"
 
 
+class PathEvent(GameEvent):
+    """The tile-by-tile route an entity just walked inside ONE action. Pure presentation data —
+    the world is already AT the final tile when this drains; a renderer may animate the walk along
+    it (instead of teleporting to the snapshot position) or ignore it entirely. `tiles` includes
+    the start tile: [[x, y], ...]."""
+    type: Literal["path"] = "path"
+    entity: str = "player"
+    tiles: list = Field(default_factory=list)
+
+
 class CombatEvent(GameEvent):
     type: Literal["combat"] = "combat"
     text: str
