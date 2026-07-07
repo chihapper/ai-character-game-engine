@@ -59,6 +59,7 @@ class Combatant(BaseModel):
     # archer (1d6 DEX), a biter (1d4), etc. The combat loop reads these; it names no dice itself.
     damage_dice: str = "1d4"
     attack_ability: str = "STR"
+    damage_type: str = ""                    # "slashing" | "piercing" | "fire" | ... ('' = untyped)
     # --- 5e sheet (SRD-based rules system) — all optional so existing content stays valid. The
     # srd.mechanics functions read these; monsters set `cr`, characters use `level` (subclass). ---
     saving_throw_profs: list[str] = Field(default_factory=list)   # abilities proficient in saves
@@ -74,10 +75,22 @@ class Combatant(BaseModel):
     cr: float | None = None                  # monster Challenge Rating (drives PB + XP); None = uses level
     hit_dice: str = ""                       # e.g. "2d6" — for HP generation
     prof_bonus: int | None = None            # explicit proficiency-bonus override (else from level/cr)
+    # --- combat status (turn-based engine, srd.combat) ---
+    dead: bool = False                       # truly dead (vs unconscious at 0 HP making death saves)
+    death_save_successes: int = 0            # 0-3; 3 -> stable
+    death_save_failures: int = 0             # 0-3; 3 -> dead
+    stable: bool = False                     # unconscious but no longer rolling death saves
 
     @property
     def alive(self) -> bool:
-        return self.hp > 0
+        """Can act this turn: has HP and isn't dead. An unconscious PC at 0 HP is NOT 'alive' for
+        acting (they make death saves), but is not `dead` either."""
+        return self.hp > 0 and not self.dead
+
+    @property
+    def down(self) -> bool:
+        """At 0 HP or dead — out of the fight for now (may still be revivable if not `dead`)."""
+        return self.hp <= 0 or self.dead
 
 
 class PlayerCharacter(Combatant):
@@ -208,6 +221,11 @@ class CombatState(BaseModel):
     turn_index: int = 0
     show_enemy_hp: bool = False               # player-toggle — mechanical readout is allowed (guardrail #5)
     ally_stance: dict[str, str] = Field(default_factory=dict)   # mind_slug -> chosen stance (decided ONCE / fight)
+    # per-turn action economy (reset at the start of each combatant's turn)
+    action_used: bool = False
+    bonus_used: bool = False
+    movement_left: int = 0                     # feet of movement remaining this turn
+    reacted: dict[str, bool] = Field(default_factory=dict)   # id -> used its reaction this round
 
     def current(self) -> str | None:
         return self.order[self.turn_index] if self.order else None
