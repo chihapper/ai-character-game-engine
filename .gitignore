@@ -1,4 +1,4 @@
-# Secrets
+﻿# Secrets
 .env
 
 # Python
@@ -15,7 +15,7 @@ chroma_db/
 .memory/
 *.wav
 # ...except the game's own generated SFX/ambience set (small, original, regenerable via
-# tools/gen_rpg_sfx.py) — their .import descriptors are tracked, so the wavs must be too.
+# tools/gen_rpg_sfx.py) â€” their .import descriptors are tracked, so the wavs must be too.
 !godot/assets/sfx/*.wav
 *.webm
 
@@ -43,7 +43,7 @@ server.log
 game_server.err
 game_server.out
 
-# stress-test transcripts + run logs (tools/stress_*.py) — generated, not source
+# stress-test transcripts + run logs (tools/stress_*.py) â€” generated, not source
 stress_*.md
 stress_*.log
 stress_grounding*.md
@@ -61,14 +61,18 @@ unity/ProAssets/packs/*.zip
 
 tts_bakeoff_out/
 
-# Runtime dev logs (server/client/spike stdout+stderr) — never commit
+# Runtime dev logs (server/client/spike stdout+stderr) â€” never commit
 *.log
 *.out.log
 *.err.log
 spikes/evi_clm_requests.jsonl
 .saves/
 
-# Dialogue-card portraits: royalty-free-but-NO-redistribution packs (two-tier asset policy —
+# Dialogue-card portraits: royalty-free-but-NO-redistribution packs (two-tier asset policy â€”
 # CC0 gets committed; these stay local; see godot/assets/portraits/README.md for re-fetch)
 godot/assets/portraits/*
 !godot/assets/portraits/README.md
+
+# Bulk CC0 asset library (hundreds of MB) - wired models get promoted into godot/assets/ and committed
+/asset_library/*
+!/asset_library/README.md
