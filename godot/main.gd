@@ -114,7 +114,7 @@ func _stage_combat_demo(shot: String) -> void:
 	var snap := {"tiles": tiles, "explored": cells, "visible": cells, "mode": "combat",
 		"player": player,
 		"entities": [
-			{"id": "rpg-lira", "name": "Lira", "pos": [1, 3], "kind": "follower", "hp": 15, "max_hp": 18},
+			{"id": "rpg-lira", "name": "Lira", "pos": [5, 3], "kind": "follower", "hp": 15, "max_hp": 18},
 			{"id": "goblin1", "name": "Goblin", "pos": [7, 2], "kind": "enemy"},
 			{"id": "skel1", "name": "Skeleton", "pos": [8, 3], "kind": "enemy"},
 		]}
@@ -129,7 +129,12 @@ func _stage_combat_demo(shot: String) -> void:
 	_world.render(snap2)
 	await get_tree().create_timer(0.6).timeout
 	_save_screenshot(base + "_1.png")            # mid-walk: Walking clip, between tiles
-	await get_tree().create_timer(1.2).timeout
+	# stage-direction acting: Lira's mind wrote the business; her body performs it
+	if _world.has_method("act_direction"):
+		_world.act_direction("rpg-lira", "She crouches low and slips into the shadows, scouting ahead.")
+	await get_tree().create_timer(0.9).timeout
+	_save_screenshot(base + "_1b.png")           # Lira mid-sneak, turned toward the player
+	await get_tree().create_timer(0.3).timeout
 	# 2) a scripted round of blows (same data shapes the server emits)
 	_world.combat_fx({"sfx": "hit", "attacker": "player", "target": "goblin1", "damage": 5, "crit": false})
 	_world.combat_fx({"sfx": "crit", "attacker": "skel1", "target": "player", "damage": 7, "crit": true})
@@ -223,6 +228,10 @@ func _on_game_event(ev: Dictionary) -> void:
 		if line.strip_edges() == "":
 			line = str(ev.get("text", ""))
 		_speech.show_line(str(ev.get("npc", "")), line, str(ev.get("slug", "")))
+		# The line's stage business (mind-authored, never shown as text) is PERFORMED: the
+		# speaker turns to you and acts it out — sneaking, crouching, drawing steel...
+		if _world != null and _world.has_method("act_direction"):
+			_world.act_direction(str(ev.get("slug", "")), str(ev.get("action", "")))
 	# Dialogue TEXT surfaces immediately; the line's audio arrives as a follow-up "voice" event
 	# and queues below. (Dialogue-attached audio kept as a fallback path.)
 	if (t == "voice" or t == "dialogue") and ev.has("audio_b64"):

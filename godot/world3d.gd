@@ -1090,6 +1090,55 @@ func _play_anim(ent: Dictionary, prefer: Array, loop: bool = false) -> void:
 					return
 
 
+# ------------------------------------------------------- stage-direction acting
+
+## The engine ships every NPC line with third-person stage business (DialogueEvent.action),
+## authored by the character's MIND — never shown as text (owner directive; the DM narrates it
+## aloud only when relevant). Here the BODY performs it: keyword -> clip, first match wins,
+## matched at word starts (a leading space guard keeps "sit" out of "hesitates"). Unmatched
+## business just turns the speaker toward the player — acting NOTHING beats acting WRONG.
+const DIRECTION_VERBS := [
+	{"k": ["sneak", "slip", "stealth", "creep", "shadow"], "a": ["Sneaking", "Crouching"], "d": 1.6},
+	{"k": ["lockpick", "pick the lock", "pins", "latch"], "a": ["Lockpicking", "Lockpick", "Interact"], "d": 1.8},
+	{"k": ["crouch", "kneel", "stoop"], "a": ["Crouching", "PickUp"], "d": 1.2},
+	{"k": ["crawl"], "a": ["Crawling"], "d": 1.5},
+	{"k": ["cast", "spell", "conjure", "summon", "weave"], "a": ["Spellcast_Raise", "Ranged_Magic_Summon", "Spellcasting"], "d": 1.4},
+	{"k": ["throw", "toss", "hurl", "fling"], "a": ["Throw"], "d": 0.9},
+	{"k": ["dodge", "duck", "flinch", "recoil", "step back", "backs away", "darts back"], "a": ["Dodge_Backward", "Dodge_Left"], "d": 0.6},
+	{"k": ["block", "shield", "brace", "guard"], "a": ["Block", "Blocking"], "d": 1.0},
+	{"k": ["draws her", "draws his", "blade", "sword", "dagger"], "a": ["Block", "2H_Melee_Idle"], "d": 1.2},
+	{"k": ["drink", "sip", "swig", "flask"], "a": ["Use_Item", "Interact"], "d": 1.0},
+	{"k": ["pick up", "picks up", "grab", "pocket", "stow", "tuck"], "a": ["PickUp", "Interact"], "d": 1.0},
+	{"k": ["search", "rummage", "examin", "inspect", "stud"], "a": ["Interact", "PickUp"], "d": 1.2},
+	{"k": ["cheer", "celebrat", "triumph", "pumps a fist"], "a": ["Cheer"], "d": 1.2},
+	{"k": ["taunt", "sneer", "mock", "spits"], "a": ["Taunt", "Interact"], "d": 1.2},
+	{"k": ["kick", "shove", "push"], "a": ["Unarmed_Melee_Attack_Kick", "Interact"], "d": 0.8},
+	{"k": ["punch"], "a": ["Unarmed_Melee_Attack_Punch_A"], "d": 0.8},
+	{"k": ["jump", "leap", "spring"], "a": ["Jump_Full_Short", "Jump_Start"], "d": 0.9},
+	{"k": ["sit", "settle"], "a": [], "d": 4.0, "kind": "rest"},
+	{"k": ["point", "gestur", "beckon", "motions", "wave"], "a": ["Interact"], "d": 1.0},
+]
+
+func act_direction(id: String, action: String) -> void:
+	if not _ents.has(id):
+		return
+	# a speaking character turns to their audience regardless of whether the business maps
+	if id != "player" and _last_pos.has(id) and _last_pos.has("player"):
+		var dirv: Vector2 = Vector2(_last_pos["player"]) - Vector2(_last_pos[id])
+		if dirv.length() > 0.1:
+			_facing[id] = atan2(dirv.x, dirv.y)
+	var text := " " + action.to_lower()
+	if text.strip_edges() == "":
+		return
+	for row in DIRECTION_VERBS:
+		for kw in row["k"]:
+			if text.contains(" " + str(kw)):
+				_fx.append({"kind": str(row.get("kind", "react")), "id": id,
+					"anims": row["a"], "seated": false,
+					"delay": 0.15, "t": 0.0, "dur": float(row["d"])})
+				return
+
+
 # ---------------------------------------------------------------- combat fx
 
 ## Same semantic beats as the 2D view, staged in 3D: attackers play an attack clip and lunge,
