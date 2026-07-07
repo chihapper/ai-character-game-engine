@@ -268,6 +268,7 @@ class GameState(BaseModel):
     doors: list[Door] = Field(default_factory=list)
     quests: list[QuestThread] = Field(default_factory=list)
     flags: dict[str, bool] = Field(default_factory=dict)   # game/quest flags (e.g. inner_door_open)
+    explored: set[str] = Field(default_factory=set)        # "x,y" tiles the player has ever seen (fog of war)
     campaign_log: CampaignLog = Field(default_factory=CampaignLog)
     combat: CombatState | None = None
 
@@ -310,3 +311,5 @@ class StateSnapshot(BaseModel):
     combat_order: list[str] = Field(default_factory=list)
     combat_turn: str | None = None
     show_enemy_hp: bool = False
+    visible: list[str] = Field(default_factory=list)       # "x,y" tiles lit right now (fog of war)
+    explored: list[str] = Field(default_factory=list)      # "x,y" tiles ever seen (dim, remembered)

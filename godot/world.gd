@@ -10,6 +10,8 @@ extends Node2D
 const CELL := 24
 
 var snap: Dictionary = {}
+var _vis := {}   # "x,y" -> true : tiles lit right now
+var _exp := {}   # "x,y" -> true : tiles ever seen (dim, remembered)
 
 var _camera: Camera2D
 var _font: Font
@@ -54,6 +56,12 @@ func _ready() -> void:
 ## main.gd calls this on every snapshot. We never talk back to Net.
 func render(s: Dictionary) -> void:
 	snap = s if typeof(s) == TYPE_DICTIONARY else {}
+	_vis.clear()
+	_exp.clear()
+	for k in snap.get("visible", []):
+		_vis[k] = true
+	for k in snap.get("explored", []):
+		_exp[k] = true
 	_move_camera_to_player()
 	queue_redraw()
 
@@ -113,12 +121,19 @@ func _draw_tiles() -> void:
 		if typeof(row) != TYPE_STRING:
 			continue
 		for x in row.length():
+			var key := str(x) + "," + str(y)
+			# Fog of war: unexplored tiles stay black (skip); explored-but-unseen are dimmed
+			# (remembered terrain); only lit tiles draw at full colour with a grid border.
+			if not _exp.has(key):
+				continue
+			var lit := _vis.has(key)
 			var ch: String = row[x]
 			var col: Color = TILE_COLORS.get(ch, VOID_COLOR)
+			if not lit:
+				col = col.darkened(0.6)
 			var rect := Rect2(x * CELL, y * CELL, CELL, CELL)
 			draw_rect(rect, col, true)
-			# 1px darker border for grid legibility (skip on void for a clean black field).
-			if ch != " ":
+			if ch != " " and lit:
 				draw_rect(rect, TILE_BORDER, false, 1.0)
 
 

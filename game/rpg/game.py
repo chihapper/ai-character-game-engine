@@ -57,6 +57,30 @@ def _split_speech(text: str) -> tuple[str, str]:
     return speech, action
 
 
+_SIGHT_RADIUS = 8   # how far the player sees (tiles), before walls block the line of sight
+
+
+def _bresenham(x0: int, y0: int, x1: int, y1: int) -> list:
+    """Integer grid line from (x0,y0) to (x1,y1), inclusive of both endpoints."""
+    pts = []
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    x, y = x0, y0
+    while True:
+        pts.append((x, y))
+        if x == x1 and y == y1:
+            return pts
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+
+
 class RpgGame(GameSession):
     def __init__(self, state: GameState, minds: Minds, rules: D20Rules, dm: DM) -> None:
         self.state = state
@@ -64,6 +88,8 @@ class RpgGame(GameSession):
         self.rules = rules
         self.dm = dm
         self._events: asyncio.Queue[GameEvent] = asyncio.Queue()
+        self._visible: set = set()              # tiles the player can see right now (fog of war)
+        self._recompute_fov()                   # light up the starting area
 
     @classmethod
     def new(cls, *, slice: str = "vault", seed: int = 1337,
@@ -112,22 +138,26 @@ class RpgGame(GameSession):
     # ---- state snapshot (mechanical only — no mind) ----
     def get_state(self) -> StateSnapshot:
         s = self.state
+        vis = self._visible
+        seen = lambda p: p is not None and (int(p[0]), int(p[1])) in vis
+        explored = lambda p: p is not None and f"{int(p[0])},{int(p[1])}" in s.explored
         ents: list[EntityView] = []
+        # Fog of war: NPCs and enemies show only where the player can SEE them; a locked door stays on
+        # the map once explored (a remembered feature); followers are with you, so always shown.
         for n in s.npcs:
-            ents.append(EntityView(id=n.slug, name=n.name, pos=n.pos, kind="npc"))
+            if seen(n.pos):
+                ents.append(EntityView(id=n.slug, name=n.name, pos=n.pos, kind="npc"))
         for f in s.followers:
             ents.append(EntityView(id=f.id, name=f.name, pos=f.pos, kind="follower", hp=f.hp, max_hp=f.max_hp))
-        # Enemies are visible on the map (no fog-of-war yet); HP stays hidden unless the player
-        # toggles it in combat (guardrail #5). `triggered` governs combat ENTRY, not sight.
-        show_hp = bool(s.combat and s.combat.show_enemy_hp)
+        show_hp = bool(s.combat and s.combat.show_enemy_hp)   # HP hidden unless toggled (guardrail #5)
         for e in s.encounters:
             for en in e.enemies:
-                if en.alive:
+                if en.alive and seen(en.pos):
                     ents.append(EntityView(id=en.id, name=en.name, pos=en.pos, kind="enemy",
                                            hp=en.hp if show_hp else None,
                                            max_hp=en.max_hp if show_hp else None))
         for d in s.doors:
-            if d.locked:
+            if d.locked and explored(d.pos):
                 ents.append(EntityView(id=d.id, name="Door", pos=d.pos, kind="door"))
         objective = next((q.title for q in s.quests if q.state in ("open", "active")), "")
         return StateSnapshot(
@@ -138,7 +168,8 @@ class RpgGame(GameSession):
             # This loop resolves player -> all allies -> all enemies per action rather than stepping a
             # single initiative cursor, so there is no one "current" combatant to report (turn_index
             # is not advanced). Leave combat_turn None instead of always claiming order[0].
-            combat_turn=None, show_enemy_hp=show_hp)
+            combat_turn=None, show_enemy_hp=show_hp,
+            visible=[f"{x},{y}" for (x, y) in vis], explored=list(s.explored))
 
     # ---- world helpers ----
     def _npc_at(self, pos) -> NpcPlacement | None:
@@ -242,6 +273,7 @@ class RpgGame(GameSession):
             npc.pos = old
         s.player.pos = (nx, ny)
         s.clock.advance(0.05)               # exploration narrative time (game owns the clock)
+        self._recompute_fov()               # reveal what the new vantage can see
         self._advance_followers(old)        # party follows your EXACT path, single-file
         self._maybe_trigger_encounter()
 
@@ -329,12 +361,14 @@ class RpgGame(GameSession):
                 self._enter_combat(e)
                 return
 
-    def _step_toward_tile(self, src, dst):
-        """First step (dx,dy) toward the REACHABLE cell nearest `dst` on walkable tiles, treating
-        living enemies as blockers (the player can't path through a foe). Robust when `dst` is a wall
-        or occupied — the player still closes the distance. Returns None if boxed in / already there."""
+    def _step_toward_tile(self, src, dst, explored=None):
+        """First step (dx,dy) toward the REACHABLE cell nearest `dst`, over walkable tiles the player
+        has SEEN (`explored`, default the live set), treating living enemies as blockers. Robust when
+        `dst` is a wall/occupied/unexplored — the player still closes to the explored frontier.
+        Returns None if boxed in / already there."""
         from collections import deque
         s = self.state
+        explored = s.explored if explored is None else explored
         src, dst = tuple(src), tuple(dst)
         blocked = {tuple(en.pos) for e in s.encounters for en in e.enemies if en.alive and en.pos}
         prev = {src: None}
@@ -347,6 +381,10 @@ class RpgGame(GameSession):
                 if nb in prev or not s.world_map.walkable(*nb):
                     continue
                 if nb in blocked and nb != dst:
+                    continue
+                # Fog of war: only auto-walk through terrain you've SEEN. Clicking into the dark walks
+                # you to the explored frontier, not into the unknown.
+                if f"{nb[0]},{nb[1]}" not in explored and nb != dst:
                     continue
                 prev[nb] = (cx, cy)
                 order.append(nb)
@@ -361,19 +399,53 @@ class RpgGame(GameSession):
 
     def _move_to(self, tx: int, ty: int) -> None:
         """Click-to-move: walk the player toward tile (tx,ty), stepping via _move_player (which handles
-        doors, the follower trail, and encounter triggers). Stops on arrival, a blocked step (wall /
-        door), or when combat starts."""
+        doors, the follower trail, and encounter triggers). The path is limited to terrain explored AT
+        CLICK TIME (frozen) — revealing new ground as you walk does NOT auto-extend the trip, so
+        clicking far only takes you to the explored frontier. Stops on arrival, a blocked step, or when
+        combat starts."""
         s = self.state
+        frozen = set(s.explored)                  # what was known when you clicked; don't extend it
         for _ in range(400):
             if tuple(s.player.pos) == (tx, ty) or s.mode == Mode.combat:
                 return
-            step = self._step_toward_tile(s.player.pos, (tx, ty))
+            step = self._step_toward_tile(s.player.pos, (tx, ty), explored=frozen)
             if step is None:
                 return
             before = tuple(s.player.pos)
             self._move_player(*step)
             if tuple(s.player.pos) == before:     # bumped a door/wall or nothing changed — stop
                 return
+
+    # ---- fog of war (FOV) ----
+    def _recompute_fov(self) -> None:
+        """Recompute the tiles the player can SEE (within the sight radius + line of sight; walls and
+        void block), and fold them into the ever-explored set. Called at start + after each move."""
+        s = self.state
+        if not getattr(s, "player", None) or not s.player.pos:
+            self._visible = set()
+            return
+        px, py = int(s.player.pos[0]), int(s.player.pos[1])
+        wm = s.world_map
+        r = _SIGHT_RADIUS
+        vis = set()
+        for y in range(py - r, py + r + 1):
+            for x in range(px - r, px + r + 1):
+                if not wm.in_bounds(x, y) or (x - px) ** 2 + (y - py) ** 2 > r * r:
+                    continue
+                if self._has_los(px, py, x, y):
+                    vis.add((x, y))
+        self._visible = vis
+        for (x, y) in vis:
+            s.explored.add(f"{x},{y}")
+
+    def _has_los(self, x0: int, y0: int, x1: int, y1: int) -> bool:
+        """Line of sight: blocked if any tile BETWEEN the two is opaque (wall/void). The endpoint may
+        be opaque (you still see the wall face that bounds a room)."""
+        wm = self.state.world_map
+        for (x, y) in _bresenham(x0, y0, x1, y1)[1:-1]:
+            if wm.tile(x, y) in ("#", " "):
+                return False
+        return True
 
     async def _talk(self, action: PlayerAction) -> None:
         s = self.state
