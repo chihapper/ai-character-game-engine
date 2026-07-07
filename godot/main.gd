@@ -43,6 +43,7 @@ func _ready() -> void:
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
 	add_child(_voice)
+	_voice.finished.connect(_play_next_voice)   # drain the voiced-line queue in order
 
 	# Wire the Net autoload. `Net` is a global autoload (extends Node) that owns the
 	# WebSocket; it emits these three signals and exposes the action methods we call.
@@ -55,22 +56,35 @@ func _ready() -> void:
 
 var _link_dropped := false   # so we can tell a reconnect from the first connect
 
+## Slice/seed are env-overridable (RPG_SLICE / RPG_SEED, mirroring net.gd's RPG_WS_URL) so
+## emberdeep — or any future slice — is reachable from this client without editing code.
+func _slice() -> String:
+	var s := OS.get_environment("RPG_SLICE")
+	return s if s != "" else "vault"
+
+func _seed() -> int:
+	var s := OS.get_environment("RPG_SEED")
+	return int(s) if s.is_valid_int() else 1337
+
 func _on_link_status(state: String) -> void:
-	# Net does NOT auto-start; main kicks off the game once the link is open.
+	# Net does NOT auto-start; main kicks off the game once the link is open. `resume=true`
+	# continues the saved WORLD for this slice+seed (minds persist on their own) — including
+	# straight through a reconnect, so a dropped link no longer resets the expedition. N starts over.
 	if state == "open":
 		if not _started:
 			_started = true
 			if _link_dropped and _hud != null:
-				_hud.log_line("— link restored — starting a fresh expedition —")
+				_hud.log_line("— link restored — picking up where you left off —")
 			_link_dropped = false
-			Net.start_game("vault", 1337)
+			Net.start_game(_slice(), _seed(), true)
 	elif state == "closed" or state == "error":
-		# Allow a fresh start when the link comes back up (Net auto-reconnects), and SAY SO —
-		# a silent dead socket looked like 'the NPC just ignores me' in live trial.
-		if _started and _hud != null:
-			_hud.log_line("— connection lost — reconnecting… —")
+		# Only a session that had actually STARTED counts as a drop — initial connect failures
+		# retry quietly (no spurious 'link restored' on the first success).
+		if _started:
+			_link_dropped = true
+			if _hud != null:
+				_hud.log_line("— connection lost — reconnecting… —")
 		_started = false
-		_link_dropped = true
 
 
 func _on_snapshot(s: Dictionary) -> void:
@@ -88,14 +102,16 @@ func _on_game_event(ev: Dictionary) -> void:
 		return
 	if _hud != null:
 		_hud.log_event(ev)
-	if str(ev.get("type", "")) == "dialogue":
-		if _dialogue != null:
-			_dialogue.show_reply(str(ev.get("npc", "")), str(ev.get("speech", "")), str(ev.get("action", "")))
-		if ev.has("audio_b64"):
-			_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
+	# Dialogue replies surface in the HUD log (the overlay closes on submit); audio queues below.
+	if str(ev.get("type", "")) == "dialogue" and ev.has("audio_b64"):
+		_play_voice(str(ev.get("audio_b64", "")), int(ev.get("rate", 24000)))
 
 
-## Play an NPC's Hume-voiced line: base64 -> raw s16le PCM -> a 16-bit mono AudioStreamWAV.
+## Voiced lines QUEUE instead of clobbering: one server batch can carry several voiced events
+## (every recruit-with-grant sends the joining line AND the handover line), and replacing the
+## playing stream cut the first one off mid-word. Play in arrival order; next starts on `finished`.
+var _voice_queue: Array = []
+
 func _play_voice(b64: String, rate: int) -> void:
 	if b64 == "" or _voice == null:
 		return
@@ -107,7 +123,14 @@ func _play_voice(b64: String, rate: int) -> void:
 	wav.mix_rate = maxi(rate, 8000)
 	wav.stereo = false
 	wav.data = pcm
-	_voice.stream = wav
+	_voice_queue.append(wav)
+	if not _voice.playing:
+		_play_next_voice()
+
+func _play_next_voice() -> void:
+	if _voice == null or _voice_queue.is_empty():
+		return
+	_voice.stream = _voice_queue.pop_front()
 	_voice.play()
 
 
@@ -155,6 +178,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_recruit_nearest()
 		KEY_F:
 			_help_nearest()
+		KEY_N:
+			# New expedition: restart THIS slice+seed fresh (resume=false overwrites the save on
+			# the next autosave). Minds keep their memories — the world resets, the people don't.
+			if _hud != null:
+				_hud.log_line("— starting a fresh expedition —")
+			Net.start_game(_slice(), _seed(), false)
 		_:
 			handled = false
 

@@ -1,7 +1,9 @@
 """Deterministic dice — a seedable RNG behind a small API.
 
-Never module-level `random`: a campaign is replayable and save/load-safe, so every roll comes from
-a held/injected `random.Random`. This is the one source of chance the whole rules system uses.
+Never module-level `random`: every roll comes from a held/injected `random.Random`, so a fixed
+seed gives a reproducible stream for tests/harness runs. (Same-seed CAMPAIGN replay is NOT a
+supported property — LLM outputs gate how many draws the stream consumes, and the RNG state is
+not persisted in saves.) This is the one source of chance the whole rules system uses.
 """
 from __future__ import annotations
 

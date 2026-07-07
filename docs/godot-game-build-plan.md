@@ -3,12 +3,12 @@
      view → Godot 4.x native desktop). A Step-0 inspection/gap report lives alongside at
      docs/godot-build-step0-inspection.md. Docs + code win where they disagree with this. -->
 
-# Claude Code Build Prompt — Living-World AI Dungeon Master (game layer)
+# Claude Code Build Prompt — Living-World AI Game Master (game layer)
 
 ## What you're building
-The **game layer** — the *world* — that drives an existing character engine (the *mind*). A 2D, **SRD-style RPG** with an AI Dungeon Master, procedurally generated dungeons, and NPCs whose personalities **evolve over a campaign**. The engine already delivers the evolving-NPC behavior; the game's job is to feed it a campaign's worth of consequential, attributable events and to render the result. The end target is a **downloadable, Steam-shippable native desktop game** (see Phase B) — not a web app.
+The **game layer** — the *world* — that drives an existing character engine (the *mind*). A 2D, **SRD-style RPG** with an AI Game Master, procedurally generated dungeons, and NPCs whose personalities **evolve over a campaign**. The engine already delivers the evolving-NPC behavior; the game's job is to feed it a campaign's worth of consequential, attributable events and to render the result. The end target is a **downloadable, Steam-shippable native desktop game** (see Phase B) — not a web app.
 
-**Read these first (they are the contract, in the repo):** `docs/engine-game-contract.md`, `docs/architecture-seams.md`, `docs/engine-overview.md`, `docs/relevance-scoring.md`. When they and this prompt disagree, the docs + code win. *(Note: the engine's chosen voice runtime is now **Hume** — EVI/Octave; if docs still name a previous provider, treat Hume as current.)*
+**Read these first (they are the contract, in the repo):** `docs/engine-game-contract.md`, `docs/architecture-seams.md`, `docs/engine-overview.md`, `docs/relevance-scoring.md`. When they and this prompt disagree, the docs + code win. *(Note: the engine's chosen voice is now **Hume Octave**, served through the modular `TTSAdapter` seam; EVI was ruled out — its CLM strips authored delivery. If docs still name a previous provider, treat Hume Octave as current.)*
 
 **The one rule (from the contract): the engine owns the MIND, the game owns the WORLD.** Everything below honors it.
 
@@ -39,7 +39,7 @@ If the existing game-layer state is ambiguous, **ask before building** rather th
 5. **No *psychological* readout — but mechanical stats are fine.** A character's feelings/relationship/mood are *felt through behavior, dialogue, and voice* — never surfaced as an affinity panel (the engine's sandbox bars are dev-only). **Mechanical stats are a different, game-owned layer:** show **follower/party HP** normally, and add a **player option to toggle enemy health visibility in combat**. The rule is about the *mind*, not the character sheet.
 6. **Reactions are a recipe, not a method.** Compose game-side: `remember` → *your* salience threshold → `deliberate` → enact. No `engine.react()`.
 7. **The game owns the clock and cadence.** Pass a numeric `Situation.clock` every turn; tune `recent_happenings_window` to that unit. Never make the engine run a loop.
-8. **Voice is the engine's Hume runtime (EVI/Octave).** Do not build new work against the retiring modular STT/LLM/TTS adapters. Expressive/extreme delivery is a prompt/expressivity concern, not game logic.
+8. **Voice is Hume Octave through the engine's modular `TTSAdapter` seam** — this IS the shipped RPG voice path. (EVI was ruled out 2026-07-06: its CLM strips authored delivery.) Consume the seam; don't build a parallel voice stack. Expressive/extreme delivery is a prompt/expressivity concern, not game logic.
 9. **Memory is engine-owned** (per-character JSONL + fastembed/lexical + RR scoring — *not* ChromaDB). The game persists **world** state separately; never touch the mind store.
 10. **Target native desktop, not the web.** The renderer is a downloadable app; never assume a browser/hosted deployment.
 
@@ -69,6 +69,7 @@ Build these as a package alongside the engine (e.g. `game/`), all renderer-agnos
 
 ### Capability flags — everything defaults ON
 Set **every** engine capability to default ON in `config.py`/`Settings`: `relationship_state`, `relationship_time_decay`, `reflection_enabled`, `intent_state`, `salience_scoring`, `commitment_detection`, `contradiction_detection`, `recent_happenings`, `arena_query`, and `reinforce_on_recall`. Always pass `Situation.clock`. A fresh character then runs at full depth out of the box — nothing to toggle, nothing that reads as broken. (Still experiment-safe: the per-`Engine` caps let the #30 control arm switch specific faculties off explicitly when needed.)
+*(Settled in implementation: the global `config.py`/`Settings` defaults were left unchanged; full depth is applied via a per-`Engine` caps override — see `full_depth_caps` in `game/rpg/minds.py`.)*
 
 ### The core loop (mode-aware)
 **Exploration/social (free-flow):**
@@ -135,7 +136,7 @@ Steps:
 - No NPC *psychological* readout (feelings/relationship/mood) — felt through behavior. (Mechanical stats *are* fine: follower HP, and a player-toggled enemy-HP readout in combat.)
 - No `engine.react()` — compose the recipe.
 - Don't run the engine's clock — the game owns cadence + clock.
-- Don't invest in the retiring modular adapter path; voice = Hume runtime.
+- Don't build a parallel voice stack; voice = Hume Octave via the modular `TTSAdapter` seam (EVI ruled out).
 - Don't assume web deployment — target native desktop.
 - Don't re-implement game logic in GDScript — Godot is a renderer over the Python core.
 
@@ -152,7 +153,7 @@ Steps:
 | Pacing | **free-flow exploration/social; turn-based combat** |
 | DM | **game-layer LLM narrator** (not a Character) + campaign-log retrieval |
 | NPC minds | **engine `Engine` instances** via the seam — never reimplemented |
-| Voice / face | engine's **Hume** runtime (EVI/Octave) + ARKit-52 bridge — consumed, not rebuilt |
+| Voice / face | **Hume Octave** via the engine's modular `TTSAdapter` seam + ARKit-52 bridge — consumed, not rebuilt |
 | Memory store | **engine-owned** (JSONL + fastembed/lexical, RR-scored) — untouched |
 | Game concepts | `register_game_extension` + `game_data` + renderer |
 | Depth flags | **all engine capabilities default ON** (relationship, time-decay, reflection, intent, salience, commitment + contradiction detection, recent-happenings, arena-query, reinforce-on-recall) + always pass `clock` |
@@ -170,7 +171,7 @@ Steps:
 
 **Order of operations (owner decision, 2026-07-06):** finish the **full proof-of-concept in Godot (Phase B)** on the *current* content model before fleshing out a real game. Today we do **constructive PCG**: the **map layout is procedural** (seeded rooms-and-corridors + cellular-automata caverns, connectivity enforced by `dungeon._assert_connected`), while enemies / loot / NPCs / objective are **authored per slice** and *placed* on procedural anchors (`Dungeon.spawns`). That is a standard, respected pattern and is enough to prove the PoC.
 
-**Deferred (post-PoC) — procedural CONTENT generation.** The below is a large build (enemy classes, difficulty math, balancing) and is premature before the PoC lands. It all lives in the **content layer on top of the existing map + anchor-population seam — NO game-core change** (the seam was audited + adversarially verified slice-agnostic; a third slice was authored touching only content):
+**Deferred (post-PoC) — procedural CONTENT generation.** The below is a large build (enemy classes, difficulty math, balancing) and is premature before the PoC lands. It all lives in the **content layer on top of the existing map + anchor-population seam — NO game-core change** (the seam was audited + adversarially verified slice-agnostic; the headless harness proves both slices — vault's rooms-and-corridors and emberdeep's cellular-automata caverns — run the full scripted playthrough with zero core edits, and a worktree exercise validated authoring a new slice without touching the core):
 - **Enemy system:** enemy *classes / archetypes* (e.g. melee brute, skirmisher, archer, caster, support) with distinct **attack profiles** (the `Combatant.damage_dice` / `attack_ability` seam already exists) and behaviors; **stat-block generation** rather than hand-authored rosters.
 - **Difficulty / depth scaling:** a CR-like budget so encounters scale to player level / dungeon depth (Pawson's "loot scaled to rank" idea, generalized to foes).
 - **Loot tables:** depth/level-scaled loot with **rarity tiers**, rolled per run (today loot is DM-narrated + authored keys only).

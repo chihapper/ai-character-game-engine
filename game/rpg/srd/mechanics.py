@@ -88,9 +88,19 @@ def saving_throw(dice: Dice, sheet, ability: str, dc: int, *, advantage: int = 0
                          advantage=advantage)
 
 
+def _skill_ability(skill_key: str) -> str:
+    """The governing ability for a skill — RAISE on an unknown key rather than silently guessing.
+    (The two entry points once fell back to DIFFERENT abilities — STR vs WIS — so the same typo'd
+    key resolved inconsistently depending on the code path. Fail loud instead.)"""
+    ability = SKILLS.get(skill_key)
+    if ability is None:
+        raise ValueError(f"unknown skill {skill_key!r}; known: {', '.join(sorted(SKILLS))}")
+    return ability
+
+
 def skill_check(dice: Dice, sheet, skill: str, dc: int, *, advantage: int = 0) -> CheckResult:
     key = _norm(skill)
-    ability = SKILLS.get(key, "STR")
+    ability = _skill_ability(key)
     profs = {_norm(s) for s in getattr(sheet, "skill_profs", [])}
     exps = {_norm(s) for s in getattr(sheet, "expertise", [])}
     return ability_check(dice, sheet, ability, dc, proficient=key in profs or key in exps,
@@ -100,7 +110,7 @@ def skill_check(dice: Dice, sheet, skill: str, dc: int, *, advantage: int = 0) -
 def passive_score(sheet, skill: str) -> int:
     """10 + the modifiers that would apply to the check (5e passive: e.g. passive Perception)."""
     key = _norm(skill)
-    ability = SKILLS.get(key, "WIS")
+    ability = _skill_ability(key)
     mod = ability_mod(sheet, ability)
     profs = {_norm(s) for s in getattr(sheet, "skill_profs", [])}
     exps = {_norm(s) for s in getattr(sheet, "expertise", [])}

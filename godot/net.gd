@@ -93,8 +93,10 @@ func _process(delta: float) -> void:
 
 # --- Public API (see the shared contract) --------------------------------------------------
 
-func start_game(slice: String, seed: int) -> void:
-	_send({"t": "start", "slice": slice, "seed": seed})
+func start_game(slice: String, seed: int, resume: bool = false) -> void:
+	# resume=true continues the saved WORLD for this slice+seed if the server has one
+	# (fresh game otherwise); minds always persist on their own.
+	_send({"t": "start", "slice": slice, "seed": seed, "resume": resume})
 
 
 func send_action(kind: String, fields: Dictionary = {}) -> void:

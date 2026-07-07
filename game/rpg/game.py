@@ -34,9 +34,11 @@ _REACT_THRESHOLD = 0.7   # game-owned salience bar for turning a witnessed event
 
 def _enemy_label(enemies) -> str:
     """A readable plural for the DOMINANT enemy in a fight ('goblins', 'cinder-husks') — so combat
-    barks name whatever the slice actually fielded, never a hard-coded 'goblins'."""
+    barks name whatever the slice actually fielded, never a hard-coded 'goblins'. Ties break
+    alphabetically (sorted) so the label is deterministic across processes — a bare set() iteration
+    order varies with string-hash randomization."""
     names = [e.name for e in enemies] or ["enemies"]
-    noun = max(set(names), key=names.count).lower()
+    noun = max(sorted(set(names)), key=names.count).lower()
     return noun if noun.endswith("s") else noun + "s"
 
 
@@ -47,7 +49,8 @@ def _split_speech(text: str) -> tuple[str, str]:
     """Split an NPC reply into (spoken speech, stage-direction action). The engine's replies mix
     first-person quoted speech ("Name's Vael…") with third-person action beats ("He shifts weight…").
     The game/client layer separates them: speech becomes the dialogue line (shown + voiced); action
-    becomes description (shown italic, never voiced). No quotes -> the whole line is speech."""
+    is carried as DATA for the voice layer (Hume acts it) and possible DM narration — it is NEVER
+    rendered as player-visible text (owner directive). No quotes -> the whole line is speech."""
     text = (text or "").strip()
     quoted = [(m.group(1) or m.group(2) or "").strip() for m in _QUOTED.finditer(text)]
     quoted = [q for q in quoted if q]
@@ -111,8 +114,27 @@ class RpgGame(GameSession):
         return cls(state, Minds(chars, reply_model=reply_model), rules,
                    DM(rules, model=dm_model, setting=state.flavor.dm_setting))
 
+    @classmethod
+    def resume(cls, *, slice: str, seed: int, state: GameState,
+               reply_model: str | None = "claude-haiku-4-5",
+               dm_model: str | None = "claude-haiku-4-5") -> "RpgGame":
+        """Rebuild a game around a SAVED world state (the Phase-A persistence promise: world + minds
+        across a restart). The WORLD comes from the save; the CAST is rebuilt from the slice (their
+        MINDS persist on their own — each engine character auto-loads its memory namespace), so a
+        remembered kindness survives the restart along with the map you cleared. The RNG is re-seeded
+        (its mid-stream state is deliberately not persisted — replay is not a supported property)."""
+        from .content import SLICES
+        builder = SLICES.get(slice)
+        if builder is None:
+            raise ValueError(f"unknown slice {slice!r}; known: {', '.join(sorted(SLICES))}")
+        _, chars = builder(seed=seed)            # throwaway world — only the cast matters here
+        rules = D20Rules(seed=seed)
+        return cls(state, Minds(chars, reply_model=reply_model), rules,
+                   DM(rules, model=dm_model, setting=state.flavor.dm_setting))
+
     async def begin(self) -> None:
-        """Open the game with a DM scene — the world speaks first."""
+        """Open the game with a DM scene — the world speaks first. On a RESUMED game this reads the
+        saved campaign log through _scene_text, so the DM naturally recaps where things stand."""
         self._emit(NarrationEvent(text=await self.dm.narrate_scene(self._scene_text())))
 
     # ---- events (to the view) ----
@@ -121,8 +143,9 @@ class RpgGame(GameSession):
 
     def _say(self, name: str, slug: str, text: str) -> None:
         """Emit an NPC line, split into spoken speech vs. stage-direction action (see _split_speech).
-        The renderer shows `speech` as the dialogue line + `action` as description; downstream voice
-        synthesis reads the full `text` (Hume voices only the quoted speech, acts the directions)."""
+        The renderer shows only `speech` as the dialogue line (`action` is never shown as text);
+        downstream voice synthesis reads the full `text` (Hume voices the quoted speech, ACTS the
+        directions)."""
         speech, action = _split_speech(text)
         self._emit(DialogueEvent(npc=name, slug=slug, text=text, speech=speech, action=action))
 
@@ -186,12 +209,6 @@ class RpgGame(GameSession):
 
     def _dist(self, a, b) -> int:
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-    def _present_near(self, slug: str | None = None, radius: int = 6) -> list[str]:
-        """NPC slugs within `radius` of the player (who can perceive/witness the scene)."""
-        px, py = self.state.player.pos
-        return [n.slug for n in self.state.npcs
-                if n.slug != slug and n.pos and self._dist(n.pos, (px, py)) <= radius]
 
     def _situation(self, for_slug: str, *, recent: list[str] | None = None):
         """Build the perceiving NPC's `Situation` from the world — location + who's present + the
@@ -303,12 +320,23 @@ class RpgGame(GameSession):
         if door.force_dc <= 0:                              # slice declared this gate unforceable
             self._emit(NarrationEvent(text=door.locked_text or f"{door.name} holds fast — it needs its key."))
             return
+        # Forcing is COSTLY, not free: every attempt spends narrative time, and a FAILED attempt is
+        # LOUD — the noise springs any nearby untriggered encounter. Without these, bump-spamming the
+        # door converged on success with zero downside, gutting the trust-gated key path (the
+        # differentiator's objective gate).
+        s.clock.advance(0.1)
         r = self.rules.ability_check(s.player, "STR", door.force_dc)
         if r.success:
             self._open_door(door, door.force_text or f"You force {door.name} open by main strength.")
         else:
             self._emit(NarrationEvent(text=door.locked_text or
                                       f"{door.name} holds fast — it needs its key, or a mightier effort."))
+            noisy = next((e for e in s.encounters
+                          if not e.triggered and e.trigger_pos
+                          and self._dist(door.pos, e.trigger_pos) <= 12), None)
+            if noisy is not None:
+                self._emit(NarrationEvent(text=s.flavor.force_noise))
+                self._enter_combat(noisy)   # submit_action resumes NPC turns right after
 
     def _open_door(self, door, how: str) -> None:
         s = self.state
@@ -328,9 +356,15 @@ class RpgGame(GameSession):
         pos = tuple(pos)
         if pos == tuple(s.player.pos) and exclude_id != s.player.id:
             return True
-        if any(f.pos and tuple(f.pos) == pos and f.id != exclude_id for f in s.followers):
+        # DEAD followers no longer block (mirrors the enemy `alive` check below — a corpse is not a
+        # wall); a downed-but-alive body still does, for the length of the fight it fell in.
+        if any(f.pos and tuple(f.pos) == pos and f.id != exclude_id and not f.dead for f in s.followers):
             return True
         if any(n.pos and tuple(n.pos) == pos for n in s.npcs):
+            return True
+        # A LOCKED door blocks everyone here (NPC/follower/enemy steps + combat movement); only the
+        # player's exploration bump (_move_player) may interact with it to try opening.
+        if any(d.locked and tuple(d.pos) == pos for d in s.doors):
             return True
         return any(en.alive and en.pos and tuple(en.pos) == pos and en.id != exclude_id
                    for e in s.encounters for en in e.enemies)
@@ -396,9 +430,10 @@ class RpgGame(GameSession):
                     continue
                 if nb in blocked and nb != dst:
                     continue
-                # Fog of war: only auto-walk through terrain you've SEEN. Clicking into the dark walks
-                # you to the explored frontier, not into the unknown.
-                if f"{nb[0]},{nb[1]}" not in explored and nb != dst:
+                # Fog of war: only auto-walk through terrain you've SEEN — the clicked tile included.
+                # (No destination exemption: clicking into the dark walks you to the explored
+                # frontier, never ONTO an unexplored cell.)
+                if f"{nb[0]},{nb[1]}" not in explored:
                     continue
                 prev[nb] = (cx, cy)
                 order.append(nb)
@@ -461,6 +496,15 @@ class RpgGame(GameSession):
                 return False
         return True
 
+    def _speaker_pos(self, slug: str):
+        """Where the named character stands right now — as an NPC placement or a follower."""
+        s = self.state
+        n = next((n for n in s.npcs if n.slug == slug and n.pos), None)
+        if n is not None:
+            return n.pos
+        f = next((f for f in s.followers if f.mind_slug == slug and f.pos), None)
+        return f.pos if f is not None else None
+
     async def _talk(self, action: PlayerAction) -> None:
         s = self.state
         slug = action.target_id
@@ -469,6 +513,16 @@ class RpgGame(GameSession):
             tgt = min(near, key=lambda n: self._dist(n.pos, s.player.pos), default=None)
             slug = tgt.slug if tgt else None
         if not slug or slug not in self.minds.engines:   # engines are keyed by slug — works for followers too
+            self._emit(NarrationEvent(text="There is no one close enough to speak to."))
+            return
+        # SERVER-side gating (the view's adjacency check is a convenience, not the authority):
+        # an explicit target must actually be in speaking range, and the dead don't answer.
+        follower = next((f for f in s.followers if f.mind_slug == slug), None)
+        if follower is not None and follower.down:
+            self._emit(NarrationEvent(text=f"{follower.name} cannot hear you."))
+            return
+        pos = self._speaker_pos(slug)
+        if pos is None or self._dist(pos, s.player.pos) > 2:
             self._emit(NarrationEvent(text="There is no one close enough to speak to."))
             return
         name = self.minds.characters[slug].name
@@ -482,6 +536,10 @@ class RpgGame(GameSession):
         On yes, they become a Follower who trails you (and can fight beside you)."""
         s = self.state
         npc = next((n for n in s.npcs if n.slug == action.target_id), None)
+        # Server-side range gate: an explicit target must actually be BESIDE you — the view's
+        # adjacency check is a convenience, not the authority (a raw wire client could name anyone).
+        if npc is not None and (not npc.pos or self._dist(npc.pos, s.player.pos) > 1):
+            npc = None
         if npc is None:
             npc = min((n for n in s.npcs if n.pos and self._dist(n.pos, s.player.pos) <= 1),
                       key=lambda n: self._dist(n.pos, s.player.pos), default=None)
@@ -525,10 +583,13 @@ class RpgGame(GameSession):
     def _grant_item(self, name: str, kind: str = "misc") -> str:
         """DM callback: loot found through a free-form action becomes a REAL item — but never an
         objective key (that gate is game-owned, not the DM's to hand out). Refusal is by DATA (the
-        slice's door keys), not a hard-coded item name."""
+        slice's door keys), not a hard-coded item name. Returns '' on refusal (the DM tool loop
+        reads falsy = refused and tells the model plainly — see dm.py). The guard matches by
+        CONTAINMENT both ways, so a decoy like 'a black keystone' -> 'a-black-keystone' can't slip
+        past an exact-id check."""
         iid = "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")[:40] or "item"
-        if iid in self._objective_key_ids():
-            return "(refused: that item is off-limits to grant)"
+        if any(k in iid or iid in k for k in self._objective_key_ids()):
+            return ""
         from .state import Item
         self.state.player.inventory.append(Item(id=iid, name=name, kind=kind))
         self.state.campaign_log.add(self.state.clock.value, f"The traveler took {name}.", tags=["loot"])
@@ -551,6 +612,13 @@ class RpgGame(GameSession):
         """World->mind seam for a consequential PLAYER deed toward named NPCs (free them, rob them,
         share loot). Plants it in each target's mind (attributed to the player) so their disposition
         and future choices evolve — then composes the reaction recipe game-side."""
+        # The dead witness nothing: drop targets whose combatant has fallen (a corpse's mind must
+        # not keep accreting player deeds), and unknown slugs (robustness against a raw wire client).
+        dead = {f.mind_slug for f in self.state.followers if f.dead}
+        dead |= {en.mind_slug for e in self.state.encounters for en in e.enemies if en.mind_slug and en.dead}
+        targets = [t for t in targets if t in self.minds.engines and t not in dead]
+        if not targets:
+            return
         sals = await asyncio.gather(*(
             self.minds.remember(slug, fact, kind="player_event", actor="player",
                                 player_role=player_role, magnitude=magnitude, t=self.state.clock.value)
@@ -575,6 +643,23 @@ class RpgGame(GameSession):
     def _living_enemies(self) -> list:
         return [en for e in self.state.encounters for en in e.enemies if en.alive]
 
+    def _fight_encounter(self):
+        """The encounter THIS fight is scoped to (None out of combat / legacy save without the id)."""
+        cs = self.state.combat
+        if cs is None or not cs.encounter_id:
+            return None
+        return next((e for e in self.state.encounters if e.id == cs.encounter_id), None)
+
+    def _fight_enemies(self) -> list:
+        """Living enemies OF THE CURRENT FIGHT. Victory, targeting, and labels all scope here — a
+        slice with several encounters must never demand killing never-triggered enemies across the
+        map (they aren't in the initiative order and get no turns). Falls back to the global list
+        only when the fight carries no encounter id (defensive)."""
+        enc = self._fight_encounter()
+        if enc is None:
+            return self._living_enemies()
+        return [en for en in enc.enemies if en.alive]
+
     def _is_enemy(self, c) -> bool:
         return any(en.id == c.id for e in self.state.encounters for en in e.enemies)
 
@@ -588,7 +673,7 @@ class RpgGame(GameSession):
         combatants = ([self.state.player] + [f for f in self.state.followers if f.alive]
                       + [e for e in encounter.enemies if e.alive])
         order = self.combat_engine.roll_initiative(combatants)
-        self.state.combat = CombatState(order=order)
+        self.state.combat = CombatState(order=order, encounter_id=encounter.id)
         self.combat_engine.begin_combat(self.state.combat, combatants)
         self.state.mode = Mode.combat
         self._emit(ModeChangedEvent(mode=Mode.combat))
@@ -631,7 +716,7 @@ class RpgGame(GameSession):
         for _ in range(500):                       # guard against a pathological non-terminating order
             if s.mode != Mode.combat or s.combat is None:
                 return
-            if not self._living_enemies():
+            if not self._fight_enemies():
                 self._end_combat(victory=True); return
             combatants = self._all_combatants()
             cur = eng.current(s.combat, combatants)
@@ -640,9 +725,16 @@ class RpgGame(GameSession):
             if cur.dead:
                 self._advance_combat_turn(); continue
             if cur.down:                           # unconscious but not dead -> death save on its turn
-                self._death_save_turn(cur)
+                outcome = self._death_save_turn(cur)
                 if cur.id == s.player.id and s.player.dead:
                     self._on_player_death(); return
+                if outcome == "revive":            # nat 20: they wake at 1 HP AND get their turn (RAW)
+                    eng.begin_turn(s.combat, cur)
+                    if cur.id == s.player.id:
+                        return                     # the revived player acts — hand control to the view
+                    await self._npc_turn(cur)
+                    if s.player.dead:
+                        self._on_player_death(); return
                 self._advance_combat_turn(); continue
             if cur.id == s.player.id:
                 return                             # the conscious player's turn: hand control to the view
@@ -663,7 +755,7 @@ class RpgGame(GameSession):
             if not party_up:
                 self._on_player_death()
             else:
-                self._end_combat(victory=not self._living_enemies())
+                self._end_combat(victory=not self._fight_enemies())
 
     async def _combat_action(self, action: PlayerAction) -> None:
         """Apply the player's intent on THEIR turn only, spending the action economy. Movement is 5 ft
@@ -687,13 +779,17 @@ class RpgGame(GameSession):
         elif action.kind == "move":
             self._player_combat_step(action.dx, action.dy)
         else:
+            # A non-combat intent (talk/do/recruit/look) mid-fight: tell the player instead of
+            # swallowing it silently — they typed a whole line and nothing happened. Slice-pure
+            # (the line is WorldFlavor data).
+            self._emit(CombatEvent(text=s.flavor.combat_no_time))
             return
-        if not self._living_enemies():
+        if not self._fight_enemies():
             self._end_combat(victory=True); return
         if not ended and cs.movement_left < 5:
             # No full step of movement remains: auto-end only once there's nothing left to attack either
             # (action spent, or no adjacent foe). Keeps the turn open while a bump-attack is still viable.
-            adjacent_foe = any(e.pos and self._dist(s.player.pos, e.pos) == 1 for e in self._living_enemies())
+            adjacent_foe = any(e.pos and self._dist(s.player.pos, e.pos) == 1 for e in self._fight_enemies())
             if cs.action_used or not adjacent_foe:
                 ended = True
         if ended:
@@ -706,7 +802,7 @@ class RpgGame(GameSession):
         s = self.state
         cs = s.combat
         tx, ty = s.player.pos[0] + dx, s.player.pos[1] + dy
-        foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
+        foe = next((e for e in self._fight_enemies() if e.pos and tuple(e.pos) == (tx, ty)), None)
         if foe is not None:
             if not cs.action_used:
                 self._attack(s.player, foe)
@@ -725,7 +821,7 @@ class RpgGame(GameSession):
         s = self.state
         cs = s.combat
         cell = (tx, ty)
-        foe = next((e for e in self._living_enemies() if e.pos and tuple(e.pos) == cell), None)
+        foe = next((e for e in self._fight_enemies() if e.pos and tuple(e.pos) == cell), None)
         if foe is not None and self._dist(s.player.pos, cell) == 1:
             if not cs.action_used:
                 self._attack(s.player, foe)
@@ -738,7 +834,7 @@ class RpgGame(GameSession):
             if step is None:
                 return
             nx, ny = s.player.pos[0] + step[0], s.player.pos[1] + step[1]
-            if any(e.pos and tuple(e.pos) == (nx, ny) for e in self._living_enemies()):
+            if any(e.pos and tuple(e.pos) == (nx, ny) for e in self._fight_enemies()):
                 return                             # next cell is the foe — stop adjacent, don't walk in
             if not s.world_map.walkable(nx, ny) or self._occupied((nx, ny), s.player.id):
                 return
@@ -789,13 +885,13 @@ class RpgGame(GameSession):
             return
         stance = cs.ally_stance.get(follower.mind_slug)
         if stance is None:
-            alarm = s.flavor.combat_alarm.format(enemies=_enemy_label(self._living_enemies()))
+            alarm = s.flavor.combat_alarm.format(enemies=_enemy_label(self._fight_enemies()))
             choice = await self.minds.act(follower.mind_slug, self._situation(follower.mind_slug, recent=[alarm]),
                 ["Fight beside the traveler", "Guard the traveler", "Hang back", "Flee the fight"])
             stance = (choice.get("action") or "").lower()
             cs.ally_stance[follower.mind_slug] = stance
             self._say(follower.name, follower.mind_slug, choice.get("reason") or stance)   # voiced downstream
-        foes = [e for e in self._living_enemies() if e.pos]
+        foes = [e for e in self._fight_enemies() if e.pos]
         if ("fight" in stance or "beside" in stance) and foes:
             tgt = min(foes, key=lambda e: self._dist(follower.pos, e.pos))
             for _ in range(max(1, int(getattr(follower, "speed", 30) or 30) // 5)):
@@ -809,12 +905,14 @@ class RpgGame(GameSession):
                 self._attack(follower, tgt)
         # guard / hang back / flee -> the follower holds: a wronged ally simply won't fight for you
 
-    def _death_save_turn(self, c) -> None:
-        """A downed PC-like spends its turn on a death saving throw; narrate the swing (and the pips)."""
+    def _death_save_turn(self, c) -> str:
+        """A downed PC-like spends its turn on a death saving throw; narrate the swing (and the pips).
+        Returns the outcome ('' if no roll happened) so the turn loop can grant a revived combatant
+        their turn. Pips are ASCII (+/x) — the client's fallback font may lack check/cross glyphs."""
         res = self.combat_engine.death_save(c)
         if not res.get("rolled"):
-            return
-        outcome = res.get("outcome")
+            return ""
+        outcome = res.get("outcome") or ""
         if outcome == "revive":
             self._emit(CombatEvent(text=f"{c.name} gasps back to consciousness!"))
         elif outcome == "dead":
@@ -823,7 +921,8 @@ class RpgGame(GameSession):
             self._emit(CombatEvent(text=f"{c.name} steadies, clinging to life."))
         else:
             self._emit(CombatEvent(
-                text=f"{c.name} fights for life ({res.get('successes', 0)}✓/{res.get('failures', 0)}✗)."))
+                text=f"{c.name} fights for life ({res.get('successes', 0)}+/{res.get('failures', 0)}x)."))
+        return outcome
 
     def _on_player_death(self) -> None:
         """Defeat is a TERMINAL state, not a stuck combat: leave combat mode, set game_over, and stop
@@ -839,8 +938,29 @@ class RpgGame(GameSession):
 
     def _end_combat(self, victory: bool) -> None:
         s = self.state
-        # Enemy label BEFORE we leave combat, drawn from whatever this slice fielded (all now dead).
-        label = _enemy_label([en for e in s.encounters for en in e.enemies])
+        # Enemy label BEFORE we leave combat, scoped to THE fight's encounter (not every encounter
+        # the slice fielded — another pack across the map is none of this label's business).
+        enc = self._fight_encounter()
+        label = _enemy_label(list(enc.enemies) if enc is not None
+                             else [en for e in s.encounters for en in e.enemies])
+        # No one lies dying once the dust settles. There is no heal/rest mechanic yet, so leaving a
+        # party member at 0 HP would strand a permanent ghost: unconscious forever (auto-crit bait),
+        # skipped by the follow-snake, never again in an initiative order. They come to at 1 HP —
+        # battered, alive, playable. A downed MINDED foe instead stabilizes where it fell: defeated
+        # but alive for the story (a named adversary who survives is fuel for metamorphosis).
+        for c in [s.player] + list(s.followers):
+            if c.hp <= 0 and not c.dead:
+                c.hp = 1
+                c.stable = False
+                c.death_save_successes = 0
+                c.death_save_failures = 0
+                if "unconscious" in c.conditions:
+                    c.conditions.remove("unconscious")
+                self._emit(CombatEvent(text=f"{c.name} comes to — battered, but breathing."))
+        if enc is not None:
+            for en in enc.enemies:
+                if en.hp <= 0 and not en.dead and en.mind_slug:
+                    en.stable = True
         s.mode = Mode.exploration
         s.combat = None
         # Credit the fight's final (partial) round: per-round ticks land on a wrap, but victory/defeat

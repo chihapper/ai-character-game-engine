@@ -8,7 +8,12 @@ LLM stance decisions, and turns its results into events (voiced where a spoken b
 
 Scope note: bonus actions, reactions/opportunity attacks, and concentration have economy hooks here
 but are minimal in this pass — the core fight (initiative -> attacks/damage/crits -> saves ->
-death saves -> next turn) is complete and RAW-correct.
+death saves -> next turn) is complete and RAW-correct. Documented simplifications (revisit with
+SRD phases 3-6): helpless/prone effects key on the melee/ranged FLAG as a proxy for the RAW
+within-5-ft test (true for every shipped attack, which is adjacent melee); knock-out does not add
+`prone`; `condition_immunities` is data carried on the sheet but not yet enforced at condition
+application (no engine path applies conditions yet); `saving_throw` (the condition-aware path)
+awaits a caster/DC consumer.
 """
 from __future__ import annotations
 
@@ -70,10 +75,14 @@ class CombatEngine:
         return self._by_id(combatants, cid) if cid else None
 
     def begin_turn(self, state, combatant) -> None:
-        """Reset the action economy for whoever's turn it now is."""
+        """Reset the action economy for whoever's turn it now is. A speed-zeroing condition
+        (grappled/restrained/unconscious...) leaves them 0 ft of movement this turn."""
         state.action_used = False
         state.bonus_used = False
-        state.movement_left = int(getattr(combatant, "speed", 30) or 30)
+        speed = int(getattr(combatant, "speed", 30) or 30)
+        if C.speed_is_zero(combatant.conditions):
+            speed = 0
+        state.movement_left = speed
 
     def begin_combat(self, state, combatants) -> None:
         """Start the fight on the TOP of initiative: turn_index=0, round 1, and begin order[0]'s turn.
@@ -160,12 +169,16 @@ class CombatEngine:
         failures; enough overflow damage is instant death. Returns the damage actually dealt."""
         dt = (damage_type or "").lower()
         eff = C.effects_of(target.conditions)
+        # RAW composition: immunity zeroes outright; otherwise resistance (halve) applies BEFORE
+        # vulnerability (double) — a resistant-AND-vulnerable target nets ~x1, never a flat x2
+        # (the old elif chain let vulnerability win outright over resist_all, e.g. petrified + vuln).
         if dt and dt in {d.lower() for d in target.immunities}:
             amount = 0
-        elif dt and dt in {d.lower() for d in target.vulnerabilities}:
-            amount *= 2
-        elif (dt and dt in {d.lower() for d in target.resistances}) or eff.get("resist_all"):
-            amount //= 2                       # per-type resistance OR condition resist-all (petrified)
+        else:
+            if (dt and dt in {d.lower() for d in target.resistances}) or eff.get("resist_all"):
+                amount //= 2                   # per-type resistance OR condition resist-all (petrified)
+            if dt and dt in {d.lower() for d in target.vulnerabilities}:
+                amount *= 2
         amount = max(0, int(amount))
 
         # a hit on an already-downed PC-like (RAW: damage at 0 HP)
@@ -222,7 +235,11 @@ class CombatEngine:
             c.dead = True
             outcome = "dead"
         elif c.death_save_successes >= 3:
+            # RAW: on becoming stable, BOTH counters reset to zero — otherwise a stabilized creature
+            # carries banked failures and wrongly permadies to a single later hit (auto-crit = 2 fails).
             c.stable = True
+            c.death_save_successes = 0
+            c.death_save_failures = 0
             outcome = "stable"
         return {"rolled": True, "roll": roll, "outcome": outcome,
                 "successes": c.death_save_successes, "failures": c.death_save_failures}

@@ -6,10 +6,11 @@ over local IPC (Phase B) — the logic never changes, only the thin renderer.
 
 See docs/godot-game-build-plan.md (the spec) and docs/godot-build-step0-inspection.md.
 
-Current scaffold (Phase A, steps 1-2): the renderer-agnostic state model, the deterministic rules
-core, and the `GameSession` boundary. Still to come: characters (reskinned from the tuned cast),
-engine integration (one Engine per named NPC, depth flags via per-Engine caps override), the DM
-orchestrator, procedural dungeon gen, the tcod dev view, and world save/load.
+Current state: Phase A complete (state model, deterministic rules core, reskinned cast, engine
+integration — one Engine per named NPC with a per-Engine caps override — DM orchestrator,
+procedural dungeon gen, tcod dev view); Phase B live (local WebSocket server + Godot 4.7 client,
+Hume-voiced NPC dialogue); SRD rules phases 1-2 wired (turn-based combat). Remaining: SRD rules
+phases 3-6; runtime world save/load is in progress (being wired now).
 """
 from __future__ import annotations
 
@@ -17,7 +18,9 @@ from .content import build_first_slice, characters
 from .dungeon import Dungeon, generate_dungeon, render_ascii
 from .game import RpgGame
 from .minds import Minds, full_depth_caps, reskin
-from .rules import AttackResult, CheckResult, D20Rules, RulesEngine
+# AttackResult lives in srd.combat now (rules.py's combat members were superseded + deleted).
+from .rules import CheckResult, D20Rules, RulesEngine
+from .srd.combat import AttackResult
 from .session import (
     CombatEvent,
     DialogueEvent,

@@ -24,10 +24,12 @@ from .state import StateSnapshot
 # ---- Client -> Server -----------------------------------------------------------------------------
 class StartMsg(BaseModel):
     """Begin (or restart) a game with a named slice + seed. Server replies with the opening events
-    and the first snapshot."""
+    and the first snapshot. `resume=True` continues from the saved WORLD state for this slice+seed
+    if one exists (minds persist on their own); `resume=False` always starts a fresh expedition."""
     t: Literal["start"] = "start"
     slice: str = "vault"
     seed: int = 1337
+    resume: bool = False
 
 
 class ActionMsg(BaseModel):
@@ -67,7 +69,9 @@ def snapshot_msg(snap: StateSnapshot) -> dict:
 
 
 def event_msg(ev: GameEvent) -> dict:
-    # `audio` (optional Hume PCM on DialogueEvent) rides a binary side-channel later, never JSON.
+    # `audio` (raw PCM on an in-process DialogueEvent) is excluded from JSON; over the wire the
+    # server attaches voice as `audio_b64` + `rate` ON the dialogue event itself (see server.py) —
+    # the client sizes its inbound buffer for that (net.gd, 8 MiB).
     return {"t": "event", "event": ev.model_dump(mode="json", exclude={"audio"})}
 
 

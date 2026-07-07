@@ -18,8 +18,10 @@ from .state import ABILITIES, Combatant
 def _system(setting: str) -> str:
     """The DM system prompt, keyed off the SLICE's setting (data) so the same narrator serves a
     flooded vault, a volcanic cavern, or a sunlit ruin without any hard-coded biome."""
+    # "Game Master" deliberately — the alternative title is a WotC trademark NOT covered by the
+    # SRD's CC-BY-4.0 license (the SRD itself says Game Master/GM). Never use the other mark.
     return (
-        f"You are the Dungeon Master of {setting} — the player's eyes, ears, and referee. Narrate "
+        f"You are the Game Master of {setting} — the player's eyes, ears, and referee. Narrate "
         "what happens when the player attempts something: 1-3 vivid, grounded sentences, second "
         "person, present tense. Convey only what the player could perceive.\n"
         "You have NO access to any character's inner thoughts, and you NEVER put words in an NPC's "
@@ -81,8 +83,13 @@ class DM:
                 inp = block.input or {}
                 if block.name == "grant_item" and grant_item is not None:
                     got = grant_item(str(inp.get("name", "something")), str(inp.get("kind", "misc")))
+                    # A falsy return = the game REFUSED the grant (objective-key guard). Tell the
+                    # model plainly — never wrap a refusal in "Given to the player: ..." (that
+                    # self-contradicting result once led the model to narrate a grant that never happened).
                     results.append({"type": "tool_result", "tool_use_id": block.id,
-                                    "content": f"Given to the player: {got}."})
+                                    "content": (f"Given to the player: {got}." if got else
+                                                "REFUSED — that item would trivialize the objective. "
+                                                "Nothing was given; narrate the attempt yielding no such find.")})
                 else:
                     # The tool schema restricts `ability` to ABILITIES, but tool-use inputs aren't
                     # hard-validated by the API — a model that emits 'Perception'/'LUCK' would crash

@@ -14,13 +14,11 @@ var _target := ""     # target entity id (talk only)
 var _panel: Panel
 var _prompt: Label
 var _edit: LineEdit
-var _reply: Label
 
 # Palette (Color("hex") is a runtime value → plain vars, never const).
 var _COL_PANEL := Color("1b1b22")
 var _COL_BORDER := Color("5fd0e0")
 var _COL_PROMPT := Color("c8bda0")
-var _COL_REPLY := Color("78dc78")
 var _COL_HINT := Color("888890")
 var _COL_TEXT := Color("f0f0f0")
 
@@ -40,15 +38,16 @@ func _build_ui() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 
-	# Centred panel.
+	# Centred panel. (Sized for prompt + entry + hint — the NPC's reply lands in the HUD log,
+	# not here: the overlay closes on submit, so an in-panel reply pane would never be seen.)
 	_panel = Panel.new()
-	_panel.custom_minimum_size = Vector2(560, 210)
+	_panel.custom_minimum_size = Vector2(560, 150)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	# PRESET_CENTER anchors all four sides to 0.5; set offsets so the box is centred on its size.
 	_panel.offset_left = -280.0
-	_panel.offset_top = -105.0
+	_panel.offset_top = -75.0
 	_panel.offset_right = 280.0
-	_panel.offset_bottom = 105.0
+	_panel.offset_bottom = 75.0
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = _COL_PANEL
 	sb.border_color = _COL_BORDER
@@ -86,14 +85,6 @@ func _build_ui() -> void:
 	hint.add_theme_color_override("font_color", _COL_HINT)
 	box.add_child(hint)
 
-	_reply = Label.new()
-	_reply.text = ""
-	_reply.add_theme_color_override("font_color", _COL_REPLY)
-	_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_reply.custom_minimum_size = Vector2(0, 60)
-	_reply.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	box.add_child(_reply)
-
 
 func is_open() -> bool:
 	return _open
@@ -122,23 +113,11 @@ func _open_common() -> void:
 	_open = true
 	if _edit != null:
 		_edit.text = ""
-	if _reply != null:
-		_reply.text = ""   # clear any stale reply from a previous turn
 	# CanvasLayer has no show(); use the `visible` property.
 	visible = true
 	# grab_focus must happen after the node is visible/in-tree.
 	if _edit != null:
 		_edit.call_deferred("grab_focus")
-
-
-func show_reply(npc: String, speech: String, _action: String = "") -> void:
-	# The reply also lands in the HUD log. We surface only the SPOKEN words here — stage directions
-	# (`_action`) are NOT shown as text; they're the DM's to narrate aloud IF relevant.
-	if _reply == null:
-		return
-	var who := str(npc).strip_edges()
-	var line := str(speech).strip_edges()
-	_reply.text = ("%s: %s" % [who, line]) if who != "" else line
 
 
 func _on_submit(t: String) -> void:
@@ -163,15 +142,22 @@ func _close() -> void:
 	visible = false
 
 
+func _input(event: InputEvent) -> void:
+	# Esc must close in ONE press. _input fires BEFORE GUI input, so we catch it even while the
+	# LineEdit has focus (in _unhandled_input the first Esc only made the LineEdit release focus,
+	# and the player had to press it twice). ONLY Esc is intercepted here — anything broader would
+	# starve the LineEdit of its character input.
+	if not _open:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		_close()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	# While open, swallow ALL key input so movement/hotkeys never reach main.gd.
 	if not _open:
 		return
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE:
-			_close()
-			get_viewport().set_input_as_handled()
-			return
 	# The LineEdit handles character entry via GUI input; any key event that still reaches
 	# _unhandled_input while we're open (e.g. focus was clicked away) is consumed here so it
 	# can never drive the world. Consume presses AND releases to avoid stray leaks.

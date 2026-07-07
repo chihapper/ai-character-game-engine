@@ -18,7 +18,8 @@ Because the mind sits behind a clean seam, the **front-end is pluggable** — te
 the engine doesn't change. Built so far: a **voiced web demo** where characters speak aloud in
 their own **Hume Octave** voices, and an **Unreal 5 MetaHuman** client (3D, spoken). A lip-sync
 face layer (NVIDIA Audio2Face → self-hosted NeuroSync) was explored and is **currently paused**;
-a **2D front-end (Godot)** is under consideration. Voice and body are a **presentation layer the
+a **2D front-end (Godot)** is the current direction — a playable RPG ([`game/rpg`](game/rpg))
+rendered by a Godot 4.7 client (see **RPG game** below). Voice and body are a **presentation layer the
 engine animates, not the engine itself** — which is exactly why the front-end can change without
 touching the mind.
 
@@ -85,7 +86,7 @@ confirming goal-evolution stays coherent and in-character over a full life.
 
 > **From reactive to alive.** The engine began *reactive* (it animates a character on demand) and
 > now reaches **autonomous agency** — characters that deliberate and act *unprompted*, living their
-> own lives between scenes ([#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20), shipped). **Track V** — the voice runtime — is largely in hand (Hume Octave, voiced demo); the open question now is the *front-end* direction (a 3D MetaHuman client exists; a 2D Godot game is under consideration). Either way, the mind is the *power* and the presentation the *crown*.
+> own lives between scenes ([#19](https://github.com/chihapper/ai-character-game-engine/issues/19) / [#20](https://github.com/chihapper/ai-character-game-engine/issues/20), shipped). **Track V** — the voice runtime — is largely in hand (Hume Octave, voiced demo); the front-end direction is now the **2D Godot RPG** ([`game/rpg`](game/rpg); a 3D MetaHuman client also exists). Either way, the mind is the *power* and the presentation the *crown*.
 
 ---
 
@@ -154,8 +155,8 @@ What's actually built, and what isn't:
   hardware the dev GPU lacked) and drove a MetaHuman face in the Unreal client. This layer is
   **currently on pause** while the front-end direction is under review.
 - **Front-ends are pluggable.** A **voiced web demo** (text + spoken Hume replies) and an
-  **Unreal 5 MetaHuman** client both drive the *same* engine. A **2D Godot** game is under
-  consideration; the engine wouldn't change.
+  **Unreal 5 MetaHuman** client both drive the *same* engine. A **2D Godot** RPG
+  ([`game/rpg`](game/rpg)) is the current front-end direction; the engine didn't change.
 
 ```
 game event / player line
@@ -286,6 +287,25 @@ preset voice. Create, switch back to Conversation, **Refresh**, and talk to it.
 
 > **Consent:** voice cloning requires that the recorded sample is your own voice or a
 > consenting party's — both providers' terms require this.
+
+---
+
+## RPG game (`game/rpg`)
+
+A playable SRD-style RPG built on the same engine — procedural dungeons, free-flow exploration,
+turn-based combat, an AI Game Master narrator, and named NPCs (reskinned from the tuned cast)
+whose minds evolve over the campaign. Three ways to run it (after **Setup & run** above):
+
+- **Terminal dev view (tcod):** `.venv/Scripts/python.exe -m game.rpg.play`
+  — env: `RPG_SLICE` (`vault` default, or `emberdeep`), `RPG_SEED`, `RPG_MODEL`.
+- **WebSocket server (Phase B IPC seam):** `.venv/Scripts/python.exe -m game.rpg.server`
+  — env: `RPG_HOST`, `RPG_PORT`, `RPG_MODEL`, `RPG_VOICE`; the client honors `RPG_WS_URL`
+  to point at a non-default host.
+- **Godot 4.7 client:** open the [`godot/`](godot) project in the Godot editor (or launch the
+  editor with `--path godot`) and press Play — it connects to the local server above.
+
+Voiced NPC dialogue needs `HUME_API_KEY` in `.env` (voice defaults on when the key is present;
+`RPG_VOICE=0` forces text-only). The NPC minds need `ANTHROPIC_API_KEY`.
 
 ---
 

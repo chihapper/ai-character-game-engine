@@ -92,7 +92,7 @@ async def _fight(game, *, max_actions=800):
     completion regardless of whether a solo level-1 could actually survive 3-4 foes (in the real game
     you'd bring a recruited ally). NPC turns resolve inside `submit_action`; the harness only drives the
     PLAYER's turn: close on the nearest foe with movement, bump-attack when adjacent, then `wait` to end
-    the turn. The DEFEAT path is proven separately (see the death soft-lock test)."""
+    the turn. The DEFEAT path is proven by `_defeat_check` below (a real in-harness check, per slice)."""
     game.state.player.hp = game.state.player.max_hp = 10**6      # harness affordance: survive to victory
     for _ in range(max_actions):
         if game.state.mode != Mode.combat:
@@ -118,6 +118,27 @@ async def _fight(game, *, max_actions=800):
                 continue
         await game.submit_action(PlayerAction(kind="wait"))       # attacked / can't reach -> end the turn
     return game.state.mode != Mode.combat
+
+
+async def _defeat_check(name: str, *, seed: int = 1) -> bool:
+    """The DEFEAT path, per slice: a 1-HP player walks into the encounter and falls. Asserts the
+    terminal contract — game_over set, combat exited cleanly, and further actions ignored (no
+    soft-lock, no corpse that can still act)."""
+    game = RpgGame.new(slice=name, seed=seed)
+    game.state.player.hp = 1                                  # one hit -> knocked out -> death saves
+    trig = game.state.encounters[0].trigger_pos
+    await _walk_to(game, trig)
+    for _ in range(300):                                      # play out (waits end the player's turns)
+        if game.state.flags.get("game_over") or game.state.mode != Mode.combat:
+            break
+        await game.submit_action(PlayerAction(kind="wait"))
+    s = game.state
+    over = bool(s.flags.get("game_over"))
+    clean = s.mode == Mode.exploration and s.combat is None
+    pos_before = tuple(s.player.pos)
+    await game.submit_action(PlayerAction(kind="move", dx=1, dy=0))   # must be ignored when over
+    ignored = tuple(s.player.pos) == pos_before if over else True
+    return over and clean and ignored
 
 
 async def _reach_objective(game):
@@ -220,6 +241,10 @@ async def run_slice(name: str, *, seed: int = 1) -> bool:
     door = game.state.doors[0]
     quest_done = any(q.id == door.opens_quest and q.state == "done" for q in game.state.quests)
     checks.append(("objective door opens + quest completes", opened and quest_done))
+
+    # 5) the DEFEAT path (fresh game): fall in the fight -> terminal game_over, no soft-lock
+    checks.append(("defeat is terminal (game_over, combat exited, input ignored)",
+                   await _defeat_check(name, seed=seed)))
 
     print("  playthrough:")
     for label, ok in checks:

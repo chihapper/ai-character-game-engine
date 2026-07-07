@@ -219,6 +219,9 @@ class CombatState(BaseModel):
     round: int = 1
     order: list[str] = Field(default_factory=list)   # combatant ids in initiative order
     turn_index: int = 0
+    # THE fight is one encounter's: victory / targeting / labels scope to this encounter, so a slice
+    # with several encounters never demands killing never-triggered enemies across the map.
+    encounter_id: str = ""
     show_enemy_hp: bool = False               # player-toggle — mechanical readout is allowed (guardrail #5)
     ally_stance: dict[str, str] = Field(default_factory=dict)   # mind_slug -> chosen stance (decided ONCE / fight)
     # per-turn action economy (reset at the start of each combatant's turn)
@@ -251,6 +254,8 @@ class WorldFlavor(BaseModel):
     combat_alarm: str = "{enemies} have set on the traveler — steel is out in the dark."  # recent-event to allies
     recruit_prompt: str = "The traveler asks you to come with them, deeper into the dark."  # recent-event on recruit
     defeat_text: str = "You fall in the dark, and it closes over you. Your story ends here. (press q to quit)"
+    combat_no_time: str = "No time for that — steel is out."   # feedback for a non-combat action mid-fight
+    force_noise: str = "The clamor rings out into the dark."   # a failed door-forcing draws attention
 
 
 class GameState(BaseModel):

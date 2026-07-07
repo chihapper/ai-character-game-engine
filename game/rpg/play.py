@@ -27,8 +27,10 @@ def main() -> None:
         raise SystemExit(f"unknown RPG_SLICE={slice_name!r}; known: {', '.join(sorted(SLICES))}")
     seed = int(os.environ.get("RPG_SEED", "1337"))
     model = os.environ.get("RPG_MODEL", "claude-haiku-4-5")
-    print(f"[rpg] slice={slice_name} seed={seed} reply_model={model} — opening the dev view...")
-    run(RpgGame.new(slice=slice_name, seed=seed, reply_model=model))
+    print(f"[rpg] slice={slice_name} seed={seed} model={model} — opening the dev view...")
+    # RPG_MODEL drives BOTH the NPC replies and the DM here — same meaning as in server.py
+    # (launcher parity: the two drivers must not interpret the same env var differently).
+    run(RpgGame.new(slice=slice_name, seed=seed, reply_model=model, dm_model=model))
 
 
 if __name__ == "__main__":

@@ -45,14 +45,16 @@ class NarrationEvent(GameEvent):
 class DialogueEvent(GameEvent):
     """An NPC line — spoken by that NPC's `Engine.respond`, NOT the DM. `text` is the full reply;
     `speech` is just the quoted words (the SPOKEN/voiced line) and `action` is the third-person stage
-    business (shown as description, never voiced). `audio` is optional Hume-voiced PCM the renderer
-    plays (in-process only; over IPC audio rides a side channel as base64)."""
+    business — carried as DATA for the voice layer (Hume ACTS it) and possible DM narration, NEVER
+    rendered as player-visible text (owner directive). `audio` is optional Hume-voiced PCM the
+    renderer plays (in-process only; over IPC the server attaches `audio_b64` + `rate` to the JSON
+    event instead)."""
     type: Literal["dialogue"] = "dialogue"
     npc: str                     # display name
     slug: str
     text: str                    # full reply (speech + stage directions)
     speech: str = ""             # just the quoted words — the line to show as dialogue + to voice
-    action: str = ""             # third-person stage business — shown as description, never voiced
+    action: str = ""             # third-person stage business — voice-acting data, never shown as text
     audio: bytes | None = None
 
 

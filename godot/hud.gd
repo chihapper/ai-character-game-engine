@@ -277,11 +277,18 @@ func _id_names(snap: Dictionary) -> Dictionary:
 
 
 # ASCII pips (fallback font may lack ✓/✗ glyphs): successes as '+', failures as 'x', empty as '-'.
+# `down` is explicit on follower EntityViews; the PLAYER dict carries no `down` key (it's a model
+# property, not a serialized field), so compute it from hp/dead — and read pips under either the
+# EntityView key names or the player-model field names.
 func _death_pips_for(e: Dictionary) -> String:
-	if not bool(e.get("down", false)):
+	var down := bool(e.get("down", false))
+	if not down:
+		var hp := _to_int(e.get("hp", 1), 1)
+		down = hp <= 0 and not bool(e.get("dead", false))
+	if not down:
 		return ""
-	var succ := _to_int(e.get("death_successes", 0), 0)
-	var fail := _to_int(e.get("death_failures", 0), 0)
+	var succ := _to_int(e.get("death_successes", e.get("death_save_successes", 0)), 0)
+	var fail := _to_int(e.get("death_failures", e.get("death_save_failures", 0)), 0)
 	var s := ""
 	for i in range(3):
 		s += ("+" if i < succ else "-")
@@ -357,7 +364,7 @@ func _update_controls(snap: Dictionary) -> void:
 func _controls_text(mode: String) -> String:
 	if mode == "combat":
 		return "click a foe to attack · a tile to move (5ft/step)   [.] end turn   G toggle enemy HP"
-	return "click to move   T talk   X do   R recruit   F help   L look   . wait"
+	return "click to move   T talk   X do   R recruit   F help   L look   . wait   N new game"
 
 
 func _update_banner(snap: Dictionary) -> void:
