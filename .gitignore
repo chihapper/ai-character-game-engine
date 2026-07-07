@@ -67,3 +67,8 @@ tts_bakeoff_out/
 *.err.log
 spikes/evi_clm_requests.jsonl
 .saves/
+
+# Dialogue-card portraits: royalty-free-but-NO-redistribution packs (two-tier asset policy —
+# CC0 gets committed; these stay local; see godot/assets/portraits/README.md for re-fetch)
+godot/assets/portraits/*
+!godot/assets/portraits/README.md

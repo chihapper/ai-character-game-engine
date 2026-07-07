@@ -83,7 +83,7 @@ func _build_ui() -> void:
 
 	# Portrait in a glowing frame. The frame is a Panel whose border pulses while speaking.
 	_frame = Panel.new()
-	_frame.custom_minimum_size = Vector2(84, 84)
+	_frame.custom_minimum_size = Vector2(104, 104)   # painted portraits deserve the presence
 	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var fb := StyleBoxFlat.new()
 	fb.bg_color = Color(0.10, 0.10, 0.14)
@@ -142,6 +142,36 @@ func _portrait_idx(slug: String, display_name: String) -> int:
 	return int(by_id.get("player", -1)) if slug == "player" else 85   # 85 = generic villager
 
 
+## REALISTIC portrait channel (owner direction 2026-07-08): the photoreal voice is heard while
+## looking at this card, so a painted realistic face here closes most of the perceived
+## voice-vs-visuals gap. Looks for assets/portraits/<slug>.png at RUNTIME (Image.load_from_file —
+## the portrait tier is gitignored no-redistribution art, so it can't go through the import
+## pipeline; see assets/portraits/README.md). Missing file -> pixel-sprite fallback. Results
+## (including misses) are cached per slug.
+var _portrait_cache: Dictionary = {}
+
+func _painted_portrait(slug: String) -> Texture2D:
+	if slug == "":
+		return null
+	if _portrait_cache.has(slug):
+		return _portrait_cache[slug]
+	var tex: Texture2D = null
+	var path := "res://assets/portraits/%s.png" % slug
+	if FileAccess.file_exists(path):
+		var img := Image.load_from_file(path)
+		if img != null:
+			# Portrait framing: packs often ship FULL-BODY art on transparency, which reads tiny
+			# in a square card. Crop to the head-and-torso: the top square of the art's actual
+			# (non-transparent) bounding box.
+			var used := img.get_used_rect()
+			if used.size.x > 0 and used.size.y > int(used.size.x * 1.15):
+				var side: int = mini(used.size.x, used.size.y)
+				img = img.get_region(Rect2i(used.position.x, used.position.y, used.size.x, side))
+			tex = ImageTexture.create_from_image(img)
+	_portrait_cache[slug] = tex
+	return tex
+
+
 ## Show a spoken line. `speech` should already be the QUOTED words only (stage directions are
 ## never player-visible text — owner directive).
 func show_line(npc_name: String, speech: String, slug: String = "") -> void:
@@ -162,7 +192,13 @@ func _display(npc_name: String, line: String, slug: String) -> void:
 	_text_label.visible_characters = 0
 	_reveal = 0.0
 	_idle = 0.0
-	if _atlas != null:
+	# Painted realistic portrait when one exists (linear filtering — it's illustration, not
+	# pixels); pixel-sprite fallback otherwise (nearest — crisp).
+	var painted := _painted_portrait(slug)
+	if painted != null:
+		_portrait.texture = painted
+		_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	elif _atlas != null:
 		var idx := _portrait_idx(slug, npc_name)
 		if idx >= 0:
 			var at := AtlasTexture.new()
@@ -170,6 +206,7 @@ func _display(npc_name: String, line: String, slug: String) -> void:
 			@warning_ignore("integer_division")
 			at.region = Rect2((idx % _cols) * _ts, (idx / _cols) * _ts, _ts, _ts)
 			_portrait.texture = at
+			_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	visible = true
 
 
