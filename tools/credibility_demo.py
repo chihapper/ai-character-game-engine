@@ -37,6 +37,50 @@ SLUG = "corvin-ashgrave-inworld"
 MODEL = os.environ.get("CRED_MODEL", "claude-opus-4-8")
 DOCK = "the fish-dock"
 
+# Replay capture — every beat's REAL data, for the record-then-replay overlay (docs/credibility-
+# demo/overlay.html). Written as replay.json (canonical) + replay.js (window assignment so the
+# overlay loads over file:// without a server). Basename via CRED_EMIT ("" disables).
+EMIT = os.environ.get("CRED_EMIT", "docs/credibility-demo/replay")
+REPLAY: dict = {"meta": {"character": "Corvin", "slug": SLUG, "model": MODEL}, "beats": []}
+
+
+def rel_snap(eng) -> dict:
+    r = eng.relationship.get()
+    return {"affection": round(r.affection, 3), "trust": round(r.trust, 3),
+            "respect": round(r.respect, 3), "mood": r.mood,
+            "scar_affection": round(r.scar_affection, 3), "scar_trust": round(r.scar_trust, 3),
+            "scar_respect": round(r.scar_respect, 3)}
+
+
+def scored_rows(dbg) -> list:
+    out = []
+    for s in (dbg.get("scored") or []):
+        out.append({"text": (s.get("text") or "").replace("\n", " ")[:110],
+                    "similarity_raw": round(s.get("similarity_raw", 0.0), 3),
+                    "importance": round(s.get("importance", 0.0), 3),
+                    "recency": round(s.get("recency", 0.0), 3),
+                    "base": round(s.get("base", 0.0), 3),
+                    "selected": bool(s.get("selected"))})
+    return out
+
+
+def emit(**rec) -> None:
+    REPLAY["beats"].append(rec)
+
+
+def write_replay() -> None:
+    if not EMIT:
+        return
+    import json
+    import pathlib
+    base = pathlib.Path(EMIT)
+    base.parent.mkdir(parents=True, exist_ok=True)
+    base.with_suffix(".json").write_text(json.dumps(REPLAY, indent=2, ensure_ascii=False),
+                                         encoding="utf-8")
+    base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(REPLAY, ensure_ascii=False)
+                                       + ";", encoding="utf-8")
+    print(f"\n   ▣ replay written: {base.with_suffix('.json')}  (+ .js for the overlay)")
+
 
 # --------------------------------------------------------------------------- printing / 🧠 panel
 
@@ -52,6 +96,11 @@ def rel_line(eng, tag: str) -> None:
           f"· {r.mood}")
 
 
+def scar_lines(eng) -> list:
+    return [ln.strip().lstrip("- ").strip() for ln in eng.relationship.get().render().splitlines()
+            if "scar you carry" in ln.lower()]
+
+
 def scar_readout(eng) -> None:
     r = eng.relationship.get()
     print("\n   ── SCARS (the engine chose the axis; a scar caps that axis permanently) ──")
@@ -59,9 +108,8 @@ def scar_readout(eng) -> None:
         s = getattr(r, f"scar_{axis}")
         if s > 0:
             print(f"      {axis:<10} scar {s:.2f}  → ceiling {1 - s:.2f}  (can never fully return)")
-    for ln in r.render().splitlines():
-        if "scar you carry" in ln.lower():
-            print(f"      prompt injects: {ln.strip()}")
+    for ln in scar_lines(eng):
+        print(f"      prompt injects: {ln}")
 
 
 def brain_panel(dbg, *, note: str = "") -> None:
@@ -98,7 +146,8 @@ def show_reply(name: str, reply: str, dbg) -> None:
 eng_ref: dict = {}   # so the print helpers can reach the live engine without threading it through
 
 
-async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, panel=False):
+async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, panel=False,
+              phase="build"):
     from orchestrator.context import RespondRequest, Situation
     print(f"\n{'=' * 84}\n▶ {label}   ·   [t={clock} · {location}]")
     print(f'   player: "{player}"')
@@ -108,6 +157,9 @@ async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, pa
     if panel:
         brain_panel(dbg)
     show_reply(name, reply, dbg)
+    emit(kind="say", phase=phase, label=label, clock=clock, location=location, player=player,
+         reply=reply, panel=panel, relationship=rel_snap(eng), scored=scored_rows(dbg),
+         beliefs=list(eng.long_term.beliefs()))
     return reply, dbg
 
 
@@ -119,6 +171,9 @@ async def event(eng, headline, fact, *, player_role, clock, importance=None):
     print(f"      attributed: {who}   ·   engine salience = {sal:.2f}"
           f"{'  (self-appraised)' if importance is None else '  (pinned)'}")
     rel_line(eng, "  → relationship:")
+    emit(kind="event", phase="build", headline=headline, fact=fact, player_role=player_role,
+         clock=clock, salience=round(sal or 0.0, 3), pinned=importance is not None,
+         relationship=rel_snap(eng))
 
 
 async def build_arc():
@@ -151,6 +206,8 @@ async def build_arc():
 
     # 3) WEEKS PASS — decay + cadence-aware absence --------------------------------------------
     print("\n" + "-" * 84 + "\n   ⏳ THREE WEEKS PASS  (clock 3 → 24). Trivia should fade; the debt should stay vivid.\n" + "-" * 84)
+    emit(kind="advance", phase="build", note="THREE WEEKS PASS", clock_from=3, clock_to=24,
+         detail="Trivia fades from recall; the debt stays vivid.")
     await say(eng, name, "~3 weeks later — the player drops by (decay + recall test)", clock=24,
               panel=True, player="Been a while. Everything still running smooth down here?")
 
@@ -168,6 +225,7 @@ async def build_arc():
               recent=["Corvin's run was seized; his crew scattered"],
               player="Hey — good to see you. Rough week? You look like hell.")
     scar_readout(eng)
+    emit(kind="scar", phase="build", relationship=rel_snap(eng), scar_lines=scar_lines(eng))
 
     # consolidated belief (reflection turns the exchanges into a durable conviction)
     await eng.flush_reflection()
@@ -177,6 +235,7 @@ async def build_arc():
         print(f"      • {b}")
     if not beliefs:
         print("      (none yet — reflection threshold not reached this run)")
+    emit(kind="beliefs", phase="build", beliefs=list(beliefs))
 
     # 5) CONDITIONED RECALL — ordinary question, betrayal memory wins, reply is changed ---------
     await say(eng, name, "Day 26 — an ORDINARY request (watch what he recalls)", clock=26,
@@ -207,10 +266,13 @@ async def prove_persistence(built_eng=None):
     print("\n   reloaded beliefs:")
     for b in eng.long_term.beliefs():
         print(f"      • {b}")
+    emit(kind="restart", phase="restart", relationship=rel_snap(eng), scar_lines=scar_lines(eng),
+         beliefs=list(eng.long_term.beliefs()))
 
     await say(eng, name, "After the restart — same player returns, asks something innocent", clock=40,
-              panel=True, player="It's me. Been thinking about that morning I brought your coffee. "
-                                 "We're still good, you and I — right?")
+              phase="restart", panel=True,
+              player="It's me. Been thinking about that morning I brought your coffee. "
+                     "We're still good, you and I — right?")
     print("   ↑ He is still cold, the scar intact, the betrayal recalled — after the process died and "
           "restarted.\n     This is not a context window.")
 
@@ -230,6 +292,7 @@ async def main():
     else:
         eng = await build_arc()
         await prove_persistence(eng)
+        write_replay()   # canonical replay for the overlay (build + restart beats)
 
 
 if __name__ == "__main__":

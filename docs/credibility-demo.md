@@ -110,13 +110,30 @@ Model via `CRED_MODEL` (default `claude-opus-4-8`; validated on `claude-sonnet-4
 affection 0.70 / respect 0.60; three beliefs consolidated; the betrayal memory surfaces on
 importance in conditioned recall; every value identical after the disk reload.
 
-### Milestone 2 — voice + visual (NEXT)
-- **Hume voice** on Corvin's replies: `make_tts("hume").stream_speech(reply, "<hume-voice-id>")`.
-  Corvin's sheet is Inworld-configured, so supply a Hume voice id (or add a `hume_voice_id` to the
-  sheet for the demo).
-- **Visual 🧠 panel** for recording: either drive the existing web sandbox (`MEMORY_DEBUG=true`
-  emits the `memories` WS payload consumed by `web/app.js`) or render the `dbg["scored"]` table as
-  an on-screen overlay. Decide based on what films cleanest.
+### Milestone 2 — visual overlay (DONE) + voice (next)
+
+**Visual overlay — `docs/credibility-demo/overlay.html`** (record-then-replay). The driver emits
+`replay.json` + `replay.js` (via `write_replay()`); the overlay is a self-contained single-screen
+cinematic replayer: dialogue on the left, animated relationship + **scar-ceiling** meters, the 🧠
+memory-relevance table (highlights *importance beats similarity*, dims diversity-suppressed
+near-dups), the consolidated beliefs, and a framed full-screen **RESTART** takeover. Controls:
+Space play/pause · ← → step · **C** cinematic (hides chrome).
+
+```
+# 1) generate the data (the recording run — uses claude-opus-4-8 by default):
+python -m tools.credibility_demo
+# 2) serve + open (fetch of replay.js needs http://, not file://):
+python -m http.server 8778 --directory docs/credibility-demo
+#    → open http://localhost:8778/overlay.html in a real browser, fullscreen, RECORD AT 1080p.
+```
+Layout is tuned for **1920×1080** (fits with room to spare); 720p is tight (beliefs card clips).
+`replay.json`/`replay.js` are committed so the overlay opens straight from the repo without a
+billed run; regenerate them to refresh the arc.
+
+**Voice (next):** pre-bake Hume audio per reply into `docs/credibility-demo/audio/<i>.wav`
+(`make_tts("hume").stream_speech(reply, "<hume-voice-id>")`; Corvin's sheet is Inworld, so pick a
+Hume voice id), reference the file in each beat, and play it in the overlay on beat-advance. Pre-
+baking keeps the recording deterministic and latency-free.
 
 ### Milestone 3 — the ChatGPT side-by-side
 Run the same arc as a long raw-ChatGPT chat (instructed to be Corvin), then a "restart" (fresh

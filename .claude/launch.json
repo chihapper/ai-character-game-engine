@@ -1,12 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "game-server-lan",
-      "runtimeExecutable": ".\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "game.server_lan"],
-      "port": 8001,
-      "autoPort": true
-    }
+    { "name": "cred-overlay", "runtimeExecutable": "python", "runtimeArgs": ["-m","http.server","8778","--directory","docs/credibility-demo"], "port": 8778 }
   ]
 }

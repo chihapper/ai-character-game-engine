@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Credibility Demo — persistent mind</title>
+<style>
+  :root{
+    --bg:#0a0c10; --panel:#11151b; --panel2:#0d1116; --edge:#222c37; --edge2:#2f3d4b;
+    --ink:#e9eef4; --muted:#8b97a5; --dim:#5c6773;
+    --aff:#f2b45c; --trust:#3fd0c9; --resp:#a98cff; --scar:#ff5d6c;
+    --sel:#7cffb2; --gold:#ffd166; --player:#6fb2ff;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;
+    -webkit-font-smoothing:antialiased}
+  #stage{position:relative;width:100vw;height:100vh;display:grid;
+    grid-template-rows:auto 1fr auto;gap:0}
+
+  /* ---- header ---- */
+  header{display:flex;align-items:center;gap:18px;padding:16px 28px;border-bottom:1px solid var(--edge)}
+  .who{display:flex;align-items:baseline;gap:12px}
+  .who .name{font-size:22px;font-weight:700;letter-spacing:.2px}
+  .who .role{color:var(--muted);font-size:13px}
+  .badge{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);
+    border:1px solid var(--edge2);border-radius:999px;padding:6px 12px}
+  .badge b{color:var(--sel);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--sel);box-shadow:0 0 10px var(--sel)}
+  .model{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+  /* ---- main split ---- */
+  main{display:grid;grid-template-columns:1.05fr .95fr;gap:0;min-height:0}
+  .left{padding:26px 30px;display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--edge)}
+  .right{padding:18px 24px;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden;background:
+    linear-gradient(180deg,var(--panel2),var(--bg))}
+
+  /* scene + dialogue */
+  .scene{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.3px;margin-bottom:6px}
+  .beatlabel{font-size:13px;color:var(--dim);margin-bottom:22px}
+  .convo{flex:1;display:flex;flex-direction:column;gap:20px;min-height:0;overflow:hidden;justify-content:center}
+  .line{opacity:0;transform:translateY(8px);transition:opacity .5s ease,transform .5s ease}
+  .line.show{opacity:1;transform:none}
+  .tag{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+  .player .tag{color:var(--player)}
+  .npc .tag{color:var(--aff)}
+  .player .text{color:#cfe0f5;font-size:19px;line-height:1.5;font-style:italic;
+    border-left:2px solid var(--player);padding-left:16px}
+  .npc .text{color:var(--ink);font-size:22px;line-height:1.5;white-space:pre-wrap;
+    border-left:2px solid var(--aff);padding-left:16px;font-weight:450}
+  .npc .text em, .npc .text .stage{color:var(--dim);font-style:italic;font-weight:400}
+
+  /* meters */
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:13px 16px}
+  .card h3{margin:0 0 10px;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);
+    font-weight:600;display:flex;align-items:center;gap:8px}
+  .meter{margin:8px 0}
+  .meter .row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .meter .lbl{font-size:13px;font-weight:600}
+  .meter .val{font-family:var(--mono);font-size:13px;color:var(--ink)}
+  .track{position:relative;height:12px;border-radius:7px;background:#0b0f14;border:1px solid var(--edge);
+    overflow:hidden}
+  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px;transition:width 1.1s cubic-bezier(.2,.8,.2,1),
+    background .6s}
+  .scarzone{position:absolute;top:0;bottom:0;right:0;background:
+    repeating-linear-gradient(-45deg,rgba(255,93,108,.32),rgba(255,93,108,.32) 5px,transparent 5px,transparent 10px);
+    border-left:2px solid var(--scar);width:0;transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+  .a .fill{background:linear-gradient(90deg,#a97a2e,var(--aff))}
+  .t .fill{background:linear-gradient(90deg,#1f6f6b,var(--trust))}
+  .r .fill{background:linear-gradient(90deg,#5b4aa3,var(--resp))}
+  .mood{margin-top:9px;font-size:13px;color:var(--muted)}
+  .mood b{color:var(--ink);font-weight:600;font-style:italic}
+  .scarnote{margin-top:5px;font-size:11px;line-height:1.35;color:var(--scar);opacity:0;transition:opacity .6s;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .scarnote.show{opacity:1}
+
+  /* brain panel / table */
+  .brain{flex:1 1 auto;min-height:180px;display:flex;flex-direction:column}
+  .brain .body{flex:1;min-height:150px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+  th{color:var(--dim);font-weight:500;text-align:right;padding:4px 8px;font-size:10px;letter-spacing:.5px;
+    text-transform:uppercase;border-bottom:1px solid var(--edge)}
+  th.mem{text-align:left}
+  td{padding:6px 8px;text-align:right;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.03);
+    transition:background .4s}
+  td.mem{text-align:left;color:var(--ink);max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  tr.sel td{color:var(--ink)}
+  tr.sel td.star{color:var(--sel)}
+  tr.impwins{background:linear-gradient(90deg,rgba(255,209,102,.10),transparent)}
+  tr.impwins td.imp{color:var(--gold);font-weight:700}
+  tr.impwins td.mem::after{content:" ← importance beats similarity";color:var(--gold);font-size:10px}
+  tr.suppressed td{color:var(--dim);opacity:.65}
+  tr.suppressed td.mem::after{content:" ✕ diversity-suppressed";color:var(--scar);opacity:.7;font-size:10px}
+  td.star{width:14px;text-align:center;color:transparent}
+  td.score{color:var(--ink);font-weight:600}
+  .col-imp{color:var(--gold)}
+
+  /* beliefs */
+  .beliefs{flex:0 0 auto}
+  .beliefs .item{font-size:12px;line-height:1.32;color:#d7e0ea;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    opacity:0;transform:translateX(-6px);transition:opacity .5s,transform .5s}
+  .beliefs .item.show{opacity:1;transform:none}
+  .beliefs .item::before{content:"“";color:var(--gold)}
+  .beliefs .item::after{content:"”";color:var(--gold)}
+
+  /* event banner */
+  .eventbanner{margin-bottom:18px;border:1px solid var(--edge2);border-radius:10px;padding:12px 16px;
+    background:linear-gradient(90deg,rgba(63,208,201,.08),transparent);display:none}
+  .eventbanner.harm{background:linear-gradient(90deg,rgba(255,93,108,.10),transparent);border-color:#5a2b31}
+  .eventbanner.show{display:block}
+  .eventbanner .k{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--trust)}
+  .eventbanner.harm .k{color:var(--scar)}
+  .eventbanner .h{font-size:15px;margin-top:4px;color:var(--ink)}
+  .eventbanner .s{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px}
+  .eventbanner .s b{color:var(--sel)}
+
+  /* full-screen takeover cards (advance / restart) */
+  #takeover{position:absolute;inset:0;background:#05070a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;z-index:20}
+  #takeover.show{opacity:1}   /* static — never gate the killer beat behind a timeline */
+  #takeover .big{font-size:44px;font-weight:800;letter-spacing:.5px;text-align:center}
+  #takeover .sub{font-family:var(--mono);font-size:15px;color:var(--muted);text-align:center;max-width:620px;line-height:1.6}
+  #takeover .steps{font-family:var(--mono);font-size:14px;color:var(--dim);text-align:left;line-height:2}
+  #takeover .steps b{color:var(--sel)}
+  .clock{font-size:80px}
+
+  /* controls */
+  footer{display:flex;align-items:center;gap:14px;padding:12px 24px;border-top:1px solid var(--edge);
+    font-family:var(--mono);font-size:12px;color:var(--muted);transition:opacity .4s}
+  footer button{background:var(--panel);color:var(--ink);border:1px solid var(--edge2);border-radius:7px;
+    padding:7px 13px;font-family:var(--mono);font-size:12px;cursor:pointer}
+  footer button:hover{border-color:var(--sel)}
+  .count{color:var(--ink)}
+  .curlabel{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .hint{color:var(--dim)}
+  body.cinema footer{opacity:0}
+  body.cinema footer:hover{opacity:1}
+  .phasepill{border:1px solid var(--edge2);border-radius:999px;padding:3px 10px;font-size:11px}
+  .phasepill.restart{color:var(--scar);border-color:#5a2b31}
+</style>
+</head>
+<body>
+<div id="stage">
+  <header>
+    <div class="who"><span class="name" id="charname">Corvin</span>
+      <span class="role">harbor-master · smuggling port</span></div>
+    <span class="phasepill" id="phasepill">building the bond</span>
+    <div class="badge"><span class="dot"></span>PERSISTENT MIND · <b>on disk</b>,&nbsp;not a context window</div>
+    <span class="model" id="model">model —</span>
+  </header>
+
+  <main>
+    <div class="left">
+      <div class="scene" id="scene"></div>
+      <div class="beatlabel" id="beatlabel"></div>
+      <div class="eventbanner" id="eventbanner">
+        <div class="k" id="evk"></div><div class="h" id="evh"></div><div class="s" id="evs"></div>
+      </div>
+      <div class="convo">
+        <div class="line player" id="playerline"><div class="tag">player</div><div class="text" id="playertext"></div></div>
+        <div class="line npc" id="npcline"><div class="tag" id="npctag">Corvin</div><div class="text" id="npctext"></div></div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <h3>Relationship <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">· hatched = permanent scar</span></h3>
+        <div class="meter a"><div class="row"><span class="lbl" style="color:var(--aff)">affection</span><span class="val" id="v-aff">0.50</span></div>
+          <div class="track"><div class="scarzone" id="s-aff"></div><div class="fill" id="f-aff"></div></div></div>
+        <div class="meter t"><div class="row"><span class="lbl" style="color:var(--trust)">trust</span><span class="val" id="v-trust">0.50</span></div>
+          <div class="track"><div class="scarzone" id="s-trust"></div><div class="fill" id="f-trust"></div></div></div>
+        <div class="meter r"><div class="row"><span class="lbl" style="color:var(--resp)">respect</span><span class="val" id="v-resp">0.50</span></div>
+          <div class="track"><div class="scarzone" id="s-resp"></div><div class="fill" id="f-resp"></div></div></div>
+        <div class="mood">mood: <b id="mood">—</b></div>
+        <div class="scarnote" id="scarnote"></div>
+      </div>
+
+      <div class="card brain">
+        <h3>🧠 Memory relevance <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">· what he recalls, and why</span></h3>
+        <div class="body">
+          <table>
+            <thead><tr><th class="star"></th><th class="mem">memory</th><th>sim</th>
+              <th class="col-imp">import</th><th>recency</th><th>score</th></tr></thead>
+            <tbody id="scored"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card beliefs" id="beliefscard" style="display:none">
+        <h3>Consolidated beliefs <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">· reflection, not scripted</span></h3>
+        <div id="beliefs"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <button id="prev">◀ prev</button>
+    <button id="play">▶ play</button>
+    <button id="next">next ▶</button>
+    <span class="count" id="count">0 / 0</span>
+    <span class="curlabel" id="curlabel"></span>
+    <span class="hint">space · ← → · C cinematic</span>
+  </footer>
+
+  <div id="takeover"></div>
+</div>
+
+<script src="replay.js"></script>
+<script>
+const R = window.CRED_REPLAY || {meta:{},beats:[]};
+const beats = R.beats || [];
+const $ = id => document.getElementById(id);
+$("charname").textContent = R.meta.character || "Corvin";
+$("model").textContent = "model · " + (R.meta.model || "—");
+
+// running state carried across beats
+let cur = {rel:{affection:.5,trust:.5,respect:.5,mood:"—",scar_affection:0,scar_trust:0,scar_respect:0},
+           scored:[], beliefs:[]};
+let idx = -1, playing = false, timer = null;
+
+function setMeter(axis, v, scar){
+  $("f-"+axis).style.width = (v*100).toFixed(1)+"%";
+  $("s-"+axis).style.width = (scar*100).toFixed(1)+"%";
+  const nm = {aff:"aff",trust:"trust",resp:"resp"}[axis];
+}
+function renderRel(rel, scarActive){
+  $("v-aff").textContent = rel.affection.toFixed(2);
+  $("v-trust").textContent = rel.trust.toFixed(2);
+  $("v-resp").textContent = rel.respect.toFixed(2);
+  setMeter("aff", rel.affection, rel.scar_affection);
+  setMeter("trust", rel.trust, rel.scar_trust);
+  setMeter("resp", rel.respect, rel.scar_respect);
+  $("mood").textContent = rel.mood || "—";
+  const anyScar = (rel.scar_trust||rel.scar_affection||rel.scar_respect) > 0;
+  const note = $("scarnote");
+  if(anyScar){
+    note.textContent = "⚑ permanent scar — trust ceiling "+(1-rel.scar_trust).toFixed(2)
+      +", affection "+(1-rel.scar_affection).toFixed(2)+", respect "+(1-rel.scar_respect).toFixed(2)
+      +" · the engine chose which axes, and how deep";
+    note.classList.add("show");
+  } else { note.classList.remove("show"); }
+}
+function fmtReply(t){
+  // dim the *stage directions* (asterisk-wrapped) so the spoken words read
+  return (t||"").replace(/\*([^*]+)\*/g, '<span class="stage">$1</span>');
+}
+function renderScored(rows){
+  const tb = $("scored"); tb.innerHTML = "";
+  if(!rows || !rows.length){ tb.innerHTML = '<tr><td class="mem" colspan="6" style="color:var(--dim)">no long-term memories scored yet</td></tr>'; return; }
+  // keep the panel compact + always show the story: all selected (≤6), plus up to 2 of the
+  // strongest diversity-suppressed rows so the "near-dup dropped" contrast is visible.
+  const byScore=(a,b)=>b.base-a.base;
+  const sel=rows.filter(r=>r.selected).sort(byScore).slice(0,6);
+  const sup=rows.filter(r=>!r.selected).sort(byScore).slice(0,2);
+  [...sel,...sup].sort(byScore).forEach(s=>{
+    const tr = document.createElement("tr");
+    const impWins = s.selected && s.importance > s.similarity_raw + 0.05;
+    const suppressed = !s.selected && s.similarity_raw > 0.55;
+    if(s.selected) tr.classList.add("sel");
+    if(impWins) tr.classList.add("impwins");
+    if(suppressed) tr.classList.add("suppressed");
+    tr.innerHTML = `<td class="star">${s.selected?"★":""}</td>`
+      + `<td class="mem">${(s.text||"").replace(/^User: /,'“you: ').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</td>`
+      + `<td>${s.similarity_raw.toFixed(2)}</td><td class="imp">${s.importance.toFixed(2)}</td>`
+      + `<td>${s.recency.toFixed(2)}</td><td class="score">${s.base.toFixed(2)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function renderBeliefs(bs){
+  const card = $("beliefscard"), box = $("beliefs");
+  if(!bs || !bs.length){ card.style.display="none"; return; }
+  card.style.display="block"; box.innerHTML="";
+  bs.forEach((b,i)=>{ const d=document.createElement("div"); d.className="item"; d.textContent=b;
+    box.appendChild(d); setTimeout(()=>d.classList.add("show"), 120*i+120); });
+}
+function showLines(player, reply){
+  const pl=$("playerline"), nl=$("npcline");
+  pl.classList.remove("show"); nl.classList.remove("show");
+  $("playertext").textContent = player||"";
+  $("npctext").innerHTML = fmtReply(reply);
+  pl.style.display = player?"block":"none";
+  nl.style.display = reply?"block":"none";
+  if(player) setTimeout(()=>pl.classList.add("show"), 60);
+  if(reply)  setTimeout(()=>nl.classList.add("show"), player?520:60);
+}
+function takeover(html, ms){
+  const t=$("takeover"); t.innerHTML=html;
+  t.classList.remove("show"); void t.offsetWidth;  // commit the opacity:0 state...
+  t.classList.add("show");                          // ...so the 0→1 fade actually fires
+  return ms;
+}
+function hideTakeover(){ $("takeover").classList.remove("show"); }
+function banner(b){
+  const el=$("eventbanner"); const harm = b.player_role==="caused";
+  el.className = "eventbanner show" + (harm?" harm":"");
+  $("evk").textContent = harm ? "⚑ player-attributed event · CAUSED (harm)" : "⚑ player-attributed event · BENEFITED";
+  $("evh").textContent = b.headline;
+  $("evs").innerHTML = "engine salience <b>"+b.salience.toFixed(2)+"</b> "
+    + (b.pinned?"(pinned)":"(self-appraised — the engine decided this mattered)");
+}
+
+function apply(b){
+  // Only clear the takeover when moving to a NON-takeover beat. Removing + re-adding .show in the
+  // same synchronous tick (for an advance/restart beat) coalesces to "no change" and the fade-in
+  // never fires — the killer RESTART card would stay invisible.
+  if(b.kind!=="advance" && b.kind!=="restart") hideTakeover();
+  $("phasepill").className = "phasepill" + (b.phase==="restart"?" restart":"");
+  $("phasepill").textContent = b.phase==="restart" ? "after the restart" :
+     (idx<=3?"building the bond":(b.kind==="event"&&b.player_role==="caused")?"the betrayal":"living with it");
+  if(b.relationship) cur.rel = b.relationship;
+  if(b.scored) cur.scored = b.scored;
+  if(b.beliefs) cur.beliefs = b.beliefs;
+
+  if(b.kind!=="event") $("eventbanner").classList.remove("show");
+
+  if(b.kind==="advance"){
+    $("scene").textContent=""; $("beatlabel").textContent="";
+    showLines("", "");
+    return takeover(`<div class="clock">⏳</div><div class="big">${b.note}</div>
+      <div class="sub">clock ${b.clock_from} → ${b.clock_to}. ${b.detail||""}<br>
+      Trivial exchanges fade from recall; the costly moment stays vivid — decay is real.</div>`, 2600);
+  }
+  if(b.kind==="restart"){
+    renderRel(cur.rel, true); renderScored(cur.scored); renderBeliefs(cur.beliefs);
+    $("scene").textContent=""; $("beatlabel").textContent=""; showLines("","");
+    return takeover(`<div class="big" style="color:var(--scar)">⏻ &nbsp;server terminated</div>
+      <div class="steps">↻ &nbsp;new process — memory empty<br>
+      ◆ &nbsp;mind loaded from <b>.memory/${R.meta.slug||"corvin"}.jsonl</b></div>
+      <div class="sub">trust <b style="color:var(--ink)">${cur.rel.trust.toFixed(2)}</b> ·
+      scar <b style="color:var(--scar)">${cur.rel.scar_trust.toFixed(2)}</b> ·
+      ${cur.beliefs.length} beliefs — <b style="color:var(--sel)">identical</b>.<br>
+      He turned off, and back on. He still remembers, and he's still hurt.</div>`, 4200);
+  }
+
+  // say / event / scar / beliefs → normal panel view
+  renderRel(cur.rel, b.kind==="scar");
+  renderScored(cur.scored);
+  renderBeliefs(cur.beliefs);
+  if(b.kind==="event"){
+    banner(b); $("scene").textContent=""; $("beatlabel").textContent=b.headline; showLines("","");
+    return 2200;
+  }
+  if(b.kind==="scar" || b.kind==="beliefs"){ return 200; }
+  // say
+  $("scene").textContent = `t=${b.clock}  ·  ${b.location||""}`;
+  $("beatlabel").textContent = b.label||"";
+  showLines(b.player, b.reply);
+  return Math.min(9000, 3200 + (b.reply||"").length*14);
+}
+
+function go(n){
+  if(n<0||n>=beats.length) return;
+  idx=n; const dwell=apply(beats[idx]);
+  $("count").textContent=(idx+1)+" / "+beats.length;
+  $("curlabel").textContent=beats[idx].label||beats[idx].headline||beats[idx].note||beats[idx].kind;
+  if(playing){ clearTimeout(timer); timer=setTimeout(()=>{ if(idx<beats.length-1) go(idx+1); else stop(); }, dwell+300); }
+}
+function play(){ playing=true; $("play").textContent="⏸ pause"; if(idx<0) go(0); else go(idx); }
+function stop(){ playing=false; $("play").textContent="▶ play"; clearTimeout(timer); }
+$("next").onclick=()=>{stop();go(Math.min(beats.length-1,idx+1))};
+$("prev").onclick=()=>{stop();go(Math.max(0,idx-1))};
+$("play").onclick=()=>{ playing?stop():play(); };
+document.addEventListener("keydown",e=>{
+  if(e.code==="Space"){e.preventDefault(); playing?stop():play();}
+  else if(e.code==="ArrowRight"){stop();go(Math.min(beats.length-1,idx+1));}
+  else if(e.code==="ArrowLeft"){stop();go(Math.max(0,idx-1));}
+  else if(e.key.toLowerCase()==="c"){document.body.classList.toggle("cinema");}
+});
+go(0);
+</script>
+</body>
+</html>
