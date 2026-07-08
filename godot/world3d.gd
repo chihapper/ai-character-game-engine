@@ -27,11 +27,11 @@ const TREK_MAX_S := 3.0        # a route is paced to land within this many secon
 # The 88x44 maps produce legitimately LONG treks — the old 40-tile cutoff was still teleporting
 # far clicks (owner report). Snapping now only covers id-reuse across a brand-new map.
 const SNAP_BEYOND_TILES := 200.0
-# Camera vantage in TILES (converted via _tile at runtime): ~36° pitch — low enough that chibi
-# characters read as PEOPLE (faces/bodies, not hat-tops), high enough to read the room; the
-# waist-high walls keep sightlines clear at this angle.
-const CAM_OFFSET_TILES := Vector3(0.0, 4.6, 6.4)
-const CAM_FOV := 40.0
+# Camera vantage in TILES (converted via _tile at runtime): ~50° pitch, pulled back — a more
+# TOP-DOWN, slightly-zoomed-out RPG view (owner direction 2026-07-09) that reads the room and the
+# party at a glance while chibi characters still show face + body, not just hat-tops.
+const CAM_OFFSET_TILES := Vector3(0.0, 7.2, 6.0)
+const CAM_FOV := 42.0
 
 var _tile := 2.0                              # world units per grid cell (measured from the kit)
 var _snap: Dictionary = {}
