@@ -111,16 +111,19 @@ async def no_cache_frontend(request, call_next):
 
 
 def make_tts(provider: str) -> TTSAdapter:
-    if provider == "cartesia":
-        return CartesiaTTS()
-    if provider == "elevenlabs":
-        return ElevenLabsTTS()
-    if provider == "hume":
-        # The chosen Track V provider — previously unreachable through this factory, so a
-        # TTS_PROVIDER=hume text-demo run silently fell back to Inworld.
-        from orchestrator.adapters.tts_hume import HumeTTS
-        return HumeTTS()
-    return InworldTTS()
+    """Construct the TTS adapter for `provider`. Thin wrapper over the provider registry
+    (orchestrator/tts_providers.py) — the single source of truth for adapter/profile/keys/caps."""
+    from orchestrator.tts_providers import make_tts as _registry_make_tts
+    return _registry_make_tts(provider)
+
+
+@app.get("/api/tts/providers")
+async def get_tts_providers() -> JSONResponse:
+    """The TTS pick-list for a 'bring-your-own-key, choose-your-voice' UI: ready providers first,
+    each with the API-key env var(s) it needs, whether those are present, and its capabilities.
+    'coming_soon' providers have adapters but aren't yet verified against their live docs."""
+    from orchestrator.tts_providers import list_providers
+    return JSONResponse([p.public_dict() for p in list_providers()])
 
 
 # ------------------------------------------------------------------- REST: chars

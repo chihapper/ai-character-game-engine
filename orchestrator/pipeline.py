@@ -251,7 +251,10 @@ class Pipeline:
             # This includes the FIRST request: the opening sentence flows into the batch
             # when more is ready, instead of standing out as a lone, differently-paced
             # utterance — while the empty() check still ships it promptly when it's alone.
-            do_batch = self.character.tts_provider == "inworld"
+            # Capability-driven (registry), NOT a provider-name check, so a new same-shaped
+            # provider just declares caps.batch=True.
+            from .tts_providers import caps as _tts_caps
+            do_batch = _tts_caps(self.character.tts_provider).batch
 
             buf_text = ""           # accumulated spoken text of the pending batch
             buf_tone: str | None = None
