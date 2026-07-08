@@ -55,6 +55,8 @@ var _slice_name := "vault"
 var _last_mode := ""                           # stance switching on combat start/end
 var _decor := "wet"                            # per-slice floor decor: "wet" | "ember" | ""
 var _daylight := false                         # town slices: bright day, no torch-lit dungeon mood
+var _town_built := false                        # a town builds its whole map once (no fog)
+var _ambient := []                              # cosmetic villagers wandering the town (client-only)
 var _puddle_mat: StandardMaterial3D = null     # vault: still black water catching the torch
 var _ember_mat: StandardMaterial3D = null      # emberdeep: glowing cracks in the stone
 var _husk_overlay: StandardMaterial3D = null   # cinder-husk: ember glow over charred bone
@@ -435,6 +437,11 @@ func set_slice(slice_name: String) -> void:
 	_fx_stagger = 0.0
 	_shake = 0.0
 	_torch_lights = 0
+	_town_built = false
+	for a in _ambient:
+		if is_instance_valid(a["node"]):
+			a["node"].queue_free()
+	_ambient.clear()
 
 
 ## Per-slice mood: the SAME dungeon geometry reads as a different place through light alone.
@@ -557,8 +564,15 @@ func render(s: Dictionary) -> void:
 		if sig != _map_sig:                    # different map entirely (new game/slice)
 			set_slice("")
 			_map_sig = sig
-		_build_explored(tiles)
-		_update_shroud(tiles)
+		if _daylight:
+			# A TOWN is built WHOLE on load (no fog-of-war — you can see across a square): full grass
+			# ground, real houses on the building footprints, a boundary wall, ambient villagers.
+			if not _town_built:
+				_town_built = true
+				_build_town_full(tiles)
+		else:
+			_build_explored(tiles)
+			_update_shroud(tiles)
 	_sync_entities()
 	_update_range_overlay()
 	# Combat starting/ending re-poses everyone standing: weapons come UP when initiative rolls
@@ -569,6 +583,291 @@ func render(s: Dictionary) -> void:
 		for id in _ents:
 			if str(_ents[id]["state"]) == "idle":
 				_play_anim(_ents[id], _idle_prefer(), true)
+
+
+# ---------------------------------------------------------------- town (whole-map build)
+
+## A town is a PLACE you see across, not a fogged crawl: build the entire map at once — grass
+## everywhere, a stone LANE from the gate through the square to each building's door, real HOUSES
+## on the interior wall-blocks (a body + gable roof + door + chimney), a low boundary wall on the
+## outer ring, and a handful of ambient villagers wandering. Runs once per town map.
+func _build_town_full(tiles: Array) -> void:
+	var h := tiles.size()
+	var w := str(tiles[0]).length()
+	# ground first (grass under everything, including where houses sit)
+	for y in h:
+		var row: String = str(tiles[y])
+		for x in row.length():
+			_place_grass_plain(x, y)
+	# building footprints = connected '#' components NOT touching the border (which is the town wall)
+	var seen := {}
+	var comps: Array = []
+	for y in range(1, h - 1):
+		var row: String = str(tiles[y])
+		for x in range(1, w - 1):
+			var k := Vector2i(x, y)
+			if row[x] != "#" or seen.has(k):
+				continue
+			# flood the component
+			var cells: Array = []
+			var q: Array = [k]
+			seen[k] = true
+			var touches_border := false
+			while not q.is_empty():
+				var c: Vector2i = q.pop_back()
+				cells.append(c)
+				if c.x <= 0 or c.y <= 0 or c.x >= w - 1 or c.y >= h - 1:
+					touches_border = true
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nb: Vector2i = c + d
+					if nb.x < 0 or nb.y < 0 or nb.x >= w or nb.y >= h or seen.has(nb):
+						continue
+					if str(tiles[nb.y])[nb.x] == "#":
+						seen[nb] = true
+						q.append(nb)
+			if not touches_border and cells.size() >= 2:
+				comps.append(cells)
+	var door_fronts: Array = []
+	for cells in comps:
+		if cells.size() >= 12:
+			door_fronts.append(_place_house(tiles, cells))    # a real building
+		else:
+			_place_well(cells)                                # a small block = the plaza well
+	# a stone lane linking the gate approach + each building door to the town centre
+	var centre := Vector2i(w / 2, h / 2)
+	_lay_lane(tiles, Vector2i(centre.x, h - 2), centre)
+	for df in door_fronts:
+		if df.x >= 0:
+			_lay_lane(tiles, df, centre)
+	# low boundary wall on the outer ring (waist-high, so it frames without boxing the view)
+	_build_town_boundary(tiles)
+	# scatter trees/bushes/rocks on open grass, away from lanes + doors
+	for y in range(1, h - 1):
+		for x in range(1, w - 1):
+			if str(tiles[y])[x] in [".", "+", ">", "<"]:
+				_maybe_town_scatter(x, y, (x * 131 + y * 197) % 100)
+	_spawn_ambient_villagers(tiles)
+
+
+## A grass quad with per-cell hue variation (no scatter — scatter is placed in a second pass so it
+## can avoid lanes/doors).
+func _place_grass_plain(x: int, y: int) -> void:
+	if _grass_mat == null:
+		return
+	var q := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(_tile, _tile)
+	q.mesh = pm
+	var hh := (x * 131 + y * 197) % 100
+	var mat := _grass_mat.duplicate() as StandardMaterial3D
+	mat.albedo_color = _grass_mat.albedo_color.lerp(Color(0.30, 0.44, 0.20), float(hh) / 140.0)
+	q.material_override = mat
+	q.position = _world_pos(float(x), float(y)) + Vector3(0.0, 0.01, 0.0)
+	_map_root.add_child(q)
+
+
+## One building footprint -> a real house (plastered body + gable roof + door + chimney), sized to
+## the block. Returns the street cell in front of the door (for lane-laying), or (-1,-1).
+func _place_house(tiles: Array, cells: Array) -> Vector2i:
+	var minx := 9999; var miny := 9999; var maxx := -1; var maxy := -1
+	for c in cells:
+		minx = mini(minx, c.x); miny = mini(miny, c.y)
+		maxx = maxi(maxx, c.x); maxy = maxi(maxy, c.y)
+	var bw := (maxx - minx + 1)
+	var bh := (maxy - miny + 1)
+	var cx := (minx + maxx) * 0.5 + 0.5
+	var cy := (miny + maxy) * 0.5 + 0.5
+	var world := Vector3(cx * _tile, 0.0, cy * _tile)
+	var wall_h := _tile * 1.15
+	var col_seed := (minx * 13 + miny * 7) % 3
+	var palette := [Color(0.82, 0.74, 0.60), Color(0.76, 0.70, 0.58), Color(0.66, 0.66, 0.64)]
+	var body_col: Color = palette[col_seed]
+
+	var house := Node3D.new()
+	_map_root.add_child(house)
+	house.position = world
+	# body
+	var body := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(bw * _tile * 0.98, wall_h, bh * _tile * 0.98)
+	body.mesh = bm
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = body_col
+	bmat.roughness = 1.0
+	body.material_override = bmat
+	body.position = Vector3(0, wall_h * 0.5, 0)
+	house.add_child(body)
+	# gable roof (a triangular prism, ridge along the longer axis, overhanging the walls)
+	var roof := MeshInstance3D.new()
+	var pr := PrismMesh.new()
+	var along_x := bw >= bh
+	pr.size = Vector3((bw if along_x else bh) * _tile * 1.06, _tile * 0.85,
+		(bh if along_x else bw) * _tile * 1.12)
+	roof.mesh = pr
+	var rmat := StandardMaterial3D.new()
+	rmat.albedo_color = Color(0.45, 0.20, 0.16)   # weathered red tile
+	rmat.roughness = 1.0
+	roof.material_override = rmat
+	roof.position = Vector3(0, wall_h + _tile * 0.42, 0)
+	if not along_x:
+		roof.rotation.y = PI * 0.5
+	house.add_child(roof)
+	# chimney with a wisp of smoke-grey
+	var chim := MeshInstance3D.new()
+	var cm := BoxMesh.new()
+	cm.size = Vector3(_tile * 0.22, _tile * 0.8, _tile * 0.22)
+	chim.mesh = cm
+	chim.material_override = rmat
+	chim.position = Vector3(bw * _tile * 0.25, wall_h + _tile * 0.5, bh * _tile * 0.2)
+	house.add_child(chim)
+	# door on the side facing the town centre; return the street cell out front
+	var h_all := tiles.size()
+	var w_all := str(tiles[0]).length()
+	var toward := Vector2(w_all * 0.5 - cx, h_all * 0.5 - cy)
+	var face := Vector2i(0, 1) if absf(toward.y) >= absf(toward.x) else Vector2i(1, 0)
+	if (face.y == 1 and toward.y < 0) or (face.x == 1 and toward.x < 0):
+		face = -face
+	var door := MeshInstance3D.new()
+	var dm := BoxMesh.new()
+	dm.size = Vector3(_tile * 0.5, wall_h * 0.62, 0.1)
+	door.mesh = dm
+	var dmat := StandardMaterial3D.new()
+	dmat.albedo_color = Color(0.30, 0.18, 0.10)
+	door.material_override = dmat
+	var fdir := Vector3(float(face.x), 0.0, float(face.y))
+	door.position = Vector3(fdir.x * bw * _tile * 0.49, wall_h * 0.31, fdir.z * bh * _tile * 0.49)
+	door.rotation.y = 0.0 if face.x == 0 else PI * 0.5
+	house.add_child(door)
+	# the street cell just outside the door
+	var dcx := int(cx) + face.x * (bw / 2 + 1)
+	var dcy := int(cy) + face.y * (bh / 2 + 1)
+	if dcx >= 0 and dcy >= 0 and dcy < h_all and dcx < w_all and str(tiles[dcy])[dcx] in [".", "+", ">", "<"]:
+		return Vector2i(dcx, dcy)
+	return Vector2i(-1, -1)
+
+
+## A small wall-block (the plaza's 2x2) -> a low stone well with a dark water top, not a house.
+func _place_well(cells: Array) -> void:
+	var minx := 9999; var miny := 9999; var maxx := -1; var maxy := -1
+	for c in cells:
+		minx = mini(minx, c.x); miny = mini(miny, c.y)
+		maxx = maxi(maxx, c.x); maxy = maxi(maxy, c.y)
+	var cx := (minx + maxx) * 0.5 + 0.5
+	var cy := (miny + maxy) * 0.5 + 0.5
+	var curb := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = _tile * 0.55
+	cm.bottom_radius = _tile * 0.6
+	cm.height = _tile * 0.5
+	curb.mesh = cm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.5, 0.5, 0.52)
+	mat.roughness = 1.0
+	curb.material_override = mat
+	curb.position = Vector3(cx * _tile, _tile * 0.25, cy * _tile)
+	_map_root.add_child(curb)
+	var water := MeshInstance3D.new()
+	var wm := CylinderMesh.new()
+	wm.top_radius = _tile * 0.42
+	wm.bottom_radius = _tile * 0.42
+	wm.height = 0.05
+	water.mesh = wm
+	var wmat := StandardMaterial3D.new()
+	wmat.albedo_color = Color(0.08, 0.12, 0.16)
+	wmat.metallic = 0.6
+	wmat.roughness = 0.2
+	water.material_override = wmat
+	water.position = Vector3(cx * _tile, _tile * 0.5, cy * _tile)
+	_map_root.add_child(water)
+
+
+## Lay a stone-path LANE (an L: horizontal then vertical) between two walkable tiles.
+func _lay_lane(tiles: Array, a: Vector2i, b: Vector2i) -> void:
+	if _path_scene == null:
+		return
+	var cur := a
+	var guard := 0
+	while cur != b and guard < 200:
+		guard += 1
+		_path_tile(tiles, cur.x, cur.y)
+		if cur.x != b.x:
+			cur.x += signi(b.x - cur.x)
+		elif cur.y != b.y:
+			cur.y += signi(b.y - cur.y)
+	_path_tile(tiles, b.x, b.y)
+
+
+func _path_tile(tiles: Array, x: int, y: int) -> void:
+	if y < 0 or y >= tiles.size() or x < 0 or x >= str(tiles[y]).length():
+		return
+	if not (str(tiles[y])[x] in [".", "+", ">", "<"]):
+		return
+	var key := "lane" + str(x) + "," + str(y)
+	if _placed.has(key):
+		return
+	_placed[key] = true
+	var p: Node3D = _path_scene.instantiate()
+	_map_root.add_child(p)
+	p.position = _world_pos(float(x), float(y)) + Vector3(0.0, 0.03, 0.0)
+	p.scale = Vector3(_tile / 2.05, 1.0, _tile / 2.0)
+
+
+## The outer ring becomes a low waist-high boundary wall (fence posts), framing the town without
+## boxing the camera.
+func _build_town_boundary(tiles: Array) -> void:
+	if _fence_scene == null:
+		return
+	var h := tiles.size()
+	var w := str(tiles[0]).length()
+	for y in h:
+		for x in str(tiles[y]).length():
+			if str(tiles[y])[x] != "#":
+				continue
+			if not (x == 0 or y == 0 or x == w - 1 or y == h - 1):
+				continue
+			for d in [[0, -1, 0.0], [1, 0, PI * 0.5], [0, 1, PI], [-1, 0, PI * 1.5]]:
+				var nx: int = x + int(d[0]); var ny: int = y + int(d[1])
+				if ny < 0 or ny >= h or nx < 0 or nx >= w:
+					continue
+				if str(tiles[ny])[nx] in [".", "+", ">", "<"]:
+					var n: Node3D = _fence_scene.instantiate()
+					_map_root.add_child(n)
+					var dirv := Vector3(float(d[0]), 0.0, float(d[1]))
+					n.position = _world_pos(float(x), float(y)) + dirv * (_tile * 0.5) + Vector3(0.0, 0.02, 0.0)
+					n.rotation.y = float(d[2])
+					n.scale = Vector3(_tile / 2.06, 1.3, 1.0)
+
+
+## A few COSMETIC villagers wandering the square (client-only; not game entities). They pick a
+## random nearby walkable cell, walk there, idle a beat, repeat — so the town has life in it.
+func _spawn_ambient_villagers(tiles: Array) -> void:
+	var open: Array = []
+	for y in range(2, tiles.size() - 2):
+		for x in range(2, str(tiles[y]).length() - 2):
+			if str(tiles[y])[x] == "." and _orth_walls(x, y) == 0:
+				open.append(Vector2i(x, y))
+	if open.size() < 8:
+		return
+	var models := [ADVENTURERS + "Rogue.glb", ADVENTURERS + "Barbarian.glb", ADVENTURERS + "Mage.glb",
+		ADVENTURERS + "Knight.glb"]
+	for i in range(6):
+		var cell: Vector2i = open[(i * 53 + 7) % open.size()]
+		var scene = load(models[i % models.size()])
+		if not (scene is PackedScene):
+			continue
+		var root := Node3D.new()
+		_ent_root.add_child(root)
+		root.position = _being_pos(cell.x, cell.y)
+		var body: Node3D = (scene as PackedScene).instantiate()
+		root.add_child(body)
+		body.scale = Vector3.ONE * (_tile * 0.5)
+		var ap: AnimationPlayer = null
+		var aps := body.find_children("*", "AnimationPlayer", true)
+		if not aps.is_empty():
+			ap = aps[0]
+			ap.play("Idle")
+		_ambient.append({"node": root, "ap": ap, "cell": Vector2(cell), "from": Vector2(cell),
+			"to": Vector2(cell), "t": 1.0, "wait": float(i) * 0.7, "state": "idle"})
 
 
 ## Build newly-explored cells: floors under '.'/'+'/stairs, wall segments on wall-cell edges that
@@ -1763,6 +2062,9 @@ func _process(delta: float) -> void:
 			_turn_ring.position = _turn_ring.position.lerp(want_ring, minf(1.0, delta * 10.0))
 	else:
 		_turn_ring.visible = false
+	# ambient town villagers wandering (cosmetic)
+	if not _ambient.is_empty():
+		_update_ambient(delta)
 	# torch flicker + follow
 	_follow_player(delta)
 	# crit shake
@@ -1773,6 +2075,56 @@ func _process(delta: float) -> void:
 	else:
 		_camera.h_offset = 0.0
 		_camera.v_offset = 0.0
+
+
+func _town_walkable(x: int, y: int) -> bool:
+	var tiles = _snap.get("tiles", [])
+	if typeof(tiles) != TYPE_ARRAY or y < 0 or y >= tiles.size():
+		return false
+	var row: String = str(tiles[y])
+	return x >= 0 and x < row.length() and row[x] in [".", "+", ">", "<"]
+
+
+## Cosmetic villagers: idle a beat, pick a nearby open tile with a clear straight line, walk there
+## (constant speed + the same step-hop), face travel, repeat. Purely client-side ambience.
+func _update_ambient(delta: float) -> void:
+	for a in _ambient:
+		var node: Node3D = a["node"]
+		if not is_instance_valid(node):
+			continue
+		if str(a["state"]) == "idle":
+			a["wait"] = float(a["wait"]) - delta
+			if float(a["wait"]) <= 0.0:
+				# pick a target a few tiles off with a walkable midpoint (avoid walking into houses)
+				var base: Vector2 = a["cell"]
+				var h := (int(base.x) * 73 + int(base.y) * 91 + int(_time * 3.0)) % 97
+				var tgt := base + Vector2(float(h % 7 - 3), float((h / 7) % 7 - 3))
+				var mid := (base + tgt) * 0.5
+				if _town_walkable(int(tgt.x), int(tgt.y)) and _town_walkable(int(mid.x), int(mid.y)) \
+						and tgt.distance_to(base) > 0.5:
+					a["from"] = base
+					a["to"] = tgt
+					a["t"] = 0.0
+					a["state"] = "walk"
+					if a["ap"] != null:
+						(a["ap"] as AnimationPlayer).play("Walking_A")
+				else:
+					a["wait"] = 0.6
+		else:
+			var d := float(a["t"]) + delta * 3.2 / maxf(0.5, Vector2(a["from"]).distance_to(a["to"]))
+			a["t"] = d
+			var p: Vector2 = Vector2(a["from"]).lerp(Vector2(a["to"]), clampf(d, 0.0, 1.0))
+			var hop := absf(sin(clampf(d, 0.0, 1.0) * PI)) * _tile * 0.05
+			node.position = _being_pos(p.x, p.y) + Vector3(0.0, hop, 0.0)
+			var dirv := Vector2(a["to"]) - Vector2(a["from"])
+			if dirv.length() > 0.01:
+				node.rotation.y = lerp_angle(node.rotation.y, atan2(dirv.x, dirv.y), minf(1.0, delta * 12.0))
+			if d >= 1.0:
+				a["cell"] = a["to"]
+				a["state"] = "idle"
+				a["wait"] = 0.8 + float((int(p.x) * 3) % 4)
+				if a["ap"] != null:
+					(a["ap"] as AnimationPlayer).play("Idle")
 
 
 var _dbg_once := false

@@ -520,7 +520,9 @@ def _graywater_map() -> tuple:
     reachable by walking AROUND them (connectivity is trivially satisfied). Returns
     (WorldMap, spawn, {slug: door-front cell})."""
     from .state import WorldMap
-    W, H = 44, 28
+    # A COMPACT square (owner feedback 2026-07-09 — a wide plaza read as empty): four buildings
+    # ring a tight centre so you're among them from the start, with a well anchoring the middle.
+    W, H = 34, 24
     grid = [["#" if (x == 0 or y == 0 or x == W - 1 or y == H - 1) else "."
              for x in range(W)] for y in range(H)]
 
@@ -536,15 +538,15 @@ def _graywater_map() -> tuple:
               (x0 + w, dy) if dx == x0 + w - 1 else (x0 - 1, dy)
         return out
 
-    maren_at = building(5, 3, 10, 6, (9, 8))         # Deepcut mine office (top-left)
-    ilo_at = building(29, 3, 9, 6, (33, 8))          # chapel (top-right)
-    sable_at = building(5, 18, 9, 6, (9, 17))        # fence's shuttered shop (bottom-left)
-    joren_at = building(29, 18, 9, 6, (33, 17))      # bakery (bottom-right)
+    maren_at = building(4, 3, 9, 5, (8, 7))          # Deepcut mine office (upper-left, door south)
+    ilo_at = building(21, 3, 9, 5, (25, 7))          # chapel (upper-right, door south)
+    sable_at = building(4, 16, 9, 5, (8, 16))        # fence's shuttered shop (lower-left, door north)
+    joren_at = building(21, 16, 9, 5, (25, 16))      # bakery (lower-right, door north)
     # a well in the middle of the square — a 2x2 block of flavor, walked around
-    for yy in (13, 14):
-        for xx in (21, 22):
+    for yy in (11, 12):
+        for xx in (16, 17):
             grid[yy][xx] = "#"
-    spawn = (21, H - 2)                              # the mountain-road gate, bottom-center
+    spawn = (14, 12)                                # in the square, well beside you, buildings ringing
 
     wm = WorldMap(width=W, height=H, tiles=["".join(row) for row in grid],
                   seed=None, source="authored")
