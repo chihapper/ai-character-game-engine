@@ -88,6 +88,7 @@ var _wall_window: PackedScene = null
 var _wall_door: PackedScene = null
 var _door_leaf: PackedScene = null
 var _spire: PackedScene = null
+var _corner_post: PackedScene = null
 var _roofs: Array = []
 var _placed := {}                              # "x,y" -> true (cell already built)
 var _map_sig := ""                             # rebuild guard (N-key restart / new slice)
@@ -208,6 +209,7 @@ func _load_town_pieces() -> void:
 	_wall_door = _load_town_one("Wall_Plaster_Door_Round")
 	_door_leaf = _load_town_one("Door_1_Round")
 	_spire = _load_town_one("Roof_Tower_RoundTiles")
+	_corner_post = _load_town_one("Corner_Exterior_Wood")
 	_roofs = _load_town_set(["Roof_RoundTiles_4x4", "Roof_RoundTiles_6x6", "Roof_RoundTiles_6x8",
 		"Roof_RoundTiles_8x8", "Roof_RoundTiles_8x10"])
 
@@ -758,15 +760,35 @@ func _place_house(tiles: Array, cells: Array) -> Vector2i:
 				var leaf: Node3D = _door_leaf.instantiate()
 				wnode.add_child(leaf)
 				leaf.position = Vector3(-0.5, 0.1, 0.0)
-	# whole tiled roof, scaled to the footprint, sitting on the wall tops
+	# CORNER POSTS close the vertical seams where two perpendicular wall runs meet (the classic
+	# modular-wall corner gap) so the shell is airtight at every corner.
+	if _corner_post != null:
+		for corner in [Vector2(minx, miny), Vector2(maxx + 1, miny),
+				Vector2(minx, maxy + 1), Vector2(maxx + 1, maxy + 1)]:
+			var cp: Node3D = _corner_post.instantiate()
+			_map_root.add_child(cp)
+			cp.position = Vector3(corner.x * _tile, 0.0, corner.y * _tile)
+	# CEILING CAP over the whole footprint (just under the roof) — seals the top so the top-down
+	# camera can't see into the interior, which is what read as 'not enclosed' (owner 2026-07-08).
+	var cap := MeshInstance3D.new()
+	var capm := BoxMesh.new()
+	capm.size = Vector3(bw * _tile + 0.2, 0.3, bh * _tile + 0.2)
+	cap.mesh = capm
+	var capmat := StandardMaterial3D.new()
+	capmat.albedo_color = Color(0.12, 0.10, 0.09)   # dark loft under the roof
+	capmat.roughness = 1.0
+	cap.material_override = capmat
+	cap.position = Vector3(cx * _tile, wall_h - 0.15, cy * _tile)
+	_map_root.add_child(cap)
+	# whole tiled roof, scaled to the footprint with a clear eave overhang, on the wall tops
 	if not _roofs.is_empty():
 		var roof: Node3D = _roofs[(minx + miny) % _roofs.size()].instantiate()
 		_map_root.add_child(roof)
 		var rab := _scene_aabb(roof)
-		var sx := (bw * _tile + 0.6) / maxf(rab.size.x, 0.1)
-		var sz := (bh * _tile + 0.6) / maxf(rab.size.z, 0.1)
-		roof.scale = Vector3(sx, 1.0, sz)
-		roof.position = Vector3(cx * _tile, wall_h, cy * _tile)
+		var sx := (bw * _tile + 1.4) / maxf(rab.size.x, 0.1)
+		var sz := (bh * _tile + 1.4) / maxf(rab.size.z, 0.1)
+		roof.scale = Vector3(sx, 1.05, sz)
+		roof.position = Vector3(cx * _tile, wall_h - 0.1, cy * _tile)
 	# a spire marks the taller civic buildings (chapel / mine office) — the two topmost blocks
 	if _spire != null and miny < h_all / 3:
 		var sp: Node3D = _spire.instantiate()
