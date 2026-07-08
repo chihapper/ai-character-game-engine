@@ -30,6 +30,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+try:                                             # pull FAL_KEY / ANTHROPIC_API_KEY out of .env
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
 REVIEW = ROOT / "godot" / "assets" / "portraits" / "review"
 FINAL = ROOT / "godot" / "assets" / "portraits"
 EMOTIONS = ["neutral", "smile", "sad", "angry", "surprised", "thoughtful"]
