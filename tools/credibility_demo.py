@@ -284,10 +284,12 @@ async def prove_persistence(built_eng=None):
     emit(kind="restart", phase="restart", relationship=rel_snap(eng), scar_lines=scar_lines(eng),
          beliefs=list(eng.long_term.beliefs()))
 
-    await say(eng, name, "After the restart — same player returns, asks something innocent", clock=40,
+    # Neutral probe — gives NO specific shared fact. Our engine knows the betrayal (cold, loaded);
+    # a fresh-context raw model has no idea who "me" is. (Avoid naming the coffee/betrayal here, or
+    # the empty-context baseline can just echo it back and look like it 'remembered'.)
+    await say(eng, name, "After the restart — the same player returns", clock=40,
               phase="restart", panel=True,
-              player="It's me. Been thinking about that morning I brought your coffee. "
-                     "We're still good, you and I — right?")
+              player="It's me. I'm back. So — we're still good, you and I. Right?")
     print("   ↑ He is still cold, the scar intact, the betrayal recalled — after the process died and "
           "restarted.\n     This is not a context window.")
 
@@ -316,6 +318,81 @@ async def sample_voices():
                 w.writeframes(pcm)
             print(f"      voice {n} ({short}…) {tone:>4}  {len(pcm)//2/AUDIO_SAMPLE_RATE:4.1f}s  ->  {wp.relative_to(pathlib.Path(EMIT).parent)}")
     print("   ✔ samples written to audio/samples/ — listen, then set CORVIN_HUME_VOICE to the winner.")
+
+
+def _baseline_persona() -> str:
+    """The SAME static persona our engine starts from, as a plain system prompt — exactly what a
+    skeptic would paste into a chat to 'be Corvin'. No memory, no relationship, no scar: that gap
+    IS the demo. Built from Corvin's sheet so the comparison is fair (only the engine differs)."""
+    from orchestrator.character_store import load_character
+    c = load_character(SLUG)
+    ss = "; ".join(getattr(c, "speech_style", []) or [])
+    samples = " / ".join(getattr(c, "sample_lines", []) or [])
+    return (
+        f"You are Corvin Ashgrave, {c.role}, {c.age}. {c.concept}\n"
+        f"Temperament: {c.temperament}\nDisposition: {c.disposition}\n"
+        f"Backstory: {c.backstory}\n"
+        + (f"Speech style: {ss}\n" if ss else "")
+        + (f"Voice (for flavor, do not quote): {samples}\n" if samples else "")
+        + "Stay fully in character as Corvin — respond only as he would speak and act, a few lines. "
+          "Use *asterisks* for any stage directions."
+    )
+
+
+async def run_baseline():
+    """The side-by-side baseline: replay the SAME arc through RAW Claude Opus (no engine). The
+    build phase runs in one chat (context accumulates — Opus can roleplay + recall within it). The
+    RESTART is a fresh chat with EMPTY context: with nothing to reload, it can't know the player,
+    the coffee, or the betrayal. Stamps beat['baseline'] onto each spoken beat; the overlay shows
+    engine-vs-baseline. Same model + max_tokens as the engine, so the ONLY variable is the engine."""
+    import json
+    import pathlib
+    import anthropic
+    from orchestrator.config import get_settings
+
+    key = get_settings().anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise SystemExit("ANTHROPIC_API_KEY not set")
+    client = anthropic.Anthropic(api_key=key)
+    system = _baseline_persona()
+
+    def opus(messages: list) -> str:
+        msg = client.messages.create(model=MODEL, max_tokens=200, system=system, messages=messages)
+        return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+
+    base = pathlib.Path(EMIT)
+    data = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
+    data["meta"]["baseline_model"] = MODEL
+    print(f"   ▣ baseline = RAW {MODEL} (no engine). build phase in one chat; restart = fresh context.")
+
+    history: list = []          # the accumulating build-phase chat
+    pending: list = []          # event narration to fold into the next player turn
+    restarted = False
+    for beat in data["beats"]:
+        if beat.get("kind") == "event":
+            pending.append(f"[{beat['headline']}: {beat['fact']}]")
+            continue
+        if beat.get("kind") != "say" or not beat.get("player"):
+            continue
+        if beat.get("phase") == "restart":
+            # THE POINT: a brand-new chat, empty context — nothing reloads.
+            if not restarted:
+                print("   ⏻ baseline RESTART — new chat, empty context")
+                restarted = True
+            reply = opus([{"role": "user", "content": beat["player"]}])
+        else:
+            content = ("\n".join(pending) + "\n\n" + beat["player"]) if pending else beat["player"]
+            pending = []
+            history.append({"role": "user", "content": content})
+            reply = opus(history)
+            history.append({"role": "assistant", "content": reply})
+        beat["baseline"] = reply
+        print(f"      [{beat.get('phase'):>7}] baseline: {reply[:88].replace(chr(10),' ')}")
+
+    base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",
+                                       encoding="utf-8")
+    print("   ✔ baseline stamped onto replay — the restart beat now shows engine vs raw model.")
 
 
 async def bake_voice():
@@ -363,10 +440,13 @@ async def main():
     ap.add_argument("--reload-only", action="store_true", help="fresh process: load from disk, prove memory")
     ap.add_argument("--voice", action="store_true", help="bake Hume audio for the existing replay.json (no LLM)")
     ap.add_argument("--sample", action="store_true", help="A/B the SAMPLE_VOICES on two lines (no LLM)")
+    ap.add_argument("--baseline", action="store_true", help="replay the arc through RAW Opus (no engine) for the side-by-side")
     args = ap.parse_args()
 
     if args.sample:
         await sample_voices()
+    elif args.baseline:
+        await run_baseline()
     elif args.voice:
         await bake_voice()
     elif args.reload_only:

@@ -52,6 +52,29 @@
     border-left:2px solid var(--aff);padding-left:16px;font-weight:450}
   .npc .text em, .npc .text .stage{color:var(--dim);font-style:italic;font-weight:400}
 
+  /* side-by-side compare (restart beat) */
+  .compare{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;justify-content:center}
+  .compare .cq{font-size:19px;line-height:1.4;font-style:italic;color:#cfe0f5;border-left:2px solid var(--player);padding-left:14px}
+  .compare .cq .tag{display:block;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--player);font-style:normal;margin-bottom:6px}
+  .samecfg{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;letter-spacing:.3px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0}
+  .col{border:1px solid var(--edge);border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .col.engine{background:linear-gradient(180deg,rgba(124,255,178,.06),transparent);border-color:#2c5a44}
+  .col.base{background:linear-gradient(180deg,rgba(255,93,108,.05),transparent);border-color:#5a2b31}
+  .ch{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .ch .sub{font-weight:400;color:var(--muted);font-size:11px}
+  .ch code{font-family:var(--mono);color:var(--sel);font-size:11px}
+  .pip{width:8px;height:8px;border-radius:50%}
+  .pip.good{background:var(--sel);box-shadow:0 0 8px var(--sel)}
+  .pip.bad{background:var(--scar);box-shadow:0 0 8px var(--scar)}
+  .cbody{font-size:15px;line-height:1.5;white-space:pre-wrap;overflow:hidden;flex:1;min-height:0}
+  .col.engine .cbody{color:var(--ink)}
+  .col.base .cbody{color:#c9b6b8}
+  .cbody .stage{color:var(--dim);font-style:italic}
+  .cnote{margin-top:10px;font-size:11px;line-height:1.35;font-family:var(--mono)}
+  .col.engine .cnote{color:var(--sel)}
+  .col.base .cnote{color:var(--scar);opacity:.85}
+
   /* meters */
   .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:13px 16px}
   .card h3{margin:0 0 10px;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);
@@ -162,6 +185,22 @@
       <div class="convo">
         <div class="line player" id="playerline"><div class="tag">player</div><div class="text" id="playertext"></div></div>
         <div class="line npc" id="npcline"><div class="tag" id="npctag">Corvin</div><div class="text" id="npctext"></div></div>
+      </div>
+      <div class="compare" id="compare" style="display:none">
+        <div class="cq"><span class="tag">player, after the restart</span><div id="cq"></div></div>
+        <div class="samecfg">same model · same character · same question — the only difference is the engine</div>
+        <div class="cols">
+          <div class="col engine">
+            <div class="ch"><span class="pip good"></span>This engine <span class="sub">· mind reloaded from <code>.memory/</code></span></div>
+            <div class="cbody" id="cengine"></div>
+            <div class="cnote" id="cenote"></div>
+          </div>
+          <div class="col base">
+            <div class="ch"><span class="pip bad"></span>Raw Claude Opus <span class="sub">· fresh chat, context wiped</span></div>
+            <div class="cbody" id="cbase"></div>
+            <div class="cnote">no store to reload — it can't know the player, the debt, or the betrayal</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -279,6 +318,7 @@ function renderBeliefs(bs){
     box.appendChild(d); setTimeout(()=>d.classList.add("show"), 120*i+120); });
 }
 function showLines(player, reply){
+  hideCompare();
   const pl=$("playerline"), nl=$("npcline");
   pl.classList.remove("show"); nl.classList.remove("show");
   $("playertext").textContent = player||"";
@@ -349,9 +389,24 @@ function apply(b){
   // say
   $("scene").textContent = `t=${b.clock}  ·  ${b.location||""}`;
   $("beatlabel").textContent = b.label||"";
+  if(b.baseline){                       // the restart beat: engine vs raw model, side by side
+    showCompare(b);
+    return Math.min(11000, 4200 + (b.reply||"").length*12);
+  }
   showLines(b.player, b.reply);
   return Math.min(9000, 3200 + (b.reply||"").length*14);
 }
+function showCompare(b){
+  document.querySelector(".convo").style.display="none";
+  const c=$("compare"); c.style.display="flex";
+  $("cq").textContent = b.player||"";
+  $("cengine").innerHTML = fmtReply(b.reply);
+  $("cbase").innerHTML = fmtReply(b.baseline);
+  const r=cur.rel;
+  $("cenote").textContent = `remembers · trust ${r.trust.toFixed(2)} · scar ${r.scar_trust.toFixed(2)} · ${cur.beliefs.length} beliefs — reloaded from disk`;
+}
+function hideCompare(){ const c=$("compare"); if(c) c.style.display="none";
+  const cv=document.querySelector(".convo"); if(cv) cv.style.display="flex"; }
 
 const vox=$("vox"); let muted=false;
 function playAudio(b){

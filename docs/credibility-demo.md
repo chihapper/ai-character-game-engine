@@ -143,7 +143,25 @@ Voice is a Hume Voice Library name; swap via `CORVIN_HUME_VOICE` (e.g. "Pirate C
 "Sad Old British Man" — any name from `GET /v0/tts/voices?provider=HUME_AI`). The `audio/` dir is
 gitignored (large, regenerable); rerun `--voice` after regenerating the arc.
 
-### Milestone 3 — the side-by-side: raw Claude Opus (next)
+### Milestone 3 — the side-by-side: raw Claude Opus (DONE)
+`--baseline` replays the arc's player lines + events (as narration) through RAW Opus — same model,
+same static persona (built from Corvin's sheet), no engine. Build phase in one chat; the **restart
+= a fresh chat, empty context**. It stamps `beat.baseline` onto each spoken beat; the overlay
+shows the engine reply vs the baseline **side by side at the restart beat**. The restart probe is
+deliberately NEUTRAL ("we're still good, right?") — naming the coffee/betrayal would let the
+empty-context baseline echo it back and look like it remembered.
+
+```
+python -m tools.credibility_demo             # 1) arc on opus (fair — both sides same model)
+python -m tools.credibility_demo --baseline  # 2) stamp the raw-Opus baseline
+python -m tools.credibility_demo --voice      # 3) bake voice 2
+```
+Verified (opus vs opus): engine cites the specific betrayal ("the watch came down on my run with
+the tide-table in their hand… did you sell me to Vane?"); raw Opus, context wiped, is a generic
+guarded stranger ("you left owing me an answer") with no idea a betrayal happened. Same model,
+same persona, same question — the only difference is the engine.
+
+#### (superseded) original ChatGPT framing
 **Baseline = raw Claude Opus, not ChatGPT** (owner, 2026-07-08). Running the bare baseline on the
 *same model our engine wraps* is the airtight version: the ONLY variable is the engine, so no one
 can deflect with "you just used a smarter model." The claim narrows to exactly what we're proving —
