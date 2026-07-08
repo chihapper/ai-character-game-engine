@@ -83,6 +83,12 @@ var _town_bushes: Array = []
 var _town_rocks: Array = []
 var _town_tufts: Array = []                     # small grass/flower/pebble scatter
 var _town_props: Array = []                     # wagon / crate near buildings
+var _wall_plaster: PackedScene = null           # village-kit building pieces (2.0-wide walls)
+var _wall_window: PackedScene = null
+var _wall_door: PackedScene = null
+var _door_leaf: PackedScene = null
+var _spire: PackedScene = null
+var _roofs: Array = []
 var _placed := {}                              # "x,y" -> true (cell already built)
 var _map_sig := ""                             # rebuild guard (N-key restart / new slice)
 var _wall_len := 4.0                           # wall piece native length/thickness (measured at load)
@@ -182,6 +188,20 @@ func _load_town_pieces() -> void:
 	_town_rocks = _load_town_set(["Rock_Medium_1", "Rock_Medium_2"])
 	_town_tufts = _load_town_set(["Grass_Common_Tall", "Grass_Wispy_Tall", "Flower_3_Group", "Pebble_Round_2"])
 	_town_props = _load_town_set(["Prop_Wagon", "Prop_Crate"])
+	# Quaternius village kit — real building pieces (walls are exactly 2.0 wide = one tile)
+	_wall_plaster = _load_town_one("Wall_Plaster_Straight")
+	_wall_window = _load_town_one("Wall_Plaster_Window_Wide_Round")
+	_wall_door = _load_town_one("Wall_Plaster_Door_Round")
+	_door_leaf = _load_town_one("Door_1_Round")
+	_spire = _load_town_one("Roof_Tower_RoundTiles")
+	_roofs = _load_town_set(["Roof_RoundTiles_4x4", "Roof_RoundTiles_6x6", "Roof_RoundTiles_6x8",
+		"Roof_RoundTiles_8x8", "Roof_RoundTiles_8x10"])
+
+
+func _load_town_one(n: String) -> PackedScene:
+	var p := TOWN + n + ".gltf"
+	var s = load(p) if ResourceLoader.exists(p) else null
+	return s if s is PackedScene else null
 
 
 func _load_town_set(names: Array) -> Array:
@@ -666,84 +686,99 @@ func _place_grass_plain(x: int, y: int) -> void:
 	_map_root.add_child(q)
 
 
-## One building footprint -> a real house (plastered body + gable roof + door + chimney), sized to
-## the block. Returns the street cell in front of the door (for lane-laying), or (-1,-1).
+## One building footprint -> a REAL building from the Quaternius village kit: plaster wall pieces
+## (exactly one tile wide) around every street-facing edge, a door wall on the face toward the
+## square, windows scattered on the rest, and a whole tiled roof scaled to the footprint. The tall
+## chapel/mine gets a spire. Returns the street cell in front of the door (for lane-laying).
 func _place_house(tiles: Array, cells: Array) -> Vector2i:
+	if _wall_plaster == null:
+		return Vector2i(-1, -1)
 	var minx := 9999; var miny := 9999; var maxx := -1; var maxy := -1
+	var cellset := {}
 	for c in cells:
 		minx = mini(minx, c.x); miny = mini(miny, c.y)
 		maxx = maxi(maxx, c.x); maxy = maxi(maxy, c.y)
+		cellset[c] = true
 	var bw := (maxx - minx + 1)
 	var bh := (maxy - miny + 1)
 	var cx := (minx + maxx) * 0.5 + 0.5
 	var cy := (miny + maxy) * 0.5 + 0.5
-	var world := Vector3(cx * _tile, 0.0, cy * _tile)
-	var wall_h := _tile * 1.15
-	var col_seed := (minx * 13 + miny * 7) % 3
-	var palette := [Color(0.82, 0.74, 0.60), Color(0.76, 0.70, 0.58), Color(0.66, 0.66, 0.64)]
-	var body_col: Color = palette[col_seed]
-
-	var house := Node3D.new()
-	_map_root.add_child(house)
-	house.position = world
-	# body
-	var body := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(bw * _tile * 0.98, wall_h, bh * _tile * 0.98)
-	body.mesh = bm
-	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = body_col
-	bmat.roughness = 1.0
-	body.material_override = bmat
-	body.position = Vector3(0, wall_h * 0.5, 0)
-	house.add_child(body)
-	# gable roof (a triangular prism, ridge along the longer axis, overhanging the walls)
-	var roof := MeshInstance3D.new()
-	var pr := PrismMesh.new()
-	var along_x := bw >= bh
-	pr.size = Vector3((bw if along_x else bh) * _tile * 1.06, _tile * 0.85,
-		(bh if along_x else bw) * _tile * 1.12)
-	roof.mesh = pr
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color = Color(0.45, 0.20, 0.16)   # weathered red tile
-	rmat.roughness = 1.0
-	roof.material_override = rmat
-	roof.position = Vector3(0, wall_h + _tile * 0.42, 0)
-	if not along_x:
-		roof.rotation.y = PI * 0.5
-	house.add_child(roof)
-	# chimney with a wisp of smoke-grey
-	var chim := MeshInstance3D.new()
-	var cm := BoxMesh.new()
-	cm.size = Vector3(_tile * 0.22, _tile * 0.8, _tile * 0.22)
-	chim.mesh = cm
-	chim.material_override = rmat
-	chim.position = Vector3(bw * _tile * 0.25, wall_h + _tile * 0.5, bh * _tile * 0.2)
-	house.add_child(chim)
-	# door on the side facing the town centre; return the street cell out front
 	var h_all := tiles.size()
 	var w_all := str(tiles[0]).length()
+	var wall_h := 3.12                              # the kit's plaster-wall height
+	# which face holds the door: toward the town centre
 	var toward := Vector2(w_all * 0.5 - cx, h_all * 0.5 - cy)
 	var face := Vector2i(0, 1) if absf(toward.y) >= absf(toward.x) else Vector2i(1, 0)
 	if (face.y == 1 and toward.y < 0) or (face.x == 1 and toward.x < 0):
 		face = -face
-	var door := MeshInstance3D.new()
-	var dm := BoxMesh.new()
-	dm.size = Vector3(_tile * 0.5, wall_h * 0.62, 0.1)
-	door.mesh = dm
-	var dmat := StandardMaterial3D.new()
-	dmat.albedo_color = Color(0.30, 0.18, 0.10)
-	door.material_override = dmat
-	var fdir := Vector3(float(face.x), 0.0, float(face.y))
-	door.position = Vector3(fdir.x * bw * _tile * 0.49, wall_h * 0.31, fdir.z * bh * _tile * 0.49)
-	door.rotation.y = 0.0 if face.x == 0 else PI * 0.5
-	house.add_child(door)
-	# the street cell just outside the door
-	var dcx := int(cx) + face.x * (bw / 2 + 1)
-	var dcy := int(cy) + face.y * (bh / 2 + 1)
-	if dcx >= 0 and dcy >= 0 and dcy < h_all and dcx < w_all and str(tiles[dcy])[dcx] in [".", "+", ">", "<"]:
-		return Vector2i(dcx, dcy)
-	return Vector2i(-1, -1)
+	var door_front := Vector2i(-1, -1)
+	var dirs := [[0, -1, 0.0], [1, 0, PI * 0.5], [0, 1, PI], [-1, 0, PI * 1.5]]
+	var placed_door := false
+	for c: Vector2i in cells:
+		for d in dirs:
+			var nb := Vector2i(c.x + int(d[0]), c.y + int(d[1]))
+			if cellset.has(nb) or nb.y < 0 or nb.y >= h_all or nb.x < 0 or nb.x >= w_all:
+				continue
+			if not (str(tiles[nb.y])[nb.x] in [".", "+", ">", "<"]):
+				continue
+			var dirv := Vector2i(int(d[0]), int(d[1]))
+			var kind := "straight"
+			# door on the first perimeter cell of the centre-facing side; windows scattered
+			if dirv == face and not placed_door and _near_face_centre(c, face, minx, miny, maxx, maxy):
+				kind = "door"; placed_door = true
+				door_front = nb
+			elif (c.x * 3 + c.y) % 3 == 0:
+				kind = "window"
+			var scene: PackedScene = _wall_plaster
+			if kind == "door":
+				scene = _wall_door
+			elif kind == "window":
+				scene = _wall_window
+			var wnode: Node3D = scene.instantiate()
+			_map_root.add_child(wnode)
+			var wd := Vector3(float(d[0]), 0.0, float(d[1]))
+			# seat the wall's outer face on the cell's outward edge (piece is 0.4 thick, centred)
+			wnode.position = _world_pos(float(c.x), float(c.y)) + wd * (_tile * 0.5 - 0.2)
+			wnode.rotation.y = float(d[2])
+			if kind == "door" and _door_leaf != null:
+				var leaf: Node3D = _door_leaf.instantiate()
+				wnode.add_child(leaf)
+				leaf.position = Vector3(-0.5, 0.1, 0.0)
+	# whole tiled roof, scaled to the footprint, sitting on the wall tops
+	if not _roofs.is_empty():
+		var roof: Node3D = _roofs[(minx + miny) % _roofs.size()].instantiate()
+		_map_root.add_child(roof)
+		var rab := _scene_aabb(roof)
+		var sx := (bw * _tile + 0.6) / maxf(rab.size.x, 0.1)
+		var sz := (bh * _tile + 0.6) / maxf(rab.size.z, 0.1)
+		roof.scale = Vector3(sx, 1.0, sz)
+		roof.position = Vector3(cx * _tile, wall_h, cy * _tile)
+	# a spire marks the taller civic buildings (chapel / mine office) — the two topmost blocks
+	if _spire != null and miny < h_all / 3:
+		var sp: Node3D = _spire.instantiate()
+		_map_root.add_child(sp)
+		sp.position = Vector3(cx * _tile, wall_h + _tile * 0.9, cy * _tile)
+		sp.scale = Vector3(0.7, 0.8, 0.7)
+	return door_front
+
+
+## Is this perimeter cell near the MIDDLE of the door-facing side? (so the door is centred, not
+## in a corner).
+func _near_face_centre(c: Vector2i, face: Vector2i, minx: int, miny: int, maxx: int, maxy: int) -> bool:
+	if face.x != 0:                                 # door on a vertical face -> centre in y
+		return c.y == (miny + maxy) / 2
+	return c.x == (minx + maxx) / 2                 # door on a horizontal face -> centre in x
+
+
+func _scene_aabb(node: Node) -> AABB:
+	var mis := node.find_children("*", "MeshInstance3D", true, false)
+	var ab := AABB()
+	var first := true
+	for m in mis:
+		var a: AABB = (m as MeshInstance3D).get_aabb()
+		ab = a if first else ab.merge(a)
+		first = false
+	return ab
 
 
 ## A small wall-block (the plaza's 2x2) -> a low stone well with a dark water top, not a house.
