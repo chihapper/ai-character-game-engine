@@ -48,6 +48,7 @@ _LEAD_TAG = re.compile(r"^\s*\[([^\[\]]{1,120})\]\s*")
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
 _PAUSE_MARK = re.compile(r"\[(long )?pause\]", re.IGNORECASE)
 _QUOTES = re.compile(r'("[^"]*"|“[^”]*”)')   # alternating narration/quoted split
+_ASTERISK = re.compile(r"\*+([^*]+?)\*+")     # *stage direction* — acted, never spoken
 
 # tone words that make a line linger after it lands
 _HEAVY_TONES = ("quiet", "grief", "sad", "somber", "broken", "wounded", "tired",
@@ -265,6 +266,18 @@ class HumeTTS(TTSAdapter):
                 if tag:
                     active_desc = _blend(tag)
                     desc_new = True
+                # *stage directions* are ACTED, never spoken. Hume is explicit: `text` is spoken
+                # in full, `description` only guides delivery — so a *flat* / *glances away* left in
+                # `text` gets read aloud (owner-heard 2026). Lift the asterisk spans OUT of the
+                # speech and fold the nearest into the acting description; strip the spans entirely
+                # (not just the '*' chars, which used to leave the words behind).
+                asides = _ASTERISK.findall(s)
+                if asides:
+                    s = _ASTERISK.sub(" ", s)
+                    aside = _compact_direction(asides[-1])
+                    if aside:
+                        active_desc = _blend(aside)
+                        desc_new = True
                 pauses = [p.group(0) for p in _PAUSE_MARK.finditer(s)]
                 if pauses:
                     # pause marks stay verbatim (Octave-native) — but the REST of the
@@ -276,9 +289,9 @@ class HumeTTS(TTSAdapter):
                 else:
                     s = render_tags(s, "hume")
                 # Hygiene before the wire: any pause placeholder that survived a mismatched
-                # put-back must NEVER reach Hume (it reads as garbage), and stray emphasis
-                # asterisks aren't Octave markup — both were audible as random letter-noises.
-                s = s.replace("\x00", "").replace("*", "")
+                # put-back must NEVER reach Hume (it reads as garbage), any unpaired stray
+                # asterisk isn't Octave markup, and asterisk removal leaves double spaces.
+                s = re.sub(r"\s{2,}", " ", s.replace("\x00", "").replace("*", "")).strip()
                 if not has_speakable(s) and not pauses:
                     continue
                 utt: dict = {"text": s.strip()}

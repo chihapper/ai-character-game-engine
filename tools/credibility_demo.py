@@ -40,7 +40,7 @@ DOCK = "the fish-dock"
 # "CUSTOM_VOICE:<uuid>" = a saved custom voice; a bare name → HUME_AI. Swap via CORVIN_HUME_VOICE.
 # The owner's two preferred voices are Voice Library voices addressed BY ID (they resolve only as
 # HUME_AI, not CUSTOM_VOICE). Default = the first; A/B both with `--sample`.
-CORVIN_VOICE = os.environ.get("CORVIN_HUME_VOICE", "HUME_AI:f49f18fc-4fe9-4e78-9338-0960d44b93f9")
+CORVIN_VOICE = os.environ.get("CORVIN_HUME_VOICE", "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2")
 SAMPLE_VOICES = os.environ.get("CRED_SAMPLE_VOICES",
                                "HUME_AI:f49f18fc-4fe9-4e78-9338-0960d44b93f9,"
                                "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2").split(",")

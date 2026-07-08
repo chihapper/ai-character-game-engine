@@ -3,7 +3,7 @@
     "character": "Corvin",
     "slug": "corvin-ashgrave-inworld",
     "model": "claude-sonnet-4-6",
-    "voice": "Grizzled New Yorker"
+    "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2"
   },
   "beats": [
     {
