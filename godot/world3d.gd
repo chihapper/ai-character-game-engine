@@ -768,36 +768,47 @@ func _place_house(tiles: Array, cells: Array) -> Vector2i:
 			var cp: Node3D = _corner_post.instantiate()
 			_map_root.add_child(cp)
 			cp.position = Vector3(corner.x * _tile, 0.0, corner.y * _tile)
-	# SOLID GABLE ROOF — a real prism that sits ON the wall tops with an overhang and fully caps
-	# the footprint. Its eaves drop to just below the wall top so there is NO triangular gap to see
-	# through (the old dark 'ceiling cap' under a floating kit-roof read as a hollow cavern from the
-	# top-down camera — owner 2026-07-08). The prism is opaque on every face: two tiled slopes, two
-	# gable ends, a closed underside — the interior can't be seen from any angle.
+	# TILED ROOF — the kit's Roof_RoundTiles mesh, kept for its actual tile geometry (owner wants
+	# the tiles). The bug before was seating it by its ORIGIN so the eaves floated above the wall
+	# tops, leaving a triangular gap onto a dark interior. Fix: seat it by its real AABB BOTTOM so
+	# the eaves rest 0.3 below the wall top (they overlap the walls), and back it with a hidden
+	# opaque prism that fills any open gable ends — so tiles show, but the interior never does.
 	var lx := bw * _tile
 	var lz := bh * _tile
-	var ov := 1.2                                   # eave overhang past the walls
-	var ridge_h := maxf(1.4, minf(lx, lz) * 0.35)   # peak height, scaled to the smaller span
-	var roof := MeshInstance3D.new()
+	var ridge_h := maxf(1.5, minf(lx, lz) * 0.34)   # target peak height above the wall top
+	# (a) hidden opaque backing prism — slightly lower ridge, no overhang, so it stays UNDER the
+	#     tiles and seals the gable-end openings against the cavern.
+	var back := MeshInstance3D.new()
 	var pm := PrismMesh.new()
-	# PrismMesh ridge runs along local Z; slopes face ±X. Orient the ridge along the LONG axis.
+	var rb := ridge_h * 0.9
 	if lx > lz:
-		pm.size = Vector3(lz + ov, ridge_h, lx + ov)
-		roof.rotation.y = PI * 0.5
+		pm.size = Vector3(lz + 0.2, rb, lx + 0.2)
+		back.rotation.y = PI * 0.5
 	else:
-		pm.size = Vector3(lx + ov, ridge_h, lz + ov)
-	roof.mesh = pm
-	var roofmat := StandardMaterial3D.new()
-	roofmat.albedo_color = Color(0.62, 0.29, 0.22)  # terracotta tile
-	roofmat.roughness = 0.85
-	roof.material_override = roofmat
-	# seat the flat underside 0.25 below the wall top so eaves overlap the walls (no gap)
-	roof.position = Vector3(cx * _tile, wall_h - 0.25 + ridge_h * 0.5, cy * _tile)
-	_map_root.add_child(roof)
+		pm.size = Vector3(lx + 0.2, rb, lz + 0.2)
+	back.mesh = pm
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = Color(0.82, 0.77, 0.68)     # PLASTER — the wall rising into a gabled end
+	bmat.roughness = 1.0                            #   (so the band under the eave reads as wall, not a dark gap)
+	back.material_override = bmat
+	back.position = Vector3(cx * _tile, wall_h - 0.4 + rb * 0.5, cy * _tile)
+	_map_root.add_child(back)
+	# (b) the visible tiled kit roof, scaled to the footprint + eave overhang, seated by AABB bottom.
+	if not _roofs.is_empty():
+		var roof: Node3D = _roofs[(minx + miny) % _roofs.size()].instantiate()
+		_map_root.add_child(roof)
+		var rab := _scene_aabb(roof)                # local mesh bounds, pre-scale
+		var sx := (lx + 1.4) / maxf(rab.size.x, 0.1)
+		var sz := (lz + 1.4) / maxf(rab.size.z, 0.1)
+		var sy := ridge_h / maxf(rab.size.y, 0.1)
+		roof.scale = Vector3(sx, sy, sz)
+		# put the scaled mesh bottom (rab.position.y * sy below the origin) at wall_h - 0.3
+		roof.position = Vector3(cx * _tile, wall_h - 0.3 - rab.position.y * sy, cy * _tile)
 	# a spire marks the taller civic buildings (chapel / mine office) — the two topmost blocks
 	if _spire != null and miny < h_all / 3:
 		var sp: Node3D = _spire.instantiate()
 		_map_root.add_child(sp)
-		sp.position = Vector3(cx * _tile, wall_h - 0.25 + ridge_h + _tile * 0.35, cy * _tile)
+		sp.position = Vector3(cx * _tile, wall_h - 0.3 + ridge_h + _tile * 0.3, cy * _tile)
 		sp.scale = Vector3(0.7, 0.8, 0.7)
 	return door_front
 
