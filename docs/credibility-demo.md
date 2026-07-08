@@ -143,6 +143,17 @@ Voice is a Hume Voice Library name; swap via `CORVIN_HUME_VOICE` (e.g. "Pirate C
 "Sad Old British Man" — any name from `GET /v0/tts/voices?provider=HUME_AI`). The `audio/` dir is
 gitignored (large, regenerable); rerun `--voice` after regenerating the arc.
 
-### Milestone 3 — the ChatGPT side-by-side (next)
-Run the same arc as a long raw-ChatGPT chat (instructed to be Corvin), then a "restart" (fresh
-chat); capture it forgetting/going inconsistent. Edit to a 2–3 min cut next to our run.
+### Milestone 3 — the side-by-side: raw Claude Opus (next)
+**Baseline = raw Claude Opus, not ChatGPT** (owner, 2026-07-08). Running the bare baseline on the
+*same model our engine wraps* is the airtight version: the ONLY variable is the engine, so no one
+can deflect with "you just used a smarter model." The claim narrows to exactly what we're proving —
+the *scaffolding* (persistence, RR memory, durable scar), not model IQ.
+
+Plan: a `--baseline` runner replays the same arc's player lines + events (as narration) through a
+plain multi-turn Opus chat (`system = "you are Corvin"`, no engine — no memory store, no
+relationship/scar, no reflection). It remembers *within* its context window (that's fine — it shows
+Opus can roleplay). Then the **restart = a fresh chat with empty context**: send only the post-
+restart probe. With nothing in context it can't know the player, the coffee, or the betrayal — it
+answers generic/warm, having "forgotten." Emit a parallel replay so the overlay can show
+engine-vs-baseline side by side at the restart beat. The contrast is the whole demo: our mind
+reloads from `.memory/`; the raw model's new session is blank.
