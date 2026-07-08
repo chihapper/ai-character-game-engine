@@ -138,6 +138,7 @@ def main() -> None:
     ap.add_argument("--mouth", action="store_true", help="also render a mouth-open frame (lip flap)")
     ap.add_argument("--emotions", action="store_true", help="also render the emotion variants")
     ap.add_argument("--base", help="approved base PNG to derive variants from (default: review/<slug>.png)")
+    ap.add_argument("--extra", default="", help="extra art direction for THIS character (e.g. outfit)")
     args = ap.parse_args()
 
     cast = _all_cast()
@@ -145,7 +146,7 @@ def main() -> None:
     if c is None:
         raise SystemExit(f"unknown slug {args.slug!r}; known: {', '.join(sorted(cast))}")
 
-    prompt = author_prompt(c)
+    prompt = author_prompt(c, extra=args.extra)
     print(f"\n[{args.slug}] Claude's portrait prompt:\n{prompt}\n")
     if args.prompt_only:
         return

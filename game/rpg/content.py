@@ -490,6 +490,34 @@ def make_sable() -> Character:
     )
 
 
+def make_lira_town() -> Character:
+    """Lira in Graywater — a stray sellsword nursing cheap ale at the Miner's Rest, hireable (owner
+    2026-07-08). Same warm, playful, disarming Bri temperament + slug/voice as her Vault self; the
+    backstory is town-local so she fits the square. RECRUITABLE after a couple of real exchanges."""
+    return reskin(
+        "brielle-bri-castellano", slug=LIRA, name="Lira",
+        role="a stray sellsword at the Miner's Rest",
+        concept="a warm, quick-witted blade-for-hire drifting through Graywater, looking for coin "
+                "worth taking and company worth keeping",
+        age="late 20s",
+        backstory=(
+            "Lira rode into Graywater a few days back with an empty purse and no contract, and has "
+            "been nursing cheap ale at the Miner's Rest tavern ever since — sizing up whether this "
+            "grim little town has any work worth a blade, or anyone worth staying for. She keeps her "
+            "chin up and her jokes coming; it's how she reads a room and how she survives one. She "
+            "bonds fast with anyone who isn't trying to rob her, and she's exactly the sort of "
+            "trouble a stranger with a sealed letter might want at their back. Her armour shows more "
+            "than it covers — she likes the effect, and she's very good with the sword to back it up."),
+        goals=["find a contract worth taking", "worthwhile company or coin",
+               "not die for someone else's quarrel"],
+        knows=["her way around a fight", "the town is split three ways over the sealed vault below"],
+        doesnt_know=["what the traveler is really after in Graywater"],
+        relationships={}, sample_lines=[], greeting="",
+        game_data={"srd5": {"role": "recruitable companion",
+                            "sheet": {"max_hp": 18, "ac": 15, "STR": 13, "DEX": 15, "CON": 13}}},
+    )
+
+
 def make_joren() -> Character:
     """The baker — the UNCOACHED wildcard (validation methodology): an ordinary man with NO stake in
     the vault, lightly drawn on purpose. If the campaign only lands for the authored faction arcs and
@@ -542,6 +570,7 @@ def _graywater_map() -> tuple:
     ilo_at = building(21, 3, 9, 5, (25, 7))          # chapel (upper-right, door south)
     sable_at = building(4, 16, 9, 5, (8, 16))        # fence's shuttered shop (lower-left, door north)
     joren_at = building(21, 16, 9, 5, (25, 16))      # bakery (lower-right, door north)
+    tavern_at = building(13, 3, 8, 5, (16, 7))       # the Miner's Rest tavern (top-centre, door south)
     # a well in the middle of the square — a 2x2 block of flavor, walked around
     for yy in (11, 12):
         for xx in (16, 17):
@@ -550,7 +579,7 @@ def _graywater_map() -> tuple:
 
     wm = WorldMap(width=W, height=H, tiles=["".join(row) for row in grid],
                   seed=None, source="authored")
-    return wm, spawn, {MAREN: maren_at, ILO: ilo_at, SABLE: sable_at, JOREN: joren_at}
+    return wm, spawn, {MAREN: maren_at, ILO: ilo_at, SABLE: sable_at, JOREN: joren_at, LIRA: tavern_at}
 
 
 def build_graywater_slice(*, seed: int = 1) -> tuple[GameState, dict[str, Character]]:
@@ -575,6 +604,10 @@ def build_graywater_slice(*, seed: int = 1) -> tuple[GameState, dict[str, Charac
                          game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=5)
     joren = NpcPlacement(slug=JOREN, name="Joren", handle="the baker", pos=doors[JOREN],
                          game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=3)
+    # Lira is a RECRUITABLE sellsword at the tavern — a couple of real exchanges and she'll come
+    # along (owner 2026-07-08). Same social gate as her Vault self.
+    lira = NpcPlacement(slug=LIRA, name="Lira", handle="a sellsword at the tavern", pos=doors[LIRA],
+                        game_data={"srd5": {"role": "recruitable companion"}}, recruit_min_talks=2)
 
     quest = QuestThread(id="the-letter", title="Deliver the sealed letter to Maren of the Deepcut",
                         notes=["You were paid to carry a sealed letter to Maren — you never learned "
@@ -584,10 +617,11 @@ def build_graywater_slice(*, seed: int = 1) -> tuple[GameState, dict[str, Charac
                                "Who these people become to you is the real journey here."])
 
     gs = GameState(flavor=_TOWN_FLAVOR, player=player, world_map=wm,
-                   npcs=[maren, ilo, sable, joren], encounters=[], doors=[], quests=[quest])
+                   npcs=[maren, ilo, sable, joren, lira], encounters=[], doors=[], quests=[quest])
     gs.campaign_log.add(0.0, "You walk into Graywater off the mountain road, a sealed letter in your "
-                             "pack and four wary faces turning your way.", tags=["intro"])
-    return gs, {c.slug: c for c in (make_maren(), make_ilo(), make_sable(), make_joren())}
+                             "pack and the town's wary faces turning your way.", tags=["intro"])
+    return gs, {c.slug: c for c in (make_maren(), make_ilo(), make_sable(), make_joren(),
+                                    make_lira_town())}
 
 
 # ==================================================================================================
