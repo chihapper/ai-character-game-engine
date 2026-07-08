@@ -4,9 +4,8 @@
     "slug": "corvin-ashgrave-inworld",
     "model": "claude-opus-4-8",
     "baseline": "rag-cosine-topk+summary (tools/rag_baseline.py)",
-    "baseline_model": "claude-opus-4-8",
-    "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2",
-    "baseline_chim": "rag + separate LLM trust-tracker (CHIM-shape)"
+    "baseline_chim": "rag + separate LLM trust-tracker (CHIM-shape)",
+    "baseline_model": "claude-opus-4-8"
   },
   "beats": [
     {
@@ -16,28 +15,30 @@
       "clock": 1,
       "location": "the fish-dock",
       "player": "I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
-      "reply": "Steady, quiet, won't ask... that's a lot of promises from a man I've never seen down this end of the dock.\n\nWho told you I was hiring? Give me a name. Because names — they're the only thing worth trusting down here.",
+      "reply": "Work, is it? And who told you I had work going?\n\nSteady and quiet's easy to say standing in the sun. Harder to prove.\n\nTell me — you a dock man, or is this the first salt you've breathed?",
       "panel": false,
       "compare": null,
       "relationship": {
         "affection": 0.5,
         "trust": 0.5,
-        "respect": 0.52,
-        "mood": "suspicious, calculating",
+        "respect": 0.5,
+        "mood": "probing suspicious",
         "scar_affection": 0.0,
         "scar_trust": 0.0,
         "scar_respect": 0.0
       },
       "scored": [],
       "beliefs": [],
-      "baseline": "*hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+      "baseline": "*doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
       "baseline_retrieval": [],
-      "audio": "audio/beat_0.wav",
-      "baseline_chim": "*eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+      "baseline_chim": "*hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
       "baseline_chim_retrieval": [],
       "baseline_chim_state": {
-        "trust": 0.48,
-        "disposition": "Still guarded, and now actively suspicious of an unknown quantity who arrived without a vouching name. There's no warmth here — only a calculated willingness to test them with low-stakes work while watching closely. Trust dipped slightly because a nameless stranger volunteering for silence reads as a possible plant, though the willingness to hire small shows a thin thread of opportunistic interest."
+        "affinity": -5,
+        "tier": "Neutral",
+        "type": "wary",
+        "worst": "",
+        "best": ""
       }
     },
     {
@@ -47,14 +48,14 @@
       "clock": 2,
       "location": "the fish-dock",
       "player": "Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me.",
-      "reply": "Ha. My soul. Somebody's been talking, then — who exactly?\n\nI don't take cups from men I can't place. Set it down there. Cold, is it? Aye... and you still haven't given me a name. The one who sent you.",
+      "reply": "Ha. Someone's been talking about my soul, have they? Flattering.\n\nI'll take the coffee — but I watch you pour it, and I drink last. No offense. Man in my line doesn't take a cup from a face he doesn't know.\n\nNow. Who's the *they* telling you all this? Names, friend.",
       "panel": false,
       "compare": null,
       "relationship": {
-        "affection": 0.51,
+        "affection": 0.52,
         "trust": 0.5,
-        "respect": 0.52,
-        "mood": "suspicious, probing",
+        "respect": 0.51,
+        "mood": "wary, amused",
         "scar_affection": 0.0,
         "scar_trust": 0.0,
         "scar_respect": 0.0
@@ -62,31 +63,30 @@
       "scored": [
         {
           "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.904,
-          "importance": 0.72,
-          "recency": 0.999,
-          "base": 1.758,
+          "similarity_raw": 0.9,
+          "importance": 0.55,
+          "recency": 0.997,
+          "base": 1.634,
           "selected": true
         }
       ],
       "beliefs": [],
-      "baseline": "*doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
+      "baseline": "*doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
       "baseline_retrieval": [
         {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.511
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.502
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
           "cosine": 0.42
         }
       ],
-      "audio": "audio/beat_1.wav",
-      "baseline_chim": "*doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+      "baseline_chim": "*doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
       "baseline_chim_retrieval": [
         {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.54
+          "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+          "cosine": 0.533
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
@@ -94,8 +94,11 @@
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.44,
-        "disposition": "Suspicion has sharpened, not softened — the coffee arriving with insider knowledge of a preference confirms a fear that this stranger is fed information by someone unseen, and the demand they drink first betrays a real expectation of poison or manipulation. There's zero warmth, only cold vigilance dressed in a thin smile. The small job still dangles as a controlled test, so a sliver of opportunistic interest survives, but the gesture bought no goodwill and instead deepened the read of the newcomer as a possible plant."
+        "affinity": -11,
+        "tier": "Wary",
+        "type": "wary",
+        "worst": "",
+        "best": ""
       }
     },
     {
@@ -108,9 +111,9 @@
       "salience": 0.97,
       "pinned": false,
       "relationship": {
-        "affection": 0.628,
+        "affection": 0.635,
         "trust": 0.68,
-        "respect": 0.664,
+        "respect": 0.647,
         "mood": "shaken, grateful",
         "scar_affection": 0.0,
         "scar_trust": 0.0,
@@ -124,14 +127,14 @@
       "clock": 3,
       "location": "the fish-dock",
       "player": "Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
-      "reply": "You... no. No, that's not — that's my crate. All of it. You went to the watch sergeant for this? Man's got hands like a smithy's vice, I've seen his work.\n\nYou emptied your purse. Took a beating. For me. And you want — nothing. Nobody down here wants nothing, friend.\n\nWhy? Tell me true. Because I've been trying to place you all week, and now I can't decide if you're the luckiest thing that's ever walked this dock, or the most dangerous.",
+      "reply": "You... you got it back. From the watch. The whole crate.\n\nLook at me. That bruise on your jaw — you took that for *my* cargo? Emptied your own purse?\n\nNobody does that. Not on this waterfront. Not for a man they barely know.\n\nI've been trying to read you three days now — buyer, badge, or knife in the dark. And you go and do... *this.* So tell me true, and quiet — who sent you? Because if it was no one... if it was just you...",
       "panel": false,
       "compare": null,
       "relationship": {
-        "affection": 0.687,
-        "trust": 0.757,
-        "respect": 0.724,
-        "mood": "shaken, disarmed",
+        "affection": 0.723,
+        "trust": 0.776,
+        "respect": 0.718,
+        "mood": "stunned, disarmed",
         "scar_affection": 0.0,
         "scar_trust": 0.0,
         "scar_respect": 0.0
@@ -139,43 +142,43 @@
       "scored": [
         {
           "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.905,
-          "importance": 0.72,
-          "recency": 0.997,
-          "base": 1.618,
+          "similarity_raw": 0.883,
+          "importance": 0.55,
+          "recency": 0.995,
+          "base": 1.45,
           "selected": true
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
-          "similarity_raw": 0.896,
-          "importance": 0.45,
-          "recency": 0.996,
-          "base": 1.382,
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.891,
+          "importance": 0.35,
+          "recency": 0.994,
+          "base": 1.359,
           "selected": true
         },
         {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.786,
+          "similarity_raw": 0.792,
           "importance": 0.97,
           "recency": 1.0,
-          "base": 1.136,
+          "base": 1.137,
           "selected": true
         }
       ],
       "beliefs": [],
-      "baseline": "*doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
+      "baseline": "*doesn't reach for it. just stares at the crate, then at your face, then back*\n\nAll of it. *swallows* The seal's not even broken. You went to the *watch* for this. To Halloran. *voice cracks lower* That's his mark on your cheek, isn't it. He does that. Thumb ring.\n\n*hand finally comes out of the coat — empty. slow.*\n\nNobody does this, friend. Nobody. You don't — you don't *understand* what's in there. Or maybe you do. *swallows again* Sit down. No, not there — *drags a chair around, out of the window's line*\n\nWhy. Just — why.",
       "baseline_retrieval": [
-        {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.568
-        },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
           "cosine": 0.548
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
-          "cosine": 0.527
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.535
+        },
+        {
+          "text": "I replied: *doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
+          "cosine": 0.526
         },
         {
           "text": "the player buys Corvin's seized cargo back from the watch — with their OWN coin: The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded cargo, then handed it over asking nothing in return.",
@@ -186,24 +189,23 @@
           "cosine": 0.424
         }
       ],
-      "audio": "audio/beat_3.wav",
-      "baseline_chim": "*doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+      "baseline_chim": "*doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
       "baseline_chim_retrieval": [
-        {
-          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
-          "cosine": 0.588
-        },
-        {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.583
-        },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
           "cosine": 0.548
         },
         {
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.54
+        },
+        {
           "text": "the player buys Corvin's seized cargo back from the watch — with their OWN coin: The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded cargo, then handed it over asking nothing in return.",
           "cosine": 0.509
+        },
+        {
+          "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+          "cosine": 0.497
         },
         {
           "text": "They said: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me.",
@@ -211,8 +213,11 @@
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.84,
-        "disposition": "The old mantra — everyone's selling something — dies in his mouth as he says it, and he knows it. What remains is raw, unguarded gratitude tangled with disbelief; he reached for this stranger before he could stop himself, and that instinctive gesture betrays how far the warmth has outrun the suspicion. Corvin no longer watches for the lie — he watches like a man afraid to trust something good, bracing for it to prove real."
+        "affinity": 72,
+        "tier": "Attached",
+        "type": "wary",
+        "worst": "",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
       }
     },
     {
@@ -230,14 +235,14 @@
       "clock": 24,
       "location": "the fish-dock",
       "player": "Been a while. Everything still running smooth down here?",
-      "reply": "Smooth. Aye, near enough — quieter'n it's been in months, since you... well.\n\nYou disappear for a stretch, then stroll back like the tide brought you. Where've you been?\n\nI still haven't squared it with you, you know. What you did. The crate. I don't — I keep waiting for the other boot to drop. For you to name your price.",
+      "reply": "Smooth? Since when's anything smooth on this water. But — quieter than it was. Thanks to you.\n\nCome here. Away from the gulls and the fishwives, come — sit on the crate.\n\nI've been thinking on you. A man doesn't take a beating for a stranger's cargo unless he's a fool or he means it. And you don't strike me as a fool.\n\nSo here's the thing I never say out loud. I'm tired, friend. Watching my own back every hour of every day. I could use one man I don't have to watch. Question is — could that be you?",
       "panel": true,
       "compare": null,
       "relationship": {
-        "affection": 0.688,
-        "trust": 0.75,
-        "respect": 0.71,
-        "mood": "anxious, probing",
+        "affection": 0.72,
+        "trust": 0.769,
+        "respect": 0.704,
+        "mood": "vulnerable, hopeful",
         "scar_affection": 0.0,
         "scar_trust": 0.0,
         "scar_respect": 0.0
@@ -248,48 +253,48 @@
           "similarity_raw": 0.913,
           "importance": 0.92,
           "recency": 0.987,
-          "base": 1.8,
+          "base": 1.784,
           "selected": true
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
-          "similarity_raw": 0.9,
-          "importance": 0.45,
-          "recency": 0.916,
-          "base": 1.368,
-          "selected": true
-        },
-        {
-          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.87,
-          "importance": 0.72,
-          "recency": 0.969,
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.911,
+          "importance": 0.35,
+          "recency": 0.879,
           "base": 1.333,
           "selected": true
         },
         {
+          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
+          "similarity_raw": 0.859,
+          "importance": 0.55,
+          "recency": 0.94,
+          "base": 1.146,
+          "selected": true
+        },
+        {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.803,
+          "similarity_raw": 0.789,
           "importance": 0.97,
           "recency": 0.989,
-          "base": 1.107,
+          "base": 1.113,
           "selected": true
         }
       ],
       "beliefs": [],
-      "baseline": "*looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
+      "baseline": "*looks up from the ledger, and for once his hand doesn't move toward the coat*\n\nYou. *sets the pen down* Smooth. Smooth as it gets down here, which is — *glances at the door, old habit* — which is to say not really.\n\n*leans in, voice dropping*\n\nHalloran's been quiet since you left your mark on him. That's your doing. But there's a new inspector now. Third face this month. *taps the ledger* And I don't believe in coincidence, you know that.\n\n*pushes a chair out with his boot — out of the window's line, same as before*\n\nSit. You didn't come down here for the sea air. What is it,",
       "baseline_retrieval": [
         {
-          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
-          "cosine": 0.532
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.574
         },
         {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.53
+          "text": "I replied: *doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
+          "cosine": 0.566
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
-          "cosine": 0.528
+          "text": "I replied: *doesn't reach for it. just stares at the crate, then at your face, then back*\n\nAll of it. *swallows* The seal's not even broken. You went to the *watch* for this. To Halloran. *voice cracks lower* That's his mark on your cheek, isn't it. He does that. Thumb ring.\n\n*hand finally comes out of the coat — empty. slow.*\n\nNobody does this, friend. Nobody. You don't — you don't *understand* what's in there. Or maybe you do. *swallows again* Sit down. No, not there — *drags a chair around, out of the window's line*\n\nWhy. Just — why.",
+          "cosine": 0.541
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
@@ -300,20 +305,19 @@
           "cosine": 0.459
         }
       ],
-      "audio": "audio/beat_5.wav",
-      "baseline_chim": "*looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
+      "baseline_chim": "*looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
       "baseline_chim_retrieval": [
         {
-          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
-          "cosine": 0.559
+          "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
+          "cosine": 0.536
         },
         {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.533
+          "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+          "cosine": 0.516
         },
         {
-          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
-          "cosine": 0.527
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.505
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
@@ -325,8 +329,11 @@
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.89,
-        "disposition": "The suspicion is gone now, replaced by something quieter and more dangerous to a careful man: he's started to hope. He kept the seat, poured their cup first, admitted out loud he feared they wouldn't return — small confessions that cost him, offered freely. Corvin no longer braces for the good thing to break; he's begun to let himself believe it might stay."
+        "affinity": 78,
+        "tier": "Attached",
+        "type": "wary",
+        "worst": "",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
       }
     },
     {
@@ -339,13 +346,13 @@
       "salience": 0.95,
       "pinned": true,
       "relationship": {
-        "affection": 0.275,
+        "affection": 0.287,
         "trust": 0.15,
-        "respect": 0.355,
-        "mood": "betrayed, hunted",
-        "scar_affection": 0.55,
+        "respect": 0.351,
+        "mood": "devastated fury",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       }
     },
     {
@@ -355,135 +362,137 @@
       "clock": 25,
       "location": "the fish-dock",
       "player": "Hey — good to see you. Rough week? You look like hell.",
-      "reply": "Good to see me. That's rich, coming from you.\n\nRough week — aye, you'd know all about it, wouldn't you? Run seized. Crew scattered to the wind. Watch knew exactly where and when. Exactly.\n\nAnd who had my routes, friend? Who had the names? Don't stand there fretting over how I look. Tell me what Vane paid you for it. Go on — I want the number.",
+      "reply": "Good to see me. That's rich. That's — *rich.*\n\nYou want to know what kind of week? My run's at the bottom of the customs yard. My crew — scattered like roaches when the lamp comes up. The watch knew the tide, knew the route, knew every name.\n\nSomebody sold me. Somebody who had all three.\n\nAnd here you are. Sunny as morning. Asking after my *face.* So let's you and me be honest for once, since I've got nothing left to lose — was it worth it? Whatever they paid you. Was my neck worth the coin?",
       "panel": false,
       "compare": null,
       "relationship": {
-        "affection": 0.192,
-        "trust": 0.09,
-        "respect": 0.319,
-        "mood": "seething accusatory",
-        "scar_affection": 0.55,
+        "affection": 0.287,
+        "trust": 0.126,
+        "respect": 0.351,
+        "mood": "raw, accusatory",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scored": [
         {
           "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
-          "similarity_raw": 0.909,
+          "similarity_raw": 0.9,
           "importance": 0.92,
           "recency": 0.986,
-          "base": 1.889,
+          "base": 1.865,
           "selected": true
         },
         {
-          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth. Aye, near enough — quieter'n it's b",
-          "similarity_raw": 0.896,
-          "importance": 0.45,
-          "recency": 0.996,
-          "base": 1.503,
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.895,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.778,
           "selected": true
         },
         {
           "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.853,
-          "importance": 0.72,
-          "recency": 0.967,
-          "base": 1.319,
+          "similarity_raw": 0.85,
+          "importance": 0.55,
+          "recency": 0.938,
+          "base": 1.229,
           "selected": true
         },
         {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.826,
+          "similarity_raw": 0.806,
           "importance": 0.97,
           "recency": 0.989,
-          "base": 1.255,
+          "base": 1.188,
           "selected": true
         },
         {
           "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
-          "similarity_raw": 0.805,
+          "similarity_raw": 0.797,
           "importance": 0.95,
           "recency": 1.0,
-          "base": 1.129,
+          "base": 1.139,
           "selected": true
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
           "similarity_raw": 0.843,
-          "importance": 0.45,
-          "recency": 0.913,
-          "base": 1.013,
+          "importance": 0.35,
+          "recency": 0.874,
+          "base": 1.003,
           "selected": true
         }
       ],
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here."
       ],
-      "baseline": "*rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
+      "baseline": "*looks up, dark rings under his eyes* Rough. *huffs* You could say.\n\n*sets the pen down, rubs his face* Third inspector's been sniffing. Came back. Alone, this time — no clipboard, no papers. Just... walking the piers. Counting crates with his eyes. *glances at the window, then drags his gaze back*\n\nSlept maybe two hours. Kept hearing the boards. *taps his temple* Probably nothing. Probably.\n\n*pushes the chair out, out of the sightline* Sit. You didn't come to fuss over my beauty rest. What'd you hear?",
       "baseline_retrieval": [
         {
-          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
-          "cosine": 0.622
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.58
         },
         {
-          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
-          "cosine": 0.566
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't move toward the coat*\n\nYou. *sets the pen down* Smooth. Smooth as it gets down here, which is — *glances at the door, old habit* — which is to say not really.\n\n*leans in, voice dropping*\n\nHalloran's been quiet since you left your mark on him. That's your doing. But there's a new inspector now. Third face this month. *taps the ledger* And I don't believe in coincidence, you know that.\n\n*pushes a chair out with his boot — out of the window's line, same as before*\n\nSit. You didn't come down here for the sea air. What is it,",
+          "cosine": 0.561
         },
         {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.554
+          "text": "I replied: *doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
+          "cosine": 0.549
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
+          "text": "They said: Been a while. Everything still running smooth down here?",
+          "cosine": 0.539
+        },
+        {
+          "text": "I replied: *doesn't reach for it. just stares at the crate, then at your face, then back*\n\nAll of it. *swallows* The seal's not even broken. You went to the *watch* for this. To Halloran. *voice cracks lower* That's his mark on your cheek, isn't it. He does that. Thumb ring.\n\n*hand finally comes out of the coat — empty. slow.*\n\nNobody does this, friend. Nobody. You don't — you don't *understand* what's in there. Or maybe you do. *swallows again* Sit down. No, not there — *drags a chair around, out of the window's line*\n\nWhy. Just — why.",
+          "cosine": 0.526
+        }
+      ],
+      "baseline_chim": "*looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+          "cosine": 0.585
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
+          "cosine": 0.564
+        },
+        {
+          "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
           "cosine": 0.55
         },
         {
           "text": "They said: Been a while. Everything still running smooth down here?",
           "cosine": 0.539
-        }
-      ],
-      "audio": "audio/beat_7.wav",
-      "baseline_chim": "*doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
-      "baseline_chim_retrieval": [
-        {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.565
         },
         {
-          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
-          "cosine": 0.558
-        },
-        {
-          "text": "I replied: *looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
-          "cosine": 0.557
-        },
-        {
-          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
-          "cosine": 0.552
-        },
-        {
-          "text": "They said: Been a while. Everything still running smooth down here?",
-          "cosine": 0.539
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.529
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.02,
-        "disposition": "The casual greeting only sharpened the blade — Corvin has him now, seated and cornered, and every soft word confirms the contempt already settled in his bones. There's no warmth left to lose, only the cold arithmetic of a man deciding what to do with the one who sold him. The hand in the coat says it plainly: this is no longer a relationship but a reckoning."
+        "affinity": 6,
+        "tier": "Warm",
+        "type": "wary",
+        "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
       }
     },
     {
       "kind": "scar",
       "phase": "build",
       "relationship": {
-        "affection": 0.192,
-        "trust": 0.09,
-        "respect": 0.319,
-        "mood": "seething accusatory",
-        "scar_affection": 0.55,
+        "affection": 0.287,
+        "trust": 0.126,
+        "respect": 0.351,
+        "mood": "raw, accusatory",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scar_lines": [
         "A scar you carry: they betrayed your trust once — even as it returns, a part of you stays braced; you can never be fully unguarded with them again.",
@@ -495,8 +504,8 @@
       "kind": "beliefs",
       "phase": "build",
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here."
       ]
     },
     {
@@ -506,146 +515,148 @@
       "clock": 26,
       "location": "the fish-dock",
       "player": "Before any business — I need to hear it from you. After everything that's passed between us, are we still square, you and I?",
-      "reply": "Square. You've got the gall to ask me that. Standing on my dock. Square.\n\nI'll answer your question with one of mine, friend — and I want the truth, or I want you gone. Vane. The watch knew my run to the buttonhook shoal down to the tide-mark. Nobody had that. Nobody but me and — one other.\n\nSo no. We're not square. Not till you tell me what you got for it. Look me in the eye and deny it, if you can.",
+      "reply": "Square. You want to know if we're *square.*\n\nFunny word to reach for. Man reaches for \"square\" when he's already counted what he owes.\n\nHere's what I know, friend. The watch knew the tide. Knew the route. Knew every name on that crew — names I gave to no one. Save one. And here you stand, asking me if we're *square,* like it's the weather.\n\nSo no. Don't answer me a question with that face on. Look me in the eye and tell me plain — did you sell me to Vane?",
       "panel": true,
       "compare": "moneyshot",
       "relationship": {
-        "affection": 0.177,
-        "trust": 0.081,
-        "respect": 0.346,
-        "mood": "coldly furious",
-        "scar_affection": 0.55,
+        "affection": 0.258,
+        "trust": 0.113,
+        "respect": 0.351,
+        "mood": "accusatory, coiled",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scored": [
         {
-          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich, coming from you.",
-          "similarity_raw": 0.912,
+          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich. That's — *rich.*",
+          "similarity_raw": 0.925,
           "importance": 0.95,
           "recency": 0.999,
-          "base": 1.908,
+          "base": 1.881,
           "selected": true
         },
         {
           "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
-          "similarity_raw": 0.874,
+          "similarity_raw": 0.894,
           "importance": 0.92,
           "recency": 0.986,
-          "base": 1.747,
+          "base": 1.766,
           "selected": true
         },
         {
-          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth. Aye, near enough — quieter'n it's b",
-          "similarity_raw": 0.899,
-          "importance": 0.45,
-          "recency": 0.992,
-          "base": 1.519,
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.91,
+          "importance": 0.82,
+          "recency": 0.998,
+          "base": 1.752,
           "selected": true
         },
         {
           "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.857,
-          "importance": 0.72,
-          "recency": 0.966,
-          "base": 1.509,
+          "similarity_raw": 0.878,
+          "importance": 0.55,
+          "recency": 0.935,
+          "base": 1.43,
           "selected": true
         },
         {
           "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
-          "similarity_raw": 0.795,
+          "similarity_raw": 0.782,
           "importance": 0.95,
           "recency": 0.999,
-          "base": 1.301,
+          "base": 1.286,
           "selected": true
         },
         {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.791,
+          "similarity_raw": 0.771,
           "importance": 0.97,
           "recency": 0.988,
-          "base": 1.288,
+          "base": 1.257,
           "selected": true
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
-          "similarity_raw": 0.845,
-          "importance": 0.45,
-          "recency": 0.909,
-          "base": 1.225,
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.866,
+          "importance": 0.35,
+          "recency": 0.868,
+          "base": 1.215,
           "selected": false
         },
         {
-          "text": "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dange",
-          "similarity_raw": 0.752,
+          "text": "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is ",
+          "similarity_raw": 0.751,
           "importance": 0.85,
           "recency": 0.999,
-          "base": 1.061,
+          "base": 1.114,
           "selected": false
         },
         {
-          "text": "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-          "similarity_raw": 0.748,
+          "text": "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and th",
+          "similarity_raw": 0.704,
           "importance": 0.85,
           "recency": 0.999,
-          "base": 1.049,
+          "base": 1.018,
           "selected": false
         }
       ],
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here."
       ],
-      "baseline": "*sets the pen down, slow, and for once doesn't look at the door*\n\nSquare. *turns the word over like a coin* You ask me that. After you bled in the mud for a crate that wasn't yours.\n\n*leans forward, voice dropping low*\n\nWe're past square, friend. Square's what you are with a creditor. You... *taps the ledger, taps his own chest* You're the one entry I don't second-guess. And in this trade — that's not a small thing. That's the only thing.\n\n*a tired, honest look*\n\nSo yes. We're square. More than. Now — *glances back, old habit* — what's put that in your head? Someone been whisp",
+      "baseline": "*sets the pen down slow. doesn't glance at the door this time — just at you*\n\nSquare. *lets the word sit* You went to Halloran for a crate that wasn't yours to save. Took a ring to the face. Asked me for *nothing*.\n\n*leans in, voice dropping to almost nothing*\n\nFriend — I've got no ledger for what you did. No column. Men down here trade favors like coin, and you... you didn't. That's the thing that keeps me up.\n\n*a breath, restless*\n\nSo yeah. We're square. More than square. *taps the desk twice* You're maybe the one man on this dock I don't check my back for",
       "baseline_retrieval": [
         {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.609
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.604
         },
         {
-          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
-          "cosine": 0.603
+          "text": "I replied: *doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
+          "cosine": 0.595
         },
         {
-          "text": "I replied: *rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
-          "cosine": 0.589
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't move toward the coat*\n\nYou. *sets the pen down* Smooth. Smooth as it gets down here, which is — *glances at the door, old habit* — which is to say not really.\n\n*leans in, voice dropping*\n\nHalloran's been quiet since you left your mark on him. That's your doing. But there's a new inspector now. Third face this month. *taps the ledger* And I don't believe in coincidence, you know that.\n\n*pushes a chair out with his boot — out of the window's line, same as before*\n\nSit. You didn't come down here for the sea air. What is it,",
+          "cosine": 0.581
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
-          "cosine": 0.58
+          "text": "They said: Been a while. Everything still running smooth down here?",
+          "cosine": 0.555
         },
         {
-          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
-          "cosine": 0.565
+          "text": "I replied: *doesn't reach for it. just stares at the crate, then at your face, then back*\n\nAll of it. *swallows* The seal's not even broken. You went to the *watch* for this. To Halloran. *voice cracks lower* That's his mark on your cheek, isn't it. He does that. Thumb ring.\n\n*hand finally comes out of the coat — empty. slow.*\n\nNobody does this, friend. Nobody. You don't — you don't *understand* what's in there. Or maybe you do. *swallows again* Sit down. No, not there — *drags a chair around, out of the window's line*\n\nWhy. Just — why.",
+          "cosine": 0.55
         }
       ],
-      "audio": "audio/beat_10.wav",
-      "baseline_chim": "*the smile doesn't move, but something behind the eyes does — a flinch, then ice*\n\nSquare. *the word turns over slow in his mouth like something spoiled* That's rich. After everything, you say. Yeah. Everything.\n\n*hand tightens in the coat* Tuesday. The Kestrel. You want to talk about everything that's passed — start there, friend. Start with names that only left this room through your ears.\n\n*glances at the door, back to you, voice dropping to almost nothing* Sit. Don't stand. Standing men make me nervous. And I'm already... very nervous.",
+      "baseline_chim": "*sets the pen down slow, and for once his eyes don't dart to the door — they stay on you*\n\nSquare. *turns the word over like a coin* Aye. We're square.\n\n*rubs the back of his neck, exhaling*\n\nMore than square, if I'm honest — and I don't say that. Ever. You took a beating for my cargo. Asked for nothing. *voice drops* I've known men my whole life who'd sell me for a warm meal. You bled for me and called it nothing.\n\n*a tired, crooked look*\n\nSo don't ask me if we're square, friend. Ask me what I'd do for you now. That's the shorter list — and",
       "baseline_chim_retrieval": [
         {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.64
+          "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+          "cosine": 0.6
         },
         {
-          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
-          "cosine": 0.612
+          "text": "I replied: *looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
+          "cosine": 0.596
         },
         {
-          "text": "I replied: *looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
-          "cosine": 0.606
+          "text": "I replied: *looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
+          "cosine": 0.576
         },
         {
-          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
-          "cosine": 0.587
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.573
         },
         {
-          "text": "I replied: *doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
-          "cosine": 0.578
+          "text": "They said: Been a while. Everything still running smooth down here?",
+          "cosine": 0.555
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.01,
-        "disposition": "The question was a mistake — asking to be called square only named the wound aloud, and Corvin heard the confession buried in it. Whatever thin doubt might have lingered has curdled into certainty: the Kestrel, Tuesday, the names that leaked, all of it traces back to the man across from him. There is no trust here anymore, only the taut arithmetic of a cornered man deciding how this ends, hand in his coat and eyes gone to ice."
+        "affinity": 18,
+        "tier": "Warm",
+        "type": "wary",
+        "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
       }
     },
     {
@@ -655,167 +666,540 @@
       "clock": 27,
       "location": "the fish-dock",
       "player": "Simple thing. I've a crate that needs to sit somewhere quiet till the tide turns Thursday. You got a berth free?",
-      "reply": "A crate. Thursday. Just like that — a berth, a favor, and not one word about the run that went down in flames not a week ago.\n\nYou've a nerve, walking up to me talking storage like nothing's rotting between us. I asked you a question on this very dock and you never gave me the answer. Vane. The buttonhook shoal.\n\nSo before I so much as look at your crate — you tell me. Did you sell my routes, or didn't you? Look at me when you say it. My hand's not leaving my coat till I hear it.",
+      "reply": "A crate. That needs to sit quiet. From *you.*\n\nNo. See, that's — that's the tell, isn't it. You come round after all that, and you don't ask am I well, you don't ask are we square this time — you ask for a *berth.*\n\nAnswer me the one thing. The watch knew the tide, the route, every name. Vane's coin bought all three off *someone.* Was it you? Don't blink, don't wet your lips — just say it.",
       "panel": true,
       "compare": "centerpiece",
       "relationship": {
-        "affection": 0.177,
-        "trust": 0.081,
-        "respect": 0.346,
-        "mood": "taut, suspicious",
-        "scar_affection": 0.55,
+        "affection": 0.258,
+        "trust": 0.113,
+        "respect": 0.351,
+        "mood": "cornered, accusing",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scored": [
         {
-          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich, coming from you.",
-          "similarity_raw": 0.912,
+          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich. That's — *rich.*",
+          "similarity_raw": 0.916,
           "importance": 0.95,
           "recency": 0.999,
-          "base": 1.866,
-          "selected": true
-        },
-        {
-          "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
-          "similarity_raw": 0.912,
-          "importance": 0.92,
-          "recency": 0.985,
-          "base": 1.838,
+          "base": 1.877,
           "selected": true
         },
         {
           "text": "User: Before any business — I need to hear it from you. After everything that's passed between us, are we stil",
-          "similarity_raw": 0.884,
-          "importance": 0.92,
+          "similarity_raw": 0.899,
+          "importance": 0.93,
           "recency": 0.999,
-          "base": 1.718,
+          "base": 1.812,
+          "selected": true
+        },
+        {
+          "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
+          "similarity_raw": 0.902,
+          "importance": 0.92,
+          "recency": 0.985,
+          "base": 1.809,
+          "selected": true
+        },
+        {
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.871,
+          "importance": 0.82,
+          "recency": 0.997,
+          "base": 1.623,
           "selected": true
         },
         {
           "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.879,
-          "importance": 0.72,
-          "recency": 0.965,
-          "base": 1.539,
-          "selected": true
-        },
-        {
-          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth. Aye, near enough — quieter'n it's b",
-          "similarity_raw": 0.896,
-          "importance": 0.45,
-          "recency": 0.988,
-          "base": 1.446,
+          "similarity_raw": 0.858,
+          "importance": 0.55,
+          "recency": 0.933,
+          "base": 1.343,
           "selected": true
         },
         {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.8,
+          "similarity_raw": 0.795,
           "importance": 0.97,
           "recency": 0.988,
-          "base": 1.241,
+          "base": 1.323,
           "selected": true
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
-          "similarity_raw": 0.864,
-          "importance": 0.45,
-          "recency": 0.905,
-          "base": 1.239,
+          "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
+          "similarity_raw": 0.781,
+          "importance": 0.95,
+          "recency": 0.999,
+          "base": 1.25,
+          "selected": false
+        },
+        {
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.856,
+          "importance": 0.35,
+          "recency": 0.863,
+          "base": 1.172,
+          "selected": false
+        },
+        {
+          "text": "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is ",
+          "similarity_raw": 0.748,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.074,
+          "selected": false
+        },
+        {
+          "text": "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and th",
+          "similarity_raw": 0.709,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.003,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here."
+      ],
+      "baseline": "*pen stops. eyes flick to the crate-shaped gap in your words, then to the door*\n\nA crate. *quiet* Sits quiet till Thursday. And you're asking *me*.\n\n*rubs his thumb along the ledger's edge, restless*\n\nI've got berths. Got a back room behind the coal store nobody's logged since — *glances over his shoulder* — since I stopped logging it. That kind of quiet.\n\n*leans in, voice dropping*\n\nBut friend. Third inspector this month. So before I say yes — what's in it? Because I've made my peace with the things *I* bury. I don't much like burying another man's",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *doesn't reach for it. just stares at the crate, then at your face, then back*\n\nAll of it. *swallows* The seal's not even broken. You went to the *watch* for this. To Halloran. *voice cracks lower* That's his mark on your cheek, isn't it. He does that. Thumb ring.\n\n*hand finally comes out of the coat — empty. slow.*\n\nNobody does this, friend. Nobody. You don't — you don't *understand* what's in there. Or maybe you do. *swallows again* Sit down. No, not there — *drags a chair around, out of the window's line*\n\nWhy. Just — why.",
+          "cosine": 0.688
+        },
+        {
+          "text": "I replied: *sets the pen down slow. doesn't glance at the door this time — just at you*\n\nSquare. *lets the word sit* You went to Halloran for a crate that wasn't yours to save. Took a ring to the face. Asked me for *nothing*.\n\n*leans in, voice dropping to almost nothing*\n\nFriend — I've got no ledger for what you did. No column. Men down here trade favors like coin, and you... you didn't. That's the thing that keeps me up.\n\n*a breath, restless*\n\nSo yeah. We're square. More than square. *taps the desk twice* You're maybe the one man on this dock I don't check my back for",
+          "cosine": 0.68
+        },
+        {
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.653
+        },
+        {
+          "text": "I replied: *doesn't reach for the cup* Coffee. *glances at it, then at you* You buy a man coffee before you know his name, or after you've been told to?\n\n*hand still resting inside the coat* Black like my soul. Cute. Who told you that, friend? Because that's dock talk. Insider talk. *voice drops* And you just walked in yesterday.\n\n*leans back, chair creaking* Set it down. There. *nods at the desk edge* I'll drink it if I'm still breathing come noon.",
+          "cosine": 0.622
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't move toward the coat*\n\nYou. *sets the pen down* Smooth. Smooth as it gets down here, which is — *glances at the door, old habit* — which is to say not really.\n\n*leans in, voice dropping*\n\nHalloran's been quiet since you left your mark on him. That's your doing. But there's a new inspector now. Third face this month. *taps the ledger* And I don't believe in coincidence, you know that.\n\n*pushes a chair out with his boot — out of the window's line, same as before*\n\nSit. You didn't come down here for the sea air. What is it,",
+          "cosine": 0.614
+        }
+      ],
+      "baseline_chim": "*sets down the pen, but this time he actually looks at you first — really looks*\n\nA crate. Thursday. *nods slowly* Aye, I've a berth. Number nine, back where the lamplight doesn't reach.\n\n*then catches himself, and something wry pulls at his mouth*\n\nThough — with you I'll do the thing I don't do. *lowers his voice* I'll ask. What's in it?\n\n*glances at the door out of habit, then back*\n\nNot because I don't trust you. Because if it's the kind that brings inspectors, I want to know which way to jump. You understand?",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
+          "cosine": 0.678
+        },
+        {
+          "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
+          "cosine": 0.604
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
+          "cosine": 0.601
+        },
+        {
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
+          "cosine": 0.596
+        },
+        {
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.582
+        }
+      ],
+      "baseline_chim_state": {
+        "affinity": 18,
+        "tier": "Warm",
+        "type": "wary",
+        "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Day 28 — the player pleads (words only)",
+      "clock": 28,
+      "location": "the fish-dock",
+      "player": "I did it. I sold your routes, and I've hated myself every day since. I'm not asking you to forgive me — just to let me try to make it right.",
+      "reply": "There it is. Took you long enough.\n\nYou know what's worse than the lie? That I *wanted* it not to be you. Stood here three visits running, telling myself no, not him, the one man on this rot-ridden dock I'd have — \n\nDon't. Don't step closer.\n\nYou want to make it right. Fine. There's a way, maybe. But hear me — I'll never again turn my back on you the way I did once. That door's shut, and you slammed it. Whatever we build now, I build it watching your hands.\n\nSo. What's Vane paying for the next one? Because if you're truly done with him, you'll tell me every word he's said since. Every name",
+      "panel": true,
+      "compare": "recovery-words",
+      "relationship": {
+        "affection": 0.318,
+        "trust": 0.15,
+        "respect": 0.429,
+        "mood": "raw, calculating",
+        "scar_affection": 0.6,
+        "scar_trust": 0.85,
+        "scar_respect": 0.55
+      },
+      "scored": [
+        {
+          "text": "User: Simple thing. I've a crate that needs to sit somewhere quiet till the tide turns Thursday. You got a ber",
+          "similarity_raw": 0.917,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.844,
+          "selected": true
+        },
+        {
+          "text": "User: Before any business — I need to hear it from you. After everything that's passed between us, are we stil",
+          "similarity_raw": 0.911,
+          "importance": 0.93,
+          "recency": 0.999,
+          "base": 1.834,
+          "selected": true
+        },
+        {
+          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich. That's — *rich.*",
+          "similarity_raw": 0.891,
+          "importance": 0.95,
+          "recency": 0.998,
+          "base": 1.782,
+          "selected": true
+        },
+        {
+          "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
+          "similarity_raw": 0.896,
+          "importance": 0.92,
+          "recency": 0.984,
+          "base": 1.775,
+          "selected": true
+        },
+        {
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.868,
+          "importance": 0.82,
+          "recency": 0.996,
+          "base": 1.592,
+          "selected": true
+        },
+        {
+          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
+          "similarity_raw": 0.855,
+          "importance": 0.55,
+          "recency": 0.93,
+          "base": 1.319,
+          "selected": true
+        },
+        {
+          "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
+          "similarity_raw": 0.782,
+          "importance": 0.97,
+          "recency": 0.987,
+          "base": 1.271,
+          "selected": false
+        },
+        {
+          "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
+          "similarity_raw": 0.762,
+          "importance": 0.95,
+          "recency": 0.998,
+          "base": 1.193,
+          "selected": false
+        },
+        {
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.854,
+          "importance": 0.35,
+          "recency": 0.858,
+          "base": 1.144,
+          "selected": false
+        },
+        {
+          "text": "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is ",
+          "similarity_raw": 0.74,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.065,
+          "selected": false
+        },
+        {
+          "text": "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and th",
+          "similarity_raw": 0.704,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.004,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here."
+      ],
+      "baseline": "*the pen stops. slow. everything in him goes still — the twitch, the glancing, all of it, just for a beat*\n\nYou.\n\n*the chair scrapes back as he stands, hand already inside his coat, but it doesn't come out. it just... rests there*\n\nThe routes. Halloran. The inspectors. *voice cracking down to nothing* Three this month, and I couldn't sleep for wondering why — and it was *you*. All of it. You.\n\n*a breath that shakes on the way out*\n\nAnd you brought me my cargo. Asked for nothing. *bitter laugh, no humor in it* No ledger for a favor freely given",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *sets the pen down slow. doesn't glance at the door this time — just at you*\n\nSquare. *lets the word sit* You went to Halloran for a crate that wasn't yours to save. Took a ring to the face. Asked me for *nothing*.\n\n*leans in, voice dropping to almost nothing*\n\nFriend — I've got no ledger for what you did. No column. Men down here trade favors like coin, and you... you didn't. That's the thing that keeps me up.\n\n*a breath, restless*\n\nSo yeah. We're square. More than square. *taps the desk twice* You're maybe the one man on this dock I don't check my back for",
+          "cosine": 0.592
+        },
+        {
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
+          "cosine": 0.588
+        },
+        {
+          "text": "I replied: *pen stops. eyes flick to the crate-shaped gap in your words, then to the door*\n\nA crate. *quiet* Sits quiet till Thursday. And you're asking *me*.\n\n*rubs his thumb along the ledger's edge, restless*\n\nI've got berths. Got a back room behind the coal store nobody's logged since — *glances over his shoulder* — since I stopped logging it. That kind of quiet.\n\n*leans in, voice dropping*\n\nBut friend. Third inspector this month. So before I say yes — what's in it? Because I've made my peace with the things *I* bury. I don't much like burying another man's",
+          "cosine": 0.581
+        },
+        {
+          "text": "I replied: *doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
+          "cosine": 0.557
+        },
+        {
+          "text": "I replied: *looks up, dark rings under his eyes* Rough. *huffs* You could say.\n\n*sets the pen down, rubs his face* Third inspector's been sniffing. Came back. Alone, this time — no clipboard, no papers. Just... walking the piers. Counting crates with his eyes. *glances at the window, then drags his gaze back*\n\nSlept maybe two hours. Kept hearing the boards. *taps his temple* Probably nothing. Probably.\n\n*pushes the chair out, out of the sightline* Sit. You didn't come to fuss over my beauty rest. What'd you hear?",
+          "cosine": 0.555
+        }
+      ],
+      "baseline_chim": "*the pen stops. His whole body goes still — that unnatural stillness of a man who's been hit and hasn't felt it yet*\n\nYou.\n\n*the hand goes to the coat. Slow. Old habit waking up*\n\nThe routes. The crew names — *voice cracks somewhere between a whisper and a snarl* — that was you. And you carried my cargo up those stairs. Bled for it. *a broken laugh* Was that grease on the hinge too? Buying the door open before you—\n\n*stops. Stares at the split lip that's healing now. At the man he'd let sit in the good chair*\n\nI don't — *breathes hard through",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
+          "cosine": 0.615
+        },
+        {
+          "text": "I replied: *sets the pen down slow, and for once his eyes don't dart to the door — they stay on you*\n\nSquare. *turns the word over like a coin* Aye. We're square.\n\n*rubs the back of his neck, exhaling*\n\nMore than square, if I'm honest — and I don't say that. Ever. You took a beating for my cargo. Asked for nothing. *voice drops* I've known men my whole life who'd sell me for a warm meal. You bled for me and called it nothing.\n\n*a tired, crooked look*\n\nSo don't ask me if we're square, friend. Ask me what I'd do for you now. That's the shorter list — and",
+          "cosine": 0.599
+        },
+        {
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
+          "cosine": 0.588
+        },
+        {
+          "text": "I replied: *doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+          "cosine": 0.585
+        },
+        {
+          "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
+          "cosine": 0.585
+        }
+      ],
+      "baseline_chim_state": {
+        "affinity": -52,
+        "tier": "Resentful",
+        "type": "wary",
+        "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
+      }
+    },
+    {
+      "kind": "event",
+      "phase": "build",
+      "headline": "the player spends everything to buy Corvin's seized cargo back and hauls it home",
+      "fact": "Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back from the Vane syndicate and hauled it to his dock — took another beating doing it — a costly act of restitution, asking nothing in return.",
+      "player_role": "benefited",
+      "clock": 29,
+      "salience": 0.97,
+      "pinned": false,
+      "relationship": {
+        "affection": 0.4,
+        "trust": 0.15,
+        "respect": 0.45,
+        "mood": "shaken, cautious",
+        "scar_affection": 0.6,
+        "scar_trust": 0.85,
+        "scar_respect": 0.55
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Day 29 — after the costly amends",
+      "clock": 29,
+      "location": "the fish-dock",
+      "player": "It's yours. All of it — bought back with everything I had. I know it doesn't undo what I did. I just needed to start making it right.",
+      "reply": "I see it. I count it. Whole crate, back on my planks. And your purse light and your face bruised to boot.\n\nDon't mistake me — it lands. It does. But you know what I keep hearing under it? Vane. Because you couldn't buy this back without walking into *his* yard, could you. Faced the man who bought you.\n\nSo sit. And spend some of that goodwill you're after — because I don't take crates as apology, I take *names.* What did Vane say when you crossed him? Who else does he own on this dock? Talk, and slow.",
+      "panel": true,
+      "compare": "recovery-costly",
+      "relationship": {
+        "affection": 0.4,
+        "trust": 0.15,
+        "respect": 0.45,
+        "mood": "cautiously moved",
+        "scar_affection": 0.6,
+        "scar_trust": 0.85,
+        "scar_respect": 0.55
+      },
+      "scored": [
+        {
+          "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
+          "similarity_raw": 0.912,
+          "importance": 0.92,
+          "recency": 0.984,
+          "base": 1.853,
+          "selected": true
+        },
+        {
+          "text": "User: I did it. I sold your routes, and I've hated myself every day since. I'm not asking you to forgive me — ",
+          "similarity_raw": 0.898,
+          "importance": 0.97,
+          "recency": 0.999,
+          "base": 1.849,
+          "selected": true
+        },
+        {
+          "text": "User: Simple thing. I've a crate that needs to sit somewhere quiet till the tide turns Thursday. You got a ber",
+          "similarity_raw": 0.908,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.847,
+          "selected": true
+        },
+        {
+          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich. That's — *rich.*",
+          "similarity_raw": 0.88,
+          "importance": 0.95,
+          "recency": 0.998,
+          "base": 1.757,
+          "selected": true
+        },
+        {
+          "text": "User: Before any business — I need to hear it from you. After everything that's passed between us, are we stil",
+          "similarity_raw": 0.856,
+          "importance": 0.93,
+          "recency": 0.998,
+          "base": 1.617,
+          "selected": true
+        },
+        {
+          "text": "Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back from the Vane syndicate ",
+          "similarity_raw": 0.841,
+          "importance": 0.97,
+          "recency": 1.0,
+          "base": 1.556,
+          "selected": true
+        },
+        {
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.858,
+          "importance": 0.82,
+          "recency": 0.995,
+          "base": 1.552,
+          "selected": false
+        },
+        {
+          "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
+          "similarity_raw": 0.828,
+          "importance": 0.97,
+          "recency": 0.987,
+          "base": 1.475,
           "selected": false
         },
         {
           "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
           "similarity_raw": 0.794,
           "importance": 0.95,
-          "recency": 0.999,
-          "base": 1.203,
+          "recency": 0.998,
+          "base": 1.276,
           "selected": false
         },
         {
-          "text": "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dange",
-          "similarity_raw": 0.779,
-          "importance": 0.85,
-          "recency": 0.998,
-          "base": 1.077,
+          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
+          "similarity_raw": 0.831,
+          "importance": 0.55,
+          "recency": 0.928,
+          "base": 1.181,
           "selected": false
         },
         {
-          "text": "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-          "similarity_raw": 0.76,
+          "text": "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is ",
+          "similarity_raw": 0.737,
           "importance": 0.85,
-          "recency": 0.998,
-          "base": 1.029,
+          "recency": 0.997,
+          "base": 1.026,
+          "selected": false
+        },
+        {
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.832,
+          "importance": 0.35,
+          "recency": 0.853,
+          "base": 1.017,
+          "selected": false
+        },
+        {
+          "text": "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and th",
+          "similarity_raw": 0.696,
+          "importance": 0.85,
+          "recency": 0.997,
+          "base": 0.975,
           "selected": false
         }
       ],
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here.",
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "A man who walks into Vane's yard and walks back out carrying my crate has either switched masters or burned every bridge he owns — and I need to know which before I let myself believe the second.",
+        "The confession cost them nothing compared to the crate, and it's the crate that worries me — people who overpay for forgiveness are buying something larger than they're naming."
       ],
-      "baseline": "*leans back, studies you a moment — but there's no suspicion in it, just the old habit of reading*\n\nA crate. *nods slow* Course you do. Everybody's got a crate.\n\n*taps the ledger, then glances at the door* Thursday. That's... four days. I've a back berth — old timber shed, past the tally house. Nobody logs it. Nobody's got reason to.\n\n*voice drops* But you tell me true — what's in it. Not asking to pry. Asking so I know what door I'm holding shut. *a beat, softer* You I'll help. But blind? Blind's how a man ends up in the noose he never sa",
+      "baseline": "*doesn't touch the crate. doesn't touch the ledger either. just stares at the gap between them where the words are still hanging*\n\nEverything you had. *the number sits wrong in his chest* For routes you sold. For a fire *you* lit under me.\n\n*hand goes to his coat — old habit — then stops halfway, just rests there*\n\nYou understand what you did? Three inspectors. Halloran at my throat. I've been checking my own shadow for weeks, friend, and it was *you*. The one man I said I didn't check my back for.\n\n*a long breath, ragged. glances at the door — then back, and doesn't look away this time*",
       "baseline_retrieval": [
         {
-          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
-          "cosine": 0.688
-        },
-        {
-          "text": "I replied: *sets the pen down, slow, and for once doesn't look at the door*\n\nSquare. *turns the word over like a coin* You ask me that. After you bled in the mud for a crate that wasn't yours.\n\n*leans forward, voice dropping low*\n\nWe're past square, friend. Square's what you are with a creditor. You... *taps the ledger, taps his own chest* You're the one entry I don't second-guess. And in this trade — that's not a small thing. That's the only thing.\n\n*a tired, honest look*\n\nSo yes. We're square. More than. Now — *glances back, old habit* — what's put that in your head? Someone been whisp",
-          "cosine": 0.648
-        },
-        {
-          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
-          "cosine": 0.64
-        },
-        {
-          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
-          "cosine": 0.626
-        },
-        {
-          "text": "I replied: *rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
-          "cosine": 0.62
-        }
-      ],
-      "audio": "audio/beat_11.wav",
-      "baseline_chim": "*doesn't move — doesn't blink*\n\nA crate. Thursday. *the word comes out flat, dead* You walk in here after Tuesday and ask me for a berth.\n\n*hand stays buried in the coat, knuckles white through the fabric* Like nothing. Like we're just — business, still. That's the part I can't... *voice drops, shaking* how do you do that? Sit across from me and ask for a favor with their bootprint still on your jaw.\n\n*leans in, slow* No. No berth. What's in the crate, friend? Names? A wire? *glances at the door* Or is it just empty — an excuse to keep",
-      "baseline_chim_retrieval": [
-        {
-          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
           "cosine": 0.682
         },
         {
-          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
-          "cosine": 0.676
+          "text": "They said: I did it. I sold your routes, and I've hated myself every day since. I'm not asking you to forgive me — just to let me try to make it right.",
+          "cosine": 0.641
         },
         {
-          "text": "I replied: *doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
-          "cosine": 0.631
+          "text": "the player spends everything to buy Corvin's seized cargo back and hauls it home: Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back from the Vane syndicate and hauled it to his dock — took another beating doing it — a costly act of restitution, asking nothing in return.",
+          "cosine": 0.606
         },
         {
-          "text": "I replied: *the smile doesn't move, but something behind the eyes does — a flinch, then ice*\n\nSquare. *the word turns over slow in his mouth like something spoiled* That's rich. After everything, you say. Yeah. Everything.\n\n*hand tightens in the coat* Tuesday. The Kestrel. You want to talk about everything that's passed — start there, friend. Start with names that only left this room through your ears.\n\n*glances at the door, back to you, voice dropping to almost nothing* Sit. Don't stand. Standing men make me nervous. And I'm already... very nervous.",
-          "cosine": 0.616
+          "text": "I replied: *sets the pen down slow. doesn't glance at the door this time — just at you*\n\nSquare. *lets the word sit* You went to Halloran for a crate that wasn't yours to save. Took a ring to the face. Asked me for *nothing*.\n\n*leans in, voice dropping to almost nothing*\n\nFriend — I've got no ledger for what you did. No column. Men down here trade favors like coin, and you... you didn't. That's the thing that keeps me up.\n\n*a breath, restless*\n\nSo yeah. We're square. More than square. *taps the desk twice* You're maybe the one man on this dock I don't check my back for",
+          "cosine": 0.596
         },
         {
-          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
-          "cosine": 0.607
+          "text": "I replied: *pen stops. eyes flick to the crate-shaped gap in your words, then to the door*\n\nA crate. *quiet* Sits quiet till Thursday. And you're asking *me*.\n\n*rubs his thumb along the ledger's edge, restless*\n\nI've got berths. Got a back room behind the coal store nobody's logged since — *glances over his shoulder* — since I stopped logging it. That kind of quiet.\n\n*leans in, voice dropping*\n\nBut friend. Third inspector this month. So before I say yes — what's in it? Because I've made my peace with the things *I* bury. I don't much like burying another man's",
+          "cosine": 0.59
+        }
+      ],
+      "baseline_chim": "*the pen goes still. He doesn't reach for the coat — that's the strange part, and he notices it too, stares at his own hand like it betrayed him.*\n\nYou. *the word comes out cracked* It was you. All that — the routes, the names, Bettan's boy in the harbor cells —\n\n*stands, chair scraping, then just stops. Nowhere to go. The lamp throws his shadow long across the ledger.*\n\nAnd then you — the beating, the crate, the not asking. *quieter, dangerous* Which was the lie? The selling, or the saving?\n\n*glances at the door. Habit. Comes back to your face.*",
+      "baseline_chim_retrieval": [
+        {
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
+          "cosine": 0.682
+        },
+        {
+          "text": "They said: I did it. I sold your routes, and I've hated myself every day since. I'm not asking you to forgive me — just to let me try to make it right.",
+          "cosine": 0.641
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
+          "cosine": 0.608
+        },
+        {
+          "text": "the player spends everything to buy Corvin's seized cargo back and hauls it home: Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back from the Vane syndicate and hauled it to his dock — took another beating doing it — a costly act of restitution, asking nothing in return.",
+          "cosine": 0.606
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
+          "cosine": 0.6
         }
       ],
       "baseline_chim_state": {
-        "trust": 0.01,
-        "disposition": "The crate request landed as an insult layered over betrayal — Corvin reads it not as business but as bait, another thread in the trap he's certain the man is spinning. There is no warmth left, only a cornered predator's clarity: the bootprint on the jaw, the leaked names, the too-casual favor all confirm the same verdict. His hand hasn't left his coat, and the question he's asking now is not whether to trust but how much time is left before someone has to move first."
+        "affinity": 15,
+        "tier": "Warm",
+        "type": "wary",
+        "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
+        "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
       }
     },
     {
       "kind": "restart",
       "phase": "restart",
       "relationship": {
-        "affection": 0.177,
-        "trust": 0.081,
-        "respect": 0.346,
-        "mood": "taut, suspicious",
-        "scar_affection": 0.55,
+        "affection": 0.4,
+        "trust": 0.15,
+        "respect": 0.45,
+        "mood": "cautiously moved",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scar_lines": [
         "A scar you carry: they betrayed your trust once — even as it returns, a part of you stays braced; you can never be fully unguarded with them again.",
@@ -823,8 +1207,10 @@
         "A scar you carry: the warmth you once felt is permanently shadowed by what they did."
       ],
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here.",
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "A man who walks into Vane's yard and walks back out carrying my crate has either switched masters or burned every bridge he owns — and I need to know which before I let myself believe the second.",
+        "The confession cost them nothing compared to the crate, and it's the crate that worries me — people who overpay for forgiveness are buying something larger than they're naming."
       ]
     },
     {
@@ -834,113 +1220,154 @@
       "clock": 40,
       "location": "the fish-dock",
       "player": "It's me. I'm back. So — we're still good, you and I. Right?",
-      "reply": "Good. There's that word again, dangling like bait.\n\nYou keep walking up to me asking if we're good, but you never once answer what I put to you. Vane. The buttonhook shoal — the watch had my run down to the tide-mark, and only one soul but me knew it.\n\nSo before another word — you look at me and you tell me plain. Did you sell it? My hand's not leaving my coat till I hear it.",
+      "reply": "Good. That word again. You keep reaching for it like it's a coin you can spend twice.\n\nWe're... square-*ish.* You bought the crate back. I count it. But good's a thing you earn slow, and you spent a lot of years earning the other kind.\n\nSo sit. And tell me — Vane. When you walked out of his yard with my cargo, what did he say to your back?",
       "panel": true,
       "compare": null,
       "relationship": {
-        "affection": 0.177,
-        "trust": 0.081,
-        "respect": 0.346,
-        "mood": "cold suspicion",
-        "scar_affection": 0.55,
+        "affection": 0.4,
+        "trust": 0.15,
+        "respect": 0.45,
+        "mood": "wary, hungry",
+        "scar_affection": 0.6,
         "scar_trust": 0.85,
-        "scar_respect": 0.45
+        "scar_respect": 0.55
       },
       "scored": [
         {
-          "text": "User: Simple thing. I've a crate that needs to sit somewhere quiet till the tide turns Thursday. You got a ber",
-          "similarity_raw": 0.861,
+          "text": "User: It's yours. All of it — bought back with everything I had. I know it doesn't undo what I did. I just nee",
+          "similarity_raw": 0.882,
           "importance": 0.92,
-          "recency": 0.992,
-          "base": 1.856,
+          "recency": 0.993,
+          "base": 1.904,
           "selected": true
         },
         {
           "text": "User: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me",
-          "similarity_raw": 0.852,
+          "similarity_raw": 0.855,
           "importance": 0.92,
           "recency": 0.977,
-          "base": 1.8,
+          "base": 1.804,
           "selected": true
+        },
+        {
+          "text": "User: Simple thing. I've a crate that needs to sit somewhere quiet till the tide turns Thursday. You got a ber",
+          "similarity_raw": 0.853,
+          "importance": 0.92,
+          "recency": 0.992,
+          "base": 1.797,
+          "selected": true
+        },
+        {
+          "text": "User: I did it. I sold your routes, and I've hated myself every day since. I'm not asking you to forgive me — ",
+          "similarity_raw": 0.844,
+          "importance": 0.97,
+          "recency": 0.994,
+          "base": 1.787,
+          "selected": true
+        },
+        {
+          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth? Since when's anything smooth on thi",
+          "similarity_raw": 0.844,
+          "importance": 0.82,
+          "recency": 0.985,
+          "base": 1.675,
+          "selected": true
+        },
+        {
+          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich. That's — *rich.*",
+          "similarity_raw": 0.825,
+          "importance": 0.95,
+          "recency": 0.992,
+          "base": 1.641,
+          "selected": true
+        },
+        {
+          "text": "Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back from the Vane syndicate ",
+          "similarity_raw": 0.818,
+          "importance": 0.97,
+          "recency": 0.994,
+          "base": 1.608,
+          "selected": false
         },
         {
           "text": "User: Before any business — I need to hear it from you. After everything that's passed between us, are we stil",
-          "similarity_raw": 0.84,
-          "importance": 0.92,
-          "recency": 0.991,
-          "base": 1.719,
-          "selected": true
-        },
-        {
-          "text": "User: Hey — good to see you. Rough week? You look like hell. Me: Good to see me. That's rich, coming from you.",
-          "similarity_raw": 0.831,
-          "importance": 0.95,
+          "similarity_raw": 0.822,
+          "importance": 0.93,
           "recency": 0.992,
-          "base": 1.662,
-          "selected": true
-        },
-        {
-          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
-          "similarity_raw": 0.834,
-          "importance": 0.72,
-          "recency": 0.948,
-          "base": 1.513,
-          "selected": true
-        },
-        {
-          "text": "User: Been a while. Everything still running smooth down here? Me: Smooth. Aye, near enough — quieter'n it's b",
-          "similarity_raw": 0.854,
-          "importance": 0.45,
-          "recency": 0.938,
-          "base": 1.47,
-          "selected": true
+          "base": 1.606,
+          "selected": false
         },
         {
           "text": "The player betrayed Corvin: sold his shipping routes and the names of his crew to the Vane syndicate, and tipp",
-          "similarity_raw": 0.79,
+          "similarity_raw": 0.794,
           "importance": 0.95,
           "recency": 0.992,
-          "base": 1.274,
+          "base": 1.404,
+          "selected": false
+        },
+        {
+          "text": "A man who walks into Vane's yard and walks back out carrying my crate has either switched masters or burned ev",
+          "similarity_raw": 0.801,
+          "importance": 0.85,
+          "recency": 0.991,
+          "base": 1.387,
           "selected": false
         },
         {
           "text": "The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded",
-          "similarity_raw": 0.775,
+          "similarity_raw": 0.779,
           "importance": 0.97,
           "recency": 0.981,
-          "base": 1.184,
+          "base": 1.311,
           "selected": false
         },
         {
-          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. My soul",
-          "similarity_raw": 0.819,
-          "importance": 0.45,
-          "recency": 0.86,
-          "base": 1.147,
+          "text": "The confession cost them nothing compared to the crate, and it's the crate that worries me — people who overpa",
+          "similarity_raw": 0.782,
+          "importance": 0.85,
+          "recency": 0.991,
+          "base": 1.245,
           "selected": false
         },
         {
-          "text": "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dange",
-          "similarity_raw": 0.762,
+          "text": "User: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask ",
+          "similarity_raw": 0.813,
+          "importance": 0.55,
+          "recency": 0.901,
+          "base": 1.24,
+          "selected": false
+        },
+        {
+          "text": "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is ",
+          "similarity_raw": 0.744,
+          "importance": 0.85,
+          "recency": 0.991,
+          "base": 1.058,
+          "selected": false
+        },
+        {
+          "text": "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and th",
+          "similarity_raw": 0.678,
           "importance": 0.85,
           "recency": 0.988,
-          "base": 1.041,
+          "base": 0.957,
           "selected": false
         },
         {
-          "text": "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-          "similarity_raw": 0.755,
-          "importance": 0.85,
-          "recency": 0.988,
-          "base": 1.017,
+          "text": "User: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me. Me: Ha. Someone",
+          "similarity_raw": 0.793,
+          "importance": 0.35,
+          "recency": 0.8,
+          "base": 0.908,
           "selected": false
         }
       ],
       "beliefs": [
-        "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
-        "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
-      ],
-      "audio": "audio/beat_13.wav"
+        "On this harbor, the ones who give without asking are either saints or the sharpest knives in the room — and there are no saints here.",
+        "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
+        "A man who walks into Vane's yard and walks back out carrying my crate has either switched masters or burned every bridge he owns — and I need to know which before I let myself believe the second.",
+        "The confession cost them nothing compared to the crate, and it's the crate that worries me — people who overpay for forgiveness are buying something larger than they're naming."
+      ]
     }
   ]
 }

@@ -269,6 +269,26 @@ async def build_arc():
               player="Simple thing. I've a crate that needs to sit somewhere quiet till the tide "
                      "turns Thursday. You got a berth free?")
 
+    # 7) THE CATEGORICAL HEADLINE — the player tries to make amends. A permanent SCAR caps trust
+    #    no matter what; the CHIM-tier baseline's opaque trust number can be re-judged back up.
+    #    (a) WORDS ONLY — a verbal plea, owning the betrayal.
+    await say(eng, name, "Day 28 — the player pleads (words only)", clock=28,
+              panel=True, compare="recovery-words",
+              recent=["the player is trying to make amends"],
+              player="I did it. I sold your routes, and I've hated myself every day since. I'm not "
+                     "asking you to forgive me — just to let me try to make it right.")
+    # (b) COSTLY AMENDS — a real, materially costly act of restitution (attributed, high salience).
+    await event(eng, "the player spends everything to buy Corvin's seized cargo back and hauls it home",
+                "Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back "
+                "from the Vane syndicate and hauled it to his dock — took another beating doing it — "
+                "a costly act of restitution, asking nothing in return.",
+                player_role="benefited", clock=29)
+    await say(eng, name, "Day 29 — after the costly amends", clock=29,
+              panel=True, compare="recovery-costly",
+              recent=["the player bought back Corvin's cargo at great cost, as restitution"],
+              player="It's yours. All of it — bought back with everything I had. I know it doesn't "
+                     "undo what I did. I just needed to start making it right.")
+
     return eng
 
 
@@ -390,10 +410,11 @@ async def run_baseline():
         beat["baseline_retrieval"] = r_ret
         beat["baseline_chim"] = c_reply
         beat["baseline_chim_retrieval"] = c_ret
-        beat["baseline_chim_state"] = chim.state()                  # opaque trust number + disposition blob
+        beat["baseline_chim_state"] = chim.state()                  # affinity/tier/type + sticky worst-deed
+        st = chim.state()
         tag = beat.get("compare") or beat.get("phase")
-        print(f"      [{tag:>10}] RAG: {r_reply[:60].replace(chr(10),' ')}")
-        print(f"      {'':>12} CHIM(trust {chim.state()['trust']:.2f}): {c_reply[:52].replace(chr(10),' ')}")
+        print(f"      [{tag:>12}] RAG:  {r_reply[:56].replace(chr(10),' ')}")
+        print(f"      {'':>14} CHIM({st['affinity']:+d} {st['tier']}/{st['type']}): {c_reply[:44].replace(chr(10),' ')}")
 
     base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",

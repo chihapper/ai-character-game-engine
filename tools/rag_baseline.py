@@ -85,38 +85,67 @@ class RagBaselineCharacter:
 
 
 class ChimStyleCharacter(RagBaselineCharacter):
-    """The SOPHISTICATED standard, in CHIM's shape: the same RAG memory PLUS a SEPARATE LLM
-    'relationship' tracker (like CHIM's async relationship_system worker) that maintains a
-    disposition + trust number and CONDITIONS THE REPLY. This one DOES go cold after a betrayal.
+    """The SOPHISTICATED standard, faithful to CHIM's actual relationship_system (source-verified:
+    abeiro/HerikaServer @ aiagent — relationship_llm.php, relationship_manager.php). The SAME RAG
+    memory, PLUS a SEPARATE async LLM 'relationship' worker that moves a signed AFFINITY by
+    conservative DELTAS (clamped to [-100,+100]), maps it to a tier (Hostile…Devoted), locks the
+    relationship TYPE one-way ("once you've formed an opinion, you don't go back to neutral"), and
+    keeps a sticky WORST/BEST deed note (only ever replaced by a more extreme event) threaded into
+    the prompt. It DOES go cold after a betrayal — "changes the character" is table stakes it shares.
 
-    But faithful to that architecture, two things it still cannot do — the categorical gap:
-      - recall is NOT conditioned on the relationship. Memory retrieval stays cosine top-k; the
-        distrust never reaches into WHAT gets recalled, so an ambiguous question can't surface the
-        betrayal by feeling — the trust tracker and the memory store are separate subsystems.
-      - the change is an OPAQUE, UNBOUNDED LLM re-judgment each turn — a disposition blob + a trust
-        number with no principled scar, no geometric ceiling, no decay law. Nothing guarantees the
-        wound persists; a few warm turns can talk the judge back up.
+    Faithful to that architecture, what it STRUCTURALLY still cannot do — the surviving categorical gap:
+      - recall is NOT relationship-conditioned. Retrieval stays cosine top-k (memory & relationship
+        are separate subsystems that only meet at prompt assembly — verified in CHIM's source: the
+        retrieval query has no trust/affinity/importance term). Distrust can't bias WHAT is recalled.
+      - the change is not a principled, bounded, per-axis, inspectable STATE. Affinity is one scalar
+        an LLM re-judges by deltas with NO decay and NO permanent trust ceiling — after costly
+        amends the number climbs back toward Warm; the only persistence is the one-way type label +
+        a sticky text note. There is no geometric scar that caps trust forever while other axes
+        recover. (So it's a narrative-continuity hack, not a metamorphosis model.)
     """
+
+    # tier ladder + thresholds, faithful to CHIM's relationship_manager.php
+    # (Hostile < Resentful < Cold < Wary < Neutral < Warm < Fond < Attached < Devoted)
+    TIERS = [(-75, "Hostile"), (-40, "Resentful"), (-20, "Cold"), (-6, "Wary"),
+             (6, "Neutral"), (30, "Warm"), (55, "Fond"), (80, "Attached"), (101, "Devoted")]
 
     def __init__(self, persona: str, *, model: str, k: int = 5, summarize: bool = True):
         super().__init__(persona, model=model, k=k, summarize=summarize)
-        self._trust = 0.5
-        self._disposition = "Neutral, professionally guarded — no strong feelings formed yet."
+        self._aff = 0                 # signed affinity, clamped [-100,+100] (CHIM's scale)
+        self._type = "neutral"        # one-way: once it leaves neutral it never returns
+        self._worst = ""              # worst-deed note, only replaced by a MORE negative event
+        self._best = ""
+        self._worst_delta = 0
+        self._best_delta = 0
+
+    def _tier(self) -> str:
+        for thr, name in self.TIERS:
+            if self._aff < thr:
+                return name
+        return "Devoted"
 
     def state(self) -> dict:
-        return {"trust": round(self._trust, 3), "disposition": self._disposition}
+        return {"affinity": self._aff, "tier": self._tier(), "type": self._type,
+                "worst": self._worst, "best": self._best}
 
     def note_event(self, text: str) -> None:
-        """A world event: stored in memory AND fed to the separate relationship judge."""
+        """A world event: stored in memory AND sent to the separate relationship judge."""
         self.remember(text)
-        self._rejudge(f"An event: {text}")
+        self._judge(f"An event occurred: {text}")
+
+    def _rel_block(self) -> str:
+        # exactly what CHIM threads into the conversation prompt: tier/type + the sticky worst/best
+        line = f"[RELATIONSHIP] Player: {self._aff:+d} ({self._tier()}, {self._type})"
+        notes = [n for n in (self._worst, self._best) if n]
+        if notes:
+            line += " — " + "; ".join(notes)
+        return line
 
     def respond(self, player: str) -> tuple[str, list[dict]]:
-        top = self.retrieve(player)                       # SAME cosine retrieval — feeling never enters it
+        top = self.retrieve(player)                       # SAME cosine retrieval — the relationship never enters it
         recalled = "\n".join(f"- {r['text']}" for r in top) or "(nothing recalled)"
         ctx = f"Summary of your history:\n{self._summary}\n\n" if self._summary else ""
-        user = (f"Your current disposition toward this person: {self._disposition} "
-                f"(trust {self._trust:.2f} of 1).\n\n{ctx}"
+        user = (f"{self._rel_block()}\n\n{ctx}"
                 f"Relevant memories (most similar to what was just said):\n{recalled}\n\n"
                 f'The person says: "{player}"\n\nReply as the character — a few lines.')
         reply = self._complete(self._persona, user, 200)
@@ -124,24 +153,36 @@ class ChimStyleCharacter(RagBaselineCharacter):
         self.remember(f"I replied: {reply}")
         if self._summarize:
             self._update_summary(player, reply)
-        self._rejudge(f"They said: {player}\nYou replied: {reply}")   # separate, AFTER the reply
+        self._judge(f"They said: {player}\nYou replied: {reply}")     # separate worker, after the reply
         return reply, top
 
-    def _rejudge(self, interaction: str) -> None:
-        """The 'relationship_system' worker: an LLM re-judges disposition + a trust number from
-        scratch each time. Opaque and unbounded — no scar, no ceiling, no decay curve."""
+    def _judge(self, interaction: str) -> None:
+        """CHIM's relationship_system worker: a conservative LLM emits a DELTA (not an absolute),
+        clamped into [-100,+100]. The affinity is freely re-judgeable (no decay, no permanent
+        trust ceiling); persistence is only the one-way TYPE lock + the sticky worst/best note."""
         import json
         import re
-        prompt = (f"Current disposition: {self._disposition}\nCurrent trust (0-1): {self._trust:.2f}\n\n"
-                  f"New interaction:\n{interaction}\n\n"
-                  "Re-judge how the character now feels about this person. Reply ONLY with JSON: "
-                  '{"trust": <float 0-1>, "disposition": "<2-3 sentences on trust/warmth/resentment>"}')
-        raw = self._complete("You judge an NPC's evolving disposition. Output only JSON.", prompt, 220)
+        prompt = (
+            f"Character's current standing toward the person: {self._aff:+d} ({self._tier()}, {self._type}).\n"
+            f"Only change it for MEANINGFUL moments (small talk = 0). Rough scale: a betrayal -60..-80, "
+            f"a costly kindness +15..+30, an insult -10..-20, warmth +3..+8.\n\n"
+            f"Interaction:\n{interaction}\n\n"
+            'Reply ONLY JSON: {"delta": <int -100..100>, "type": "<one word or empty>", "reason": "<brief>"}')
+        raw = self._complete("You are a relationship judge for an NPC. Output only JSON.", prompt, 160)
         m = re.search(r"\{.*\}", raw, re.S)
-        if m:
-            try:
-                d = json.loads(m.group())
-                self._trust = float(d.get("trust", self._trust))
-                self._disposition = str(d.get("disposition", self._disposition)).strip() or self._disposition
-            except (ValueError, TypeError):
-                pass
+        if not m:
+            return
+        try:
+            d = json.loads(m.group())
+        except (ValueError, TypeError):
+            return
+        delta = int(d.get("delta", 0) or 0)
+        self._aff = max(-100, min(100, self._aff + delta))            # bounded clamp (CHIM)
+        new_type = str(d.get("type", "") or "").strip().lower()
+        if new_type and new_type != "neutral" and self._type == "neutral":
+            self._type = new_type                                     # one-way: leaves neutral, never returns
+        reason = str(d.get("reason", "") or "").strip()
+        if reason and delta <= -10 and delta < self._worst_delta:     # worst-deed ratchet (only more negative)
+            self._worst, self._worst_delta = f"worst: {reason}", delta
+        if reason and delta >= 10 and delta > self._best_delta:
+            self._best, self._best_delta = f"best: {reason}", delta
