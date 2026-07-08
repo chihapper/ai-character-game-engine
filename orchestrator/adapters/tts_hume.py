@@ -158,11 +158,23 @@ class HumeTTS(TTSAdapter):
         business around the quotes ('she laughs softly, leaning in' — silenced as
         speech, delivered as direction; Octave is built to act stage directions).
         Octave carries prosody forward on its own — we only re-state on a TURN.
-        `base_description` (optional) seeds the FIRST utterance when the line has no
-        direction of its own — the caller's scene mood (a dungeon's hush, a forge's
-        strain). Any direction found in the text overrides it from that point on."""
+        `base_description` (optional) is the caller's SCENE mood (a dungeon's hush, a
+        forge's strain). It seeds the first utterance outright, and BLENDS behind any
+        direction found in the text — 'glances at you' alone would otherwise erase the
+        scene from the voice (most replies carry some business, so an override-only
+        baseline almost never fired). The specific direction leads; the mood follows
+        within the 100-char budget."""
+        base = (base_description or "").strip()
+
+        def _blend(direction: str) -> str:
+            if not base:
+                return direction[:100]
+            if not direction:
+                return base[:100]
+            return f"{direction} — {base}"[:100]
+
         out: list[dict] = []
-        active_desc = (base_description or "").strip()[:100]
+        active_desc = base[:100]
 
         # narration/quoted alternation: narration becomes the NEXT quote's direction — and,
         # between or after quotes, a TIMED BEAT: stage business takes time, so the line
@@ -200,12 +212,12 @@ class HumeTTS(TTSAdapter):
             if tag:  # an explicit [tag] outranks inferred stage business
                 direction = tag
             if direction:
-                active_desc = direction
+                active_desc = _blend(direction)
             desc_new = bool(direction)
             for s in (x for x in _SENTENCE_END.split(spoken) if x.strip()):
                 tag, s = _consume_lead_tag(s)
                 if tag:
-                    active_desc = tag
+                    active_desc = _blend(tag)
                     desc_new = True
                 pauses = [p.group(0) for p in _PAUSE_MARK.finditer(s)]
                 if pauses:

@@ -93,10 +93,11 @@ func _process(delta: float) -> void:
 
 # --- Public API (see the shared contract) --------------------------------------------------
 
-func start_game(slice: String, seed: int, resume: bool = false) -> void:
+func start_game(slice: String, seed: int, resume: bool = false, fresh_minds: bool = false) -> void:
 	# resume=true continues the saved WORLD for this slice+seed if the server has one
-	# (fresh game otherwise); minds always persist on their own.
-	_send({"t": "start", "slice": slice, "seed": seed, "resume": resume})
+	# (fresh game otherwise); minds persist on their own. fresh_minds=true (dev reset,
+	# Shift+N) ALSO wipes the cast's memories — a true first meeting.
+	_send({"t": "start", "slice": slice, "seed": seed, "resume": resume, "fresh_minds": fresh_minds})
 
 
 func send_action(kind: String, fields: Dictionary = {}) -> void:

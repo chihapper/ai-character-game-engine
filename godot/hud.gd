@@ -402,7 +402,8 @@ func toggle_help() -> void:
 			"The gold ring marks whose turn it is.\n" + \
 			"Click a foe to attack (adjacent) · [.] or Space ends your turn\n" + \
 			"G toggles enemy HP\n\n" + \
-			"Esc leaves a conversation · N new expedition · F1 closes this"
+			"Esc leaves a conversation · N new expedition (people remember you)\n" + \
+			"Shift+N full reset (fresh world AND fresh minds) · F1 closes this"
 		lbl.add_theme_font_size_override("font_size", 15)
 		lbl.add_theme_color_override("font_color", _col_text)
 		_help_panel.add_child(lbl)

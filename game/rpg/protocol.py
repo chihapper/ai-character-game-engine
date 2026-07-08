@@ -35,6 +35,10 @@ class StartMsg(BaseModel):
     slice: str = "vault"
     seed: int = 1337
     resume: bool = False
+    # DEV/testing reset: also wipe the game cast's MINDS (their .memory stores). Persistent minds
+    # are the product — the world resets, the people don't — but evaluating first-meeting behavior
+    # (greetings, voice mood, trust-building) needs a true clean slate. Ignored when resume=True.
+    fresh_minds: bool = False
 
 
 class ActionMsg(BaseModel):

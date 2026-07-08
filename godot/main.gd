@@ -547,14 +547,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_N:
 			# New expedition: restart THIS slice+seed fresh (resume=false overwrites the save on
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
+			# SHIFT+N is the dev reset: fresh world AND fresh minds (a true first meeting).
+			var full_reset: bool = event.shift_pressed
 			if _hud != null:
-				_hud.log_line("— starting a fresh expedition —")
+				_hud.log_line("— fresh expedition, fresh MINDS (full reset) —" if full_reset
+					else "— starting a fresh expedition —")
 			_greeted.clear()
 			if _talk != null:
 				_talk.close()
 			if _world != null:
 				_world.set_slice(_slice())   # also drops stale movement tweens (fresh map re-uses ids)
-			Net.start_game(_slice(), _seed(), false)
+			Net.start_game(_slice(), _seed(), false, full_reset)
 		_:
 			handled = false
 
@@ -622,6 +625,8 @@ func _on_dialogue_submitted(mode: String, target_name: String, text: String) -> 
 		if str(_snapshot.get("mode", "")) != "combat":
 			var who := target_name if target_name != "" else "They"
 			_hud.log_line("%s considers…" % who)
+			if _talk != null and _talk.is_open():
+				_talk.show_line(who, "…", "", "")   # the stage holds the beat while they think
 	else:
 		_hud.log_line("You try to: %s" % text)
 
@@ -697,8 +702,13 @@ func _maybe_greet(id: String, who: String) -> void:
 		return
 	_greeted[id] = true
 	Net.send_action("greet", {"target_id": id})
+	var display := who if who != "" else "They"
 	if _hud != null:
-		_hud.log_line("%s turns to you…" % (who if who != "" else "They"))
+		_hud.log_line("%s turns to you…" % display)
+	# The stage shows the beat too — an empty input box alone reads as "you must type first"
+	# while the greeting is still crossing the LLM (owner-felt 2026-07-09).
+	if _talk != null and _talk.is_open():
+		_talk.show_line(display, "…", "", "")
 
 
 func _recruit_nearest() -> void:

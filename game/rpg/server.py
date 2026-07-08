@@ -121,6 +121,20 @@ class RpgConnection:
         msg = parse_client(data)                     # raises ValidationError on a bad shape
         if isinstance(msg, StartMsg):
             save_to = _save_path(msg.slice, msg.seed)
+            if msg.fresh_minds and not msg.resume:
+                # A true clean slate for TESTING: drop the game cast's mind stores before the new
+                # game constructs its engines (only the rpg-* namespace — other characters' minds
+                # are untouched). Normal N keeps minds by design; this is the harder reset.
+                from orchestrator.config import get_settings as _gs
+                mem_dir = Path(_gs().memory_dir)
+                wiped = 0
+                for f in mem_dir.glob("rpg-*"):
+                    try:
+                        f.unlink()
+                        wiped += 1
+                    except OSError:
+                        pass
+                print(f"[rpg-server] fresh_minds: wiped {wiped} cast memory files")
             loaded = self._load_save(msg) if msg.resume else None
             if loaded is not None:
                 game = RpgGame.resume(slice=msg.slice, seed=msg.seed, state=loaded,
