@@ -72,6 +72,15 @@ var _banner_scenes := {}                       # "wet"/"ember" -> PackedScene
 var _prop_sets := {}                           # "wet"/"ember" -> Array[PackedScene]
 var _torch_lights := 0                         # per-map light budget (unshadowed omnis are cheap,
                                                # but Forward+ still deserves a ceiling)
+# -- town (daylight) tileset: grass ground + village fences + nature scatter --
+var _grass_mat: StandardMaterial3D = null
+var _fence_scene: PackedScene = null
+var _path_scene: PackedScene = null
+var _town_trees: Array = []
+var _town_bushes: Array = []
+var _town_rocks: Array = []
+var _town_tufts: Array = []                     # small grass/flower/pebble scatter
+var _town_props: Array = []                     # wagon / crate near buildings
 var _placed := {}                              # "x,y" -> true (cell already built)
 var _map_sig := ""                             # rebuild guard (N-key restart / new slice)
 var _wall_len := 4.0                           # wall piece native length/thickness (measured at load)
@@ -146,11 +155,40 @@ var ENEMY_MODELS := {
 }
 
 
+const TOWN := "res://assets/town/"
+
 func _ready() -> void:
 	_load_sheet()
 	_build_scene()
 	_load_dungeon_pieces()
+	_load_town_pieces()
 	set_slice("vault")
+
+
+func _load_town_pieces() -> void:
+	_grass_mat = StandardMaterial3D.new()
+	_grass_mat.albedo_color = Color(0.36, 0.52, 0.24)   # meadow green
+	_grass_mat.roughness = 1.0
+	var f = load(TOWN + "Prop_WoodenFence_Single.gltf")
+	if f is PackedScene:
+		_fence_scene = f
+	var p = load(TOWN + "RockPath_Square_Wide.gltf")
+	if p is PackedScene:
+		_path_scene = p
+	_town_trees = _load_town_set(["CommonTree_1", "CommonTree_3", "CommonTree_5", "Pine_2", "Pine_4"])
+	_town_bushes = _load_town_set(["Bush_Common", "Bush_Common_Flowers"])
+	_town_rocks = _load_town_set(["Rock_Medium_1", "Rock_Medium_2"])
+	_town_tufts = _load_town_set(["Grass_Common_Tall", "Grass_Wispy_Tall", "Flower_3_Group", "Pebble_Round_2"])
+	_town_props = _load_town_set(["Prop_Wagon", "Prop_Crate"])
+
+
+func _load_town_set(names: Array) -> Array:
+	var out: Array = []
+	for n in names:
+		var s = load(TOWN + str(n) + ".gltf") if ResourceLoader.exists(TOWN + str(n) + ".gltf") else null
+		if s is PackedScene:
+			out.append(s)
+	return out
 
 
 func _load_sheet() -> void:
@@ -197,6 +235,17 @@ func _build_scene() -> void:
 	env.fog_light_color = Color(0.05, 0.05, 0.08)
 	env.fog_density = 0.015
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	# A real sky, kept ready — daylight (town) slices switch background to it so the world reads
+	# as OUTDOORS under open sky, not a lit room (owner feedback 2026-07-09). Dungeons keep BG_COLOR.
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.35, 0.52, 0.82)
+	sky_mat.sky_horizon_color = Color(0.78, 0.82, 0.86)
+	sky_mat.ground_horizon_color = Color(0.78, 0.82, 0.86)
+	sky_mat.ground_bottom_color = Color(0.55, 0.6, 0.6)
+	sky_mat.sun_angle_max = 30.0
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	env.sky = sky
 	_env_node = WorldEnvironment.new()
 	_env_node.environment = env
 	add_child(_env_node)
@@ -396,21 +445,21 @@ func _apply_palette(slice_name: String) -> void:
 	_daylight = false
 	match slice_name:
 		"graywater", "town":
-			# A TOWN, not a dungeon: cold bright mountain daylight, the sun (not a torch) doing the
-			# lighting, only a wisp of fog. The stone geometry reads as a cobbled square + stone
-			# buildings rather than a cave.
-			env.background_color = Color(0.62, 0.68, 0.78)
-			env.ambient_light_color = Color(0.72, 0.76, 0.82)
-			env.ambient_light_energy = 1.25
+			# A TOWN OUTDOORS: open SKY background, sun-lit, grass ground + village fences + trees
+			# (owner feedback 2026-07-09 — the lit-stone version still read as a dungeon).
+			env.background_mode = Environment.BG_SKY
+			env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+			env.ambient_light_energy = 1.0
 			env.fog_light_color = Color(0.7, 0.75, 0.82)
-			env.fog_density = 0.004
+			env.fog_density = 0.003
 			_sun.light_color = Color(1.0, 0.96, 0.86)
-			_sun.light_energy = 1.35
-			_decor = ""                              # no puddles/ember cracks on a town square
+			_sun.light_energy = 1.4
+			_sun.rotation_degrees = Vector3(-52.0, 40.0, 0.0)
+			_decor = ""                              # town ground is grass, not dungeon decor
 			_daylight = true
-			if _floor_sets.has("wet"):
-				_floor_scenes = _floor_sets["wet"]   # plain stone reads as cobblestone in daylight
 		"emberdeep":
+			env.background_mode = Environment.BG_COLOR
+			env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 			env.background_color = Color(0.045, 0.015, 0.008)
 			env.ambient_light_color = Color(0.55, 0.34, 0.22)
 			env.ambient_light_energy = 0.5
@@ -423,6 +472,8 @@ func _apply_palette(slice_name: String) -> void:
 			if _floor_sets.has("ember"):
 				_floor_scenes = _floor_sets["ember"]
 		_:
+			env.background_mode = Environment.BG_COLOR
+			env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 			env.background_color = Color(0.02, 0.02, 0.03)
 			env.ambient_light_color = Color(0.35, 0.38, 0.48)
 			env.ambient_light_energy = 0.55
@@ -543,6 +594,9 @@ func _build_explored(tiles: Array) -> void:
 
 
 func _place_floor(x: int, y: int) -> void:
+	if _daylight:
+		_place_grass(x, y)
+		return
 	if _floor_scenes.is_empty():
 		return
 	# Mostly the plain tile; every few cells one of the character variants (broken, mossy, rocky).
@@ -558,6 +612,56 @@ func _place_floor(x: int, y: int) -> void:
 		scene = _floor_scenes[vi]
 	_place_scene(scene, x, y, 0.0)
 	_maybe_decor(x, y)
+
+
+## Town ground: a grass quad per cell (subtle per-cell green variation), a worn RockPath tile on
+## the well-trodden central plaza + the gate approach, and scatter (tufts/bushes/trees/props) so
+## the square reads as an outdoor village, not a lit stone room.
+func _place_grass(x: int, y: int) -> void:
+	var q := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(_tile, _tile)
+	q.mesh = pm
+	var h := (x * 131 + y * 197) % 100
+	var mat := _grass_mat.duplicate() as StandardMaterial3D
+	mat.albedo_color = _grass_mat.albedo_color.lerp(Color(0.30, 0.44, 0.20), float(h) / 140.0)
+	q.material_override = mat
+	q.position = _world_pos(float(x), float(y)) + Vector3(0.0, 0.02, 0.0)
+	_map_root.add_child(q)
+	# a worn stone path across the very centre of the map (the plaza + the gate lane)
+	if _path_scene != null and (absi(x - int(_snap.get("map_width", 44)) / 2) <= 1 or _orth_walls(x, y) == 0 and h < 6):
+		var path: Node3D = _path_scene.instantiate()
+		_map_root.add_child(path)
+		path.position = _world_pos(float(x), float(y)) + Vector3(0.0, 0.03, 0.0)
+		path.scale = Vector3(_tile / 2.05, 1.0, _tile / 2.0)
+	_maybe_town_scatter(x, y, h)
+
+
+## Nature/village scatter on open grass (tufts everywhere-ish; bushes/rocks/trees/props sparser),
+## deterministic, kept off cell centres where beings stand.
+func _maybe_town_scatter(x: int, y: int, h: int) -> void:
+	var open := _orth_walls(x, y)
+	var off := Vector3(_tile * 0.28 * float(h % 3 - 1), 0.02, _tile * 0.28 * float((h / 3) % 3 - 1))
+	var pos := _world_pos(float(x), float(y)) + off
+	var scene: PackedScene = null
+	var sc := 0.5
+	if open >= 1 and h % 7 == 0 and not _town_trees.is_empty():        # trees hug buildings/edges
+		scene = _town_trees[h % _town_trees.size()]; sc = 0.42
+	elif h % 11 == 0 and not _town_bushes.is_empty():
+		scene = _town_bushes[h % _town_bushes.size()]; sc = 0.7
+	elif h % 13 == 0 and not _town_rocks.is_empty():
+		scene = _town_rocks[h % _town_rocks.size()]; sc = 0.5
+	elif h % 5 == 0 and not _town_tufts.is_empty():
+		scene = _town_tufts[h % _town_tufts.size()]; sc = 0.55
+	elif open == 1 and h % 9 == 0 and not _town_props.is_empty():      # wagon/crate against a wall
+		scene = _town_props[h % _town_props.size()]; sc = 0.5
+	if scene == null:
+		return
+	var n: Node3D = scene.instantiate()
+	_map_root.add_child(n)
+	n.position = pos
+	n.rotation.y = float(h) * 0.7
+	n.scale = Vector3(sc, sc, sc)
 
 
 ## Orthogonal wall-cell count around a floor cell: 0 = open room, 1 = along a room wall,
@@ -650,6 +754,9 @@ func _place_scene(scene: PackedScene, x: int, y: int, yaw: float) -> Node3D:
 ## A wall CELL renders as wall segments on each edge shared with an explored floor cell — the
 ## classic tile-to-face mapping (the far side of the wall stays void; the camera never sees it).
 func _place_walls(tiles: Array, x: int, y: int) -> void:
+	if _daylight:
+		_place_fence(tiles, x, y)
+		return
 	if _wall_scene == null:
 		return
 	var dirs := [[0, -1, 0.0], [1, 0, PI * 0.5], [0, 1, PI], [-1, 0, PI * 1.5]]
@@ -682,6 +789,40 @@ func _place_walls(tiles: Array, x: int, y: int) -> void:
 			n.scale.x = _tile / _wall_len
 			n.scale.y = 0.55
 			_maybe_wall_dressing(x, y, dirv, float(d[2]), wh)
+
+
+## Town buildings: a wooden PALISADE fence on each edge facing open ground — scaled a bit taller
+## than the low garden fence so a building footprint reads as a walled structure, not a hedge, and
+## grass tucked under so no stone shows. (Bespoke modular houses are a later polish; this reads as
+## an outdoor village at a glance.)
+func _place_fence(tiles: Array, x: int, y: int) -> void:
+	if _fence_scene == null:
+		return
+	# grass under the wall cell too, so the footprint isn't a bare hole
+	if _grass_mat != null:
+		var g := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(_tile, _tile)
+		g.mesh = pm
+		g.material_override = _grass_mat
+		g.position = _world_pos(float(x), float(y)) + Vector3(0.0, 0.01, 0.0)
+		_map_root.add_child(g)
+	var dirs := [[0, -1, 0.0], [1, 0, PI * 0.5], [0, 1, PI], [-1, 0, PI * 1.5]]
+	for d in dirs:
+		var nx: int = x + int(d[0])
+		var ny: int = y + int(d[1])
+		if ny < 0 or ny >= tiles.size():
+			continue
+		var row: String = str(tiles[ny])
+		if nx < 0 or nx >= row.length():
+			continue
+		if row[nx] in [".", "+", ">", "<"] and _exp.has(str(nx) + "," + str(ny)):
+			var n: Node3D = _fence_scene.instantiate()
+			_map_root.add_child(n)
+			var dirv := Vector3(float(d[0]), 0.0, float(d[1]))
+			n.position = _world_pos(float(x), float(y)) + dirv * (_tile * 0.5) + Vector3(0.0, 0.02, 0.0)
+			n.rotation.y = float(d[2])
+			n.scale = Vector3(_tile / 2.06, 2.4, 1.0)   # ~1 tile wide, raised to palisade height
 
 
 ## Torches and banners live on the corridor-facing side of wall segments (deterministic, sparse).
