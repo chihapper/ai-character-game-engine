@@ -9,6 +9,10 @@ with maximal fidelity:
   * ElevenLabs v3 — inline audio tags, anywhere in the line.
   * Inworld TTS-2 — a LEADING bracket is read as natural-language steering; a bare
     adjective is wrapped into an instruction ("[sound cold]") for best effect.
+  * Hume Octave — a LEADING bracket becomes the utterance's acting `description`
+    (consumed by its adapter BEFORE tags are rendered); there is no inline token
+    vocabulary, so any bracket still standing mid-sentence is dropped, and
+    [pause]/[long pause] stay verbatim in its text (Octave-native markers).
   * Cartesia (deprecated) — categorical only; it just renders [laughter] and drops
     the rest. No emotion control without the old vocab.
 
@@ -22,23 +26,26 @@ import re
 
 from .timing import PAUSE_HINT_MS, PAUSE_TAG_MS
 
-# Non-verbal sound roots -> (Cartesia, Inworld, ElevenLabs) tokens. Substring match,
-# so "[nervous laugh]" / "[bitter chuckle]" still resolve. None = no equivalent.
-_NONVERBAL_ROOTS: dict[str, tuple[str | None, str | None, str | None]] = {
-    "laugh":   ("[laughter]", "[laugh]", "[laughs]"),
-    "chuckle": ("[laughter]", "[laugh]", "[laughs]"),
-    "giggle":  ("[laughter]", "[laugh]", "[giggles]"),
-    "snicker": ("[laughter]", "[laugh]", "[laughs]"),
-    "scoff":   (None, None, "[scoffs]"),
-    "sigh":    (None, "[sigh]", "[sighs]"),
-    "breath":  (None, "[breathe]", "[exhales]"),
-    "exhale":  (None, "[breathe]", "[exhales]"),
-    "gasp":    (None, None, "[gasps]"),
-    "cough":   (None, "[cough]", None),
-    "yawn":    (None, "[yawn]", None),
-    "throat":  (None, "[clear throat]", "[clears throat]"),
-    "cry":     (None, None, "[crying]"),
-    "sob":     (None, None, "[crying]"),
+# Non-verbal sound roots -> (Cartesia, Inworld, ElevenLabs, Hume) tokens. Substring
+# match, so "[nervous laugh]" / "[bitter chuckle]" still resolve. None = no equivalent.
+# Hume Octave has NO inline token vocabulary (a leading sound tag becomes the acting
+# `description` in its adapter, upstream of render_tags), so its column drops — never
+# rewrites — any sound bracket still standing mid-sentence.
+_NONVERBAL_ROOTS: dict[str, tuple[str | None, str | None, str | None, str | None]] = {
+    "laugh":   ("[laughter]", "[laugh]", "[laughs]", None),
+    "chuckle": ("[laughter]", "[laugh]", "[laughs]", None),
+    "giggle":  ("[laughter]", "[laugh]", "[giggles]", None),
+    "snicker": ("[laughter]", "[laugh]", "[laughs]", None),
+    "scoff":   (None, None, "[scoffs]", None),
+    "sigh":    (None, "[sigh]", "[sighs]", None),
+    "breath":  (None, "[breathe]", "[exhales]", None),
+    "exhale":  (None, "[breathe]", "[exhales]", None),
+    "gasp":    (None, None, "[gasps]", None),
+    "cough":   (None, "[cough]", None, None),
+    "yawn":    (None, "[yawn]", None, None),
+    "throat":  (None, "[clear throat]", "[clears throat]", None),
+    "cry":     (None, None, "[crying]", None),
+    "sob":     (None, None, "[crying]", None),
 }
 
 # Physical-action verbs that mark a bracket as a STAGE DIRECTION (something the
@@ -411,10 +418,41 @@ class CartesiaProfile(VoiceProfile):
         )
 
 
+class HumeProfile(VoiceProfile):
+    name = "hume"
+    sound_idx = 3  # no inline tokens — sounds are acted via the leading-tag description
+    splits_mid_line = False  # the adapter is per-sentence already; a lead tag turns each one
+
+    def render_direction(self, tone: str, leading: bool) -> str | None:
+        # Octave acts through per-utterance `description`s: the Hume adapter consumes a
+        # LEADING [tag] as the acting instruction BEFORE tags are rendered, so any bracket
+        # that reaches here can't be honored inline and Octave may read it aloud. Drop it,
+        # never rewrite it (the safety net).
+        return None
+
+    def directive(self) -> str:
+        return (
+            _HEADER
+            + "Direct your delivery by LEADING a sentence with ONE bracketed acting "
+            "instruction — natural language, like a script's parenthetical: [sarcastic], "
+            "[whispering, urgent], [voice breaking], [cold, clipped, each word deliberate]. "
+            "This voice ACTS a leading instruction but cannot honor one mid-sentence, so "
+            "when the feeling turns, start a NEW sentence with a fresh instruction.\n"
+            + "- Non-verbal sounds (a laugh, a sigh) go in the leading instruction too "
+            "([laughs softly], [sighs, resigned]) — never mid-sentence.\n"
+            + "- TIMING: put [pause] or [long pause] inline where a beat lands — the voice "
+            "holds real silence there. Trailing '...' and em-dashes hang naturally.\n"
+            + _CARRY
+            + "Match every instruction to the words; never stay flat. No physical actions — "
+            "you are only a voice."
+        )
+
+
 _PROFILES: dict[str, VoiceProfile] = {
     "elevenlabs": ElevenLabsProfile(),
     "inworld": InworldProfile(),
     "cartesia": CartesiaProfile(),
+    "hume": HumeProfile(),
 }
 
 

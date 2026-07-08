@@ -115,6 +115,11 @@ def make_tts(provider: str) -> TTSAdapter:
         return CartesiaTTS()
     if provider == "elevenlabs":
         return ElevenLabsTTS()
+    if provider == "hume":
+        # The chosen Track V provider — previously unreachable through this factory, so a
+        # TTS_PROVIDER=hume text-demo run silently fell back to Inworld.
+        from orchestrator.adapters.tts_hume import HumeTTS
+        return HumeTTS()
     return InworldTTS()
 
 

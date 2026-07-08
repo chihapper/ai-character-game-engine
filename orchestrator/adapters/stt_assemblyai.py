@@ -70,7 +70,17 @@ class AssemblyAISTT(STTAdapter):
             # 3. Poll until terminal (short utterances finish in a few seconds).
             poll_url = f"{_BASE}/v2/transcript/{transcript_id}"
             for _ in range(60):  # ~30s ceiling
-                result = (await client.get(poll_url, headers=self._headers)).json()
+                poll = await client.get(poll_url, headers=self._headers)
+                if poll.status_code != 200:
+                    # A transient poll hiccup (5xx, gateway blip) must not lose the
+                    # job — the transcript is still cooking server-side. Re-poll.
+                    await asyncio.sleep(0.5)
+                    continue
+                try:
+                    result = poll.json()
+                except ValueError:
+                    await asyncio.sleep(0.5)  # non-JSON blip — same story, re-poll
+                    continue
                 status = result.get("status")
                 if status == "completed":
                     return (result.get("text") or "").strip()

@@ -11,9 +11,9 @@ when it compiles a character — without knowing anything about what the game me
 
     # in a game layer, at startup:
     from orchestrator.character_extensions import register_game_extension
-    def render_dnd5e(sheet: dict) -> str:
-        return f"# Your nature (D&D)\nLevel {sheet['level']} {sheet['class']}. ..."
-    register_game_extension("dnd5e", render_dnd5e)
+    def render_srd5(sheet: dict) -> str:
+        return f"# Your nature\nLevel {sheet['level']} {sheet['class']}. ..."
+    register_game_extension("srd5", render_srd5)
 
 With no game registered, `game_data` stays inert (current engine default). Register
 a renderer and that game's characters gain extra, game-shaped depth.

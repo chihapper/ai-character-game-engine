@@ -29,7 +29,14 @@ class ShortTermMemory:
         # running two turns leaner.
         if len(self._messages) > self._max_messages:
             keep = max(2, self._max_messages - 4)
-            self._messages = self._messages[-keep:]
+            kept = self._messages[-keep:]
+            # The kept window MUST start with a user turn: the API rejects an assistant-first
+            # history, and a 400 here soft-locks the conversation PERMANENTLY (the buffer only
+            # mutates after a successful reply, so every retry rebuilds the same bad request).
+            # Trim parity depends on which role triggered the trim — shed one more if needed.
+            if kept and kept[0].get("role") != "user":
+                kept = kept[1:]
+            self._messages = kept
 
     def messages(self) -> list[dict]:
         """A copy of the buffered messages, oldest first."""

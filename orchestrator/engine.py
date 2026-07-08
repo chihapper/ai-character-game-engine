@@ -493,6 +493,11 @@ class Engine:
         if self._reflect_acc < c.reflection_importance_threshold:
             return
         recent = self._reflect_buffer[-c.reflection_max_inputs:]
+        # Snapshot what this pass CONSUMES before the await: reflection runs in the background,
+        # so exchanges can land in the buffer DURING the LLM call — a blanket clear afterwards
+        # would silently destroy them. Drop only the consumed slice/importance when we're done.
+        consumed_n = len(self._reflect_buffer)
+        consumed_acc = self._reflect_acc
         beliefs = await consolidate_beliefs(self.character, recent, existing=self.long_term.beliefs())
         if beliefs is None:
             # Transient failure — keep the accumulated window so those exchanges still get their
@@ -501,8 +506,8 @@ class Engine:
             return
         for b in beliefs:  # add_belief supersedes near-duplicate convictions (#15), no piling up
             await self.long_term.add_belief(b, importance=c.reflection_importance, t=now_t)
-        self._reflect_buffer.clear()
-        self._reflect_acc = 0.0
+        del self._reflect_buffer[:consumed_n]
+        self._reflect_acc = max(0.0, self._reflect_acc - consumed_acc)
 
     async def respond(self, request: RespondRequest, *, debug: bool = False):
         """Headless convenience: prepare -> generate (direct LLM) -> record short-term ->

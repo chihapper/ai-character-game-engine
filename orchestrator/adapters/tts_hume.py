@@ -10,11 +10,14 @@ Octave is an LLM-based voice, and its docs want structure, not a text blob:
     not a fixed gap.
   - [pause] / [long pause] are native inline markers — kept verbatim in text.
 
-Docs consulted (verified 2026-07): dev.hume.ai TTS overview / acting-instructions /
-continuation / timestamps. POST /v0/tts/stream/file, X-Hume-Api-Key auth, PCM = 48 kHz
-s16le mono -> resampled to our wire rate. Timestamps (word/phoneme, /stream/json v2)
-exist for precise lip-sync alignment later. EVI (speech-to-speech, custom-LLM capable)
-is a separate product — a Track V full-loop candidate, not this adapter.
+Docs re-audited 2026-07-09 (dev.hume.ai): POST /v0/tts/stream/json, X-Hume-Api-Key auth,
+PCM 48 kHz s16le mono -> resampled to our wire rate. We PIN `version:"1"` in the body —
+acting `description` is Octave-1-ONLY ("coming soon" for Octave 2), and with no version
+Hume auto-routes, so a drift to v2 would SILENTLY drop our acting layer (this was the
+"voices went flat" symptom). `description` best-practice <=100 chars (hard limit 1000).
+Octave 2 (when its description support lands) buys ~2x lower latency, more languages, and
+native word/phoneme timestamps for the paused lip-sync work. EVI (speech-to-speech) is a
+separate product — a Track V full-loop candidate, not this adapter.
 """
 from __future__ import annotations
 
@@ -81,6 +84,24 @@ def _speed_for(description: str) -> float | None:
     return None
 
 
+def _consume_lead_tag(text: str) -> tuple[str | None, str]:
+    """Consume a leading [tag] as an acting direction — EXCEPT pause marks, which are
+    Octave-native inline markers kept verbatim in the text (module contract), never a
+    description. A pause mark is skipped over (left in place) so a real tag right behind
+    it still directs: "[pause] [warm] Easy now." -> ("warm", "[pause] Easy now.")."""
+    kept = ""
+    rest = text
+    while True:
+        m = _LEAD_TAG.match(rest)
+        if not m:
+            return None, text
+        if _PAUSE_MARK.fullmatch(f"[{m.group(1).strip()}]"):
+            kept += rest[: m.end()]
+            rest = rest[m.end():]
+            continue
+        return m.group(1).strip(), kept + rest[m.end():]
+
+
 def _compact_direction(narration: str) -> str:
     """Stage business -> a short acting instruction (Octave wants <=100 chars): keep the
     LAST sentence of the narration (the beat closest to the words) and trim."""
@@ -141,14 +162,43 @@ class HumeTTS(TTSAdapter):
         # per entry (_CONTINUATION_TTL_S); reset_continuation() clears it on a new scene.
         self._last_generation: dict[str, tuple[str, float]] = {}
 
-    def _utterances(self, text: str, voice_id: str) -> list[dict]:
+    def _utterances(self, text: str, voice_id: str, base_description: str = "") -> list[dict]:
         """A reply becomes per-sentence utterances with acting instructions, from BOTH
         sources the character gives us: leading [tags] AND the third-person stage
         business around the quotes ('she laughs softly, leaning in' — silenced as
         speech, delivered as direction; Octave is built to act stage directions).
-        Octave carries prosody forward on its own — we only re-state on a TURN."""
+        Octave carries prosody forward on its own — we only re-state on a TURN.
+        `base_description` (optional) is the caller's SCENE mood (a dungeon's hush, a
+        forge's strain). It seeds the first utterance outright, and BLENDS behind any
+        direction found in the text — 'glances at you' alone would otherwise erase the
+        scene from the voice (most replies carry some business, so an override-only
+        baseline almost never fired). The specific direction leads; the mood follows
+        within the 100-char budget."""
+        base = (base_description or "").strip()
+
+        def _fit(s: str, limit: int = 100) -> str:
+            # Octave best-practice is <=100 chars; NEVER hand it a mid-word-truncated instruction
+            # (owner-heard 2026-07-09 — a chopped '…wary of what the ec' read as garbage).
+            s = s.strip()
+            if len(s) <= limit:
+                return s
+            return s[:limit].rsplit(" ", 1)[0].rstrip(" ,;—-")
+
+        def _blend(direction: str) -> str:
+            # The character's OWN emotion LEADS; the scene mood is light seasoning, appended only
+            # when it fits WHOLE. A strong specific direction (a snarl, delight) crowds the ambient
+            # out — which is correct: a snarl must not ALSO be labelled 'hushed'. The old code
+            # glued an 89-char mood onto every line, truncated mid-word, flattening all delivery
+            # to the same generic gloom (the regression behind 'something happened to the voices').
+            if not direction:
+                return _fit(base)
+            if not base:
+                return _fit(direction)
+            combined = f"{direction}, {base}"
+            return combined if len(combined) <= 100 else _fit(direction)
+
         out: list[dict] = []
-        active_desc = ""
+        active_desc = _fit(base)
 
         # narration/quoted alternation: narration becomes the NEXT quote's direction — and,
         # between or after quotes, a TIMED BEAT: stage business takes time, so the line
@@ -182,21 +232,31 @@ class HumeTTS(TTSAdapter):
                 # the PREVIOUS utterance holds while it happens
                 beat_boosts[len(out) - 1] = max(beat_boosts.get(len(out) - 1, 0.0),
                                                 _beat_silence(narration_raw))
-            m = _LEAD_TAG.match(spoken)
-            if m:  # an explicit [tag] outranks inferred stage business
-                direction = m.group(1).strip()
-                spoken = spoken[m.end():]
+            tag, spoken = _consume_lead_tag(spoken)
+            if tag:  # an explicit [tag] outranks inferred stage business
+                direction = tag
             if direction:
-                active_desc = direction
+                active_desc = _blend(direction)
             desc_new = bool(direction)
             for s in (x for x in _SENTENCE_END.split(spoken) if x.strip()):
-                m = _LEAD_TAG.match(s)
-                if m:
-                    active_desc = m.group(1).strip()
+                tag, s = _consume_lead_tag(s)
+                if tag:
+                    active_desc = _blend(tag)
                     desc_new = True
-                    s = s[m.end():]
-                pauses = {p.span(): p.group(0) for p in _PAUSE_MARK.finditer(s)}
-                s = render_tags(s, "hume") if not pauses else s
+                pauses = [p.group(0) for p in _PAUSE_MARK.finditer(s)]
+                if pauses:
+                    # pause marks stay verbatim (Octave-native) — but the REST of the
+                    # sentence still passes the drop-risky-tags safety net: shield the
+                    # pauses behind a placeholder, render, then put them back.
+                    s = render_tags(_PAUSE_MARK.sub("\x00", s), "hume")
+                    for mark in pauses:
+                        s = s.replace("\x00", mark, 1)
+                else:
+                    s = render_tags(s, "hume")
+                # Hygiene before the wire: any pause placeholder that survived a mismatched
+                # put-back must NEVER reach Hume (it reads as garbage), and stray emphasis
+                # asterisks aren't Octave markup — both were audible as random letter-noises.
+                s = s.replace("\x00", "").replace("*", "")
                 if not has_speakable(s) and not pauses:
                     continue
                 utt: dict = {"text": s.strip()}
@@ -225,18 +285,26 @@ class HumeTTS(TTSAdapter):
             utt["trailing_silence"] = round(silence, 2)
         return out
 
-    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+    async def stream_speech(self, text: str, voice_id: str,
+                            base_description: str = "") -> AsyncIterator[bytes]:
         """Streams via /v0/tts/stream/json — unlike /stream/file, it reports REAL errors
         (the file endpoint returns 200 + zero bytes on e.g. exhausted credits) and is the
-        endpoint that carries generation_id (continuation) and timestamps when we want them."""
+        endpoint that carries generation_id (continuation) and timestamps when we want them.
+        `base_description` = the caller's scene-mood acting baseline (see _utterances)."""
         import base64 as _b64
         import json as _json
-        utterances = self._utterances(text, voice_id)
+        utterances = self._utterances(text, voice_id, base_description)
         if not utterances:
             return
         # instant mode measurably flattens the acting (furious/whisper energy ratio 1.5x vs
         # 2.7x full quality) — quality is the default; HUME_INSTANT=1 buys ~1s of latency back
-        body = {"utterances": utterances, "format": {"type": "pcm"},
+        # PIN OCTAVE 1 (verified against dev.hume.ai 2026-07-09): our whole expressive layer is
+        # the per-utterance acting `description`, which is Octave-1-ONLY — "coming soon" for
+        # Octave 2. With no `version`, Hume auto-routes to whatever it deems best; if that drifts
+        # to v2 our acting instructions are SILENTLY IGNORED (flat, uncharacterized delivery).
+        # Explicit "1" guarantees the descriptions are honored. Revisit when v2 gains description
+        # support (then v2 also buys ~2x lower latency, more languages, native timestamps).
+        body = {"utterances": utterances, "format": {"type": "pcm"}, "version": "1",
                 "instant_mode": bool(voice_id) and self._instant}
         import time as _time
         prev = self._last_generation.get(voice_id)
@@ -260,7 +328,7 @@ class HumeTTS(TTSAdapter):
                     except ValueError:
                         continue
                     if msg.get("error") or msg.get("message") and not msg.get("audio"):
-                        self._last_generation.pop(voice_id, None)  # a failed context must not persist
+                        self._last_generation.pop(voice_id, None)   # a failed context must not persist
                         raise RuntimeError(f"Hume TTS error: {str(msg)[:300]}")
                     gid = msg.get("generation_id")
                     if gid:
