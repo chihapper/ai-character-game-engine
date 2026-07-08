@@ -97,7 +97,10 @@ func _ready() -> void:
 	var shot := OS.get_environment("RPG_SHOT")
 	if shot != "":
 		var t := Timer.new()
-		t.wait_time = 4.0
+		# RPG_SHOT_DELAY overrides the capture time (a slow opening DM narration can push the
+		# first snapshot past the default 4s — a bright empty frame is just the shot beating it).
+		var delay := OS.get_environment("RPG_SHOT_DELAY")
+		t.wait_time = float(delay) if delay.is_valid_float() else 4.0
 		t.one_shot = true
 		add_child(t)
 		t.timeout.connect(func():

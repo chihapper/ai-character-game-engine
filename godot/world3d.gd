@@ -54,6 +54,7 @@ var _zoom := 1.0                               # camera dolly factor (mouse whee
 var _slice_name := "vault"
 var _last_mode := ""                           # stance switching on combat start/end
 var _decor := "wet"                            # per-slice floor decor: "wet" | "ember" | ""
+var _daylight := false                         # town slices: bright day, no torch-lit dungeon mood
 var _puddle_mat: StandardMaterial3D = null     # vault: still black water catching the torch
 var _ember_mat: StandardMaterial3D = null      # emberdeep: glowing cracks in the stone
 var _husk_overlay: StandardMaterial3D = null   # cinder-husk: ember glow over charred bone
@@ -108,6 +109,11 @@ var CAST_MODELS := {
 	"rpg-lira": ADVENTURERS + "Rogue.glb",
 	"rpg-torvald": ADVENTURERS + "Barbarian.glb",
 	"rpg-senna": ADVENTURERS + "Mage.glb",
+	# Graywater town cast (The Hollow Accord) — distinct silhouettes for the four townsfolk
+	"rpg-maren": ADVENTURERS + "Knight.glb",         # sturdy, hard mine-boss
+	"rpg-ilo": ADVENTURERS + "Mage.glb",             # robed chapel-keeper
+	"rpg-sable": ADVENTURERS + "Rogue_Hooded.glb",   # shadowed fence
+	"rpg-joren": ADVENTURERS + "Barbarian.glb",      # burly baker
 }
 var CLASS_MODELS := {
 	"fighter": ADVENTURERS + "Knight.glb",
@@ -387,12 +393,29 @@ func set_slice(slice_name: String) -> void:
 ## furnace-red fill, glowing floor cracks. Slices the client doesn't know default to the vault look.
 func _apply_palette(slice_name: String) -> void:
 	var env: Environment = _env_node.environment
+	_daylight = false
 	match slice_name:
+		"graywater", "town":
+			# A TOWN, not a dungeon: cold bright mountain daylight, the sun (not a torch) doing the
+			# lighting, only a wisp of fog. The stone geometry reads as a cobbled square + stone
+			# buildings rather than a cave.
+			env.background_color = Color(0.62, 0.68, 0.78)
+			env.ambient_light_color = Color(0.72, 0.76, 0.82)
+			env.ambient_light_energy = 1.25
+			env.fog_light_color = Color(0.7, 0.75, 0.82)
+			env.fog_density = 0.004
+			_sun.light_color = Color(1.0, 0.96, 0.86)
+			_sun.light_energy = 1.35
+			_decor = ""                              # no puddles/ember cracks on a town square
+			_daylight = true
+			if _floor_sets.has("wet"):
+				_floor_scenes = _floor_sets["wet"]   # plain stone reads as cobblestone in daylight
 		"emberdeep":
 			env.background_color = Color(0.045, 0.015, 0.008)
 			env.ambient_light_color = Color(0.55, 0.34, 0.22)
 			env.ambient_light_energy = 0.5
 			env.fog_light_color = Color(0.10, 0.03, 0.01)
+			env.fog_density = 0.015
 			_torch.light_color = Color(1.0, 0.55, 0.25)
 			_sun.light_color = Color(0.9, 0.45, 0.25)
 			_sun.light_energy = 0.10
@@ -404,6 +427,7 @@ func _apply_palette(slice_name: String) -> void:
 			env.ambient_light_color = Color(0.35, 0.38, 0.48)
 			env.ambient_light_energy = 0.55
 			env.fog_light_color = Color(0.05, 0.05, 0.08)
+			env.fog_density = 0.015
 			_torch.light_color = Color(1.0, 0.72, 0.45)
 			_sun.light_color = Color(0.55, 0.6, 0.8)
 			_sun.light_energy = 0.12
@@ -1626,7 +1650,9 @@ func _follow_player(delta: float) -> void:
 				print("[world3d] ent ", eid, " @", node.global_position,
 					" sprite=", ent["sprite"], " anim=", (ap.current_animation if ap != null else "-"))
 	_torch.position = _torch.position.lerp(target + Vector3(0, _tile * 0.9, 0), minf(1.0, delta * 8.0))
-	_torch.light_energy = 2.4 + 0.35 * sin(_time * 9.0) + 0.18 * sin(_time * 23.0)
+	# In daylight (town) the sun lights the scene — kill the torch so a bright square isn't
+	# washed by a personal glow; underground it flickers and owns the mood.
+	_torch.light_energy = 0.0 if _daylight else (2.4 + 0.35 * sin(_time * 9.0) + 0.18 * sin(_time * 23.0))
 	var want := target + CAM_OFFSET_TILES * _tile * _zoom
 	_camera.position = _camera.position.lerp(want, minf(1.0, delta * 6.0))
 	_camera.look_at(target + Vector3(0, _tile * 0.3, 0))

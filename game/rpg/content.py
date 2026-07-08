@@ -358,6 +358,237 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
 
 
 # ==================================================================================================
+# SLICE 3 — "Graywater" (THE HOLLOW ACCORD, Act 1). A purely SOCIAL town slice: no dungeon, no
+# encounter, no objective door — a hand-authored map + four faction-anchored townsfolk whose minds
+# decide the campaign. Warm town / grim vault contrast (docs/campaign-proposal.md). Proves the
+# core carries a combat-free, door-free slice with the same zero game-core changes.
+# ==================================================================================================
+
+MAREN = "rpg-maren"    # Halvard-derived — proud, driving mine-boss; wants the vault OPEN
+ILO = "rpg-ilo"        # Wren-derived — soft, steadfast chapel-keeper; wants it SEALED
+SABLE = "rpg-sable"    # Corvin-derived — sharp, angle-reading fence; wants it QUIET
+JOREN = "rpg-joren"    # Joren-derived — the ordinary baker; the UNCOACHED wildcard (control arm)
+LETTER = "sealed-letter"
+
+_TOWN_FLAVOR = WorldFlavor(
+    voice_mood="plain and wary",   # SHORT (see WorldFlavor.voice_mood): warmer than the vault, but
+                                   # these are hard hill-folk sizing up a stranger
+    theme="Graywater",
+    world_frame=(
+        "You live in Graywater — a hard little mining town clinging to the mountainside above a "
+        "sealed vault the old folk swear should never be opened. The Deepcut mine still pays, "
+        "barely; the chapel still keeps the old wards on the vault door; and everyone in town has "
+        "an opinion about the dark below and the stranger who just walked in off the mountain road. "
+        "This is a world of picks and lantern-light and long memories, not of any modern place."),
+    location_label="the square at the heart of Graywater",
+    time_label="a grey mountain morning",
+    scene_prose=(
+        "The traveler stands in Graywater's little market square — cold mountain air, woodsmoke, the "
+        "clink of the mine somewhere below, and four wary faces who all noticed the stranger arrive."),
+    dm_setting="a weathered mining town divided over the sealed vault beneath it",
+    recruit_prompt="The traveler asks you to walk with them a while.",
+    defeat_text="You fall here in Graywater. Your story ends on the mountain road. (press q to quit)",
+    rest_text="You take a quiet hour in Graywater — a bench, a crust of Joren's bread, the cold air.",
+    combat_start="Steel comes out, even here — {enemies} round on the traveler!",
+    combat_victory="It's over. Graywater holds its breath, then breathes again.",
+)
+
+
+def letter_item() -> Item:
+    return Item(id=LETTER, name="a sealed letter", kind="quest",
+                data={"desc": "A travel-worn letter, sealed with grey wax and addressed in a "
+                              "careful hand to Maren of the Deepcut. You were paid to carry it — "
+                              "you never learned by whom, or why.",
+                      "addressed_to": "Maren"})
+
+
+def make_maren() -> Character:
+    """Mine-boss who wants the vault OPEN. Halvard's proud, self-reliant, slow-to-lean-on-anyone
+    temperament carries; whether her core goal BENDS toward the traveler or she uses them and
+    turns is the engine's to decide (the goal-evolution arc)."""
+    return reskin(
+        "halvard-crane", slug=MAREN, name="Maren", role="boss of the Deepcut mine",
+        concept="a proud, driving mine-boss who needs the sealed vault opened to keep her town alive — "
+                "and is done asking permission",
+        age="weathered 50s",
+        backstory=(
+            "Maren runs the Deepcut, the mine that IS Graywater. The good ore is playing out, and the "
+            "only seam worth digging runs straight past the vault door the chapel swears must stay "
+            "sealed. She has buried three miners this year and carries a whole town on her back. She "
+            "has decided the vault gets opened — for the seam, for the wages, for Graywater — and she "
+            "is done waiting for a keeper's blessing. She is proud and hard and tired, not cruel; she "
+            "would rather be respected than liked, and she trusts competence over sweet talk."),
+        goals=["reopen the sealed vault and reach the deep seam", "keep Graywater's people paid and fed",
+               "owe nothing to the chapel or the fence"],
+        secrets=[{"text": "She has already quietly hired diggers to force the vault door within the "
+                          "month, wards or no wards — and hasn't told the town.",
+                  "reveal_when": "she comes to trust the traveler as an ally, not the chapel's"}],
+        knows=["the Deepcut's good ore is nearly gone", "Father Ilo will fight her over the vault",
+               "Sable would rather the vault were cracked quietly than opened for the whole town"],
+        doesnt_know=["who the traveler is, or that they carry a letter addressed to her"],
+        relationships={}, sample_lines=[], greeting="",
+        game_data={"srd5": {"role": "townsfolk", "faction": "the Deepcut (open the vault)",
+                            "sheet": {"max_hp": 14, "ac": 12, "STR": 13, "DEX": 10, "CON": 13}}},
+    )
+
+
+def make_ilo() -> Character:
+    """Chapel-keeper who wants the vault SEALED. Wren's soft-spoken, watchful, steadfast-once-decided
+    temperament carries. He is afraid with reason, not a fanatic; what he actually knows is his to
+    reveal."""
+    return reskin(
+        "wren-alder", slug=ILO, name="Father Ilo", role="keeper of Graywater's chapel",
+        concept="a soft-spoken keeper who has read the old wards and believes the vault must stay "
+                "sealed, whatever it costs the town",
+        age="quiet 60s",
+        backstory=(
+            "Ilo tends the chapel and the wards his predecessors set on the vault door, generation after "
+            "generation. He has read the marginalia the miners can't — the reasons the door was sealed, "
+            "written by people who were there. He is not a zealot; he is frightened, with cause, and "
+            "grieved that he cannot make a hungry town believe him. He is gentle in everything except "
+            "this: the door stays shut. He would sooner be thought a fool than watch Maren open it."),
+        goals=["keep the vault door sealed", "protect Graywater from what the old wards hold back",
+               "be believed before it is too late"],
+        secrets=[{"text": "The last time the wards weakened, thirty years ago, his predecessor went "
+                          "down to renew them and never came back up — Ilo was the boy who waited.",
+                  "reveal_when": "he trusts the traveler enough to share his fear plainly"}],
+        knows=["what the old wards are meant to hold", "Maren means to open the door with or without him",
+               "the town is hungry enough to side with the mine"],
+        doesnt_know=["who the traveler is or whose errand brought them"],
+        relationships={}, sample_lines=[], greeting="",
+        game_data={"srd5": {"role": "townsfolk", "faction": "the chapel (keep it sealed)",
+                            "sheet": {"max_hp": 10, "ac": 10, "STR": 9, "DEX": 10, "CON": 10}}},
+    )
+
+
+def make_sable() -> Character:
+    """Fence who wants the vault QUIET. Corvin's guarded, angle-reading, trust-no-one temperament
+    carries — she tests every newcomer with a small chance to cross her (the trust-lost-fast arc)."""
+    return reskin(
+        "corvin-ashgrave-inworld", slug=SABLE, name="Sable", role="Graywater's fence and quiet dealer",
+        concept="a sharp, angle-reading fence who would rather the vault were quietly plundered than "
+                "flung open or sealed shut — and tests everyone who walks in",
+        age="hard-to-place 40s",
+        backstory=(
+            "Sable moves what comes up out of the deep — discreetly, to buyers who don't ask where. An "
+            "opened vault means soldiers, crowds, and the King's tithe; a sealed one means no trade at "
+            "all. What she wants is the door cracked just enough and kept quiet, the take hers to place. "
+            "She survives by trusting no one and reading everyone, and she sizes up every newcomer by "
+            "leaving a small opening to see whether they'll take it. She is not warm, but she keeps her "
+            "word to those who keep theirs."),
+        goals=["keep the vault-trade quiet, small, and hers", "read the traveler before they read her",
+               "owe nothing, be owed plenty"],
+        secrets=[{"text": "She has already moved one small relic that came up out of the vault last "
+                          "winter — proof the door is not as sealed as the chapel believes.",
+                  "reveal_when": "the traveler proves they can keep a secret and be useful"}],
+        knows=["there is a quiet way the vault already leaks", "Maren wants it thrown wide (bad for trade)",
+               "Ilo wants it shut forever (worse for trade)"],
+        doesnt_know=["who sent the traveler, or what their letter says"],
+        relationships={}, sample_lines=[], greeting="",
+        game_data={"srd5": {"role": "townsfolk", "faction": "the trade (keep it quiet)",
+                            "sheet": {"max_hp": 12, "ac": 13, "STR": 10, "DEX": 14, "CON": 11}}},
+    )
+
+
+def make_joren() -> Character:
+    """The baker — the UNCOACHED wildcard (validation methodology): an ordinary man with NO stake in
+    the vault, lightly drawn on purpose. If the campaign only lands for the authored faction arcs and
+    Joren stays flat, we studied for the test. Minimal goals, no planted secret."""
+    return reskin(
+        "joren-pike", slug=JOREN, name="Joren", role="Graywater's baker",
+        concept="the town baker — flour to his elbows, no stake in the vault, just bread, gossip, and "
+                "a decent heart",
+        age="comfortable 40s",
+        backstory=(
+            "Joren has baked Graywater's bread for twenty years. His counter is where the town talks, so "
+            "he hears everything and judges most of it kindly. He has opinions about his neighbors — "
+            "Maren works too hard, Ilo worries too much, Sable he watches his till around — but no "
+            "opinion at all about the dark below that he'd act on. He just wants the ovens hot and his "
+            "neighbors fed."),
+        goals=["keep the ovens going and the town in bread", "stay well clear of the vault business"],
+        knows=["everyone in Graywater and most of their quarrels", "the mine's been paying worse lately"],
+        doesnt_know=["anything the traveler is really after"],
+        relationships={}, sample_lines=[], greeting="",
+        game_data={"srd5": {"role": "townsfolk", "faction": "none (the wildcard)",
+                            "sheet": {"max_hp": 11, "ac": 10, "STR": 12, "DEX": 10, "CON": 12}}},
+    )
+
+
+def _graywater_map() -> tuple:
+    """Hand-author Graywater: a bordered square with four buildings (mine office, chapel, fence's
+    shuttered shop, bakery) as solid wall blocks standing in open street, so every floor cell stays
+    reachable by walking AROUND them (connectivity is trivially satisfied). Returns
+    (WorldMap, spawn, {slug: door-front cell})."""
+    from .state import WorldMap
+    W, H = 44, 28
+    grid = [["#" if (x == 0 or y == 0 or x == W - 1 or y == H - 1) else "."
+             for x in range(W)] for y in range(H)]
+
+    def building(x0: int, y0: int, w: int, h: int, door: tuple) -> tuple:
+        # solid wall block with a single '.' door gap; returns the street cell just outside the door
+        for yy in range(y0, y0 + h):
+            for xx in range(x0, x0 + w):
+                grid[yy][xx] = "#"
+        dx, dy = door
+        grid[dy][dx] = "."                          # the doorway itself, walkable
+        # the street cell one step outside the block, where the NPC stands
+        out = (dx, y0 + h) if dy == y0 + h - 1 else (dx, y0 - 1) if dy == y0 else \
+              (x0 + w, dy) if dx == x0 + w - 1 else (x0 - 1, dy)
+        return out
+
+    maren_at = building(5, 3, 10, 6, (9, 8))         # Deepcut mine office (top-left)
+    ilo_at = building(29, 3, 9, 6, (33, 8))          # chapel (top-right)
+    sable_at = building(5, 18, 9, 6, (9, 17))        # fence's shuttered shop (bottom-left)
+    joren_at = building(29, 18, 9, 6, (33, 17))      # bakery (bottom-right)
+    # a well in the middle of the square — a 2x2 block of flavor, walked around
+    for yy in (13, 14):
+        for xx in (21, 22):
+            grid[yy][xx] = "#"
+    spawn = (21, H - 2)                              # the mountain-road gate, bottom-center
+
+    wm = WorldMap(width=W, height=H, tiles=["".join(row) for row in grid],
+                  seed=None, source="authored")
+    return wm, spawn, {MAREN: maren_at, ILO: ilo_at, SABLE: sable_at, JOREN: joren_at}
+
+
+def build_graywater_slice(*, seed: int = 1) -> tuple[GameState, dict[str, Character]]:
+    """The Hollow Accord, Act 1: the traveler arrives in Graywater carrying a sealed letter for
+    Maren, and meets the four people whose evolving regard for them will decide the campaign. NO
+    encounter, NO objective door — a social slice, proving the core runs one. All prose is
+    `_TOWN_FLAVOR`; the cast + placements + the letter are the only content."""
+    wm, spawn, doors = _graywater_map()
+
+    player = PlayerCharacter(id="player", name="You",
+                             stats=Stats(STR=12, DEX=12, CON=12, WIS=12, CHA=13),
+                             pos=spawn, level=1, gold=8)
+    progression.apply_class(player, "fighter")
+    player.max_hp = player.hp = 20
+    player.inventory.append(letter_item())           # the light hook (owner-locked)
+
+    maren = NpcPlacement(slug=MAREN, name="Maren", handle="the mine-boss", pos=doors[MAREN],
+                         game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=4)
+    ilo = NpcPlacement(slug=ILO, name="Father Ilo", handle="the chapel-keeper", pos=doors[ILO],
+                       game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=4)
+    sable = NpcPlacement(slug=SABLE, name="Sable", handle="the fence", pos=doors[SABLE],
+                         game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=5)
+    joren = NpcPlacement(slug=JOREN, name="Joren", handle="the baker", pos=doors[JOREN],
+                         game_data={"srd5": {"role": "townsfolk"}}, recruit_min_talks=3)
+
+    quest = QuestThread(id="the-letter", title="Deliver the sealed letter to Maren of the Deepcut",
+                        notes=["You were paid to carry a sealed letter to Maren — you never learned "
+                               "by whom, or why.",
+                               "Graywater is split over the sealed vault below: Maren wants it opened, "
+                               "Father Ilo wants it kept shut, Sable wants it quiet.",
+                               "Who these people become to you is the real journey here."])
+
+    gs = GameState(flavor=_TOWN_FLAVOR, player=player, world_map=wm,
+                   npcs=[maren, ilo, sable, joren], encounters=[], doors=[], quests=[quest])
+    gs.campaign_log.add(0.0, "You walk into Graywater off the mountain road, a sealed letter in your "
+                             "pack and four wary faces turning your way.", tags=["intro"])
+    return gs, {c.slug: c for c in (make_maren(), make_ilo(), make_sable(), make_joren())}
+
+
+# ==================================================================================================
 # Slice registry — add a builder here and it's selectable via `RpgGame.new(slice=...)` /
 # `RPG_SLICE=<name>`; no game-core change is ever needed.
 # ==================================================================================================
@@ -365,6 +596,7 @@ def build_emberdeep_slice(*, seed: int = 2027) -> tuple[GameState, dict[str, Cha
 SLICES = {
     "vault": build_first_slice,
     "emberdeep": build_emberdeep_slice,
+    "graywater": build_graywater_slice,
 }
 
 

@@ -58,6 +58,11 @@ HUME_VOICES = {
     "rpg-lira": "Expressive Girl",              # Bri-derived — warm sellsword
     "rpg-torvald": "Yorkshire Chap",            # Halvard-derived — gruff forge-delver
     "rpg-senna": "Medieval Peasant Woman",      # Wren-derived — quiet cartographer
+    # Graywater town cast (The Hollow Accord) — four distinct voices for one social scene
+    "rpg-maren": "Medieval Peasant Woman",      # Halvard-derived — hard, driving mine-boss
+    "rpg-ilo": "Brooding Intellectual Man",     # Wren-derived — grave, gentle chapel-keeper
+    "rpg-sable": "Ava Song",                    # Corvin-derived — sharp, guarded fence
+    "rpg-joren": "Yorkshire Chap",              # the warm, folksy baker
 }
 
 
