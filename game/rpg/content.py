@@ -60,6 +60,8 @@ VAEL = "rpg-vael"       # Corvin-derived — guarded, suspicious, a dangerous pa
 LIRA = "rpg-lira"       # Bri-derived — warm, quick, disarming
 
 _VAULT_FLAVOR = WorldFlavor(
+    voice_mood=("hushed and tense, voice kept low in a vast drowned ruin, "
+                "wary of what the echo might wake"),
     theme="the Sunken Vault",
     world_frame=("You are deep in the Sunken Vault — a flooded, ancient dungeon of black stone, old "
                  "wards, and worse things in the dark. Torchlight, dripping water, no way out but "
@@ -212,6 +214,8 @@ TORVALD = "rpg-torvald"   # Halvard-derived — gruff, proud, self-reliant, slow
 SENNA = "rpg-senna"       # Wren-derived — quiet, watchful, steadfast once she trusts
 
 _EMBER_FLAVOR = WorldFlavor(
+    voice_mood=("strained by heat and effort, urgent, breath short in scorching air, "
+                "raising the voice over deep rumbling"),
     theme="the Emberdeep",
     world_frame=("You are in the Emberdeep — a collapsed dwarven forge-warren bored into a living "
                  "volcano. Heat shimmers off black basalt, veins of magma light the dark a dull "

@@ -23,8 +23,8 @@ class PlayerAction(BaseModel):
     # enemy); "move_to" is click-to-move (pathfind to a tile); "use" consumes an inventory item
     # (a healing draught — spends the ACTION in combat). Add a kind here the moment the core
     # handles it, not before (a declared-but-ignored kind is a silent no-op trap).
-    kind: Literal["move", "move_to", "talk", "recruit", "do", "look", "wait", "toggle_enemy_hp",
-                  "use", "rest"]
+    kind: Literal["move", "move_to", "talk", "greet", "recruit", "do", "look", "wait",
+                  "toggle_enemy_hp", "use", "rest"]
     dx: int = 0                  # move (single step; the core rejects non-unit deltas)
     dy: int = 0
     tx: int = 0                  # move_to (target tile)
@@ -61,6 +61,8 @@ class DialogueEvent(GameEvent):
     text: str                    # full reply (speech + stage directions)
     speech: str = ""             # just the quoted words — the line to show as dialogue + to voice
     action: str = ""             # third-person stage business — voice-acting data, never shown as text
+    mood: str = ""               # the SCENE's baseline acting direction for the voice (slice data —
+                                 # a line's own tags/business still override; renderers may ignore)
     audio: bytes | None = None
 
 

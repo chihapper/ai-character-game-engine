@@ -11,6 +11,8 @@ extends CanvasLayer
 ## THIN and render-only: no networking, no game logic. main.gd opens/closes it, routes dialogue
 ## events here while open, and feeds set_level() with the voice playhead's amplitude each frame.
 
+signal closed   # leaving the conversation (Esc/click-away/combat) — main silences the voice
+
 const TYPE_CHARS_PER_S := 42.0
 
 var _slug := ""
@@ -72,11 +74,14 @@ func open(slug: String, display_name: String, model_path: String) -> void:
 
 
 func close() -> void:
+	if not visible:
+		return
 	visible = false
 	_slug = ""
 	if _bust_model != null:
 		_bust_model.queue_free()
 		_bust_model = null
+	closed.emit()
 
 
 ## An NPC line while the scene is up. A different speaker interjecting takes the stage

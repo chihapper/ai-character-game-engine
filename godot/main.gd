@@ -69,6 +69,7 @@ func _ready() -> void:
 	_talk.name = "TalkScene"
 	_talk.set_script(load("res://talk_scene.gd"))
 	add_child(_talk)
+	_talk.closed.connect(_stop_voice)   # leaving the conversation silences the speaker
 
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
@@ -265,6 +266,7 @@ func _on_game_event(ev: Dictionary) -> void:
 		var slug := str(ev.get("slug", ""))
 		# While the talk scene is up, lines take the STAGE (whole portrait / live bust);
 		# otherwise the compact speech card handles them (ambient lines, walk-by grants).
+		_voice_muted = false                       # a NEW line always plays (dismissal muted the OLD one)
 		if _talk != null and _talk.is_open():
 			_talk.show_line(str(ev.get("npc", "")), line, slug, _model_path_for(slug))
 		elif _speech != null:
@@ -301,8 +303,30 @@ var _voice_buf_frames := 0            # the generator ring's true capacity, meas
 var _amp_chunks: Array = []           # ~80ms amplitude windows [{end: abs frame idx, amp}] awaiting playback
 var _pushed_frames := 0               # total frames ever pushed into the ring (playhead anchor)
 
+## Dismissing a conversation SILENCES it (owner feedback 2026-07-09): clicking out means
+## "I'm done listening." Stops playback, drops everything queued, and mutes late-arriving
+## chunks of the SAME line (the server streams per line; the next dialogue event unmutes).
+var _voice_muted := false
+
+func _stop_voice() -> void:
+	if _voice == null:
+		return
+	_voice.stop()
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = float(_voice_rate)
+	gen.buffer_length = 4.0
+	_voice.stream = gen
+	_voice_playback = null
+	_voice_buf_frames = 0
+	_pending = PackedVector2Array()
+	_amp_chunks = []
+	_pushed_frames = 0
+	_voice_tail = 0.0
+	_voice_muted = true
+
+
 func _play_voice(b64: String, rate: int) -> void:
-	if b64 == "" or _voice == null:
+	if b64 == "" or _voice == null or _voice_muted:
 		return
 	# The protocol deliberately carries `rate` per message; if it changes, rebuild the
 	# generator to match (a mismatched mix_rate would play every line pitch-shifted).
@@ -451,8 +475,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A click on an UNEXPLORED tile is rejected with feedback (the server enforces the same rule
 	# authoritatively — this check just keeps the refusal from being silent).
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if _speech != null:
-			_speech.dismiss()   # a map click means the player moved on — clear the speech card
+		if _speech != null and _speech.visible:
+			_speech.dismiss()   # a map click means the player moved on — card AND voice stop
+			_stop_voice()
 		if _world != null:
 			var t: Vector2i = _world.tile_at_mouse()
 			var key := str(t.x) + "," + str(t.y)
@@ -524,6 +549,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			# the next autosave). Minds keep their memories — the world resets, the people don't.
 			if _hud != null:
 				_hud.log_line("— starting a fresh expedition —")
+			_greeted.clear()
 			if _talk != null:
 				_talk.close()
 			if _world != null:
@@ -618,6 +644,7 @@ func _try_click_talk(t: Vector2i) -> bool:
 			_dialogue.open_talk(id, who)
 		if _talk != null:
 			_talk.open(id, who, _model_path_for(id))
+		_maybe_greet(id, who)
 	else:
 		Net.send_action("move_to", {"tx": t.x, "ty": t.y})
 		if _world != null and _world.has_method("mark_destination"):
@@ -658,6 +685,20 @@ func _open_talk_on_nearest() -> void:
 		_dialogue.open_talk(id, who)
 	if _talk != null:                     # the conversation takes the stage
 		_talk.open(id, who, _model_path_for(id))
+	_maybe_greet(id, who)
+
+
+## The NPC speaks FIRST when a conversation opens: approaching someone is a social event they
+## react to in character. Once per person per expedition (repeat opens skip straight to input).
+var _greeted := {}
+
+func _maybe_greet(id: String, who: String) -> void:
+	if id == "" or _greeted.has(id):
+		return
+	_greeted[id] = true
+	Net.send_action("greet", {"target_id": id})
+	if _hud != null:
+		_hud.log_line("%s turns to you…" % (who if who != "" else "They"))
 
 
 func _recruit_nearest() -> void:

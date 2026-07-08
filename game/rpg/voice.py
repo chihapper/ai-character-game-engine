@@ -19,19 +19,21 @@ def wire_rate() -> int:
     return AUDIO_SAMPLE_RATE
 
 
-async def stream_line(text: str, slug: str):
+async def stream_line(text: str, slug: str, mood: str = ""):
     """STREAM the PCM (s16le mono) for an NPC line in their cast voice, chunk by chunk as Hume
     produces it — the caller can put the first sentence on the wire while the rest is still
     synthesizing. Yields raw PCM chunks; raises on failure (the caller treats voice as
     best-effort). The adapter feeds Hume the FULL reply: it voices only the quoted speech and
-    turns stage directions into acting instructions."""
+    turns stage directions into acting instructions. `mood` is the SCENE's baseline direction
+    (slice voice_mood) — applied when a line carries no business of its own, so characters
+    sound like they're standing where they're standing."""
     if not (text or "").strip():
         return
     from game import casting
 
     from orchestrator.adapters.tts_hume import HumeTTS
     vid = casting.hume_voice(slug)
-    async for chunk in HumeTTS().stream_speech(text, vid):
+    async for chunk in HumeTTS().stream_speech(text, vid, base_description=mood):
         yield chunk
 
 

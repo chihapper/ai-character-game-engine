@@ -24,7 +24,9 @@ extends Node3D
 const WALK_TILES_PER_S := 4.6
 const RUN_TILES_PER_S := 10.0
 const TREK_MAX_S := 3.0        # a route is paced to land within this many seconds
-const SNAP_BEYOND_TILES := 40.0  # longer than this (new game repositioning) just snaps
+# The 88x44 maps produce legitimately LONG treks — the old 40-tile cutoff was still teleporting
+# far clicks (owner report). Snapping now only covers id-reuse across a brand-new map.
+const SNAP_BEYOND_TILES := 200.0
 # Camera vantage in TILES (converted via _tile at runtime): ~36° pitch — low enough that chibi
 # characters read as PEOPLE (faces/bodies, not hat-tops), high enough to read the room; the
 # waist-high walls keep sightlines clear at this angle.

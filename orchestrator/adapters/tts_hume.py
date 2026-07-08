@@ -152,14 +152,17 @@ class HumeTTS(TTSAdapter):
         self._api_key = settings.hume_api_key
         self._instant = settings.hume_instant
 
-    def _utterances(self, text: str, voice_id: str) -> list[dict]:
+    def _utterances(self, text: str, voice_id: str, base_description: str = "") -> list[dict]:
         """A reply becomes per-sentence utterances with acting instructions, from BOTH
         sources the character gives us: leading [tags] AND the third-person stage
         business around the quotes ('she laughs softly, leaning in' — silenced as
         speech, delivered as direction; Octave is built to act stage directions).
-        Octave carries prosody forward on its own — we only re-state on a TURN."""
+        Octave carries prosody forward on its own — we only re-state on a TURN.
+        `base_description` (optional) seeds the FIRST utterance when the line has no
+        direction of its own — the caller's scene mood (a dungeon's hush, a forge's
+        strain). Any direction found in the text overrides it from that point on."""
         out: list[dict] = []
-        active_desc = ""
+        active_desc = (base_description or "").strip()[:100]
 
         # narration/quoted alternation: narration becomes the NEXT quote's direction — and,
         # between or after quotes, a TIMED BEAT: stage business takes time, so the line
@@ -242,13 +245,15 @@ class HumeTTS(TTSAdapter):
             utt["trailing_silence"] = round(silence, 2)
         return out
 
-    async def stream_speech(self, text: str, voice_id: str) -> AsyncIterator[bytes]:
+    async def stream_speech(self, text: str, voice_id: str,
+                            base_description: str = "") -> AsyncIterator[bytes]:
         """Streams via /v0/tts/stream/json — unlike /stream/file, it reports REAL errors
         (the file endpoint returns 200 + zero bytes on e.g. exhausted credits) and is the
-        endpoint that carries generation_id (continuation) and timestamps when we want them."""
+        endpoint that carries generation_id (continuation) and timestamps when we want them.
+        `base_description` = the caller's scene-mood acting baseline (see _utterances)."""
         import base64 as _b64
         import json as _json
-        utterances = self._utterances(text, voice_id)
+        utterances = self._utterances(text, voice_id, base_description)
         if not utterances:
             return
         # instant mode measurably flattens the acting (furious/whisper energy ratio 1.5x vs

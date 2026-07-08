@@ -264,6 +264,11 @@ class WorldFlavor(BaseModel):
     force_noise: str = "The clamor rings out into the dark."   # a failed door-forcing draws attention
     rest_text: str = "You make a cold camp and take what rest the dark allows."   # narrated on a rest
     rest_ambush: str = "Something heard you settle — shapes move at the edge of the light."  # rest drew danger
+    # Baseline VOICE acting direction for the scene (Hume Octave `description`, <=100 chars):
+    # without it, a line with no stage business of its own reads neutral-natural — nothing told
+    # the voice it was standing in a dungeon (owner-heard 2026-07-09). A line's own tags/business
+    # still override this; it is the floor, not the ceiling.
+    voice_mood: str = "speaking low and wary, tension under the words, alert to the dark around"
 
 
 class GameState(BaseModel):

@@ -159,9 +159,11 @@ class RpgGame(GameSession):
         """Emit an NPC line, split into spoken speech vs. stage-direction action (see _split_speech).
         The renderer shows only `speech` as the dialogue line (`action` is never shown as text);
         downstream voice synthesis reads the full `text` (Hume voices the quoted speech, ACTS the
-        directions)."""
+        directions). `mood` rides along as the scene's BASELINE acting direction — a line with no
+        business of its own still sounds like it's standing where it's standing."""
         speech, action = _split_speech(text)
-        self._emit(DialogueEvent(npc=name, slug=slug, text=text, speech=speech, action=action))
+        self._emit(DialogueEvent(npc=name, slug=slug, text=text, speech=speech, action=action,
+                                 mood=self.state.flavor.voice_mood))
 
     async def events(self):
         while True:
@@ -268,6 +270,8 @@ class RpgGame(GameSession):
             self._move_to(action.tx, action.ty)
         elif action.kind == "talk":
             await self._talk(action)
+        elif action.kind == "greet":
+            await self._greet(action)
         elif action.kind == "recruit":
             await self._recruit(action)
         elif action.kind == "do":
@@ -650,6 +654,29 @@ class RpgGame(GameSession):
                     self._emit(NarrationEvent(text=told))
             except Exception:                    # noqa: BLE001 — narration is an enhancement
                 pass
+
+    async def _greet(self, action: PlayerAction) -> None:
+        """The NPC speaks FIRST when a conversation opens (owner feedback 2026-07-09): approaching
+        someone is itself a social event, and whoever you walk up to reacts to it in character —
+        warmly, warily, however they've come to regard you. Same range gating as _talk; the
+        approach is passed as a non-verbal event (the player hasn't said anything), doesn't count
+        toward the recruit gate, and is logged as an approach, not speech."""
+        s = self.state
+        slug = action.target_id
+        if not slug or slug not in self.minds.engines:
+            return
+        follower = next((f for f in s.followers if f.mind_slug == slug), None)
+        if follower is not None and follower.down:
+            return
+        pos = self._speaker_pos(slug)
+        if pos is None or self._dist(pos, s.player.pos) > 2:
+            return
+        name = self.minds.characters[slug].name
+        reply = await self.minds.talk(
+            slug, "*The traveler walks up to you, clearly wanting to talk.*",
+            self._situation(slug))
+        self._say(name, slug, reply)
+        s.campaign_log.add(s.clock.value, f"The traveler approached {name}.", tags=["talk", slug])
 
     async def _recruit(self, action: PlayerAction) -> None:
         """Ask an adjacent NPC to join — a social flow, not a command (owner design 2026-07-06):

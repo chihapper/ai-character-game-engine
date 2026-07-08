@@ -215,7 +215,7 @@ async def serve(host: str = "127.0.0.1", port: int = 8787, *,
                                 pcm=bytes(buf), rate=rate)))
                         buf.clear()
 
-                agen = stream_line(e["text"], e.get("slug", ""))
+                agen = stream_line(e["text"], e.get("slug", ""), mood=e.get("mood", ""))
                 try:
                     while True:
                         try:
