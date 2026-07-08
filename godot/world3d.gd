@@ -132,6 +132,20 @@ var CAST_MODELS := {
 	"rpg-sable": ADVENTURERS + "Rogue_Hooded.glb",   # shadowed fence
 	"rpg-joren": ADVENTURERS + "Barbarian.glb",      # burly baker
 }
+
+## Per-character COLOUR TINT so the chibi world model reads as its painted portrait's palette
+## (owner 2026-07-08 — models didn't match the faces). The tint MULTIPLIES the model's texture
+## (kept subtle, near-white) so detail survives; a strong-but-light hue nudges hair/clothing
+## toward the portrait. Keeps all animation (the reason we tint rather than swap to billboards).
+var CAST_TINTS := {
+	"rpg-lira": Color(0.98, 0.66, 0.55),    # auburn hair, tan skin, warm leather
+	"rpg-maren": Color(0.86, 0.76, 0.62),   # grey hair, brown coat, coal dust
+	"rpg-ilo": Color(0.84, 0.86, 0.92),     # white hair, pale grey robe
+	"rpg-sable": Color(0.66, 0.62, 0.76),   # black hair, dusk-purple scarf
+	"rpg-joren": Color(0.94, 0.80, 0.62),   # warm baker tones
+	"rpg-vael": Color(0.72, 0.70, 0.66),    # cold grey scavenger
+	"player": Color(0.74, 0.62, 0.60),      # dark-haired knight, black-and-red
+}
 var CLASS_MODELS := {
 	"fighter": ADVENTURERS + "Knight.glb",
 	"rogue": ADVENTURERS + "Rogue.glb",
@@ -1538,6 +1552,8 @@ func _spawn_entity(id: String, e: Dictionary, kind: String, at: Vector2) -> void
 				# cinder-husk: the skeleton smolders from inside (translucent ember overlay)
 				for m in body.find_children("*", "MeshInstance3D", true, false):
 					(m as MeshInstance3D).material_overlay = _husk_overlay
+			if CAST_TINTS.has(id):
+				_tint_model(body, CAST_TINTS[id])
 			ent["caster"] = model_path.contains("Mage")   # spellcasters swing spells, not swords
 			ent["model_path"] = model_path                # the talk scene's bust uses the same GLB
 			var aps := body.find_children("*", "AnimationPlayer", true)
@@ -1705,6 +1721,21 @@ func _play_random(ent: Dictionary, key: String, exclude: Array, fallback: Array)
 		_play_anim(ent, fallback)
 	else:
 		ap.play(picks[randi() % picks.size()])
+
+
+## Multiply every surface of a character model by a tint (per-instance, so other characters
+## sharing the model aren't affected) — keeps the texture detail, shifts the palette.
+func _tint_model(body: Node3D, tint: Color) -> void:
+	for m in body.find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for s in range(mi.mesh.get_surface_count()):
+			var mat := mi.get_active_material(s)
+			if mat is StandardMaterial3D:
+				var dup := (mat as StandardMaterial3D).duplicate()
+				dup.albedo_color = dup.albedo_color * tint
+				mi.set_surface_override_material(s, dup)
 
 
 func _play_anim(ent: Dictionary, prefer: Array, loop: bool = false) -> void:
