@@ -10,11 +10,14 @@ Octave is an LLM-based voice, and its docs want structure, not a text blob:
     not a fixed gap.
   - [pause] / [long pause] are native inline markers — kept verbatim in text.
 
-Docs consulted (verified 2026-07): dev.hume.ai TTS overview / acting-instructions /
-continuation / timestamps. POST /v0/tts/stream/file, X-Hume-Api-Key auth, PCM = 48 kHz
-s16le mono -> resampled to our wire rate. Timestamps (word/phoneme, /stream/json v2)
-exist for precise lip-sync alignment later. EVI (speech-to-speech, custom-LLM capable)
-is a separate product — a Track V full-loop candidate, not this adapter.
+Docs re-audited 2026-07-09 (dev.hume.ai): POST /v0/tts/stream/json, X-Hume-Api-Key auth,
+PCM 48 kHz s16le mono -> resampled to our wire rate. We PIN `version:"1"` in the body —
+acting `description` is Octave-1-ONLY ("coming soon" for Octave 2), and with no version
+Hume auto-routes, so a drift to v2 would SILENTLY drop our acting layer (this was the
+"voices went flat" symptom). `description` best-practice <=100 chars (hard limit 1000).
+Octave 2 (when its description support lands) buys ~2x lower latency, more languages, and
+native word/phoneme timestamps for the paused lip-sync work. EVI (speech-to-speech) is a
+separate product — a Track V full-loop candidate, not this adapter.
 """
 from __future__ import annotations
 
@@ -165,26 +168,30 @@ class HumeTTS(TTSAdapter):
         baseline almost never fired). The specific direction leads; the mood follows
         within the 100-char budget."""
         base = (base_description or "").strip()
-        prev_core = ""   # the last direction proper (sans scene mood) — transitions ease, not snap
+
+        def _fit(s: str, limit: int = 100) -> str:
+            # Octave best-practice is <=100 chars; NEVER hand it a mid-word-truncated instruction
+            # (owner-heard 2026-07-09 — a chopped '…wary of what the ec' read as garbage).
+            s = s.strip()
+            if len(s) <= limit:
+                return s
+            return s[:limit].rsplit(" ", 1)[0].rstrip(" ,;—-")
 
         def _blend(direction: str) -> str:
-            nonlocal prev_core
-            core = direction
-            # TONE TRANSITIONS (owner-heard 2026-07-09: hush jumped to excitement with nothing
-            # between): when the direction genuinely changes mid-flow, tell Octave the shift is
-            # gradual. Outbursts still land — the character's own business can SAY "suddenly".
-            if core and prev_core and core != prev_core and "sudden" not in core.lower():
-                core = f"{core}, easing into it rather than snapping"
-            if direction:
-                prev_core = direction
+            # The character's OWN emotion LEADS; the scene mood is light seasoning, appended only
+            # when it fits WHOLE. A strong specific direction (a snarl, delight) crowds the ambient
+            # out — which is correct: a snarl must not ALSO be labelled 'hushed'. The old code
+            # glued an 89-char mood onto every line, truncated mid-word, flattening all delivery
+            # to the same generic gloom (the regression behind 'something happened to the voices').
+            if not direction:
+                return _fit(base)
             if not base:
-                return core[:100]
-            if not core:
-                return base[:100]
-            return f"{core} — {base}"[:100]
+                return _fit(direction)
+            combined = f"{direction}, {base}"
+            return combined if len(combined) <= 100 else _fit(direction)
 
         out: list[dict] = []
-        active_desc = base[:100]
+        active_desc = _fit(base)
 
         # narration/quoted alternation: narration becomes the NEXT quote's direction — and,
         # between or after quotes, a TIMED BEAT: stage business takes time, so the line
@@ -284,7 +291,13 @@ class HumeTTS(TTSAdapter):
             return
         # instant mode measurably flattens the acting (furious/whisper energy ratio 1.5x vs
         # 2.7x full quality) — quality is the default; HUME_INSTANT=1 buys ~1s of latency back
-        body = {"utterances": utterances, "format": {"type": "pcm"},
+        # PIN OCTAVE 1 (verified against dev.hume.ai 2026-07-09): our whole expressive layer is
+        # the per-utterance acting `description`, which is Octave-1-ONLY — "coming soon" for
+        # Octave 2. With no `version`, Hume auto-routes to whatever it deems best; if that drifts
+        # to v2 our acting instructions are SILENTLY IGNORED (flat, uncharacterized delivery).
+        # Explicit "1" guarantees the descriptions are honored. Revisit when v2 gains description
+        # support (then v2 also buys ~2x lower latency, more languages, native timestamps).
+        body = {"utterances": utterances, "format": {"type": "pcm"}, "version": "1",
                 "instant_mode": bool(voice_id) and self._instant}
         import time as _time
         prev = _LAST_GENERATION.get(voice_id)
