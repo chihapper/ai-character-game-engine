@@ -848,10 +848,26 @@ func _spawn_ambient_villagers(tiles: Array) -> void:
 				open.append(Vector2i(x, y))
 	if open.size() < 8:
 		return
+	# Farthest-point spread so they DON'T clump in one corner (owner feedback 2026-07-09): each
+	# villager is placed on the open cell furthest from all already-placed ones.
+	var picks: Array = [open[open.size() / 2]]
+	while picks.size() < 5:
+		var best: Vector2i = picks[0]
+		var best_d := -1.0
+		for c in open:
+			var nearest := 9999.0
+			for p in picks:
+				nearest = minf(nearest, Vector2(c).distance_to(Vector2(p)))
+			if nearest > best_d:
+				best_d = nearest
+				best = c
+		if best_d <= 0.0:
+			break
+		picks.append(best)
 	var models := [ADVENTURERS + "Rogue.glb", ADVENTURERS + "Barbarian.glb", ADVENTURERS + "Mage.glb",
 		ADVENTURERS + "Knight.glb"]
-	for i in range(6):
-		var cell: Vector2i = open[(i * 53 + 7) % open.size()]
+	for i in picks.size():
+		var cell: Vector2i = picks[i]
 		var scene = load(models[i % models.size()])
 		if not (scene is PackedScene):
 			continue
@@ -866,8 +882,8 @@ func _spawn_ambient_villagers(tiles: Array) -> void:
 		if not aps.is_empty():
 			ap = aps[0]
 			ap.play("Idle")
-		_ambient.append({"node": root, "ap": ap, "cell": Vector2(cell), "from": Vector2(cell),
-			"to": Vector2(cell), "t": 1.0, "wait": float(i) * 0.7, "state": "idle"})
+		_ambient.append({"node": root, "ap": ap, "cell": Vector2(cell), "home": Vector2(cell),
+			"from": Vector2(cell), "to": Vector2(cell), "t": 1.0, "wait": float(i) * 0.9, "state": "idle"})
 
 
 ## Build newly-explored cells: floors under '.'/'+'/stairs, wall segments on wall-cell edges that
@@ -2095,10 +2111,15 @@ func _update_ambient(delta: float) -> void:
 		if str(a["state"]) == "idle":
 			a["wait"] = float(a["wait"]) - delta
 			if float(a["wait"]) <= 0.0:
-				# pick a target a few tiles off with a walkable midpoint (avoid walking into houses)
+				# stroll a short step, ANCHORED to a home spot so they don't all migrate together
+				# (they linger, amble a little, return) — reads as townsfolk minding their patch.
 				var base: Vector2 = a["cell"]
+				var home: Vector2 = a["home"]
 				var h := (int(base.x) * 73 + int(base.y) * 91 + int(_time * 3.0)) % 97
-				var tgt := base + Vector2(float(h % 7 - 3), float((h / 7) % 7 - 3))
+				var tgt: Vector2 = base + Vector2(float(h % 5 - 2), float((h / 5) % 5 - 2))
+				if base.distance_to(home) > 3.0:      # drifted — head back toward home
+					tgt = base + (home - base).normalized() * 2.0
+				tgt = tgt.round()
 				var mid := (base + tgt) * 0.5
 				if _town_walkable(int(tgt.x), int(tgt.y)) and _town_walkable(int(mid.x), int(mid.y)) \
 						and tgt.distance_to(base) > 0.5:
@@ -2122,7 +2143,7 @@ func _update_ambient(delta: float) -> void:
 			if d >= 1.0:
 				a["cell"] = a["to"]
 				a["state"] = "idle"
-				a["wait"] = 0.8 + float((int(p.x) * 3) % 4)
+				a["wait"] = 2.5 + float((int(p.x) * 7) % 5)   # longer, varied pauses — calmer town
 				if a["ap"] != null:
 					(a["ap"] as AnimationPlayer).play("Idle")
 
