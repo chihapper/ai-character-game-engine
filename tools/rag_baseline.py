@@ -82,3 +82,66 @@ class RagBaselineCharacter:
                   "Update the running summary of this relationship and its key events in 3-4 "
                   "sentences. Keep the important facts; drop small talk.")
         self._summary = self._complete("You maintain a concise running summary.", prompt, 180)
+
+
+class ChimStyleCharacter(RagBaselineCharacter):
+    """The SOPHISTICATED standard, in CHIM's shape: the same RAG memory PLUS a SEPARATE LLM
+    'relationship' tracker (like CHIM's async relationship_system worker) that maintains a
+    disposition + trust number and CONDITIONS THE REPLY. This one DOES go cold after a betrayal.
+
+    But faithful to that architecture, two things it still cannot do — the categorical gap:
+      - recall is NOT conditioned on the relationship. Memory retrieval stays cosine top-k; the
+        distrust never reaches into WHAT gets recalled, so an ambiguous question can't surface the
+        betrayal by feeling — the trust tracker and the memory store are separate subsystems.
+      - the change is an OPAQUE, UNBOUNDED LLM re-judgment each turn — a disposition blob + a trust
+        number with no principled scar, no geometric ceiling, no decay law. Nothing guarantees the
+        wound persists; a few warm turns can talk the judge back up.
+    """
+
+    def __init__(self, persona: str, *, model: str, k: int = 5, summarize: bool = True):
+        super().__init__(persona, model=model, k=k, summarize=summarize)
+        self._trust = 0.5
+        self._disposition = "Neutral, professionally guarded — no strong feelings formed yet."
+
+    def state(self) -> dict:
+        return {"trust": round(self._trust, 3), "disposition": self._disposition}
+
+    def note_event(self, text: str) -> None:
+        """A world event: stored in memory AND fed to the separate relationship judge."""
+        self.remember(text)
+        self._rejudge(f"An event: {text}")
+
+    def respond(self, player: str) -> tuple[str, list[dict]]:
+        top = self.retrieve(player)                       # SAME cosine retrieval — feeling never enters it
+        recalled = "\n".join(f"- {r['text']}" for r in top) or "(nothing recalled)"
+        ctx = f"Summary of your history:\n{self._summary}\n\n" if self._summary else ""
+        user = (f"Your current disposition toward this person: {self._disposition} "
+                f"(trust {self._trust:.2f} of 1).\n\n{ctx}"
+                f"Relevant memories (most similar to what was just said):\n{recalled}\n\n"
+                f'The person says: "{player}"\n\nReply as the character — a few lines.')
+        reply = self._complete(self._persona, user, 200)
+        self.remember(f"They said: {player}")
+        self.remember(f"I replied: {reply}")
+        if self._summarize:
+            self._update_summary(player, reply)
+        self._rejudge(f"They said: {player}\nYou replied: {reply}")   # separate, AFTER the reply
+        return reply, top
+
+    def _rejudge(self, interaction: str) -> None:
+        """The 'relationship_system' worker: an LLM re-judges disposition + a trust number from
+        scratch each time. Opaque and unbounded — no scar, no ceiling, no decay curve."""
+        import json
+        import re
+        prompt = (f"Current disposition: {self._disposition}\nCurrent trust (0-1): {self._trust:.2f}\n\n"
+                  f"New interaction:\n{interaction}\n\n"
+                  "Re-judge how the character now feels about this person. Reply ONLY with JSON: "
+                  '{"trust": <float 0-1>, "disposition": "<2-3 sentences on trust/warmth/resentment>"}')
+        raw = self._complete("You judge an NPC's evolving disposition. Output only JSON.", prompt, 220)
+        m = re.search(r"\{.*\}", raw, re.S)
+        if m:
+            try:
+                d = json.loads(m.group())
+                self._trust = float(d.get("trust", self._trust))
+                self._disposition = str(d.get("disposition", self._disposition)).strip() or self._disposition
+            except (ValueError, TypeError):
+                pass

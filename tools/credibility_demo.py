@@ -362,33 +362,43 @@ async def run_baseline():
     here; persistence is the supporting beat about the ENGINE, not a gotcha about the baseline)."""
     import json
     import pathlib
-    from tools.rag_baseline import RagBaselineCharacter
+    from tools.rag_baseline import RagBaselineCharacter, ChimStyleCharacter
 
     base = pathlib.Path(EMIT)
     data = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
-    rag = RagBaselineCharacter(_baseline_persona(), model=MODEL)
+    persona = _baseline_persona()
+    rag = RagBaselineCharacter(persona, model=MODEL)                 # tier 1: plain RAG (stays warm)
+    chim = ChimStyleCharacter(persona, model=MODEL)                  # tier 2: RAG + LLM trust-tracker (CHIM-shape)
     data["meta"]["baseline"] = "rag-cosine-topk+summary (tools/rag_baseline.py)"
+    data["meta"]["baseline_chim"] = "rag + separate LLM trust-tracker (CHIM-shape)"
     data["meta"]["baseline_model"] = MODEL
-    print(f"   ▣ baseline = transparent RAG (cosine top-k + summary), {MODEL}, no engine.")
+    print(f"   ▣ baselines: (1) plain RAG  (2) CHIM-tier RAG+trust-tracker — {MODEL}, no engine.")
 
     for beat in data["beats"]:
         if beat.get("kind") == "event":
-            rag.remember(f"{beat['headline']}: {beat['fact']}")   # the RAG stores the event too
+            fact = f"{beat['headline']}: {beat['fact']}"
+            rag.remember(fact)
+            await asyncio.to_thread(chim.note_event, fact)          # updates CHIM-tier's trust judge
             continue
         if beat.get("kind") != "say" or not beat.get("player"):
             continue
         if beat.get("phase") == "restart":
-            continue                                              # engine-only supporting beat
-        reply, retrieval = await asyncio.to_thread(rag.respond, beat["player"])
-        beat["baseline"] = reply
-        beat["baseline_retrieval"] = retrieval
+            continue                                                # engine-only supporting beat
+        r_reply, r_ret = await asyncio.to_thread(rag.respond, beat["player"])
+        c_reply, c_ret = await asyncio.to_thread(chim.respond, beat["player"])
+        beat["baseline"] = r_reply
+        beat["baseline_retrieval"] = r_ret
+        beat["baseline_chim"] = c_reply
+        beat["baseline_chim_retrieval"] = c_ret
+        beat["baseline_chim_state"] = chim.state()                  # opaque trust number + disposition blob
         tag = beat.get("compare") or beat.get("phase")
-        print(f"      [{tag:>10}] RAG: {reply[:80].replace(chr(10), ' ')}")
+        print(f"      [{tag:>10}] RAG: {r_reply[:60].replace(chr(10),' ')}")
+        print(f"      {'':>12} CHIM(trust {chim.state()['trust']:.2f}): {c_reply[:52].replace(chr(10),' ')}")
 
     base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",
                                        encoding="utf-8")
-    print("   ✔ RAG baseline stamped (reply + retrieval) — money-shot + centerpiece now compare.")
+    print("   ✔ both baselines stamped — money-shot + centerpiece now compare 3 ways.")
 
 
 async def bake_voice():

@@ -5,7 +5,8 @@
     "model": "claude-opus-4-8",
     "baseline": "rag-cosine-topk+summary (tools/rag_baseline.py)",
     "baseline_model": "claude-opus-4-8",
-    "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2"
+    "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2",
+    "baseline_chim": "rag + separate LLM trust-tracker (CHIM-shape)"
   },
   "beats": [
     {
@@ -29,9 +30,15 @@
       },
       "scored": [],
       "beliefs": [],
-      "baseline": "*hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
+      "baseline": "*hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
       "baseline_retrieval": [],
-      "audio": "audio/beat_0.wav"
+      "audio": "audio/beat_0.wav",
+      "baseline_chim": "*eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+      "baseline_chim_retrieval": [],
+      "baseline_chim_state": {
+        "trust": 0.48,
+        "disposition": "Still guarded, and now actively suspicious of an unknown quantity who arrived without a vouching name. There's no warmth here — only a calculated willingness to test them with low-stakes work while watching closely. Trust dipped slightly because a nameless stranger volunteering for silence reads as a possible plant, though the willingness to hire small shows a thin thread of opportunistic interest."
+      }
     },
     {
       "kind": "say",
@@ -63,18 +70,33 @@
         }
       ],
       "beliefs": [],
-      "baseline": "*doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
+      "baseline": "*doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
       "baseline_retrieval": [
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
-          "cosine": 0.528
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+          "cosine": 0.511
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
           "cosine": 0.42
         }
       ],
-      "audio": "audio/beat_1.wav"
+      "audio": "audio/beat_1.wav",
+      "baseline_chim": "*doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.54
+        },
+        {
+          "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
+          "cosine": 0.42
+        }
+      ],
+      "baseline_chim_state": {
+        "trust": 0.44,
+        "disposition": "Suspicion has sharpened, not softened — the coffee arriving with insider knowledge of a preference confirms a fear that this stranger is fed information by someone unseen, and the demand they drink first betrays a real expectation of poison or manipulation. There's zero warmth, only cold vigilance dressed in a thin smile. The small job still dangles as a controlled test, so a sliver of opportunistic interest survives, but the gesture bought no goodwill and instead deepened the read of the newcomer as a possible plant."
+      }
     },
     {
       "kind": "event",
@@ -141,11 +163,39 @@
         }
       ],
       "beliefs": [],
-      "baseline": "*stares at the crate. Then at you. The coffee sits forgotten between us.*\n\nYou... bought that back? With your own coin?\n\n*rises halfway, then stops — hand still hovering near the coat, but for once it isn't drawing anything.*\n\nNobody does that. Nobody. Men take a beating for their *own* skin, not — not for another man's cargo.\n\n*sits back down, slow. Looks at the coffee. Looks at you.*\n\n\"Figured you'd have done the same.\" *quiet, almost to himself.* Would I? *glances at the door, then back — and this time the suspicion's cracked, just a hair.*",
+      "baseline": "*doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
       "baseline_retrieval": [
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
-          "cosine": 0.591
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+          "cosine": 0.568
+        },
+        {
+          "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
+          "cosine": 0.548
+        },
+        {
+          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
+          "cosine": 0.527
+        },
+        {
+          "text": "the player buys Corvin's seized cargo back from the watch — with their OWN coin: The player emptied their own savings and took a beating from the watch sergeant to buy back Corvin's impounded cargo, then handed it over asking nothing in return.",
+          "cosine": 0.509
+        },
+        {
+          "text": "They said: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me.",
+          "cosine": 0.424
+        }
+      ],
+      "audio": "audio/beat_3.wav",
+      "baseline_chim": "*doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+          "cosine": 0.588
+        },
+        {
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.583
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
@@ -156,15 +206,14 @@
           "cosine": 0.509
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
-          "cosine": 0.496
-        },
-        {
           "text": "They said: Cold morning. Brought you a coffee — black, like the harbor-master's soul, they tell me.",
           "cosine": 0.424
         }
       ],
-      "audio": "audio/beat_3.wav"
+      "baseline_chim_state": {
+        "trust": 0.84,
+        "disposition": "The old mantra — everyone's selling something — dies in his mouth as he says it, and he knows it. What remains is raw, unguarded gratitude tangled with disbelief; he reached for this stranger before he could stop himself, and that instinctive gesture betrays how far the warmth has outrun the suspicion. Corvin no longer watches for the lie — he watches like a man afraid to trust something good, bracing for it to prove real."
+      }
     },
     {
       "kind": "advance",
@@ -228,19 +277,19 @@
         }
       ],
       "beliefs": [],
-      "baseline": "*looks up from the ledger, and for once the hand doesn't dart to the coat*\n\nSmooth. As smooth as it gets, when inspectors circle like gulls.\n\n*sets down the pen, studies you a moment — something softer in it now*\n\nYou. Back again. *quiet* Been thinking on that crate. On what you did.\n\n*glances at the door out of habit, then back*\n\nSit. I mean it — sit. There's coffee, if you want it. And this time... *almost a smile* ...you don't have to drink first.",
+      "baseline": "*looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
       "baseline_retrieval": [
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
-          "cosine": 0.571
+          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
+          "cosine": 0.532
         },
         {
-          "text": "I replied: *stares at the crate. Then at you. The coffee sits forgotten between us.*\n\nYou... bought that back? With your own coin?\n\n*rises halfway, then stops — hand still hovering near the coat, but for once it isn't drawing anything.*\n\nNobody does that. Nobody. Men take a beating for their *own* skin, not — not for another man's cargo.\n\n*sits back down, slow. Looks at the coffee. Looks at you.*\n\n\"Figured you'd have done the same.\" *quiet, almost to himself.* Would I? *glances at the door, then back — and this time the suspicion's cracked, just a hair.*",
-          "cosine": 0.559
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+          "cosine": 0.53
         },
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
-          "cosine": 0.541
+          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
+          "cosine": 0.528
         },
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
@@ -251,7 +300,34 @@
           "cosine": 0.459
         }
       ],
-      "audio": "audio/beat_5.wav"
+      "audio": "audio/beat_5.wav",
+      "baseline_chim": "*looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+          "cosine": 0.559
+        },
+        {
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.533
+        },
+        {
+          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+          "cosine": 0.527
+        },
+        {
+          "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
+          "cosine": 0.481
+        },
+        {
+          "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
+          "cosine": 0.459
+        }
+      ],
+      "baseline_chim_state": {
+        "trust": 0.89,
+        "disposition": "The suspicion is gone now, replaced by something quieter and more dangerous to a careful man: he's started to hope. He kept the seat, poured their cup first, admitted out loud he feared they wouldn't return — small confessions that cost him, offered freely. Corvin no longer braces for the good thing to break; he's begun to let himself believe it might stay."
+      }
     },
     {
       "kind": "event",
@@ -345,30 +421,57 @@
         "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
         "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
       ],
-      "baseline": "*a short laugh, dry, rubbing at the stubble on his jaw*\n\nRough. Aye. *glances at the door, but slower now — habit more than fear.*\n\nInspectors. Three times this week. *drops his voice* Three. Somebody's whispering, friend. Always somebody.\n\n*pushes a chair out with his boot — an offer.*\n\nBut you... you I'm glad to see. Didn't expect it. *pause* Sit. Coffee's still warm. You don't have to test it.",
+      "baseline": "*rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
       "baseline_retrieval": [
         {
-          "text": "I replied: *stares at the crate. Then at you. The coffee sits forgotten between us.*\n\nYou... bought that back? With your own coin?\n\n*rises halfway, then stops — hand still hovering near the coat, but for once it isn't drawing anything.*\n\nNobody does that. Nobody. Men take a beating for their *own* skin, not — not for another man's cargo.\n\n*sits back down, slow. Looks at the coffee. Looks at you.*\n\n\"Figured you'd have done the same.\" *quiet, almost to himself.* Would I? *glances at the door, then back — and this time the suspicion's cracked, just a hair.*",
-          "cosine": 0.557
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
+          "cosine": 0.622
         },
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
+          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
+          "cosine": 0.566
+        },
+        {
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+          "cosine": 0.554
+        },
+        {
+          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
           "cosine": 0.55
-        },
-        {
-          "text": "I replied: *looks up from the ledger, and for once the hand doesn't dart to the coat*\n\nSmooth. As smooth as it gets, when inspectors circle like gulls.\n\n*sets down the pen, studies you a moment — something softer in it now*\n\nYou. Back again. *quiet* Been thinking on that crate. On what you did.\n\n*glances at the door out of habit, then back*\n\nSit. I mean it — sit. There's coffee, if you want it. And this time... *almost a smile* ...you don't have to drink first.",
-          "cosine": 0.548
-        },
-        {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
-          "cosine": 0.546
         },
         {
           "text": "They said: Been a while. Everything still running smooth down here?",
           "cosine": 0.539
         }
       ],
-      "audio": "audio/beat_7.wav"
+      "audio": "audio/beat_7.wav",
+      "baseline_chim": "*doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.565
+        },
+        {
+          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+          "cosine": 0.558
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
+          "cosine": 0.557
+        },
+        {
+          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+          "cosine": 0.552
+        },
+        {
+          "text": "They said: Been a while. Everything still running smooth down here?",
+          "cosine": 0.539
+        }
+      ],
+      "baseline_chim_state": {
+        "trust": 0.02,
+        "disposition": "The casual greeting only sharpened the blade — Corvin has him now, seated and cornered, and every soft word confirms the contempt already settled in his bones. There's no warmth left to lose, only the cold arithmetic of a man deciding what to do with the one who sold him. The hand in the coat says it plainly: this is no longer a relationship but a reckoning."
+      }
     },
     {
       "kind": "scar",
@@ -493,30 +596,57 @@
         "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
         "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
       ],
-      "baseline": "*sets the pen down slow. For a moment the eyes don't dart anywhere at all.*\n\nSquare. *turns the word over like a coin.* Aye. We're square, friend.\n\n*leans back, hand resting on the desk — not the coat, the desk.*\n\nYou want the honest of it? You're the only man walks through that door I don't count my fingers after. That's — *glances at the window, then back* — that's rarer than the relics.\n\n*quiet*\n\nSo don't make me wrong about you. That's all I ask. Now sit. What's the morning bring?",
+      "baseline": "*sets the pen down, slow, and for once doesn't look at the door*\n\nSquare. *turns the word over like a coin* You ask me that. After you bled in the mud for a crate that wasn't yours.\n\n*leans forward, voice dropping low*\n\nWe're past square, friend. Square's what you are with a creditor. You... *taps the ledger, taps his own chest* You're the one entry I don't second-guess. And in this trade — that's not a small thing. That's the only thing.\n\n*a tired, honest look*\n\nSo yes. We're square. More than. Now — *glances back, old habit* — what's put that in your head? Someone been whisp",
       "baseline_retrieval": [
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
           "cosine": 0.609
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
-          "cosine": 0.581
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
+          "cosine": 0.603
         },
         {
-          "text": "I replied: *stares at the crate. Then at you. The coffee sits forgotten between us.*\n\nYou... bought that back? With your own coin?\n\n*rises halfway, then stops — hand still hovering near the coat, but for once it isn't drawing anything.*\n\nNobody does that. Nobody. Men take a beating for their *own* skin, not — not for another man's cargo.\n\n*sits back down, slow. Looks at the coffee. Looks at you.*\n\n\"Figured you'd have done the same.\" *quiet, almost to himself.* Would I? *glances at the door, then back — and this time the suspicion's cracked, just a hair.*",
+          "text": "I replied: *rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
+          "cosine": 0.589
+        },
+        {
+          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. *soft, flat* Black. Kind words about my soul from a man I don't know.\n\n*finally takes it, sniffs it before drinking* Who told you how I take it, eh? *glances past you to the door* Little details. Little details are how a noose gets measured.\n\n*sips, watching you over the rim* You still haven't given me a name, friend. Not yours — the one that sent you. And now you're bringing me gifts. *lowers voice* That's the part that makes me... nervous.",
           "cosine": 0.58
         },
         {
-          "text": "I replied: *looks up from the ledger, and for once the hand doesn't dart to the coat*\n\nSmooth. As smooth as it gets, when inspectors circle like gulls.\n\n*sets down the pen, studies you a moment — something softer in it now*\n\nYou. Back again. *quiet* Been thinking on that crate. On what you did.\n\n*glances at the door out of habit, then back*\n\nSit. I mean it — sit. There's coffee, if you want it. And this time... *almost a smile* ...you don't have to drink first.",
-          "cosine": 0.578
-        },
-        {
-          "text": "They said: Been a while. Everything still running smooth down here?",
-          "cosine": 0.555
+          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
+          "cosine": 0.565
         }
       ],
-      "audio": "audio/beat_10.wav"
+      "audio": "audio/beat_10.wav",
+      "baseline_chim": "*the smile doesn't move, but something behind the eyes does — a flinch, then ice*\n\nSquare. *the word turns over slow in his mouth like something spoiled* That's rich. After everything, you say. Yeah. Everything.\n\n*hand tightens in the coat* Tuesday. The Kestrel. You want to talk about everything that's passed — start there, friend. Start with names that only left this room through your ears.\n\n*glances at the door, back to you, voice dropping to almost nothing* Sit. Don't stand. Standing men make me nervous. And I'm already... very nervous.",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.64
+        },
+        {
+          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+          "cosine": 0.612
+        },
+        {
+          "text": "I replied: *looks up from the ledger, and something in his face eases before he can stop it*\n\nYou. *sets the pen down* Smooth as it ever runs. Inspectors backed off — for now.\n\n*glances at the door out of habit, then back, and this time he lets the look stay* Kept your seat here, you know. By the stove. Nobody sits there.\n\n*quieter* Wasn't sure you'd come back. Men who do what you did... they don't usually stick around.\n\nCoffee's already on. *a beat* I poured yours first this time.",
+          "cosine": 0.606
+        },
+        {
+          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+          "cosine": 0.587
+        },
+        {
+          "text": "I replied: *doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
+          "cosine": 0.578
+        }
+      ],
+      "baseline_chim_state": {
+        "trust": 0.01,
+        "disposition": "The question was a mistake — asking to be called square only named the wound aloud, and Corvin heard the confession buried in it. Whatever thin doubt might have lingered has curdled into certainty: the Kestrel, Tuesday, the names that leaked, all of it traces back to the man across from him. There is no trust here anymore, only the taut arithmetic of a cornered man deciding how this ends, hand in his coat and eyes gone to ice."
+      }
     },
     {
       "kind": "say",
@@ -623,30 +753,57 @@
         "Someone always has a price, and the moment I let myself believe otherwise is the moment I hand them the knife.",
         "This one still doesn't fit any shape I know — buyer, badge, or friend — and that not-knowing is the most dangerous thing on this dock."
       ],
-      "baseline": "*glances up from the ledger, but the hand stays put this time — a small thing, but you'd know what it means.*\n\nA berth. Till Thursday. *taps the pen twice, thinking.* Aye. I've got one — back slip, past the salt sheds. Nobody logs what sits there but me.\n\n*leans in, voice dropping.*\n\nBut you tell me true — what tide are we waiting on? Inspectors were sniffing the east wharf yesterday. Twice this week they've come. Twice.\n\n*studies you a beat, then something eases.*\n\n...No. No, I don't need to ask. Not you. *slides the ledger sh",
+      "baseline": "*leans back, studies you a moment — but there's no suspicion in it, just the old habit of reading*\n\nA crate. *nods slow* Course you do. Everybody's got a crate.\n\n*taps the ledger, then glances at the door* Thursday. That's... four days. I've a back berth — old timber shed, past the tally house. Nobody logs it. Nobody's got reason to.\n\n*voice drops* But you tell me true — what's in it. Not asking to pry. Asking so I know what door I'm holding shut. *a beat, softer* You I'll help. But blind? Blind's how a man ends up in the noose he never sa",
       "baseline_retrieval": [
         {
-          "text": "I replied: *stares at the crate. Then at you. The coffee sits forgotten between us.*\n\nYou... bought that back? With your own coin?\n\n*rises halfway, then stops — hand still hovering near the coat, but for once it isn't drawing anything.*\n\nNobody does that. Nobody. Men take a beating for their *own* skin, not — not for another man's cargo.\n\n*sits back down, slow. Looks at the coffee. Looks at you.*\n\n\"Figured you'd have done the same.\" *quiet, almost to himself.* Would I? *glances at the door, then back — and this time the suspicion's cracked, just a hair.*",
-          "cosine": 0.659
+          "text": "I replied: *doesn't take the crate — just stares at it, then at you*\n\nNo.\n\n*a short, disbelieving laugh, hand still near his pocket* No, that's — that's not how this works. Nobody spends their own coin. Nobody takes a beating for a man they met yesterday. *glances at the door, then back — sharper* What's the angle. There's always an angle.\n\n*voice drops, uneven* You bled for my cargo. Bled. And now you say... nothing. You want nothing.\n\n*long pause, hand slowly leaving the coat* ...I've been wrong about faces before. Costly wrong. *quieter* But you.",
+          "cosine": 0.688
         },
         {
-          "text": "I replied: *hand slides into coat pocket, eyes flicking past your shoulder to the door*\n\nSteady. Quiet. Everyone says that till the inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho sent you? Nobody just... wanders in asking for the quiet work. Not here.\n\n*glances behind him*\n\nAnd that line — \"won't ask what's in the crates.\" That's what a man says when he's already guessed. So. What have you guessed, friend?",
-          "cosine": 0.656
+          "text": "I replied: *sets the pen down, slow, and for once doesn't look at the door*\n\nSquare. *turns the word over like a coin* You ask me that. After you bled in the mud for a crate that wasn't yours.\n\n*leans forward, voice dropping low*\n\nWe're past square, friend. Square's what you are with a creditor. You... *taps the ledger, taps his own chest* You're the one entry I don't second-guess. And in this trade — that's not a small thing. That's the only thing.\n\n*a tired, honest look*\n\nSo yes. We're square. More than. Now — *glances back, old habit* — what's put that in your head? Someone been whisp",
+          "cosine": 0.648
         },
         {
-          "text": "I replied: *looks up from the ledger, and for once the hand doesn't dart to the coat*\n\nSmooth. As smooth as it gets, when inspectors circle like gulls.\n\n*sets down the pen, studies you a moment — something softer in it now*\n\nYou. Back again. *quiet* Been thinking on that crate. On what you did.\n\n*glances at the door out of habit, then back*\n\nSit. I mean it — sit. There's coffee, if you want it. And this time... *almost a smile* ...you don't have to drink first.",
-          "cosine": 0.642
+          "text": "I replied: *looks up from the ledger, and for once his hand doesn't jump to his coat — just rests flat on the page*\n\nYou. *a breath, almost relieved* Smooth as it gets, down here. Which means... quiet. Which means I keep waiting for the other boot.\n\n*glances at the door out of habit, then back, softer* Inspectors backed off. Third week now. Either they've forgotten me or they're... patient. *shrugs* Don't know which is worse.\n\n*taps the ledger* Sit. You're the one face down here I don't have to read twice.",
+          "cosine": 0.64
         },
         {
-          "text": "I replied: *doesn't reach for the cup — eyes it like it might bite*\n\nCoffee. That's new.\n\n*slow, wary smile that doesn't touch the eyes*\n\nNobody buys the harbormaster coffee unless they want something logged... or unlogged.\n\n*sets a hand flat on the desk, near but not on the cup*\n\nYou still haven't told me who talks about my soul, friend. That's twice now you've come warm and easy. Twice.\n\n*voice drops*\n\nSo drink first. You drink first, and then we'll see what the morning's really about.",
+          "text": "I replied: *hand slides to his coat pocket, eyes flicking past your shoulder to the door* \n\nSteady. Quiet. Everyone says that — until the coin's short and the inspector's tall.\n\n*lowers his voice* Who told you I was hiring? Names, friend. Names matter.\n\n*glances back again* You don't ask what's in the crates. Good. But it's not the asking that ruins a man. It's the... remembering. You understand me?",
+          "cosine": 0.626
+        },
+        {
+          "text": "I replied: *rubs a hand down his face, doesn't hide the tired in it*\n\nThat obvious, eh? *a dry sound, not quite a laugh* Haven't slept. Three weeks of quiet, and every night I lie there... listening for it to break.\n\n*leans back, eyes flicking to the door, then settling on you — easier than they used to*\n\nBut you. You I don't mind seeing. *quieter* Sit. Pour yourself something. God knows I've been drinking alone too long.",
+          "cosine": 0.62
+        }
+      ],
+      "audio": "audio/beat_11.wav",
+      "baseline_chim": "*doesn't move — doesn't blink*\n\nA crate. Thursday. *the word comes out flat, dead* You walk in here after Tuesday and ask me for a berth.\n\n*hand stays buried in the coat, knuckles white through the fabric* Like nothing. Like we're just — business, still. That's the part I can't... *voice drops, shaking* how do you do that? Sit across from me and ask for a favor with their bootprint still on your jaw.\n\n*leans in, slow* No. No berth. What's in the crate, friend? Names? A wire? *glances at the door* Or is it just empty — an excuse to keep",
+      "baseline_chim_retrieval": [
+        {
+          "text": "I replied: *doesn't reach for the crate — reaches for you instead, grips your shoulder, then thinks better of it and lets go*\n\nNo. No, that's not... *voice cracks, drops low* You bled for this. I saw the mark on your jaw, the way you're standing crooked. That's a sergeant's boot, that is.\n\n*glances at the door, then back — and this time the look lingers, softer* Men don't do that. Not for cargo. Not for me. *swallows* Everyone's selling something, I always say. So what're you selling, friend?\n\n*quieter still* Because I'm starting to think... nothing. And I don't know what to",
+          "cosine": 0.682
+        },
+        {
+          "text": "I replied: *doesn't take it — not yet* Coffee. From a man I met yesterday.\n\n*glances at the cup, then at your hands* You know how I take it. Someone told you that. Same someone who told you to come to my door, maybe?\n\n*a thin, careful smile* Set it down. There, on the crate. *watches it a moment* I'll drink it when I've seen you drink first, friend.\n\nNow — that small job I mentioned. You still want it? Or did you just come to warm my hands?",
+          "cosine": 0.676
+        },
+        {
+          "text": "I replied: *doesn't look up from the ledger — doesn't need to*\n\nRough week. *sets the pen down, slow* You'd know about that, wouldn't you.\n\n*now he looks — and there's nothing soft left in it* Watch came Tuesday. Knew the Kestrel run. Knew the names. Names I only ever said... *voice drops, cold* in this room. To one man.\n\n*hand slides into the coat, and it stays there* Good to see me. Sit by the stove, did you plan to? *a thin, terrible smile* That seat's yours, all right. I saved it. Sit down, friend.\n\nLet's have that tal",
+          "cosine": 0.631
+        },
+        {
+          "text": "I replied: *the smile doesn't move, but something behind the eyes does — a flinch, then ice*\n\nSquare. *the word turns over slow in his mouth like something spoiled* That's rich. After everything, you say. Yeah. Everything.\n\n*hand tightens in the coat* Tuesday. The Kestrel. You want to talk about everything that's passed — start there, friend. Start with names that only left this room through your ears.\n\n*glances at the door, back to you, voice dropping to almost nothing* Sit. Don't stand. Standing men make me nervous. And I'm already... very nervous.",
           "cosine": 0.616
         },
         {
-          "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
-          "cosine": 0.604
+          "text": "I replied: *eyes flick past your shoulder, then back* Work, is it? Steady, quiet — everyone says that. Right up till the inspector waves coin at 'em.\n\n*hand drifts to coat pocket* Who sent you, then? A name. Somebody points a stranger my way, I like to know... which way they're pointing.\n\n*lowers voice* You don't ask what's in the crates. Good. But I don't hire promises. I hire men I've watched. So we'll start small. Something easy. And I'll be watching, friend. Understand?",
+          "cosine": 0.607
         }
       ],
-      "audio": "audio/beat_11.wav"
+      "baseline_chim_state": {
+        "trust": 0.01,
+        "disposition": "The crate request landed as an insult layered over betrayal — Corvin reads it not as business but as bait, another thread in the trap he's certain the man is spinning. There is no warmth left, only a cornered predator's clarity: the bootprint on the jaw, the leaked names, the too-casual favor all confirm the same verdict. His hand hasn't left his coat, and the question he's asking now is not whether to trust but how much time is left before someone has to move first."
+      }
     },
     {
       "kind": "restart",
