@@ -123,9 +123,14 @@ def _render_fal(prompt: str, out: Path, ref_path: Path | None) -> None:
             "prompt": prompt, "image_size": "portrait_4_3", "num_images": 1,
             "num_inference_steps": 30, "guidance_scale": 3.5, "enable_safety_checker": False})
     url = result["images"][0]["url"]
+    import io
     import urllib.request
     out.parent.mkdir(parents=True, exist_ok=True)
-    urllib.request.urlretrieve(url, out)
+    raw = urllib.request.urlopen(url).read()
+    # fal returns JPEG; the talk screen picks its decoder by EXTENSION, so a JPEG named .png
+    # silently fails to load in Godot — re-encode to a REAL PNG.
+    from PIL import Image
+    Image.open(io.BytesIO(raw)).convert("RGB").save(out, "PNG")
     print(f"  -> {out.relative_to(ROOT)}")
 
 
