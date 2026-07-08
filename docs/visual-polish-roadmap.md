@@ -48,13 +48,22 @@ carry a prop (basket, tools). Client-only; no engine change.
 | **Flux (BFL via fal.ai/Replicate)** | med | filter varies | **best painterly** | seed + reference | ~$0.03–0.05 | Highest art quality; a bit more setup |
 | **Stability SD3.5** | med | weaker | good, tunable | seed/LoRA | cheap / self-host | Most control, least guardrail — riskiest on SFW |
 
-**Recommendation:** start on **gpt-image-1** (ease + moderation directly answer the pornographic-
-sampler burn), keep the provider behind a one-function seam so we can bake off Flux for quality
-later. Claude writes the prompts either way (Anthropic-in-the-loop; image gen is a different
-modality, not competing with Claude).
+**DECIDED (owner, 2026-07-09): fal.ai Flux, permissive.** Flux's painterly quality is the better
+match for the Lira look, and fal exposes `enable_safety_checker` (turned OFF) so scarred villains
+/ charred undead / hard faces aren't over-blocked — the strict gpt-image-1 filter was the concern.
+Safety is carried by three layers regardless of the model: Claude authors an SFW-but-mature prompt,
+the owner reviews every face, and (as a floor) the provider's own moderation. Provider lives behind
+`_render()` in `tools/gen_portrait.py` (`PORTRAIT_PROVIDER` swaps it).
 
-**Effort:** M (the tool + seam + a review pass over the 5 Graywater faces + Lira/Vael refresh).
-**Depends on:** provider choice + API key.
+**No-filter escape hatch** if hosted Flux still blocks a legit character: local **ComfyUI + Flux
+GGUF** (no filter; slow on the Pascal 1080 Ti), or rent a modern GPU on **RunPod/vast.ai** (~$0.40/hr)
+for a fast uncensored batch (~$1 total, one-time) — `PORTRAIT_PROVIDER=comfy` seam TODO.
+
+**STATUS:** tool built + prompt-authoring proven live (Claude writes a rich on-style prompt from
+each sheet). **BLOCKED only on a `FAL_KEY`** (fal.ai signup) + `pip install fal-client`; then the
+first cast renders into `review/` for approval.
+
+**Effort:** M. **Depends on:** FAL_KEY.
 
 ---
 

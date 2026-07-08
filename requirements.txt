@@ -22,3 +22,5 @@ PyYAML==6.0.2
 anthropic==0.69.0
 
 nvidia-audio2face-3d==1.3.0
+
+fal-client  # AI portrait rendering (tools/gen_portrait.py); needs FAL_KEY
