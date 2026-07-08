@@ -165,13 +165,23 @@ class HumeTTS(TTSAdapter):
         baseline almost never fired). The specific direction leads; the mood follows
         within the 100-char budget."""
         base = (base_description or "").strip()
+        prev_core = ""   # the last direction proper (sans scene mood) — transitions ease, not snap
 
         def _blend(direction: str) -> str:
+            nonlocal prev_core
+            core = direction
+            # TONE TRANSITIONS (owner-heard 2026-07-09: hush jumped to excitement with nothing
+            # between): when the direction genuinely changes mid-flow, tell Octave the shift is
+            # gradual. Outbursts still land — the character's own business can SAY "suddenly".
+            if core and prev_core and core != prev_core and "sudden" not in core.lower():
+                core = f"{core}, easing into it rather than snapping"
+            if direction:
+                prev_core = direction
             if not base:
-                return direction[:100]
-            if not direction:
+                return core[:100]
+            if not core:
                 return base[:100]
-            return f"{direction} — {base}"[:100]
+            return f"{core} — {base}"[:100]
 
         out: list[dict] = []
         active_desc = base[:100]
@@ -229,6 +239,10 @@ class HumeTTS(TTSAdapter):
                         s = s.replace("\x00", mark, 1)
                 else:
                     s = render_tags(s, "hume")
+                # Hygiene before the wire: any pause placeholder that survived a mismatched
+                # put-back must NEVER reach Hume (it reads as garbage), and stray emphasis
+                # asterisks aren't Octave markup — both were audible as random letter-noises.
+                s = s.replace("\x00", "").replace("*", "")
                 if not has_speakable(s) and not pauses:
                     continue
                 utt: dict = {"text": s.strip()}

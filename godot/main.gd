@@ -70,6 +70,7 @@ func _ready() -> void:
 	_talk.set_script(load("res://talk_scene.gd"))
 	add_child(_talk)
 	_talk.closed.connect(_stop_voice)   # leaving the conversation silences the speaker
+	_talk.submitted.connect(_on_stage_talk)   # replies are typed ON the stage now
 
 	_voice = AudioStreamPlayer.new()
 	_voice.name = "Voice"
@@ -645,8 +646,6 @@ func _try_click_talk(t: Vector2i) -> bool:
 	var pp = _snapshot.get("player", {}).get("pos", [0, 0])
 	var dist: int = absi(int(pp[0]) - t.x) + absi(int(pp[1]) - t.y)
 	if dist <= 2:
-		if _dialogue != null:
-			_dialogue.open_talk(id, who)
 		if _talk != null:
 			_talk.open(id, who, _model_path_for(id))
 		_maybe_greet(id, who)
@@ -686,11 +685,20 @@ func _open_talk_on_nearest() -> void:
 		return
 	var id := str(target.get("id", ""))
 	var who := str(target.get("name", ""))
-	if _dialogue != null:
-		_dialogue.open_talk(id, who)
-	if _talk != null:                     # the conversation takes the stage
+	if _talk != null:                     # the conversation takes the stage (input lives ON it)
 		_talk.open(id, who, _model_path_for(id))
 	_maybe_greet(id, who)
+
+
+## The player's reply, typed directly on the talk stage (owner feedback 2026-07-09: the
+## detached bottom entry bar was "horrible" — you type under their words now).
+func _on_stage_talk(slug: String, display: String, text: String) -> void:
+	Net.talk(slug, text)
+	if _hud != null:
+		_hud.log_line('You: "%s"' % text)
+		_hud.log_line("%s considers…" % display)
+	if _talk != null and _talk.is_open():
+		_talk.show_line(display, "…", "", "")
 
 
 ## The NPC speaks FIRST when a conversation opens: approaching someone is a social event they

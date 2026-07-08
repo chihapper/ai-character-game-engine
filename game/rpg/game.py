@@ -672,9 +672,12 @@ class RpgGame(GameSession):
         if pos is None or self._dist(pos, s.player.pos) > 2:
             return
         name = self.minds.characters[slug].name
-        reply = await self.minds.talk(
-            slug, "*The traveler walks up to you, clearly wanting to talk.*",
-            self._situation(slug))
+        # The approach is an EVENT the mind responds to, never words the player said: talk()
+        # planted a fake utterance ("you said you wanted to talk…", owner-heard 2026-07-09),
+        # and choose_action's reason came back as inner monologue. react() is the engine's
+        # designed channel for exactly this — a spoken, in-character response to the moment.
+        reply = await self.minds.react(
+            slug, "The traveler walks up to you, wanting to talk.", self._situation(slug))
         self._say(name, slug, reply)
         s.campaign_log.add(s.clock.value, f"The traveler approached {name}.", tags=["talk", slug])
 

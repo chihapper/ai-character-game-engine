@@ -12,6 +12,7 @@ extends CanvasLayer
 ## events here while open, and feeds set_level() with the voice playhead's amplitude each frame.
 
 signal closed   # leaving the conversation (Esc/click-away/combat) — main silences the voice
+signal submitted(slug: String, display: String, text: String)   # the player's reply, typed ON the stage
 
 const TYPE_CHARS_PER_S := 42.0
 
@@ -33,7 +34,8 @@ var _bust_model: Node3D = null
 var _name_plate: Label
 var _text_panel: PanelContainer     # the spoken line (left)
 var _text: RichTextLabel
-var _hint: Label
+var _entry: LineEdit                # REPLY input, directly under their words (owner feedback:
+var _hint: Label                    # the detached bottom entry bar read as "horrible" placement)
 
 var _portrait_cache := {}           # slug -> {base: Texture2D|null, mouth: Texture2D|null}
 
@@ -58,6 +60,8 @@ func open(slug: String, display_name: String, model_path: String) -> void:
 	_name_plate.text = display_name
 	_text.text = ""
 	_reveal = 0.0
+	_entry.clear()
+	_entry.call_deferred("grab_focus")
 	var art := _painted(slug)
 	if art["base"] != null:
 		_portrait.texture = art["base"]
@@ -92,6 +96,8 @@ func show_line(display_name: String, line: String, slug: String, model_path: Str
 	_text.text = line
 	_text.visible_characters = 0
 	_reveal = 0.0
+	if visible and _entry != null:
+		_entry.call_deferred("grab_focus")
 
 
 ## Voice playhead amplitude (0..1), fed by main.gd every frame — drives mouth/motion.
@@ -257,17 +263,32 @@ func _build_ui() -> void:
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text_panel.add_child(_text)
 
+	_entry = LineEdit.new()
+	_entry.placeholder_text = "Say something…"
+	_entry.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_entry.anchor_left = 0.05
+	_entry.anchor_right = 0.55
+	_entry.anchor_top = 0.655
+	_entry.anchor_bottom = 0.715
+	_entry.set_offsets_preset(Control.PRESET_FULL_RECT)
+	_entry.add_theme_font_size_override("font_size", 16)
+	_entry.text_submitted.connect(func(t: String):
+		var line := t.strip_edges()
+		if line != "":
+			submitted.emit(_slug, _display, line)
+		_entry.clear())
+	add_child(_entry)
+
 	_hint = Label.new()
-	_hint.text = "T — reply        Esc / click away — leave"
+	_hint.text = "Enter — send        Esc / click away — leave"
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint.add_theme_font_size_override("font_size", 13)
-	_hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.7))
-	# sits just under the text panel, well clear of the bottom controls bar
+	_hint.add_theme_font_size_override("font_size", 12)
+	_hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_hint.anchor_left = 0.05
 	_hint.anchor_right = 0.55
-	_hint.anchor_top = 0.65
-	_hint.anchor_bottom = 0.69
+	_hint.anchor_top = 0.72
+	_hint.anchor_bottom = 0.755
 	_hint.set_offsets_preset(Control.PRESET_FULL_RECT)
 	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hint)
@@ -283,7 +304,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mp: Vector2 = _frame.get_global_mouse_position()
-		if not _frame.get_global_rect().has_point(mp) and not _text_panel.get_global_rect().has_point(mp):
+		if not _frame.get_global_rect().has_point(mp) and not _text_panel.get_global_rect().has_point(mp) 				and not _entry.get_global_rect().has_point(mp):
 			close()
 			get_viewport().set_input_as_handled()
 

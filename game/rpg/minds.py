@@ -78,6 +78,13 @@ class Minds:
         inner change the exchange causes."""
         return await self.engines[slug].respond(RespondRequest(player_input=player_input, situation=situation))
 
+    async def react(self, slug: str, event: str, situation: Situation) -> str:
+        """A SPOKEN response to a game EVENT (not player speech): 'the traveler walks up',
+        'the door gives way'. Uses RespondRequest's event channel, so nothing lands in the
+        mind's history as words the player said (talk() planted exactly that — a greet through
+        it had Lira answering 'you said you wanted to talk')."""
+        return await self.engines[slug].respond(RespondRequest(event=event, situation=situation))
+
     async def act(self, slug: str, situation: Situation, options: list[str]) -> dict:
         """On-map / combat behavior: the engine picks ONE of the afforded `options`, grounded in
         who it has become. Returns {action, reason, expression, face}; the GAME enacts the choice."""
