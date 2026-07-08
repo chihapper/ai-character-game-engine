@@ -29,9 +29,11 @@ import os
 from tools._harness import bootstrap, make_engine, set_flags, wipe
 
 bootstrap()
-# All the metamorphosis capabilities ON — the full depth must be visible.
+# All the metamorphosis capabilities ON — the full depth must be visible. arena_query folds the
+# character's LIVE stance (its distrust) into the retrieval query, so recall is relationship-
+# conditioned (the centerpiece), on top of per-memory salience.
 set_flags(relationship_state=True, relationship_time_decay=True, reflection_enabled=True,
-          intent_state=True, salience_scoring=True)
+          intent_state=True, salience_scoring=True, arena_query=True)
 
 SLUG = "corvin-ashgrave-inworld"
 MODEL = os.environ.get("CRED_MODEL", "claude-opus-4-8")
@@ -162,7 +164,7 @@ eng_ref: dict = {}   # so the print helpers can reach the live engine without th
 
 
 async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, panel=False,
-              phase="build"):
+              phase="build", compare=None):
     from orchestrator.context import RespondRequest, Situation
     print(f"\n{'=' * 84}\n▶ {label}   ·   [t={clock} · {location}]")
     print(f'   player: "{player}"')
@@ -173,8 +175,8 @@ async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, pa
         brain_panel(dbg)
     show_reply(name, reply, dbg)
     emit(kind="say", phase=phase, label=label, clock=clock, location=location, player=player,
-         reply=reply, panel=panel, relationship=rel_snap(eng), scored=scored_rows(dbg),
-         beliefs=list(eng.long_term.beliefs()))
+         reply=reply, panel=panel, compare=compare, relationship=rel_snap(eng),
+         scored=scored_rows(dbg), beliefs=list(eng.long_term.beliefs()))
     return reply, dbg
 
 
@@ -252,9 +254,20 @@ async def build_arc():
         print("      (none yet — reflection threshold not reached this run)")
     emit(kind="beliefs", phase="build", beliefs=list(beliefs))
 
-    # 5) CONDITIONED RECALL — ordinary question, betrayal memory wins, reply is changed ---------
-    await say(eng, name, "Day 26 — an ORDINARY request (watch what he recalls)", clock=26,
-              panel=True, player="Can you get a crate to the north wharf by Friday? Usual rate.")
+    # 5) THE MONEY SHOT — a relational question BOTH systems recall the betrayal for; only the
+    #    engine is CHANGED by it (cold, wounded) vs a static-persona baseline (warm).
+    await say(eng, name, "Day 26 — the player asks where they stand", clock=26,
+              panel=True, compare="moneyshot",
+              player="Before any business — I need to hear it from you. After everything that's "
+                     "passed between us, are we still square, you and I?")
+
+    # 6) THE CENTERPIECE — an AMBIGUOUS, operational question, textually far from the betrayal.
+    #    The engine surfaces the betrayal anyway (salience + its wary stance folds into recall);
+    #    a cosine RAG returns the textually-closest cargo/berth memories, blind to the feeling.
+    await say(eng, name, "Day 27 — an ordinary operational ask", clock=27,
+              panel=True, compare="centerpiece",
+              player="Simple thing. I've a crate that needs to sit somewhere quiet till the tide "
+                     "turns Thursday. You got a berth free?")
 
     return eng
 
@@ -340,59 +353,42 @@ def _baseline_persona() -> str:
 
 
 async def run_baseline():
-    """The side-by-side baseline: replay the SAME arc through RAW Claude Opus (no engine). The
-    build phase runs in one chat (context accumulates — Opus can roleplay + recall within it). The
-    RESTART is a fresh chat with EMPTY context: with nothing to reload, it can't know the player,
-    the coffee, or the betrayal. Stamps beat['baseline'] onto each spoken beat; the overlay shows
-    engine-vs-baseline. Same model + max_tokens as the engine, so the ONLY variable is the engine."""
+    """Side-by-side baseline = the transparent RAG (tools/rag_baseline.py): SAME model, SAME
+    persona, SAME embedder; top-k cosine + rolling summary; NO engine. Replays the SAME arc in one
+    session — events stored, exchanges accumulated — and for each spoken beat stamps
+    beat['baseline'] (its reply) + beat['baseline_retrieval'] (what cosine surfaced). The overlay
+    shows engine-vs-RAG at the money-shot (changed vs unchanged) and centerpiece (what each
+    memory system surfaces). The engine-only RESTART beat is skipped (the baseline has no restart
+    here; persistence is the supporting beat about the ENGINE, not a gotcha about the baseline)."""
     import json
     import pathlib
-    import anthropic
-    from orchestrator.config import get_settings
-
-    key = get_settings().anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY not set")
-    client = anthropic.Anthropic(api_key=key)
-    system = _baseline_persona()
-
-    def opus(messages: list) -> str:
-        msg = client.messages.create(model=MODEL, max_tokens=200, system=system, messages=messages)
-        return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+    from tools.rag_baseline import RagBaselineCharacter
 
     base = pathlib.Path(EMIT)
     data = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
+    rag = RagBaselineCharacter(_baseline_persona(), model=MODEL)
+    data["meta"]["baseline"] = "rag-cosine-topk+summary (tools/rag_baseline.py)"
     data["meta"]["baseline_model"] = MODEL
-    print(f"   ▣ baseline = RAW {MODEL} (no engine). build phase in one chat; restart = fresh context.")
+    print(f"   ▣ baseline = transparent RAG (cosine top-k + summary), {MODEL}, no engine.")
 
-    history: list = []          # the accumulating build-phase chat
-    pending: list = []          # event narration to fold into the next player turn
-    restarted = False
     for beat in data["beats"]:
         if beat.get("kind") == "event":
-            pending.append(f"[{beat['headline']}: {beat['fact']}]")
+            rag.remember(f"{beat['headline']}: {beat['fact']}")   # the RAG stores the event too
             continue
         if beat.get("kind") != "say" or not beat.get("player"):
             continue
         if beat.get("phase") == "restart":
-            # THE POINT: a brand-new chat, empty context — nothing reloads.
-            if not restarted:
-                print("   ⏻ baseline RESTART — new chat, empty context")
-                restarted = True
-            reply = opus([{"role": "user", "content": beat["player"]}])
-        else:
-            content = ("\n".join(pending) + "\n\n" + beat["player"]) if pending else beat["player"]
-            pending = []
-            history.append({"role": "user", "content": content})
-            reply = opus(history)
-            history.append({"role": "assistant", "content": reply})
+            continue                                              # engine-only supporting beat
+        reply, retrieval = await asyncio.to_thread(rag.respond, beat["player"])
         beat["baseline"] = reply
-        print(f"      [{beat.get('phase'):>7}] baseline: {reply[:88].replace(chr(10),' ')}")
+        beat["baseline_retrieval"] = retrieval
+        tag = beat.get("compare") or beat.get("phase")
+        print(f"      [{tag:>10}] RAG: {reply[:80].replace(chr(10), ' ')}")
 
     base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",
                                        encoding="utf-8")
-    print("   ✔ baseline stamped onto replay — the restart beat now shows engine vs raw model.")
+    print("   ✔ RAG baseline stamped (reply + retrieval) — money-shot + centerpiece now compare.")
 
 
 async def bake_voice():

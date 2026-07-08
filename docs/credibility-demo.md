@@ -2,18 +2,28 @@
 
 Branch: `credibility-demo` (off clean `main`, the post engine/voice-uplift base).
 
-## The goal
-Prove, undeniably and on camera, that this is a **persistent thinking system**, not a
-chatbot acting a part — by staging the three things ChatGPT fundamentally *cannot* do:
-1. **Persistence across a restart** (the mind lives on disk, not in a context window).
-2. **Selective, decaying, inspectable memory** (the 🧠 panel shows *why* a memory won —
-   importance beating similarity, a near-duplicate suppressed, the trivial faded while the
-   significant stayed vivid).
-3. **Durable state that conditions behavior** (trust that dropped and won't come back fast;
-   an AI-chosen permanent scar; recall that tilts guarded).
+## The goal (consolidated 2026-07-08)
+Prove the engine **changes** characters — permanently and coherently, from *attributed* experience
+— in a way the standard architecture **structurally cannot**. The differentiator is NOT memory
+(plenty of products remember); it's that a standard memory system accumulates *facts* while its
+persona stays static, where this character is *altered* by what you did. Most systems remember
+*that* you betrayed them; this one is *changed* by it.
 
-The demo's whole job is to defeat "it's just ChatGPT told to act that way." So we stage that
-exact objection — and win.
+**Framing: categorical, not comparative.** Do not claim "mine remembers/changes better" — that's a
+quality judgment on a setup we control, and it invites "you rigged it." Instead demonstrate
+capabilities the standard architecture cannot have at all. Three:
+1. **Attributed change.** Same betrayal, same stored fact — this character's trust collapses, a
+   permanent scar forms, a belief consolidates; a static-persona memory system still treats you
+   like a friend.
+2. **Relationship-conditioned recall (centerpiece).** After the betrayal, an ambiguous question
+   surfaces the memory of the lie — because the character now distrusts you (its live stance folds
+   into the retrieval query) AND because the betrayal was encoded as high-salience. A cosine RAG
+   ranks by textual similarity to the query alone; it's blind to salience and to feeling.
+3. **Principled, inspectable relevance.** The 🧠 panel shows *why* a memory won — importance/recency
+   beating raw similarity, near-duplicates suppressed, the trivial faded, the pivotal vivid.
+
+The supporting proof (not the headline): **persistence across a restart** — the change is durable
+state on disk (`.memory/<slug>.jsonl`), not a context trick.
 
 ## What we are NOT building
 No dungeon, no sprites, no models, no combat, no level design. Just the **sandbox + the 🧠
@@ -143,35 +153,35 @@ Voice is a Hume Voice Library name; swap via `CORVIN_HUME_VOICE` (e.g. "Pirate C
 "Sad Old British Man" — any name from `GET /v0/tts/voices?provider=HUME_AI`). The `audio/` dir is
 gitignored (large, regenerable); rerun `--voice` after regenerating the arc.
 
-### Milestone 3 — the side-by-side: raw Claude Opus (DONE)
-`--baseline` replays the arc's player lines + events (as narration) through RAW Opus — same model,
-same static persona (built from Corvin's sheet), no engine. Build phase in one chat; the **restart
-= a fresh chat, empty context**. It stamps `beat.baseline` onto each spoken beat; the overlay
-shows the engine reply vs the baseline **side by side at the restart beat**. The restart probe is
-deliberately NEUTRAL ("we're still good, right?") — naming the coffee/betrayal would let the
-empty-context baseline echo it back and look like it remembered.
+### Milestone 3 — the side-by-side: a transparent RAG baseline (DONE)
+**Baseline = an open, faithful ~1-file RAG** (`tools/rag_baseline.py`) — the standard character-
+memory pattern: embed every exchange, retrieve **top-k by cosine similarity**, keep a rolling LLM
+summary, on the **same base LLM, same static persona, and same embedder** as the engine. No
+importance/salience, no relationship state, no relationship-conditioned recall, no principled
+forgetting. It's competent, not crippled — the honest opponent. (Superseded the earlier
+raw-Opus-empty-context baseline: that only proved "it forgot on restart," a comparative/weak claim.
+The RAG *remembers the betrayal too* — which sets up the far stronger categorical claim: it
+remembers and still can't change or recall-by-feeling.)
+
+`--baseline` replays the SAME arc (events stored, exchanges accumulated) through the RAG and stamps
+`beat.baseline` (its reply) + `beat.baseline_retrieval` (what cosine surfaced) onto the money-shot
+and centerpiece beats. The overlay renders engine-vs-RAG there.
 
 ```
-python -m tools.credibility_demo             # 1) arc on opus (fair — both sides same model)
-python -m tools.credibility_demo --baseline  # 2) stamp the raw-Opus baseline
-python -m tools.credibility_demo --voice      # 3) bake voice 2
+python -m tools.credibility_demo             # 1) arc on opus, arena_query ON (both sides same model)
+python -m tools.credibility_demo --baseline  # 2) run the RAG baseline over the same arc
+python -m tools.credibility_demo --voice      # 3) bake voice 2 (engine replies)
 ```
-Verified (opus vs opus): engine cites the specific betrayal ("the watch came down on my run with
-the tide-table in their hand… did you sell me to Vane?"); raw Opus, context wiped, is a generic
-guarded stranger ("you left owing me an answer") with no idea a betrayal happened. Same model,
-same persona, same question — the only difference is the engine.
 
-#### (superseded) original ChatGPT framing
-**Baseline = raw Claude Opus, not ChatGPT** (owner, 2026-07-08). Running the bare baseline on the
-*same model our engine wraps* is the airtight version: the ONLY variable is the engine, so no one
-can deflect with "you just used a smarter model." The claim narrows to exactly what we're proving —
-the *scaffolding* (persistence, RR memory, durable scar), not model IQ.
-
-Plan: a `--baseline` runner replays the same arc's player lines + events (as narration) through a
-plain multi-turn Opus chat (`system = "you are Corvin"`, no engine — no memory store, no
-relationship/scar, no reflection). It remembers *within* its context window (that's fine — it shows
-Opus can roleplay). Then the **restart = a fresh chat with empty context**: send only the post-
-restart probe. With nothing in context it can't know the player, the coffee, or the betrayal — it
-answers generic/warm, having "forgotten." Emit a parallel replay so the overlay can show
-engine-vs-baseline side by side at the restart beat. The contrast is the whole demo: our mind
-reloads from `.memory/`; the raw model's new session is blank.
+**Verified (opus vs opus, same persona/embedder):**
+- **Money shot** — "after everything, are we still square?" → Engine: *"You've got the gall to ask
+  me that… Vane… we're not square."* (trust 0.08, scarred). RAG: *"Aye. We're square, friend.
+  You're the only man I don't count my fingers after."* Both have the betrayal in memory; only one
+  is changed by it.
+- **Centerpiece** — an operational ask ("store a crate till Thursday, got a berth?") textually far
+  from the betrayal. Engine: *"…not one word about the run that went down in flames… did you sell
+  my routes?"* — so changed it can't even do business. RAG: *"Aye, back slip past the salt sheds,
+  nobody logs what sits there but me"* — cheerfully offers to hide the cargo. The panel shows the
+  engine ranking bond/betrayal/aftermath by **importance 0.92–0.97** (+ distrust folded into the
+  query via `arena_query`); the RAG's cosine top-k is all operational chatter, zero betrayal.
+- **Restart** (supporting) — engine reloads from `.memory/`, scar intact, still changed.

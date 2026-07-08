@@ -74,6 +74,13 @@
   .cnote{margin-top:10px;font-size:11px;line-height:1.35;font-family:var(--mono)}
   .col.engine .cnote{color:var(--sel)}
   .col.base .cnote{color:var(--scar);opacity:.85}
+  /* centerpiece: what each memory system actually surfaced */
+  .reti{margin-top:10px;border-top:1px solid var(--edge);padding-top:8px}
+  .rcap{font-family:var(--mono);font-size:9.5px;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .ri{font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ri .rv{display:inline-block;min-width:52px;color:var(--dim)}
+  .col.engine .ri.hot{color:var(--sel)} .col.engine .ri.hot .rv{color:var(--sel)}
+  .col.base .ri .rv{color:var(--scar);opacity:.8}
 
   /* meters */
   .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:13px 16px}
@@ -187,18 +194,18 @@
         <div class="line npc" id="npcline"><div class="tag" id="npctag">Corvin</div><div class="text" id="npctext"></div></div>
       </div>
       <div class="compare" id="compare" style="display:none">
-        <div class="cq"><span class="tag">player, after the restart</span><div id="cq"></div></div>
-        <div class="samecfg">same model · same character · same question — the only difference is the engine</div>
+        <div class="cq"><span class="tag">player asks</span><div id="cq"></div></div>
+        <div class="samecfg" id="samecfg">same model · same character · same history — the only difference is the engine</div>
         <div class="cols">
           <div class="col engine">
-            <div class="ch"><span class="pip good"></span>This engine <span class="sub">· mind reloaded from <code>.memory/</code></span></div>
+            <div class="ch"><span class="pip good"></span>This engine <span class="sub">· changed by the betrayal</span></div>
             <div class="cbody" id="cengine"></div>
             <div class="cnote" id="cenote"></div>
           </div>
           <div class="col base">
-            <div class="ch"><span class="pip bad"></span>Raw Claude Opus <span class="sub">· fresh chat, context wiped</span></div>
+            <div class="ch"><span class="pip bad"></span>Standard RAG <span class="sub">· cosine top-k + summary, same LLM</span></div>
             <div class="cbody" id="cbase"></div>
-            <div class="cnote">no store to reload — it can't know the player, the debt, or the betrayal</div>
+            <div class="cnote">has the betrayal in memory — but no salience, no relationship state: unchanged</div>
           </div>
         </div>
       </div>
@@ -389,21 +396,41 @@ function apply(b){
   // say
   $("scene").textContent = `t=${b.clock}  ·  ${b.location||""}`;
   $("beatlabel").textContent = b.label||"";
-  if(b.baseline){                       // the restart beat: engine vs raw model, side by side
+  if(b.compare){                        // money-shot / centerpiece: engine vs the RAG baseline
     showCompare(b);
-    return Math.min(11000, 4200 + (b.reply||"").length*12);
+    return Math.min(12000, 4600 + (b.reply||"").length*12);
   }
   showLines(b.player, b.reply);
   return Math.min(9000, 3200 + (b.reply||"").length*14);
 }
+function retrihtml(items, kind){
+  // engine: rank by importance (its extra axis); RAG: rank by cosine (all it has)
+  if(!items||!items.length) return "";
+  const rows = items.slice(0,4).map(it=>{
+    const val = kind==="engine" ? (it.importance!=null?it.importance:0) : (it.cosine!=null?it.cosine:0);
+    const key = kind==="engine" ? "imp" : "cos";
+    const txt = (it.text||"").replace(/^User: /,'you: ').replace(/^(They said|I replied): /,'').replace(/[*]/g,'').replace(/</g,'&lt;').slice(0,42);
+    const hot = kind==="engine" && val>=0.9;
+    return `<div class="ri${hot?' hot':''}"><span class="rv">${key} ${val.toFixed(2)}</span> ${txt}</div>`;
+  }).join("");
+  const cap = kind==="engine" ? "ranked by IMPORTANCE (+ its distrust folded into the query)"
+                              : "ranked by COSINE similarity to the words — no other signal";
+  return `<div class="reti"><div class="rcap">${cap}</div>${rows}</div>`;
+}
 function showCompare(b){
   document.querySelector(".convo").style.display="none";
   const c=$("compare"); c.style.display="flex";
+  const centre = b.compare==="centerpiece";
   $("cq").textContent = b.player||"";
-  $("cengine").innerHTML = fmtReply(b.reply);
-  $("cbase").innerHTML = fmtReply(b.baseline);
+  $("samecfg") && ($("samecfg").textContent = centre
+    ? "same memories, same question — watch what each MEMORY SYSTEM surfaces"
+    : "same model · same character · same history — the only difference is the engine");
   const r=cur.rel;
-  $("cenote").textContent = `remembers · trust ${r.trust.toFixed(2)} · scar ${r.scar_trust.toFixed(2)} · ${cur.beliefs.length} beliefs — reloaded from disk`;
+  $("cengine").innerHTML = fmtReply(b.reply) + (centre ? retrihtml(cur.scored.filter(s=>s.selected), "engine") : "");
+  $("cbase").innerHTML = fmtReply(b.baseline) + (centre ? retrihtml(b.baseline_retrieval, "rag") : "");
+  $("cenote").textContent = centre
+    ? "surfaces the betrayal by salience + distrust — can't even discuss a crate"
+    : `changed · trust ${r.trust.toFixed(2)} · scar ${r.scar_trust.toFixed(2)} · ${cur.beliefs.length} beliefs`;
 }
 function hideCompare(){ const c=$("compare"); if(c) c.style.display="none";
   const cv=document.querySelector(".convo"); if(cv) cv.style.display="flex"; }
