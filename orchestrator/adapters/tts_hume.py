@@ -84,6 +84,28 @@ def _speed_for(description: str) -> float | None:
     return None
 
 
+_UUID_RE = re.compile(r"[0-9a-f\-]{36}")
+
+
+def _voice_ref(voice_id: str) -> dict:
+    """Map a voice_id string to Hume's {id|name, provider} ref.
+
+    An explicit prefix wins and is the only way to address a Voice Library voice BY ID (a bare
+    UUID is otherwise ambiguous and defaults to a custom voice):
+      "HUME_AI:<uuid|name>"      -> a Hume Voice Library voice (by id or name)
+      "CUSTOM_VOICE:<uuid>"      -> a saved custom voice in this account
+    With no prefix: a 36-char UUID -> CUSTOM_VOICE by id; anything else -> HUME_AI by name.
+    """
+    for prov in ("HUME_AI", "CUSTOM_VOICE"):
+        if voice_id.startswith(prov + ":"):
+            ref = voice_id[len(prov) + 1:].strip()
+            key = "id" if _UUID_RE.fullmatch(ref.lower()) else "name"
+            return {key: ref, "provider": prov}
+    if _UUID_RE.fullmatch(voice_id.lower()):
+        return {"id": voice_id, "provider": "CUSTOM_VOICE"}
+    return {"name": voice_id, "provider": "HUME_AI"}
+
+
 def _consume_lead_tag(text: str) -> tuple[str | None, str]:
     """Consume a leading [tag] as an acting direction — EXCEPT pause marks, which are
     Octave-native inline markers kept verbatim in the text (module contract), never a
@@ -272,9 +294,7 @@ class HumeTTS(TTSAdapter):
         if voice_id:
             # instant mode wants the voice on EVERY utterance (identity is stable anyway;
             # prosody still continues utterance-to-utterance within the request)
-            is_id = bool(re.fullmatch(r"[0-9a-f\-]{36}", voice_id.lower()))
-            voice = ({"id": voice_id, "provider": "CUSTOM_VOICE"} if is_id
-                     else {"name": voice_id, "provider": "HUME_AI"})
+            voice = _voice_ref(voice_id)
             for utt in out:
                 utt["voice"] = voice
         for i, utt in enumerate(out):

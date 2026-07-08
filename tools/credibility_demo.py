@@ -36,10 +36,21 @@ set_flags(relationship_state=True, relationship_time_decay=True, reflection_enab
 SLUG = "corvin-ashgrave-inworld"
 MODEL = os.environ.get("CRED_MODEL", "claude-opus-4-8")
 DOCK = "the fish-dock"
-# Corvin's voice: a Hume Voice Library name (weathered, gravelly dockside operator). Corvin's
-# character sheet is Inworld-configured, so we pass a Hume voice by name here for the demo.
-# Swap via CORVIN_HUME_VOICE (any name from `GET /v0/tts/voices?provider=HUME_AI`).
-CORVIN_VOICE = os.environ.get("CORVIN_HUME_VOICE", "Grizzled New Yorker")
+# Corvin's voice. Prefix picks the Hume provider: "HUME_AI:<uuid|name>" = Voice Library,
+# "CUSTOM_VOICE:<uuid>" = a saved custom voice; a bare name → HUME_AI. Swap via CORVIN_HUME_VOICE.
+# The owner's two preferred voices are Voice Library voices addressed BY ID (they resolve only as
+# HUME_AI, not CUSTOM_VOICE). Default = the first; A/B both with `--sample`.
+CORVIN_VOICE = os.environ.get("CORVIN_HUME_VOICE", "HUME_AI:f49f18fc-4fe9-4e78-9338-0960d44b93f9")
+SAMPLE_VOICES = os.environ.get("CRED_SAMPLE_VOICES",
+                               "HUME_AI:f49f18fc-4fe9-4e78-9338-0960d44b93f9,"
+                               "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2").split(",")
+# two short lines that show Corvin's range (warm-but-wary, then cold-betrayed)
+SAMPLE_LINES = [
+    ("warm", "Nobody hands something back and asks for nothing. So don't tell me you want "
+             "nothing — that's not how this works, and we both know it."),
+    ("cold", "You walk in here, my run just seized, my crew gone, and you're already talking "
+             "about the next job. *flat* How'd you know I'd have anything to move by Friday."),
+]
 
 # Replay capture — every beat's REAL data, for the record-then-replay overlay (docs/credibility-
 # demo/overlay.html). Written as replay.json (canonical) + replay.js (window assignment so the
@@ -281,6 +292,32 @@ async def prove_persistence(built_eng=None):
           "restarted.\n     This is not a context window.")
 
 
+async def sample_voices():
+    """A/B two Corvin lines (warm + cold) across several voice ids so the owner can pick by ear.
+    Writes docs/credibility-demo/audio/samples/<n>_<shortid>_<tone>.wav. Cheap (TTS only)."""
+    import pathlib
+    import wave
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    from orchestrator.main import make_tts
+    out = pathlib.Path(EMIT).parent / "audio" / "samples"
+    out.mkdir(parents=True, exist_ok=True)
+    print(f"   ▣ sampling {len(SAMPLE_VOICES)} voice(s) × {len(SAMPLE_LINES)} lines")
+    for n, vid in enumerate(SAMPLE_VOICES, 1):
+        vid = vid.strip()
+        short = vid.split(":")[-1][:8]   # strip any provider prefix; keep the ref's first 8 chars
+        tts = make_tts("hume")   # fresh instance per voice → no cross-voice continuity bleed
+        for tone, line in SAMPLE_LINES:
+            pcm = b""
+            async for chunk in tts.stream_speech(line, vid):
+                pcm += chunk
+            wp = out / f"{n}_{short}_{tone}.wav"
+            with wave.open(str(wp), "wb") as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(AUDIO_SAMPLE_RATE)
+                w.writeframes(pcm)
+            print(f"      voice {n} ({short}…) {tone:>4}  {len(pcm)//2/AUDIO_SAMPLE_RATE:4.1f}s  ->  {wp.relative_to(pathlib.Path(EMIT).parent)}")
+    print("   ✔ samples written to audio/samples/ — listen, then set CORVIN_HUME_VOICE to the winner.")
+
+
 async def bake_voice():
     """Pre-bake Hume audio for every spoken line in the EXISTING replay.json, decoupled from the
     (billed) LLM arc — so re-voicing never re-runs the arc. Writes audio/beat_<i>.wav and stamps an
@@ -325,9 +362,12 @@ async def main():
     ap.add_argument("--build-only", action="store_true", help="live the arc, persist to disk, exit")
     ap.add_argument("--reload-only", action="store_true", help="fresh process: load from disk, prove memory")
     ap.add_argument("--voice", action="store_true", help="bake Hume audio for the existing replay.json (no LLM)")
+    ap.add_argument("--sample", action="store_true", help="A/B the SAMPLE_VOICES on two lines (no LLM)")
     args = ap.parse_args()
 
-    if args.voice:
+    if args.sample:
+        await sample_voices()
+    elif args.voice:
         await bake_voice()
     elif args.reload_only:
         await prove_persistence(None)
