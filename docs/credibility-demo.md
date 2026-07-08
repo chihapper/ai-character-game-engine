@@ -130,11 +130,19 @@ Layout is tuned for **1920×1080** (fits with room to spare); 720p is tight (bel
 `replay.json`/`replay.js` are committed so the overlay opens straight from the repo without a
 billed run; regenerate them to refresh the arc.
 
-**Voice (next):** pre-bake Hume audio per reply into `docs/credibility-demo/audio/<i>.wav`
-(`make_tts("hume").stream_speech(reply, "<hume-voice-id>")`; Corvin's sheet is Inworld, so pick a
-Hume voice id), reference the file in each beat, and play it in the overlay on beat-advance. Pre-
-baking keeps the recording deterministic and latency-free.
+**Voice — Hume "Grizzled New Yorker" (DONE).** `--voice` reads `replay.json` and pre-bakes each
+spoken line to `audio/beat_<i>.wav` (decoupled from the LLM arc — no re-run), stamping an `audio`
+path on each say beat. One `HumeTTS` instance across the arc carries Corvin's prosodic through-line
+turn to turn, reset at the betrayal so the cold turn doesn't inherit the warmth. The overlay plays
+the clip on each beat (mute = M / button) and, in autoplay, advances when Corvin finishes speaking.
 
-### Milestone 3 — the ChatGPT side-by-side
+```
+python -m tools.credibility_demo --voice        # bake audio for the current replay.json
+```
+Voice is a Hume Voice Library name; swap via `CORVIN_HUME_VOICE` (e.g. "Pirate Captain",
+"Sad Old British Man" — any name from `GET /v0/tts/voices?provider=HUME_AI`). The `audio/` dir is
+gitignored (large, regenerable); rerun `--voice` after regenerating the arc.
+
+### Milestone 3 — the ChatGPT side-by-side (next)
 Run the same arc as a long raw-ChatGPT chat (instructed to be Corvin), then a "restart" (fresh
 chat); capture it forgetting/going inconsistent. Edit to a 2–3 min cut next to our run.

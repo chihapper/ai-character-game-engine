@@ -2,7 +2,8 @@
   "meta": {
     "character": "Corvin",
     "slug": "corvin-ashgrave-inworld",
-    "model": "claude-sonnet-4-6"
+    "model": "claude-sonnet-4-6",
+    "voice": "Grizzled New Yorker"
   },
   "beats": [
     {
@@ -24,7 +25,8 @@
         "scar_respect": 0.0
       },
       "scored": [],
-      "beliefs": []
+      "beliefs": [],
+      "audio": "audio/beat_0.wav"
     },
     {
       "kind": "say",
@@ -54,7 +56,8 @@
           "selected": true
         }
       ],
-      "beliefs": []
+      "beliefs": [],
+      "audio": "audio/beat_1.wav"
     },
     {
       "kind": "event",
@@ -119,7 +122,8 @@
           "selected": true
         }
       ],
-      "beliefs": []
+      "beliefs": [],
+      "audio": "audio/beat_3.wav"
     },
     {
       "kind": "advance",
@@ -181,7 +185,8 @@
           "selected": true
         }
       ],
-      "beliefs": []
+      "beliefs": [],
+      "audio": "audio/beat_5.wav"
     },
     {
       "kind": "event",
@@ -270,7 +275,8 @@
           "selected": true
         }
       ],
-      "beliefs": []
+      "beliefs": [],
+      "audio": "audio/beat_7.wav"
     },
     {
       "kind": "scar",
@@ -375,7 +381,8 @@
         "Someone who returns a crate at personal cost — no name, no angle, no ask — is either the most dangerous kind of operative or the rarest thing on this waterfront: a person who actually means it.",
         "Three lost men and an inspector rotation closing in tells me I'm running out of time to decide whether this stranger is salvation or the last mistake I'll ever make.",
         "I've been starving for someone I can trust so long that I'm terrified I'll talk myself into trusting the wrong one just because they brought me coffee and bled for my cargo."
-      ]
+      ],
+      "audio": "audio/beat_10.wav"
     },
     {
       "kind": "restart",
@@ -512,7 +519,8 @@
         "Someone who returns a crate at personal cost — no name, no angle, no ask — is either the most dangerous kind of operative or the rarest thing on this waterfront: a person who actually means it.",
         "Three lost men and an inspector rotation closing in tells me I'm running out of time to decide whether this stranger is salvation or the last mistake I'll ever make.",
         "I've been starving for someone I can trust so long that I'm terrified I'll talk myself into trusting the wrong one just because they brought me coffee and bled for my cargo."
-      ]
+      ],
+      "audio": "audio/beat_12.wav"
     }
   ]
 }

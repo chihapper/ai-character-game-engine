@@ -57,3 +57,6 @@ bri_romance_transcript.md
 unity/ProAssets/packs/*.zip
 
 tts_bakeoff_out/
+
+# Credibility Demo — pre-baked Hume audio (large, regenerate with: python -m tools.credibility_demo --voice)
+docs/credibility-demo/audio/

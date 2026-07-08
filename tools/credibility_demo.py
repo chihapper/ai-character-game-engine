@@ -36,6 +36,10 @@ set_flags(relationship_state=True, relationship_time_decay=True, reflection_enab
 SLUG = "corvin-ashgrave-inworld"
 MODEL = os.environ.get("CRED_MODEL", "claude-opus-4-8")
 DOCK = "the fish-dock"
+# Corvin's voice: a Hume Voice Library name (weathered, gravelly dockside operator). Corvin's
+# character sheet is Inworld-configured, so we pass a Hume voice by name here for the demo.
+# Swap via CORVIN_HUME_VOICE (any name from `GET /v0/tts/voices?provider=HUME_AI`).
+CORVIN_VOICE = os.environ.get("CORVIN_HUME_VOICE", "Grizzled New Yorker")
 
 # Replay capture — every beat's REAL data, for the record-then-replay overlay (docs/credibility-
 # demo/overlay.html). Written as replay.json (canonical) + replay.js (window assignment so the
@@ -277,13 +281,55 @@ async def prove_persistence(built_eng=None):
           "restarted.\n     This is not a context window.")
 
 
+async def bake_voice():
+    """Pre-bake Hume audio for every spoken line in the EXISTING replay.json, decoupled from the
+    (billed) LLM arc — so re-voicing never re-runs the arc. Writes audio/beat_<i>.wav and stamps an
+    "audio" path onto each say beat, then rewrites replay.json + replay.js. One HumeTTS instance
+    across the arc → prosody continues turn-to-turn (Corvin's through-line), reset at the betrayal
+    so the cratered mood doesn't inherit the warmth. Needs HUME_API_KEY. Run after a build."""
+    import json
+    import pathlib
+    import wave
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    from orchestrator.main import make_tts
+    base = pathlib.Path(EMIT)
+    data = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
+    audio_dir = base.parent / "audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    tts = make_tts("hume")
+    data["meta"]["voice"] = CORVIN_VOICE
+    print(f"   ▣ baking Corvin's voice: '{CORVIN_VOICE}' (Hume Octave)")
+    for i, b in enumerate(data["beats"]):
+        if b.get("kind") != "say" or not b.get("reply"):
+            continue
+        # reset the prosodic carry once, at the betrayal reply, so the cold turn doesn't inherit warmth
+        if b.get("clock") == 25 and b.get("phase") == "build":
+            tts.reset_continuation()
+        pcm = b""
+        async for chunk in tts.stream_speech(b["reply"], CORVIN_VOICE):
+            pcm += chunk
+        wav_path = audio_dir / f"beat_{i}.wav"
+        with wave.open(str(wav_path), "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(AUDIO_SAMPLE_RATE)
+            w.writeframes(pcm)
+        b["audio"] = f"audio/beat_{i}.wav"
+        print(f"      beat {i:>2}  {len(pcm)//2/AUDIO_SAMPLE_RATE:5.1f}s  ->  {b['audio']}")
+    base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",
+                                       encoding="utf-8")
+    print("   ✔ voice baked + replay updated — reload the overlay to hear it.")
+
+
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--build-only", action="store_true", help="live the arc, persist to disk, exit")
     ap.add_argument("--reload-only", action="store_true", help="fresh process: load from disk, prove memory")
+    ap.add_argument("--voice", action="store_true", help="bake Hume audio for the existing replay.json (no LLM)")
     args = ap.parse_args()
 
-    if args.reload_only:
+    if args.voice:
+        await bake_voice()
+    elif args.reload_only:
         await prove_persistence(None)
     elif args.build_only:
         await build_arc()

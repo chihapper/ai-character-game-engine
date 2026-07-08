@@ -200,11 +200,13 @@
     <button id="prev">◀ prev</button>
     <button id="play">▶ play</button>
     <button id="next">next ▶</button>
+    <button id="mute">🔊 voice</button>
     <span class="count" id="count">0 / 0</span>
     <span class="curlabel" id="curlabel"></span>
-    <span class="hint">space · ← → · C cinematic</span>
+    <span class="hint">space · ← → · C cinematic · M mute</span>
   </footer>
 
+  <audio id="vox" preload="auto"></audio>
   <div id="takeover"></div>
 </div>
 
@@ -351,15 +353,31 @@ function apply(b){
   return Math.min(9000, 3200 + (b.reply||"").length*14);
 }
 
+const vox=$("vox"); let muted=false;
+function playAudio(b){
+  vox.onended=null;
+  if(b && b.audio){ vox.src=b.audio; try{vox.currentTime=0;}catch(e){}
+    if(!muted){ vox.play().catch(()=>{}); } return true; }
+  vox.pause(); vox.removeAttribute("src"); return false;
+}
+function advanceAfter(dwell, hasAudio){
+  clearTimeout(timer); vox.onended=null;
+  const step=()=>{ if(!playing) return; idx<beats.length-1 ? go(idx+1) : stop(); };
+  if(hasAudio && !muted){ vox.onended=()=>setTimeout(step, 700); }   // advance when Corvin finishes
+  else { timer=setTimeout(step, dwell+300); }
+}
 function go(n){
   if(n<0||n>=beats.length) return;
-  idx=n; const dwell=apply(beats[idx]);
+  idx=n; const b=beats[idx]; const dwell=apply(b);
   $("count").textContent=(idx+1)+" / "+beats.length;
-  $("curlabel").textContent=beats[idx].label||beats[idx].headline||beats[idx].note||beats[idx].kind;
-  if(playing){ clearTimeout(timer); timer=setTimeout(()=>{ if(idx<beats.length-1) go(idx+1); else stop(); }, dwell+300); }
+  $("curlabel").textContent=b.label||b.headline||b.note||b.kind;
+  const hasAudio=playAudio(b);
+  if(playing) advanceAfter(dwell, hasAudio);
 }
 function play(){ playing=true; $("play").textContent="⏸ pause"; if(idx<0) go(0); else go(idx); }
-function stop(){ playing=false; $("play").textContent="▶ play"; clearTimeout(timer); }
+function stop(){ playing=false; $("play").textContent="▶ play"; clearTimeout(timer); vox.onended=null; }
+$("mute").onclick=()=>{ muted=!muted; $("mute").textContent=muted?"🔇 muted":"🔊 voice";
+  if(muted) vox.pause(); };
 $("next").onclick=()=>{stop();go(Math.min(beats.length-1,idx+1))};
 $("prev").onclick=()=>{stop();go(Math.max(0,idx-1))};
 $("play").onclick=()=>{ playing?stop():play(); };
@@ -368,6 +386,7 @@ document.addEventListener("keydown",e=>{
   else if(e.code==="ArrowRight"){stop();go(Math.min(beats.length-1,idx+1));}
   else if(e.code==="ArrowLeft"){stop();go(Math.max(0,idx-1));}
   else if(e.key.toLowerCase()==="c"){document.body.classList.toggle("cinema");}
+  else if(e.key.toLowerCase()==="m"){$("mute").click();}
 });
 go(0);
 </script>
