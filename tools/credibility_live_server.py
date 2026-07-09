@@ -22,7 +22,7 @@ import io
 import wave
 
 from tools import credibility_demo as demo   # runs bootstrap() + set_flags(all caps ON) at import
-from tools._harness import make_engine
+from tools._harness import make_engine, wipe
 
 from orchestrator.character_store import load_character
 from orchestrator.config import AUDIO_SAMPLE_RATE
@@ -126,8 +126,20 @@ def build_app():
 
     @app.post("/api/reset")
     async def reset() -> JSONResponse:
+        """Soft reset — rewind to the pre-web snapshot (the scarred arc state)."""
         async with _LOCK:
             demo.restore("pre-web")
+            _rebuild_engine()
+            STATE["clock"] = 41.0
+            STATE["turns"] = 0
+            return JSONResponse(_state_dict())
+
+    @app.post("/api/hardreset")
+    async def hardreset() -> JSONResponse:
+        """HARD reset — wipe the persisted mind entirely (memories, scars, relationship,
+        beliefs, intent). A blank-slate character you build up from scratch through conversation."""
+        async with _LOCK:
+            wipe(demo.SLUG)          # deletes .memory/<ns>.* ; the 'pre-web' snapshot survives
             _rebuild_engine()
             STATE["clock"] = 41.0
             STATE["turns"] = 0
@@ -181,6 +193,7 @@ main{display:grid;grid-template-columns:1.05fr .95fr;min-height:0}
 button{font-family:var(--sans);font-size:13px;border-radius:9px;border:1px solid var(--edge2);
   background:#141a22;color:var(--ink);padding:10px 15px;cursor:pointer}
 button:hover{border-color:var(--trust)} button:disabled{opacity:.5;cursor:default}
+#hard{border-color:#5a2b31;color:#ff9aa4} #hard:hover{border-color:var(--scar)}
 #send{background:linear-gradient(180deg,#1f6f6b,#155a4a);border-color:#2c5a44;color:#eafff6;font-weight:600}
 .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);user-select:none}
 .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px 15px}
@@ -228,7 +241,8 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
         <textarea id="msg" placeholder="Say something to him…  (Enter to send · Shift+Enter for newline)"></textarea>
         <label class="toggle"><input type="checkbox" id="voice"> 🔊 voice</label>
         <button id="send">Send</button>
-        <button id="reset" title="restore the pre-web snapshot">Reset</button>
+        <button id="reset" title="rewind to the scarred arc state (the pre-web snapshot)">Reset</button>
+        <button id="hard" title="wipe his mind entirely — no memories, no scars, neutral — and build from scratch">Wipe</button>
       </div>
     </div>
     <div class="right">
@@ -330,11 +344,16 @@ async function speak(text){
   }catch(e){}
 }
 async function reset(){
-  if(!confirm("Restore the pre-web snapshot? This wipes the current conversation's changes to his mind.")) return;
+  if(!confirm("Reset to the scarred arc state (pre-web snapshot)? This discards the current conversation's changes, but keeps his arc history and scars.")) return;
   const d=await (await fetch("/api/reset",{method:"POST"})).json();
   $("convo").innerHTML=""; paintState(d);
 }
-$("send").onclick=send; $("reset").onclick=reset;
+async function hard(){
+  if(!confirm("WIPE his mind entirely? Every memory, scar, belief, and the relationship are erased — he starts blank, as if you've never met. Cannot be undone.")) return;
+  const d=await (await fetch("/api/hardreset",{method:"POST"})).json();
+  $("convo").innerHTML=""; paintState(d);
+}
+$("send").onclick=send; $("reset").onclick=reset; $("hard").onclick=hard;
 $("msg").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
 (async()=>{ const d=await (await fetch("/api/state")).json(); paintState(d);
   if(d.mute_default===false) {} $("msg").focus(); })();
