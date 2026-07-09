@@ -84,9 +84,25 @@ def _state_dict(*, reply: str | None = None, dbg: dict | None = None) -> dict:
         "mute_default": CFG["mute_default"],
     }
     if reply is not None:
+        raw = (dbg or {}).get("scored", [])
+        # Keep the RR breakdown intact but carry `kind` through, so the panel can honour the same
+        # split the engine does (engine.prepare): episodic memories vs consolidated beliefs.
         d["reply"] = reply
-        d["scored"] = demo.scored_rows(dbg or {})
-        d["recalled"] = [s["text"] for s in (dbg or {}).get("scored", []) if s.get("selected")]
+        d["scored"] = [{
+            "text": (s.get("text") or "").replace("\n", " ").strip(),
+            "similarity_raw": round(s.get("similarity_raw", 0.0), 3),
+            "importance": round(s.get("importance", 0.0), 3),
+            "recency": round(s.get("recency", 0.0), 3),
+            "base": round(s.get("base", 0.0), 3),
+            "selected": bool(s.get("selected")),
+            "kind": s.get("kind", ""),
+        } for s in raw]
+        # episodic recall only (what the engine injects as "memories"); beliefs are surfaced separately
+        d["recalled"] = [(s.get("text") or "") for s in raw
+                         if s.get("selected") and s.get("kind") != "belief"]
+        # which consolidated belief(s) the query actually fished up this turn (to highlight them)
+        d["recalled_beliefs"] = [(s.get("text") or "") for s in raw
+                                 if s.get("selected") and s.get("kind") == "belief"]
     return d
 
 
@@ -320,6 +336,10 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
 .win{color:var(--sel)} .imp{color:var(--gold)}
 .beliefs li{font-size:12.5px;line-height:1.45;color:var(--ink);margin:4px 0;list-style:none;padding-left:14px;position:relative}
 .beliefs li:before{content:"•";color:var(--scar);position:absolute;left:0}
+.beliefs li.hot{color:var(--sel)} .beliefs li.hot:before{color:var(--sel)}
+.rchip{font-family:var(--mono);font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:#08130d;
+  background:var(--sel);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px}
+.bnote{font-family:var(--mono);font-size:11px;color:var(--gold);margin-top:8px;padding-top:7px;border-top:1px solid #171d25}
 .intent{font-size:12px;color:var(--muted);font-style:italic}
 .empty{color:var(--dim);font-size:12px;font-style:italic}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--edge2);border-top-color:var(--trust);
@@ -386,7 +406,8 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
           <th title="recency (decays with in-game time)">rec</th>
           <th title="combined relevance score">score</th>
           <th style="text-align:left">memory &nbsp;<span style="color:var(--dim);text-transform:none;letter-spacing:0">(hover to read)</span></th>
-        </tr></thead><tbody id="brainBody"><tr><td colspan="6" class="empty" style="text-align:center">— talk to him and this fills with the real scores —</td></tr></tbody></table></div>
+        </tr></thead><tbody id="brainBody"><tr><td colspan="6" class="empty" style="text-align:center">— talk to him and this fills with the real scores —</td></tr></tbody></table>
+        <div id="brainNote" class="bnote"></div></div>
       </div>
       <div class="card">
         <h3>Consolidated beliefs</h3>
@@ -417,13 +438,22 @@ function paintState(d){
   set("fRes","sRes","vRes",r.respect,r.scar_respect);
   $("moodInline").innerHTML=r.mood?("· <b>"+esc(r.mood)+"</b>"):"";
   $("scarNotes").innerHTML=(d.scar_lines||[]).map(s=>'<div class="scarnote">✕ '+esc(s)+'</div>').join("");
-  const bl=$("beliefs"); bl.innerHTML=(d.beliefs&&d.beliefs.length)?d.beliefs.map(b=>"<li>"+esc(b)+"</li>").join(""):'<li class="empty" style="color:var(--dim)">none consolidated yet</li>';
+  const rbSet=new Set((d.recalled_beliefs||[]).map(x=>x.trim()));
+  const bl=$("beliefs"); bl.innerHTML=(d.beliefs&&d.beliefs.length)?d.beliefs.map(b=>{
+    const hot=rbSet.has((b||"").trim());
+    return "<li"+(hot?' class="hot"':"")+">"+esc(b)+(hot?' <span class="rchip">recalled now</span>':"")+"</li>";
+  }).join(""):'<li class="empty" style="color:var(--dim)">none consolidated yet</li>';
   $("intent").textContent=d.intent?("current intent: "+d.intent):"";
   if(d.scored) paintBrain(d.scored);
 }
 function paintBrain(rows){
-  const b=$("brainBody");
-  if(!rows.length){ b.innerHTML='<tr><td colspan="6" class="empty" style="text-align:center">(no long-term memories scored yet)</td></tr>'; return; }
+  const b=$("brainBody"), note=$("brainNote");
+  // Honour the engine's own split: this table is EPISODIC recall. Consolidated beliefs are
+  // shown (and highlighted when relevant) in their own panel, not mixed in here.
+  const belSel=rows.filter(s=>s.kind==='belief'&&s.selected).length;
+  note.textContent = belSel ? ("＋ "+belSel+" consolidated belief"+(belSel==1?"":"s")+" also lit up this turn — see Consolidated beliefs below.") : "";
+  rows=rows.filter(s=>s.kind!=='belief');
+  if(!rows.length){ b.innerHTML='<tr><td colspan="6" class="empty" style="text-align:center">(no episodic memories scored yet)</td></tr>'; return; }
   rows=rows.slice().sort((a,c)=>c.base-a.base);
   b.innerHTML=rows.map(s=>{
     const impWin=s.selected&&s.importance>s.similarity_raw+0.05;
