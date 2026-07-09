@@ -153,6 +153,21 @@ Voice is a Hume Voice Library name; swap via `CORVIN_HUME_VOICE` (e.g. "Pirate C
 "Sad Old British Man" — any name from `GET /v0/tts/voices?provider=HUME_AI`). The `audio/` dir is
 gitignored (large, regenerable); rerun `--voice` after regenerating the arc.
 
+### The live, unscripted segment (`--live`) — the anti-"cooked books" beat
+After the scripted arc, the scarred mind sits in `.memory/`. `--live` opens an interactive,
+VOICED console session against that same mind, through the SAME Engine + capability flags the arc
+used (deliberately NOT the legacy web pipeline, which doesn't inject relationship state). Ad-lib
+novel questions on camera — Corvin answers scarred, in voice 2, and nobody wrote his answers.
+The mind is auto-snapshotted first; reset a take with `--restore pre-live`.
+
+```
+python -m tools.credibility_demo --live           # voiced (winsound); --mute for text-only
+python -m tools.credibility_demo --restore pre-live   # reset between takes
+python -m tools.credibility_demo --snapshot <tag>      # manual save points
+```
+Recommended video structure: scripted replay (~2 min) → live ad-lib (~30–45 s) → "clone it,
+run it, audit it" (`tools/credibility_audit.py`).
+
 ### Milestone 3 — the side-by-side: a transparent RAG baseline (DONE)
 **Baseline = an open, faithful ~1-file RAG** (`tools/rag_baseline.py`) — the standard character-
 memory pattern: embed every exchange, retrieve **top-k by cosine similarity**, keep a rolling LLM

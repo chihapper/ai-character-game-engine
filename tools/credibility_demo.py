@@ -368,6 +368,91 @@ async def build_arc_bri():
     return eng
 
 
+def _mem_files():
+    import glob
+    import pathlib
+    from orchestrator.character_store import load_character
+    from orchestrator.config import get_settings
+    ns = load_character(SLUG).memory_namespace
+    return ns, pathlib.Path(get_settings().memory_dir), ns and glob.glob
+
+
+def snapshot(tag: str) -> None:
+    """Copy the character's persisted mind to .memory/snapshots/<tag>/ (for clean retakes)."""
+    import shutil
+    ns, mem, _ = _mem_files()
+    dst = mem / "snapshots" / tag
+    dst.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for f in mem.glob(f"{ns}.*"):
+        shutil.copy2(f, dst / f.name)
+        n += 1
+    print(f"   ▣ snapshot '{tag}': {n} file(s) saved")
+
+
+def restore(tag: str) -> None:
+    """Restore the mind from a snapshot (and drop in-process caches)."""
+    import shutil
+    from orchestrator.memory.long_term import LongTermMemory
+    ns, mem, _ = _mem_files()
+    src = mem / "snapshots" / tag
+    files = list(src.glob(f"{ns}.*")) if src.exists() else []
+    if not files:
+        raise SystemExit(f"no snapshot '{tag}' for {ns}")
+    for f in files:
+        shutil.copy2(f, mem / f.name)
+    LongTermMemory.invalidate(ns)
+    print(f"   ▣ restored '{tag}': {len(files)} file(s) — the mind is back to that moment")
+
+
+async def live_session(mute: bool) -> None:
+    """THE UNSCRIPTED SEGMENT — talk to the SAME persisted mind the scripted arc left on disk,
+    through the SAME Engine + capability flags the arc used (not the legacy web pipeline, which
+    doesn't inject relationship state). Ad-lib questions on camera; Corvin answers scarred, in
+    voice 2, and no one wrote his answers. The mind is auto-snapshotted first — reset a take with:
+        python -m tools.credibility_demo --restore pre-live
+    """
+    import pathlib
+    import tempfile
+    import wave
+    from orchestrator.config import AUDIO_SAMPLE_RATE
+    from orchestrator.context import RespondRequest, Situation
+    from orchestrator.character_store import load_character
+    snapshot("pre-live")
+    eng = make_engine(SLUG, model=MODEL, max_tokens=220)
+    eng_ref["eng"] = eng
+    name = load_character(SLUG).name.split()[0]
+    print("#" * 84 + f"\n#  LIVE — {name}, loaded from .memory/ (nothing scripted past this point)\n" + "#" * 84)
+    rel_line(eng, "loaded:")
+    scar_readout(eng)
+    tts = None if mute else __import__("orchestrator.main", fromlist=["make_tts"]).make_tts("hume")
+    clock = float(os.environ.get("CRED_LIVE_CLOCK", "41"))
+    print(f"\n   Type to talk to {name} ('quit' ends; --restore pre-live resets the mind).\n")
+    while True:
+        try:
+            line = input("   you: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if not line or line.lower() in ("quit", "exit"):
+            break
+        sit = Situation(location=DOCK, clock=clock, present=[name])
+        reply, dbg = await eng.respond(RespondRequest(player_input=line, situation=sit), debug=True)
+        show_reply(name, reply, dbg)
+        if tts is not None:
+            pcm = b""
+            async for ch in tts.stream_speech(reply, CORVIN_VOICE):
+                pcm += ch
+            wav = pathlib.Path(tempfile.gettempdir()) / "cred_live.wav"
+            with wave.open(str(wav), "wb") as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(AUDIO_SAMPLE_RATE)
+                w.writeframes(pcm)
+            import winsound
+            winsound.PlaySound(str(wav), winsound.SND_FILENAME)
+        clock += 0.02
+    await eng.flush_reflection()
+    print("\n   ✔ live session ended (mind updated by the conversation; snapshot 'pre-live' has the original)")
+
+
 async def prove_persistence(built_eng=None):
     """Reload Corvin FROM DISK and prove the mind is intact. If built_eng is given we do an
     honest in-process cold reload (cache invalidated → re-read from .memory/); with no built_eng
@@ -545,7 +630,18 @@ async def main():
     ap.add_argument("--sample", action="store_true", help="A/B the SAMPLE_VOICES on two lines (no LLM)")
     ap.add_argument("--baseline", action="store_true", help="run the transparent baselines over the arc (no engine)")
     ap.add_argument("--bri", action="store_true", help="variance test: the same arc shape on Bri (romantic betrayal); writes replay_bri")
+    ap.add_argument("--live", action="store_true", help="UNSCRIPTED: talk to the persisted scarred mind, voiced (auto-snapshots first)")
+    ap.add_argument("--mute", action="store_true", help="with --live: text only, no Hume audio")
+    ap.add_argument("--snapshot", metavar="TAG", help="save the character's mind to .memory/snapshots/<TAG>")
+    ap.add_argument("--restore", metavar="TAG", help="restore the character's mind from a snapshot")
     args = ap.parse_args()
+
+    if args.snapshot:
+        snapshot(args.snapshot); return
+    if args.restore:
+        restore(args.restore); return
+    if args.live:
+        await live_session(args.mute); return
 
     if args.bri:                                    # variance test — own slug + own replay file
         global SLUG, EMIT
