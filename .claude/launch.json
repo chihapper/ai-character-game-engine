@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "cred-overlay", "runtimeExecutable": "python", "runtimeArgs": ["-m","http.server","8778","--directory","docs/credibility-demo"], "port": 8778 }
+    { "name": "cred-overlay", "runtimeExecutable": "python", "runtimeArgs": ["-m","http.server","8778","--directory","docs/credibility-demo"], "port": 8778 },
+    { "name": "cred-freehand", "runtimeExecutable": ".venv/Scripts/python.exe", "runtimeArgs": ["-m","tools.credibility_live_server","--port","8799"], "port": 8799 }
   ]
 }
