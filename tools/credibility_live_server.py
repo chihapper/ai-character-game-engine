@@ -277,6 +277,7 @@ button:hover{border-color:var(--trust)} button:disabled{opacity:.5;cursor:defaul
   font-family:var(--sans);font-size:12.5px;padding:7px 9px}
 .wrow input#days,.wrow input#evtImp{width:56px} .wrow .grow{flex:1}
 .wrow button{padding:7px 12px;font-size:12.5px}
+.whint{font-size:11px;color:var(--dim);font-style:italic;margin-top:2px}
 .line.scene-in .text,.line.event-in .text{border:none;padding-left:0}
 .line.scene-in{opacity:.85}
 .line.scene-in .tag{color:var(--muted)} .line.scene-in .text{font-family:var(--mono);font-size:13px;color:var(--muted);font-style:italic}
@@ -350,9 +351,9 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
             <option value="self">his own change of heart</option>
             <option value="none">just a memory (no shift)</option>
           </select>
-          <input id="evtImp" type="number" min="0" max="1" step="0.05" placeholder="imp?" title="importance — leave blank and he appraises it himself">
           <button id="inject">Inject</button>
         </div>
+        <div class="whint">He appraises how much each event matters to him — no importance to set.</div>
       </div>
       <div class="card">
         <h3>Relationship <span id="moodInline" class="mood" style="margin:0"></span></h3>
@@ -473,8 +474,8 @@ async function advance(){
 }
 async function inject(){
   if(busy) return; const fact=$("evtText").value.trim(); if(!fact) return;
-  const role=$("evtRole").value; const impv=$("evtImp").value.trim();
-  const payload={fact,role}; if(impv!=="") payload.importance=parseFloat(impv);
+  const role=$("evtRole").value;
+  const payload={fact,role};   // no importance -> the character appraises its salience himself
   busy=true; $("inject").disabled=true;
   const c=$("convo"); const div=document.createElement("div"); div.className="line event-in";
   div.innerHTML='<div class="tag">⚑ event · '+esc(role)+'</div><div class="text">'+esc(fact)+'</div><div class="ed"><span class="spin"></span></div>';
@@ -484,8 +485,8 @@ async function inject(){
     if(d.error){ div.querySelector(".ed").innerHTML='('+d.error+')'; }
     else{
       const e=d.event;
-      div.querySelector(".ed").innerHTML='salience '+e.salience.toFixed(2)+(e.appraised?' (he appraised it)':' (pinned)')+' &nbsp;·&nbsp; '+fmtDelta(e.delta);
-      $("evtText").value=""; $("evtImp").value=""; paintState(d);
+      div.querySelector(".ed").innerHTML='he appraised salience '+e.salience.toFixed(2)+' &nbsp;·&nbsp; '+fmtDelta(e.delta);
+      $("evtText").value=""; paintState(d);
     }
   }catch(e2){ div.querySelector(".ed").innerHTML='(network error)'; }
   busy=false; $("inject").disabled=false;
