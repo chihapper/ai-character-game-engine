@@ -32,7 +32,10 @@ from orchestrator.context import RespondRequest, Situation
 STATE: dict = {"eng": None, "clock": 41.0, "tts": None, "turns": 0}
 _LOCK = asyncio.Lock()
 CFG: dict = {"talk_model": demo.MODEL, "engine_model": None, "mute_default": False,
-             "voice": demo.CORVIN_VOICE}
+             "voice": demo.CORVIN_VOICE, "max_tokens": 1024}
+# max_tokens is a CEILING, not a target — the model still stops when the reply is done, so a
+# generous cap only PREVENTS truncation (it doesn't bloat replies). 220 (copied from the scripted
+# arc, whose lines were authored short) was clipping his longer free-hand replies mid-sentence.
 
 
 def _engine():
@@ -50,7 +53,7 @@ BASELINE = "arc-baseline"
 
 
 def _rebuild_engine() -> None:
-    STATE["eng"] = make_engine(demo.SLUG, model=CFG["talk_model"], max_tokens=220)
+    STATE["eng"] = make_engine(demo.SLUG, model=CFG["talk_model"], max_tokens=CFG["max_tokens"])
     _seed_clock()
 
 
@@ -602,7 +605,9 @@ def main() -> None:
     ap.add_argument("--engine-model", help="engine-process model: haiku|sonnet|opus or a full id")
     ap.add_argument("--voice", default=demo.CORVIN_VOICE, help="Hume voice ref (HUME_AI:<id>)")
     ap.add_argument("--mute-default", action="store_true", help="start with the voice toggle off")
+    ap.add_argument("--max-tokens", type=int, default=1024, help="reply length ceiling (default 1024; prevents truncation)")
     args = ap.parse_args()
+    CFG["max_tokens"] = args.max_tokens
 
     demo.SLUG = args.slug
     CFG["voice"] = args.voice
