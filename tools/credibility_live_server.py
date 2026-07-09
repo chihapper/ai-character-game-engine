@@ -43,8 +43,27 @@ def _name() -> str:
     return load_character(demo.SLUG).name.split(" (")[0].split()[0]
 
 
+#: Immutable soft-Reset target = the scarred arc. Seeded ONCE (from the arc's own 'pre-live'
+#: snapshot if present, else from current disk) and never clobbered — so Reset is always stable,
+#: unlike snapshotting "whatever disk happens to be" at each startup.
+BASELINE = "arc-baseline"
+
+
 def _rebuild_engine() -> None:
     STATE["eng"] = make_engine(demo.SLUG, model=CFG["talk_model"], max_tokens=220)
+
+
+def _ensure_baseline() -> None:
+    import pathlib
+    from orchestrator.config import get_settings
+    base = pathlib.Path(get_settings().memory_dir) / "snapshots" / BASELINE
+    if base.exists():
+        return
+    try:
+        demo.restore("pre-live")   # seed from the arc's scarred mind if we have it
+    except SystemExit:
+        pass                        # no arc snapshot -> baseline := whatever is on disk now
+    demo.snapshot(BASELINE)
 
 
 def _state_dict(*, reply: str | None = None, dbg: dict | None = None) -> dict:
@@ -61,6 +80,7 @@ def _state_dict(*, reply: str | None = None, dbg: dict | None = None) -> dict:
         "beliefs": list(eng.long_term.beliefs()),
         "intent": (eng.intent.get().intent or ""),
         "turns": STATE["turns"],
+        "clock": round(STATE["clock"], 2),
         "mute_default": CFG["mute_default"],
     }
     if reply is not None:
@@ -87,6 +107,15 @@ def build_app():
 
     class TextIn(BaseModel):
         text: str = ""
+
+    class AdvanceIn(BaseModel):
+        days: float = 3.0
+
+    class EventIn(BaseModel):
+        fact: str = ""
+        role: str = "benefited"          # benefited | caused | self | none
+        importance: float | None = None  # None -> he appraises it himself
+        magnitude: float | None = None   # optional coarse objective-scale hint (0..1)
 
     app = FastAPI(title="Credibility — free-hand")
 
@@ -124,11 +153,55 @@ def build_app():
             pcm += chunk
         return Response(content=_pcm_to_wav(pcm), media_type="audio/wav")
 
+    @app.post("/api/advance")
+    async def advance(body: AdvanceIn) -> JSONResponse:
+        """Advance in-game time by `days`. Feelings drift toward baseline over the gap (bounded by
+        scars) and memory recency decays — exactly what prepare() does per turn, applied now so it
+        shows immediately; the recency shift also lands on the next retrieval."""
+        async with _LOCK:
+            eng = _engine()
+            before = demo.rel_snap(eng)
+            STATE["clock"] += float(body.days)
+            eng._age_relationship(STATE["clock"])   # drift + persist over the elapsed gap
+            d = _state_dict()
+            d["advanced_days"] = float(body.days)
+            after = d["relationship"]
+            d["drift"] = {ax: round(after[ax] - before[ax], 3)
+                          for ax in ("affection", "trust", "respect")}
+            return JSONResponse(d)
+
+    @app.post("/api/event")
+    async def event(body: EventIn) -> JSONResponse:
+        """Inject a player-attributed (or self-driven) world event: remember() self-appraises its
+        salience, ages the gap, then applies the AI-judged disposition shift (and any scar/heal)."""
+        fact = (body.fact or "").strip()
+        if not fact:
+            return JSONResponse({"error": "empty"}, status_code=400)
+        role = (body.role or "none").lower()
+        async with _LOCK:
+            eng = _engine()
+            before = demo.rel_snap(eng)
+            sal = await eng.remember(
+                fact,
+                player_role=(role if role in ("benefited", "caused") else None),
+                actor=("self" if role == "self" else "player"),
+                importance=body.importance, magnitude=body.magnitude, t=STATE["clock"])
+            d = _state_dict()
+            after = d["relationship"]
+            d["event"] = {
+                "fact": fact, "role": role,
+                "salience": round(sal or 0.0, 3),
+                "appraised": body.importance is None,
+                "delta": {ax: round(after[ax] - before[ax], 3)
+                          for ax in ("affection", "trust", "respect")},
+            }
+            return JSONResponse(d)
+
     @app.post("/api/reset")
     async def reset() -> JSONResponse:
-        """Soft reset — rewind to the pre-web snapshot (the scarred arc state)."""
+        """Soft reset — rewind to the scarred-arc baseline snapshot."""
         async with _LOCK:
-            demo.restore("pre-web")
+            demo.restore(BASELINE)
             _rebuild_engine()
             STATE["clock"] = 41.0
             STATE["turns"] = 0
@@ -197,6 +270,19 @@ button:hover{border-color:var(--trust)} button:disabled{opacity:.5;cursor:defaul
 #send{background:linear-gradient(180deg,#1f6f6b,#155a4a);border-color:#2c5a44;color:#eafff6;font-weight:600}
 .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);user-select:none}
 .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px 15px}
+.card.world h3{display:flex;align-items:center}
+.wrow{display:flex;align-items:center;gap:8px;margin:7px 0}
+.wlab{font-size:12px;color:var(--muted)}
+.wrow input,.wrow select{background:#0b0f14;border:1px solid var(--edge2);border-radius:8px;color:var(--ink);
+  font-family:var(--sans);font-size:12.5px;padding:7px 9px}
+.wrow input#days,.wrow input#evtImp{width:56px} .wrow .grow{flex:1}
+.wrow button{padding:7px 12px;font-size:12.5px}
+.line.scene-in .text,.line.event-in .text{border:none;padding-left:0}
+.line.scene-in{opacity:.85}
+.line.scene-in .tag{color:var(--muted)} .line.scene-in .text{font-family:var(--mono);font-size:13px;color:var(--muted);font-style:italic}
+.line.event-in .tag{color:var(--gold)}
+.line.event-in .text{font-size:15px;color:#e7d7ad;border-left:2px solid var(--gold);padding-left:14px}
+.line.event-in .ed{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:6px;padding-left:14px}
 .card h3{margin:0 0 9px;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:600}
 .meter{margin:7px 0}
 .meter .row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
@@ -246,6 +332,28 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
       </div>
     </div>
     <div class="right">
+      <div class="card world">
+        <h3>⏳ World controls <span id="clockLbl" class="model" style="text-transform:none;letter-spacing:0;margin-left:auto"></span></h3>
+        <div class="wrow">
+          <span class="wlab">advance</span>
+          <input id="days" type="number" value="3" min="0" step="1">
+          <span class="wlab">days</span>
+          <button id="advance">Advance time</button>
+        </div>
+        <div class="wrow">
+          <input id="evtText" class="grow" placeholder="inject an event — e.g. the player hauled his seized cargo back through the rain, wanting nothing">
+        </div>
+        <div class="wrow">
+          <select id="evtRole">
+            <option value="benefited">player helped him</option>
+            <option value="caused">player harmed him</option>
+            <option value="self">his own change of heart</option>
+            <option value="none">just a memory (no shift)</option>
+          </select>
+          <input id="evtImp" type="number" min="0" max="1" step="0.05" placeholder="imp?" title="importance — leave blank and he appraises it himself">
+          <button id="inject">Inject</button>
+        </div>
+      </div>
       <div class="card">
         <h3>Relationship <span id="moodInline" class="mood" style="margin:0"></span></h3>
         <div class="meter a"><div class="row"><span class="lbl" style="color:var(--aff)">affection</span><span class="val" id="vAff">—</span></div>
@@ -280,6 +388,7 @@ function paintState(d){
   $("hName").textContent=d.name; $("hRole").textContent=d.role?("· "+d.role):"";
   $("hModel").textContent="voice "+d.talk_model+"  ·  engine "+d.engine_model;
   $("hTurns").textContent=d.turns;
+  if(d.clock!==undefined) $("clockLbl").textContent="day "+Math.round(d.clock);
   const r=d.relationship;
   const set=(fill,scar,val,v,sc)=>{ $(fill).style.width=(clamp(v)*100)+"%";
     $(scar).style.width=(clamp(sc)*100)+"%"; $(val).textContent=v.toFixed(2)+(sc>0?("  ⌈"+(1-sc).toFixed(2)+"⌉"):""); };
@@ -343,8 +452,46 @@ async function speak(text){
     const a=new Audio(url); a.onended=()=>URL.revokeObjectURL(url); a.play();
   }catch(e){}
 }
+function fmtDelta(o){ if(!o) return ""; const p=[]; for(const k of ["affection","trust","respect"]){
+    const v=o[k]; if(Math.abs(v)>=0.005){ const s=(v>0?"+":"")+v.toFixed(2);
+      p.push('<span style="color:'+(v>0?'var(--sel)':'var(--scar)')+'">'+k[0]+' '+s+'</span>'); } }
+  return p.length?p.join("  "):'<span style="color:var(--dim)">no disposition shift</span>'; }
+function addScene(txt){
+  const c=$("convo"); const div=document.createElement("div"); div.className="line scene-in";
+  div.innerHTML='<div class="tag">— time —</div><div class="text">'+esc(txt)+'</div>';
+  c.appendChild(div); c.scrollTop=c.scrollHeight;
+}
+async function advance(){
+  if(busy) return; const days=parseFloat($("days").value||"0"); if(!(days>0)) return;
+  busy=true; $("advance").disabled=true;
+  try{
+    const d=await (await fetch("/api/advance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({days})})).json();
+    addScene(days+" day"+(days==1?"":"s")+" pass — feelings drift toward baseline (bounded by scars); memory recency fades. Drift: "+ (function(){var t=fmtDelta(d.drift);return t.replace(/<[^>]+>/g,'').trim()||'negligible';})());
+    paintState(d);
+  }catch(e){}
+  busy=false; $("advance").disabled=false;
+}
+async function inject(){
+  if(busy) return; const fact=$("evtText").value.trim(); if(!fact) return;
+  const role=$("evtRole").value; const impv=$("evtImp").value.trim();
+  const payload={fact,role}; if(impv!=="") payload.importance=parseFloat(impv);
+  busy=true; $("inject").disabled=true;
+  const c=$("convo"); const div=document.createElement("div"); div.className="line event-in";
+  div.innerHTML='<div class="tag">⚑ event · '+esc(role)+'</div><div class="text">'+esc(fact)+'</div><div class="ed"><span class="spin"></span></div>';
+  c.appendChild(div); c.scrollTop=c.scrollHeight;
+  try{
+    const d=await (await fetch("/api/event",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})).json();
+    if(d.error){ div.querySelector(".ed").innerHTML='('+d.error+')'; }
+    else{
+      const e=d.event;
+      div.querySelector(".ed").innerHTML='salience '+e.salience.toFixed(2)+(e.appraised?' (he appraised it)':' (pinned)')+' &nbsp;·&nbsp; '+fmtDelta(e.delta);
+      $("evtText").value=""; $("evtImp").value=""; paintState(d);
+    }
+  }catch(e2){ div.querySelector(".ed").innerHTML='(network error)'; }
+  busy=false; $("inject").disabled=false;
+}
 async function reset(){
-  if(!confirm("Reset to the scarred arc state (pre-web snapshot)? This discards the current conversation's changes, but keeps his arc history and scars.")) return;
+  if(!confirm("Reset to the scarred-arc baseline? This discards the current conversation's changes, but keeps his arc history and scars.")) return;
   const d=await (await fetch("/api/reset",{method:"POST"})).json();
   $("convo").innerHTML=""; paintState(d);
 }
@@ -354,6 +501,8 @@ async function hard(){
   $("convo").innerHTML=""; paintState(d);
 }
 $("send").onclick=send; $("reset").onclick=reset; $("hard").onclick=hard;
+$("advance").onclick=advance; $("inject").onclick=inject;
+$("evtText").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();inject();} });
 $("msg").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
 (async()=>{ const d=await (await fetch("/api/state")).json(); paintState(d);
   if(d.mute_default===false) {} $("msg").focus(); })();
@@ -381,7 +530,7 @@ def main() -> None:
         CFG["engine_model"] = demo.resolve_model(args.engine_model)
     demo.apply_engine_model(CFG["engine_model"])
 
-    demo.snapshot("pre-web")          # reset point for the session
+    _ensure_baseline()                # stable scarred-arc reset target (created once)
     _rebuild_engine()
     print(f"   ⚙ {_name()}  ·  voice={CFG['talk_model']}  engine={CFG['engine_model'] or 'default (claude-sonnet-4-6)'}")
     print(f"   ▶ open  http://{args.host}:{args.port}/   (free-hand; Reset restores 'pre-web')")
