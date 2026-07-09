@@ -1,0 +1,24 @@
+{
+  "name": "waterdeep-passage",
+  "slug": "corvin-ashgrave-inworld",
+  "saved_at": "2026-07-09 19:45",
+  "git_commit": "62ba6f7",
+  "note": "Fresh un-scarred Corvin (built from Wipe). Player negotiates smuggled passage to Waterdeep WITHOUT their name on the manifest, to hunt someone who wronged them years ago. Corvin warms from cool-professional to complicit partner; forms suspicion-then-alliance beliefs; trust climbs to ~0.70. Great showcase of relationship-conditioned recall + emergent belief formation + the live in-browser brain panel. THIS is the reference direction to emulate before any pivot.",
+  "turns": 16,
+  "beliefs": 4,
+  "relationship": {
+    "affection": 0.7089650608995536,
+    "trust": 0.7350279083834172,
+    "respect": 0.7084012616847142,
+    "mood": "fearfully urgent",
+    "scar_affection": 0.0,
+    "scar_trust": 0.0,
+    "scar_respect": 0.0,
+    "persistence_half_life": 180.0
+  },
+  "mind_files": [
+    "corvin-ashgrave-inworld.intent.json",
+    "corvin-ashgrave-inworld.jsonl",
+    "corvin-ashgrave-inworld.relationship.json"
+  ]
+}
