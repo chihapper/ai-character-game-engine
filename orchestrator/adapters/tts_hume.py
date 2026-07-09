@@ -231,7 +231,14 @@ class HumeTTS(TTSAdapter):
         trailing_beat = 0.0
         pending_direction = ""
         pending_raw = ""
-        any_quotes = any(i % 2 == 1 and p.strip() for i, p in enumerate(parts))
+        # Alternation mode only fires for genuinely DIALOGUE-FORMATTED text ('*leans in* "Hello."'),
+        # where the quoted spans carry most of the content. SCARE QUOTES must not trigger it: in
+        # 'Man reaches for "square" when he owes' the quotes wrap one word — treating the rest as
+        # stage business silenced a 443-char reply down to the word "square" (owner-caught 2026).
+        quoted_len = sum(len(p) for i, p in enumerate(parts) if i % 2 == 1)
+        total_len = max(1, len((text or "").strip()))
+        any_quotes = (any(i % 2 == 1 and p.strip() for i, p in enumerate(parts))
+                      and quoted_len / total_len >= 0.35)
         if any_quotes:
             for i, p in enumerate(parts):
                 if i % 2 == 0:

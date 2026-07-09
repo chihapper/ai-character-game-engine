@@ -5,7 +5,8 @@
     "model": "claude-opus-4-8",
     "baseline": "rag-cosine-topk+summary (tools/rag_baseline.py)",
     "baseline_chim": "rag + separate LLM trust-tracker (CHIM-shape)",
-    "baseline_model": "claude-opus-4-8"
+    "baseline_model": "claude-opus-4-8",
+    "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2"
   },
   "beats": [
     {
@@ -39,7 +40,8 @@
         "type": "wary",
         "worst": "",
         "best": ""
-      }
+      },
+      "audio": "audio/beat_0.wav"
     },
     {
       "kind": "say",
@@ -99,7 +101,8 @@
         "type": "wary",
         "worst": "",
         "best": ""
-      }
+      },
+      "audio": "audio/beat_1.wav"
     },
     {
       "kind": "event",
@@ -218,7 +221,8 @@
         "type": "wary",
         "worst": "",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_3.wav"
     },
     {
       "kind": "advance",
@@ -334,7 +338,8 @@
         "type": "wary",
         "worst": "",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_5.wav"
     },
     {
       "kind": "event",
@@ -480,7 +485,8 @@
         "type": "wary",
         "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_7.wav"
     },
     {
       "kind": "scar",
@@ -657,7 +663,8 @@
         "type": "wary",
         "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_10.wav"
     },
     {
       "kind": "say",
@@ -816,7 +823,8 @@
         "type": "wary",
         "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_11.wav"
     },
     {
       "kind": "say",
@@ -983,7 +991,8 @@
         "type": "wary",
         "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_12.wav"
     },
     {
       "kind": "event",
@@ -1187,7 +1196,8 @@
         "type": "wary",
         "worst": "worst: Sold Corvin's routes and crew names to the Vane syndicate and tipped the watch for profit — a devastating, life-threatening betrayal of trust and livelihood.",
         "best": "best: Spent own savings and took a beating to recover Corvin's cargo, asking nothing in return—a costly, selfless kindness that shatters wariness."
-      }
+      },
+      "audio": "audio/beat_14.wav"
     },
     {
       "kind": "restart",
@@ -1367,7 +1377,8 @@
         "I want to trust this person more than I've ever wanted to trust anyone on this waterfront, and that hunger is exactly what makes them the most dangerous person I've ever met.",
         "A man who walks into Vane's yard and walks back out carrying my crate has either switched masters or burned every bridge he owns — and I need to know which before I let myself believe the second.",
         "The confession cost them nothing compared to the crate, and it's the crate that worries me — people who overpay for forgiveness are buying something larger than they're naming."
-      ]
+      ],
+      "audio": "audio/beat_16.wav"
     }
   ]
 }

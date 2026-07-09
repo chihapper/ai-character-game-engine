@@ -173,6 +173,28 @@ python -m tools.credibility_demo --baseline  # 2) run the RAG baseline over the 
 python -m tools.credibility_demo --voice      # 3) bake voice 2 (engine replies)
 ```
 
+**CHIM due-diligence (2026-07-08, source-verified via gh api):** the strongest comparable engine
+(CHIM/HerikaServer, Skyrim) was reviewed at source level. Its memory retrieval is affect-blind
+cosine+recency+participants with NO importance term; its relationship layer is a separate async
+LLM delta-judge on ONE clamped scalar (±100) with a one-way type lock and a sticky worst-deed
+note — no decay, no per-axis scar, and it never touches retrieval. A second baseline
+(`ChimStyleCharacter`, faithful to that source) is included. A landscape survey (Character.AI,
+Inworld, Convai, NVIDIA ACE, Replika, Kindroid, Nomi, SillyTavern [source], AI Dungeon) found NO
+shipping system documenting relationship-conditioned recall.
+
+**The two headline claims (robust — structural, and held across both baseline versions):**
+1. **Relationship-conditioned recall** — no shipping engine folds the character's live feeling
+   into retrieval; ours does (arena_query), on top of first-class salience.
+2. **The bounded scar** — after costly amends, ours: affection recovers (0.26→0.40) while trust
+   stays capped at the scar ceiling (0.15); CHIM-style: the single affinity dips and climbs back
+   to Warm (+15) — *"the sticky note still says 'sold my routes', but the number went back to
+   Warm. In ours, the scar IS the ceiling."* Shown as a trust-trajectory graph at the
+   recovery-costly beat.
+
+The money-shot/centerpiece "stays warm / serves its betrayer" contrast vs the CHIM-style column is
+run-dependent color (a deep bond arithmetically cushions the betrayal and pleasant conversation
+drifts the scalar back up) — supporting, never the headline.
+
 **Verified (opus vs opus, same persona/embedder):**
 - **Money shot** — "after everything, are we still square?" → Engine: *"You've got the gall to ask
   me that… Vane… we're not square."* (trust 0.08, scarred). RAG: *"Aye. We're square, friend.

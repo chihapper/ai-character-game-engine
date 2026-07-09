@@ -58,9 +58,21 @@
   .compare .cq .tag{display:block;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--player);font-style:normal;margin-bottom:6px}
   .samecfg{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;letter-spacing:.3px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:0}
+  .cols.three{grid-template-columns:1fr 1fr 1fr;gap:12px}
   .col{border:1px solid var(--edge);border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
   .col.engine{background:linear-gradient(180deg,rgba(124,255,178,.06),transparent);border-color:#2c5a44}
   .col.base{background:linear-gradient(180deg,rgba(255,93,108,.05),transparent);border-color:#5a2b31}
+  .col.chim{background:linear-gradient(180deg,rgba(242,180,92,.06),transparent);border-color:#5a4a2b}
+  .pip.mid{background:var(--aff);box-shadow:0 0 8px var(--aff)}
+  .col.chim .cnote{color:var(--aff);opacity:.9}
+  .cols.three .cbody{font-size:13px;line-height:1.45}
+  .cols.three .ch{font-size:12px}
+  /* recovery trajectory strip */
+  .traj{border:1px solid var(--edge);border-radius:12px;padding:12px 16px;background:var(--panel)}
+  .traj .tcap{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .traj svg{width:100%;height:96px;display:block}
+  .traj .tleg{display:flex;gap:18px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
+  .traj .tleg .sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
   .ch{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
   .ch .sub{font-weight:400;color:var(--muted);font-size:11px}
   .ch code{font-family:var(--mono);color:var(--sel);font-size:11px}
@@ -196,18 +208,24 @@
       <div class="compare" id="compare" style="display:none">
         <div class="cq"><span class="tag">player asks</span><div id="cq"></div></div>
         <div class="samecfg" id="samecfg">same model · same character · same history — the only difference is the engine</div>
-        <div class="cols">
+        <div class="cols" id="cols">
           <div class="col engine">
-            <div class="ch"><span class="pip good"></span>This engine <span class="sub">· changed by the betrayal</span></div>
+            <div class="ch"><span class="pip good"></span>This engine <span class="sub">· one integrated mind</span></div>
             <div class="cbody" id="cengine"></div>
             <div class="cnote" id="cenote"></div>
           </div>
+          <div class="col chim" id="chimcol" style="display:none">
+            <div class="ch"><span class="pip mid"></span>RAG + relationship tracker <span class="sub">· CHIM-style, same LLM</span></div>
+            <div class="cbody" id="cchim"></div>
+            <div class="cnote" id="cchimnote"></div>
+          </div>
           <div class="col base">
-            <div class="ch"><span class="pip bad"></span>Standard RAG <span class="sub">· cosine top-k + summary, same LLM</span></div>
+            <div class="ch"><span class="pip bad"></span>Plain RAG <span class="sub">· cosine top-k + summary, same LLM</span></div>
             <div class="cbody" id="cbase"></div>
-            <div class="cnote">has the betrayal in memory — but no salience, no relationship state: unchanged</div>
+            <div class="cnote">has the betrayal in memory — no relationship state at all: unchanged</div>
           </div>
         </div>
+        <div class="traj" id="traj" style="display:none"></div>
       </div>
     </div>
 
@@ -417,22 +435,71 @@ function retrihtml(items, kind){
                               : "ranked by COSINE similarity to the words — no other signal";
   return `<div class="reti"><div class="rcap">${cap}</div>${rows}</div>`;
 }
+const COMPARE_COPY = {
+  moneyshot: {
+    sub: "same model · same history — all three hold the betrayal in memory",
+    note: r => `changed by it · trust ${r.trust.toFixed(2)}, capped by a scar (${r.scar_trust.toFixed(2)})`,
+    chim: st => `tracker knows: ${st.worst||"—"} · yet affinity reads ${st.affinity>0?"+":""}${st.affinity} (${st.tier})`},
+  centerpiece: {
+    sub: "an ordinary question, textually far from the betrayal — watch what each memory system surfaces",
+    note: () => "surfaces the betrayal — salience + its own distrust are IN the retrieval query",
+    chim: () => "retrieval is cosine-only — the tracker's feelings never reach what it recalls"},
+  "recovery-words": {
+    sub: "the player owns the betrayal — words only",
+    note: r => `the scar holds: trust ${r.trust.toFixed(2)} at its ceiling (${(1-r.scar_trust).toFixed(2)})`,
+    chim: st => `one scalar, re-judged: affinity now ${st.affinity>0?"+":""}${st.affinity} (${st.tier})`},
+  "recovery-costly": {
+    sub: "costly amends — the hardest test: does the wound survive real restitution?",
+    note: r => `affection recovers (${r.affection.toFixed(2)}) — trust CANNOT (${r.trust.toFixed(2)}, ceiling ${(1-r.scar_trust).toFixed(2)}). The scar IS the ceiling.`,
+    chim: st => `the note still says it — but the number went back to ${st.tier} (${st.affinity>0?"+":""}${st.affinity})`}
+};
 function showCompare(b){
   document.querySelector(".convo").style.display="none";
   const c=$("compare"); c.style.display="flex";
   const centre = b.compare==="centerpiece";
+  const copy = COMPARE_COPY[b.compare] || COMPARE_COPY.moneyshot;
+  const r=cur.rel, st=b.baseline_chim_state||{};
   $("cq").textContent = b.player||"";
-  $("samecfg") && ($("samecfg").textContent = centre
-    ? "same memories, same question — watch what each MEMORY SYSTEM surfaces"
-    : "same model · same character · same history — the only difference is the engine");
-  const r=cur.rel;
+  $("samecfg").textContent = copy.sub;
   $("cengine").innerHTML = fmtReply(b.reply) + (centre ? retrihtml(cur.scored.filter(s=>s.selected), "engine") : "");
+  $("cenote").textContent = copy.note(r);
+  const three = !!b.baseline_chim;
+  $("cols").classList.toggle("three", three);
+  $("chimcol").style.display = three ? "flex" : "none";
+  if(three){
+    $("cchim").innerHTML = fmtReply(b.baseline_chim) + (centre ? retrihtml(b.baseline_chim_retrieval, "rag") : "");
+    $("cchimnote").textContent = copy.chim(st);
+  }
   $("cbase").innerHTML = fmtReply(b.baseline) + (centre ? retrihtml(b.baseline_retrieval, "rag") : "");
-  $("cenote").textContent = centre
-    ? "surfaces the betrayal by salience + distrust — can't even discuss a crate"
-    : `changed · trust ${r.trust.toFixed(2)} · scar ${r.scar_trust.toFixed(2)} · ${cur.beliefs.length} beliefs`;
+  $("traj").style.display = b.compare==="recovery-costly" ? "block" : "none";
+  if(b.compare==="recovery-costly") renderTraj();
+}
+function renderTraj(){
+  // trust trajectories across the arc: engine trust (with its scar ceiling) vs the CHIM-style
+  // affinity (normalized -100..100 -> 0..1). The picture IS the claim: one line hits a permanent
+  // ceiling; the other dips and climbs back.
+  const says = beats.filter(x=>x.kind==="say" && x.relationship && x.phase!=="restart");
+  const W=1000,H=96,P=8, n=says.length;
+  const x=i=>P+(W-2*P)*(n<2?0:i/(n-1)), y=v=>H-P-(H-2*P)*Math.max(0,Math.min(1,v));
+  const eng=says.map((s,i)=>`${x(i)},${y(s.relationship.trust)}`).join(" ");
+  const chim=says.map((s,i)=>{const a=s.baseline_chim_state?s.baseline_chim_state.affinity:null;
+    return a==null?null:`${x(i)},${y((a+100)/200)}`}).filter(Boolean).join(" ");
+  const last=says[says.length-1].relationship, ceil=1-last.scar_trust;
+  const marks=says.map((s,i)=>{
+    const tag=s.compare==="moneyshot"?"betrayed":s.compare==="recovery-words"?"plea":s.compare==="recovery-costly"?"amends":"";
+    return tag?`<text x="${x(i)}" y="${H-1}" font-size="9" fill="#5c6773" text-anchor="middle" font-family="monospace">${tag}</text>`:"";}).join("");
+  $("traj").innerHTML = `<div class="tcap">Trust through betrayal → amends · the categorical difference</div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <line x1="${P}" y1="${y(ceil)}" x2="${W-P}" y2="${y(ceil)}" stroke="#ff5d6c" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="${W-P}" y="${y(ceil)-4}" font-size="10" fill="#ff5d6c" text-anchor="end" font-family="monospace">scar ceiling ${ceil.toFixed(2)} — trust can never pass this again</text>
+      <polyline points="${chim}" fill="none" stroke="#f2b45c" stroke-width="2.5" opacity=".9"/>
+      <polyline points="${eng}" fill="none" stroke="#7cffb2" stroke-width="2.5"/>${marks}
+    </svg>
+    <div class="tleg"><span><span class="sw" style="background:#7cffb2"></span>this engine — capped by the scar</span>
+    <span><span class="sw" style="background:#f2b45c"></span>RAG + tracker — dips, then climbs back</span></div>`;
 }
 function hideCompare(){ const c=$("compare"); if(c) c.style.display="none";
+  const t=$("traj"); if(t) t.style.display="none";
   const cv=document.querySelector(".convo"); if(cv) cv.style.display="flex"; }
 
 const vox=$("vox"); let muted=false;
