@@ -297,12 +297,24 @@ button:hover{border-color:var(--trust)} button:disabled{opacity:.5;cursor:defaul
 .r .fill{background:linear-gradient(90deg,#5b4aa3,var(--resp))}
 .mood{margin-top:8px;font-size:12px;color:var(--muted)} .mood b{color:var(--ink);font-style:italic}
 .scarnote{margin-top:6px;font-size:11px;line-height:1.35;color:var(--scar);opacity:.9}
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
-th{color:var(--dim);font-weight:500;text-align:right;padding:4px 7px;font-size:9.5px;letter-spacing:.5px;
+table{width:100%;table-layout:fixed;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th{color:var(--dim);font-weight:500;text-align:right;padding:4px 6px;font-size:9.5px;letter-spacing:.3px;
   text-transform:uppercase;border-bottom:1px solid var(--edge)}
 th:last-child{text-align:left}
-td{padding:4px 7px;text-align:right;color:var(--muted);border-bottom:1px solid #171d25}
-td.mem{text-align:left;color:var(--dim);max-width:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td{padding:4px 6px;text-align:right;color:var(--muted);border-bottom:1px solid #171d25}
+/* fit the numeric columns to their content ("0.92"); memory takes all remaining width */
+#brain th:nth-child(1),#brain td:nth-child(1){width:18px;padding:4px 2px;text-align:center}
+#brain th:nth-child(2),#brain td:nth-child(2),
+#brain th:nth-child(3),#brain td:nth-child(3),
+#brain th:nth-child(4),#brain td:nth-child(4){width:40px}
+#brain th:nth-child(5),#brain td:nth-child(5){width:46px}
+td.mem{text-align:left;color:var(--dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+tr.sel td.mem{color:var(--sel)}
+#memPop{position:fixed;display:none;z-index:60;max-width:460px;max-height:72vh;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--edge2);border-radius:10px;padding:11px 14px;
+  font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--ink);white-space:pre-wrap;
+  box-shadow:0 12px 34px rgba(0,0,0,.55)}
+#memPop .pk{display:block;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
 tr.sel td{color:var(--ink)} tr.sel td.mem{color:var(--sel)}
 tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
 .win{color:var(--sel)} .imp{color:var(--gold)}
@@ -368,7 +380,12 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
       <div class="card" style="flex:1;min-height:150px;display:flex;flex-direction:column">
         <h3>🧠 Memory relevance <span class="model" style="text-transform:none;letter-spacing:0">— what he recalled to answer</span></h3>
         <div style="flex:1;overflow:auto"><table id="brain"><thead><tr>
-          <th class="star"></th><th>sim_raw</th><th>import</th><th>recency</th><th>score</th><th style="text-align:left">memory</th>
+          <th class="star" title="selected for recall"></th>
+          <th title="raw cosine similarity to the query">sim</th>
+          <th title="how memorable this is to him (self-appraised)">imp</th>
+          <th title="recency (decays with in-game time)">rec</th>
+          <th title="combined relevance score">score</th>
+          <th style="text-align:left">memory &nbsp;<span style="color:var(--dim);text-transform:none;letter-spacing:0">(hover to read)</span></th>
         </tr></thead><tbody id="brainBody"><tr><td colspan="6" class="empty" style="text-align:center">— talk to him and this fills with the real scores —</td></tr></tbody></table></div>
       </div>
       <div class="card">
@@ -379,10 +396,12 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
     </div>
   </main>
 </div>
+<div id="memPop"><span class="pk">memory</span><span id="memPopBody"></span></div>
 <script>
 const $=id=>document.getElementById(id);
 const clamp=v=>Math.max(0,Math.min(1,v));
 function esc(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
 function stageify(s){return esc(s).replace(/\*([^*]+)\*/g,'<span class="stage">$1</span>');}
 
 function paintState(d){
@@ -415,9 +434,21 @@ function paintBrain(rows){
       '<td class="'+(impWin?'imp':'')+'">'+s.importance.toFixed(2)+'</td>'+
       '<td>'+s.recency.toFixed(2)+'</td>'+
       '<td class="'+(s.selected?'win':'')+'">'+s.base.toFixed(2)+'</td>'+
-      '<td class="mem" title="'+esc(s.text)+'">'+esc(s.text)+'</td></tr>';
+      '<td class="mem" data-full="'+escAttr(s.text)+'">'+esc(s.text)+'</td></tr>';
   }).join("");
 }
+// hover a memory cell -> floating popover with the full text (anchored to the cell's left)
+let popTimer=null;
+function positionPop(cell){
+  const pop=$("memPop"), r=cell.getBoundingClientRect();
+  pop.style.display="block";
+  const pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let left=r.left-pw-10; if(left<8) left=8;
+  let top=r.top-6; if(top+ph>window.innerHeight-8) top=window.innerHeight-ph-8; if(top<8) top=8;
+  pop.style.left=left+"px"; pop.style.top=top+"px";
+}
+function showPop(cell){ clearTimeout(popTimer); $("memPopBody").textContent=cell.getAttribute("data-full")||""; positionPop(cell); }
+function hidePopSoon(){ popTimer=setTimeout(()=>{$("memPop").style.display="none";},180); }
 function addLine(cls,tag,html,recalled){
   const c=$("convo");
   const div=document.createElement("div"); div.className="line "+cls;
@@ -504,6 +535,10 @@ async function hard(){
 $("send").onclick=send; $("reset").onclick=reset; $("hard").onclick=hard;
 $("advance").onclick=advance; $("inject").onclick=inject;
 $("evtText").addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();inject();} });
+$("brainBody").addEventListener("mouseover",e=>{const c=e.target.closest(".mem"); if(c) showPop(c);});
+$("brainBody").addEventListener("mouseout",e=>{const c=e.target.closest(".mem"); if(c) hidePopSoon();});
+$("memPop").addEventListener("mouseenter",()=>clearTimeout(popTimer));
+$("memPop").addEventListener("mouseleave",()=>{$("memPop").style.display="none";});
 $("msg").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
 (async()=>{ const d=await (await fetch("/api/state")).json(); paintState(d);
   if(d.mute_default===false) {} $("msg").focus(); })();
