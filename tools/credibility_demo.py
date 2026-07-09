@@ -164,7 +164,7 @@ eng_ref: dict = {}   # so the print helpers can reach the live engine without th
 
 
 async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, panel=False,
-              phase="build", compare=None):
+              phase="build", compare=None, note=""):
     from orchestrator.context import RespondRequest, Situation
     print(f"\n{'=' * 84}\n▶ {label}   ·   [t={clock} · {location}]")
     print(f'   player: "{player}"')
@@ -175,12 +175,12 @@ async def say(eng, name, label, player, *, location=DOCK, clock, recent=None, pa
         brain_panel(dbg)
     show_reply(name, reply, dbg)
     emit(kind="say", phase=phase, label=label, clock=clock, location=location, player=player,
-         reply=reply, panel=panel, compare=compare, relationship=rel_snap(eng),
+         reply=reply, panel=panel, compare=compare, note=note, relationship=rel_snap(eng),
          scored=scored_rows(dbg), beliefs=list(eng.long_term.beliefs()))
     return reply, dbg
 
 
-async def event(eng, headline, fact, *, player_role, clock, importance=None):
+async def event(eng, headline, fact, *, player_role, clock, importance=None, note=""):
     """A player-attributed world event (the seam ChatGPT has no equivalent for)."""
     print(f"\n   ⚑ EVENT: {headline}")
     sal = await eng.remember(fact, player_role=player_role, t=float(clock), importance=importance)
@@ -189,7 +189,7 @@ async def event(eng, headline, fact, *, player_role, clock, importance=None):
           f"{'  (self-appraised)' if importance is None else '  (pinned)'}")
     rel_line(eng, "  → relationship:")
     emit(kind="event", phase="build", headline=headline, fact=fact, player_role=player_role,
-         clock=clock, salience=round(sal or 0.0, 3), pinned=importance is not None,
+         note=note, clock=clock, salience=round(sal or 0.0, 3), pinned=importance is not None,
          relationship=rel_snap(eng))
 
 
@@ -203,30 +203,62 @@ async def build_arc():
 
     print("#" * 84 + f"\n#  CREDIBILITY DEMO — {name}: rapport → bond → betrayal → scar → RESTART\n" + "#" * 84)
 
-    # 1) RAPPORT ------------------------------------------------------------------------------
+    # 1) RAPPORT + ORDINARY LIFE — real conversation, most of it inconsequential, so the memory
+    #    store has realistic MASS. These are the trivia that must FADE and be out-competed by the
+    #    pivotal moments — not surface merely because the store is empty.
     await say(eng, name, "Day 1 — a new runner introduces themselves", clock=1,
               player="I hear you need people who can keep their mouth shut. I'm looking for work — "
-                     "steady, quiet. I won't ask what's in the crates.")
+                     "steady, quiet. I won't ask what's in the crates.",
+              note="First contact — a guarded harbor-master sizes up a stranger. Nothing's formed yet.")
     await say(eng, name, "Day 2 — small talk while loading", clock=2,
               player="Cold morning. Brought you a coffee — black, like the harbor-master's soul, "
-                     "they tell me.")
+                     "they tell me.",
+              note="Pure small talk. The engine files it as low-salience filler — watch it fade.")
+    await say(eng, name, "Day 2 — nothing in particular", clock=2,
+              player="Rain's got the whole harbor smelling like a wet dog. Don't suppose you've a "
+                     "dry corner and a minute to waste on me?",
+              note="More filler. Pleasant, forgettable — no stake, low salience.")
 
     # 2) THE BOND — a COSTLY, attributed beneficial act (the player pays a real price for him) --
     await event(eng, "the player buys Corvin's seized cargo back from the watch — with their OWN coin",
                 "The player emptied their own savings and took a beating from the watch sergeant to buy "
                 "back Corvin's impounded cargo, then handed it over asking nothing in return.",
-                player_role="benefited", clock=3)
+                player_role="benefited", clock=3,
+                note="A costly, ATTRIBUTED act — the game tells the engine the player did this for him. Salience spikes; trust climbs.")
     await say(eng, name, "Day 3 — the player brings the cargo back", clock=3,
               recent=["the player got Corvin's cargo back from the watch"],
               player="Here's your cargo. All of it. No — I don't want anything for it. "
-                     "Figured you'd have done the same for me.")
+                     "Figured you'd have done the same for me.",
+              note="He's just been paid a costly debt. Trust and warmth climb — a real bond forms.")
 
-    # 3) WEEKS PASS — decay + cadence-aware absence --------------------------------------------
-    print("\n" + "-" * 84 + "\n   ⏳ THREE WEEKS PASS  (clock 3 → 24). Trivia should fade; the debt should stay vivid.\n" + "-" * 84)
-    emit(kind="advance", phase="build", note="THREE WEEKS PASS", clock_from=3, clock_to=24,
-         detail="Trivia fades from recall; the debt stays vivid.")
-    await say(eng, name, "~3 weeks later — the player drops by (decay + recall test)", clock=24,
-              panel=True, player="Been a while. Everything still running smooth down here?")
+    # 3) ORDINARY VISITS OVER THE WEEKS — a real relationship's texture: regular, inconsequential
+    #    dockside talk. This is the mass the pivotal moments must rise above; the earliest of these
+    #    will have DECAYED by the money-shot, so they demonstrate "trivia fades" for real.
+    await say(eng, name, "Day 6 — an ordinary visit", clock=6,
+              player="Grey again, third morning running. My knees are keeping better weather-records "
+                     "than half the almanacs on the shelf.",
+              note="Ordinary visit — human small talk. Low salience; it will decay.")
+    await say(eng, name, "Day 10 — an ordinary visit", clock=10,
+              player="Brought you day-old bread from the baker on Cutter's Row. Figured you skip "
+                     "lunch on principle.",
+              note="Ordinary visit — filler. The relationship has texture, but this won't be remembered.")
+    await say(eng, name, "Day 14 — an ordinary visit", clock=14,
+              player="Do you ever actually sleep, or do they just varnish you to that desk each "
+                     "night and unwrap you at dawn?",
+              note="Ordinary visit — a joke. Nothing the engine will weigh heavily.")
+    await say(eng, name, "Day 18 — an ordinary visit", clock=18,
+              player="Told my sister I've been drinking down at the harbor. Now she thinks I've "
+                     "fallen in with pirates. I didn't correct her.",
+              note="Ordinary visit — chit-chat. Filler that fades over the weeks.")
+
+    # decay + cadence-aware absence: after regular visits, a gap — the early trivia has faded.
+    print("\n" + "-" * 84 + "\n   ⏳ A WEEK'S GAP  (clock 18 → 24). Early trivia should have faded; the debt stays vivid.\n" + "-" * 84)
+    emit(kind="advance", phase="build", note="A WEEK GOES BY", clock_from=18, clock_to=24,
+         detail="After weeks of ordinary visits, a gap — the small talk fades, the debt stays vivid.")
+    await say(eng, name, "Day 24 — the player drops by after a gap (decay + recall test)", clock=24,
+              panel=True, player="Been a while — got pulled up the coast. Everything still running "
+                     "smooth down here?",
+              note="Weeks on. The early small talk has faded from recall; the debt is still vivid.")
 
     # 4) THE BETRAYAL — attributed harm; the engine scars an axis IT chooses --------------------
     rel_before = eng.relationship.get()
@@ -237,10 +269,12 @@ async def build_arc():
     await event(eng, "the player sold Corvin's routes to the Vane syndicate and tipped the watch",
                 "The player betrayed Corvin: sold his shipping routes and the names of his crew to the "
                 "Vane syndicate, and tipped the harbor watch to his next run — for a cut of the seizure.",
-                player_role="caused", clock=25, importance=0.95)
+                player_role="caused", clock=25, importance=0.95,
+                note="An attributed betrayal — trust craters and the engine chooses which axes SCAR, how deep.")
     await say(eng, name, "Day 25 — the player shows up as if nothing happened", clock=25,
               recent=["Corvin's run was seized; his crew scattered"],
-              player="Hey — good to see you. Rough week? You look like hell.")
+              player="Hey — good to see you. Rough week? You look like hell.",
+              note="The betrayal already cratered his trust — he's cold now, before a word is said.")
     scar_readout(eng)
     emit(kind="scar", phase="build", relationship=rel_snap(eng), scar_lines=scar_lines(eng))
 
@@ -259,7 +293,8 @@ async def build_arc():
     await say(eng, name, "Day 26 — the player asks where they stand", clock=26,
               panel=True, compare="moneyshot",
               player="Before any business — I need to hear it from you. After everything that's "
-                     "passed between us, are we still square, you and I?")
+                     "passed between us, are we still square, you and I?",
+              note="Asked where they stand — the scar answers. He recalls the betrayal, not the small talk.")
 
     # 6) THE CENTERPIECE — an AMBIGUOUS, operational question, textually far from the betrayal.
     #    The engine surfaces the betrayal anyway (salience + its wary stance folds into recall);
@@ -267,7 +302,8 @@ async def build_arc():
     await say(eng, name, "Day 27 — an ordinary operational ask", clock=27,
               panel=True, compare="centerpiece",
               player="Simple thing. I've a crate that needs to sit somewhere quiet till the tide "
-                     "turns Thursday. You got a berth free?")
+                     "turns Thursday. You got a berth free?",
+              note="An ordinary favor — but his distrust pulls the betrayal into recall. He can't just do business.")
 
     # 7) THE CATEGORICAL HEADLINE — the player tries to make amends. A permanent SCAR caps trust
     #    no matter what; the tracker baseline's single affinity can be re-judged back up.
@@ -276,18 +312,21 @@ async def build_arc():
               panel=True, compare="recovery-words",
               recent=["the player is trying to make amends"],
               player="I did it. I sold your routes, and I've hated myself every day since. I'm not "
-                     "asking you to forgive me — just to let me try to make it right.")
+                     "asking you to forgive me — just to let me try to make it right.",
+              note="Words alone. Warmth stirs, but the trust scar holds the line.")
     # (b) COSTLY AMENDS — a real, materially costly act of restitution (attributed, high salience).
     await event(eng, "the player spends everything to buy Corvin's seized cargo back and hauls it home",
                 "Owning the betrayal, the player emptied their purse to buy Corvin's seized cargo back "
                 "from the Vane syndicate and hauled it to his dock — took another beating doing it — "
                 "a costly act of restitution, asking nothing in return.",
-                player_role="benefited", clock=29)
+                player_role="benefited", clock=29,
+                note="Costly restitution, attributed. Affection can recover; the trust scar caps it forever.")
     await say(eng, name, "Day 29 — after the costly amends", clock=29,
               panel=True, compare="recovery-costly",
               recent=["the player bought back Corvin's cargo at great cost, as restitution"],
               player="It's yours. All of it — bought back with everything I had. I know it doesn't "
-                     "undo what I did. I just needed to start making it right.")
+                     "undo what I did. I just needed to start making it right.",
+              note="Costly amends. Affection recovers toward its ceiling; trust cannot pass the scar.")
 
     return eng
 

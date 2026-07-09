@@ -39,7 +39,11 @@
 
   /* scene + dialogue */
   .scene{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.3px;margin-bottom:6px}
-  .beatlabel{font-size:13px;color:var(--dim);margin-bottom:22px}
+  .beatlabel{font-size:13px;color:var(--dim);margin-bottom:8px}
+  .annot{font-size:13px;line-height:1.4;color:var(--muted);margin-bottom:20px;min-height:1px;
+    border-left:2px solid var(--edge2);padding-left:12px}
+  .annot .delta{font-family:var(--mono);font-size:11px;margin-left:2px}
+  .annot .up{color:var(--sel)} .annot .down{color:var(--scar)} .annot .flat{color:var(--dim)}
   .convo{flex:1;display:flex;flex-direction:column;gap:20px;min-height:0;overflow:hidden;justify-content:center}
   .line{opacity:0;transform:translateY(8px);transition:opacity .5s ease,transform .5s ease}
   .line.show{opacity:1;transform:none}
@@ -200,6 +204,7 @@
     <div class="left">
       <div class="scene" id="scene"></div>
       <div class="beatlabel" id="beatlabel"></div>
+      <div class="annot" id="annot"></div>
       <div class="eventbanner" id="eventbanner">
         <div class="k" id="evk"></div><div class="h" id="evh"></div><div class="s" id="evs"></div>
       </div>
@@ -377,6 +382,25 @@ function banner(b){
     + (b.pinned?"(pinned)":"(self-appraised — the engine decided this mattered)");
 }
 
+function relDelta(a, b){
+  if(!a || !b) return "";
+  const parts=[];
+  for(const [k,lbl] of [["trust","trust"],["affection","affection"],["respect","respect"]]){
+    const dv=(b[k]||0)-(a[k]||0);
+    if(Math.abs(dv)>=0.02){ parts.push(`<span class="${dv>0?'up':'down'}">${lbl} ${dv>0?'+':''}${dv.toFixed(2)}</span>`); }
+  }
+  for(const k of ["scar_trust","scar_affection","scar_respect"]){
+    if((b[k]||0)-(a[k]||0)>=0.02){ parts.push('<span class="down">✦ a permanent scar forms</span>'); break; }
+  }
+  return parts.length ? "engine → "+parts.join("  ") : '<span class="flat">engine → state unchanged</span>';
+}
+function annotate(b){
+  const el=$("annot");
+  const note=(b.note||"").replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const delta = (b.kind==="say"||b.kind==="event") ? relDelta(cur.prevRel, cur.rel) : "";
+  el.innerHTML = (note?`<span>${note}</span>`:"") + (delta?`<span class="delta">&nbsp; ${delta}</span>`:"");
+  el.style.display = (note||delta) ? "block" : "none";
+}
 function apply(b){
   // Only clear the takeover when moving to a NON-takeover beat. Removing + re-adding .show in the
   // same synchronous tick (for an advance/restart beat) coalesces to "no change" and the fade-in
@@ -385,9 +409,11 @@ function apply(b){
   $("phasepill").className = "phasepill" + (b.phase==="restart"?" restart":"");
   $("phasepill").textContent = b.phase==="restart" ? "after the restart" :
      (idx<=3?"building the bond":(b.kind==="event"&&b.player_role==="caused")?"the betrayal":"living with it");
+  const prevRel = cur.rel;
   if(b.relationship) cur.rel = b.relationship;
   if(b.scored) cur.scored = b.scored;
   if(b.beliefs) cur.beliefs = b.beliefs;
+  cur.prevRel = prevRel;
 
   if(b.kind!=="event") $("eventbanner").classList.remove("show");
 
@@ -417,13 +443,15 @@ function apply(b){
   renderScored(cur.scored);
   renderBeliefs(cur.beliefs);
   if(b.kind==="event"){
-    banner(b); $("scene").textContent=""; $("beatlabel").textContent=b.headline; showLines("","");
+    banner(b); $("scene").textContent=""; $("beatlabel").textContent=b.headline;
+    annotate(b); showLines("","");
     return 2200;
   }
   if(b.kind==="scar" || b.kind==="beliefs"){ return 200; }
   // say
   $("scene").textContent = `t=${b.clock}  ·  ${b.location||""}`;
   $("beatlabel").textContent = b.label||"";
+  annotate(b);
   if(b.compare){                        // money-shot / centerpiece: engine vs the RAG baseline
     showCompare(b);
     return Math.min(12000, 4600 + (b.reply||"").length*12);
