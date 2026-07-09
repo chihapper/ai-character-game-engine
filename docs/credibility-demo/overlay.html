@@ -274,12 +274,18 @@
   <div id="takeover"></div>
 </div>
 
-<script src="replay.js"></script>
+<script>
+// ?replay=bri loads replay_bri.js (the Bri variance run); default = replay.js (Corvin).
+(function(){var v=(new URLSearchParams(location.search).get("replay")||"").replace(/[^a-z0-9]/gi,"");
+document.write('<script src="replay'+(v?'_'+v:'')+'.js"><\/script>');})();
+</script>
 <script>
 const R = window.CRED_REPLAY || {meta:{},beats:[]};
 const beats = R.beats || [];
 const $ = id => document.getElementById(id);
 $("charname").textContent = R.meta.character || "Corvin";
+const ROLES = {Corvin: "harbor-master · smuggling port", Bri: "tavern keeper · armor made of jokes"};
+document.querySelector(".who .role").textContent = ROLES[R.meta.character] || "";
 $("model").textContent = "model · " + (R.meta.model || "—");
 
 // running state carried across beats
