@@ -51,6 +51,25 @@ BASELINE = "arc-baseline"
 
 def _rebuild_engine() -> None:
     STATE["eng"] = make_engine(demo.SLUG, model=CFG["talk_model"], max_tokens=220)
+    _seed_clock()
+
+
+def _seed_clock() -> None:
+    """Seed the session clock ABOVE every timestamp already on disk, so turns can never rewind.
+    The clock used to live only in memory and reset to 41.0 on restart — a mid-conversation
+    restart then stamped new memories BELOW older ones, scrambling recency and 'what just
+    happened' (the character loses the thread and turns suspicious). Now it always continues
+    forward from the newest thing the character remembers."""
+    eng = _engine()
+    ts: list[float] = []
+    for r in eng.long_term._all():
+        for v in (getattr(r, "t", None), getattr(r, "last_t", None)):
+            if v is not None:
+                ts.append(v)
+    lt = eng.relationship.get().last_t
+    if lt is not None:
+        ts.append(lt)
+    STATE["clock"] = round(max(ts) + 0.02, 3) if ts else 41.0
 
 
 def _ensure_baseline() -> None:
@@ -218,8 +237,7 @@ def build_app():
         """Soft reset — rewind to the scarred-arc baseline snapshot."""
         async with _LOCK:
             demo.restore(BASELINE)
-            _rebuild_engine()
-            STATE["clock"] = 41.0
+            _rebuild_engine()          # _seed_clock() runs inside; clock continues above the baseline
             STATE["turns"] = 0
             return JSONResponse(_state_dict())
 
@@ -228,9 +246,8 @@ def build_app():
         """HARD reset — wipe the persisted mind entirely (memories, scars, relationship,
         beliefs, intent). A blank-slate character you build up from scratch through conversation."""
         async with _LOCK:
-            wipe(demo.SLUG)          # deletes .memory/<ns>.* ; the 'pre-web' snapshot survives
-            _rebuild_engine()
-            STATE["clock"] = 41.0
+            wipe(demo.SLUG)          # deletes .memory/<ns>.* ; snapshots survive
+            _rebuild_engine()        # wiped -> no timestamps -> _seed_clock() defaults to 41.0
             STATE["turns"] = 0
             return JSONResponse(_state_dict())
 
