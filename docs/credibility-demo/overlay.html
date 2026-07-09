@@ -163,6 +163,8 @@
   #takeover{position:absolute;inset:0;background:#05070a;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:20px;opacity:0;pointer-events:none;z-index:20}
   #takeover.show{opacity:1}   /* static — never gate the killer beat behind a timeline */
+  .tkhint{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:14px;display:none}
+  body:not(.playing) #takeover .tkhint{display:block}   /* hint only when paused — clean on camera */
   #takeover .big{font-size:44px;font-weight:800;letter-spacing:.5px;text-align:center}
   #takeover .sub{font-family:var(--mono);font-size:15px;color:var(--muted);text-align:center;max-width:620px;line-height:1.6}
   #takeover .steps{font-family:var(--mono);font-size:14px;color:var(--dim);text-align:left;line-height:2}
@@ -286,7 +288,7 @@ const $ = id => document.getElementById(id);
 $("charname").textContent = R.meta.character || "Corvin";
 const ROLES = {Corvin: "harbor-master · smuggling port", Bri: "tavern keeper · armor made of jokes"};
 document.querySelector(".who .role").textContent = ROLES[R.meta.character] || "";
-$("model").textContent = "model · " + (R.meta.model || "—");
+$("model").textContent = (R.meta.model || "—") + " · replay of a real run — reproduce: python -m tools.credibility_demo";
 
 // running state carried across beats
 let cur = {rel:{affection:.5,trust:.5,respect:.5,mood:"—",scar_affection:0,scar_trust:0,scar_respect:0},
@@ -393,8 +395,9 @@ function apply(b){
     $("scene").textContent=""; $("beatlabel").textContent="";
     showLines("", "");
     return takeover(`<div class="clock">⏳</div><div class="big">${b.note}</div>
-      <div class="sub">clock ${b.clock_from} → ${b.clock_to}. ${b.detail||""}<br>
-      Trivial exchanges fade from recall; the costly moment stays vivid — decay is real.</div>`, 2600);
+      <div class="sub">clock ${b.clock_from} → ${b.clock_to}. ${b.detail
+        ||"Trivial exchanges fade from recall; the pivotal moment stays vivid — decay is real."}</div>
+      <div class="tkhint">→ step &nbsp;·&nbsp; Space play</div>`, 2600);
   }
   if(b.kind==="restart"){
     renderRel(cur.rel, true); renderScored(cur.scored); renderBeliefs(cur.beliefs);
@@ -405,7 +408,8 @@ function apply(b){
       <div class="sub">trust <b style="color:var(--ink)">${cur.rel.trust.toFixed(2)}</b> ·
       scar <b style="color:var(--scar)">${cur.rel.scar_trust.toFixed(2)}</b> ·
       ${cur.beliefs.length} beliefs — <b style="color:var(--sel)">identical</b>.<br>
-      He turned off, and back on. He still remembers, and he's still hurt.</div>`, 4200);
+      He turned off, and back on. He still remembers, and he's still hurt.</div>
+      <div class="tkhint">→ step &nbsp;·&nbsp; Space play</div>`, 4200);
   }
 
   // say / event / scar / beliefs → normal panel view
@@ -512,13 +516,17 @@ const vox=$("vox"); let muted=false;
 function playAudio(b){
   vox.onended=null;
   if(b && b.audio){ vox.src=b.audio; try{vox.currentTime=0;}catch(e){}
-    if(!muted){ vox.play().catch(()=>{}); } return true; }
+    if(!muted){ vox.play().catch(()=>{ if(vox.onerror) vox.onerror(); }); } return true; }
   vox.pause(); vox.removeAttribute("src"); return false;
 }
 function advanceAfter(dwell, hasAudio){
-  clearTimeout(timer); vox.onended=null;
-  const step=()=>{ if(!playing) return; idx<beats.length-1 ? go(idx+1) : stop(); };
-  if(hasAudio && !muted){ vox.onended=()=>setTimeout(step, 700); }   // advance when Corvin finishes
+  clearTimeout(timer); vox.onended=null; vox.onerror=null;
+  const step=()=>{ clearTimeout(timer); if(!playing) return; idx<beats.length-1 ? go(idx+1) : stop(); };
+  if(hasAudio && !muted){
+    vox.onended=()=>setTimeout(step, 700);                 // advance when the line finishes...
+    vox.onerror=()=>{ clearTimeout(timer); timer=setTimeout(step, dwell+300); } // ...or fall back
+    timer=setTimeout(step, 120000);                        // failsafe: autoplay can never wedge
+  }
   else { timer=setTimeout(step, dwell+300); }
 }
 function go(n){
@@ -529,8 +537,10 @@ function go(n){
   const hasAudio=playAudio(b);
   if(playing) advanceAfter(dwell, hasAudio);
 }
-function play(){ playing=true; $("play").textContent="⏸ pause"; if(idx<0) go(0); else go(idx); }
-function stop(){ playing=false; $("play").textContent="▶ play"; clearTimeout(timer); vox.onended=null; }
+function play(){ playing=true; document.body.classList.add("playing");
+  $("play").textContent="⏸ pause"; if(idx<0) go(0); else go(idx); }
+function stop(){ playing=false; document.body.classList.remove("playing");
+  $("play").textContent="▶ play"; clearTimeout(timer); vox.onended=null; vox.onerror=null; }
 $("mute").onclick=()=>{ muted=!muted; $("mute").textContent=muted?"🔇 muted":"🔊 voice";
   if(muted) vox.pause(); };
 $("next").onclick=()=>{stop();go(Math.min(beats.length-1,idx+1))};
