@@ -36,7 +36,42 @@ set_flags(relationship_state=True, relationship_time_decay=True, reflection_enab
           intent_state=True, salience_scoring=True, arena_query=True)
 
 SLUG = "corvin-ashgrave-inworld"
-MODEL = os.environ.get("CRED_MODEL", "claude-opus-4-8")
+
+# ── Model knobs ──────────────────────────────────────────────────────────────────────────────
+# TWO independent layers, each selectable to haiku|sonnet|opus (or a full model id):
+#   • the CONVERSATIONAL model  — the voice of Corvin himself (the Engine's dialogue LLM).
+#   • the ENGINE-PROCESS model  — the machinery: salience appraisal, reflection/consolidation,
+#     deliberation. These run through the judgment roles (orchestrator/judgment.py), whose model
+#     is resolved from settings.{salience,reflection,deliberation}_model.
+# Aliases resolve to the latest of each family; pass a full "claude-…" id to pin an exact one.
+_MODEL_ALIASES = {
+    "haiku": "claude-haiku-4-5",
+    "sonnet": "claude-sonnet-5",
+    "opus": "claude-opus-4-8",
+}
+
+
+def resolve_model(name: str | None) -> str | None:
+    """haiku|sonnet|opus (case-insensitive) -> latest id; a 'claude-…' id passes through; None -> None."""
+    if not name:
+        return None
+    return _MODEL_ALIASES.get(name.strip().lower(), name.strip())
+
+
+def apply_engine_model(model_id: str | None) -> None:
+    """Point the engine-process judgment roles (salience / reflection / deliberation) at `model_id`.
+    Mutates the cached Settings in place (same route sandbox.py uses); None leaves the defaults."""
+    if not model_id:
+        return
+    from orchestrator.config import get_settings
+    s = get_settings()
+    s.salience_model = s.reflection_model = s.deliberation_model = model_id
+
+
+# Conversational model (Corvin's voice). CRED_MODEL may be an alias or a full id; --talk-model wins.
+MODEL = resolve_model(os.environ.get("CRED_MODEL", "claude-opus-4-8"))
+# Engine-process model. Unset -> keep the engine's own defaults (sonnet-4-6); --engine-model wins.
+ENGINE_MODEL = resolve_model(os.environ.get("CRED_ENGINE_MODEL"))
 DOCK = "the fish-dock"
 # Corvin's voice. Prefix picks the Hume provider: "HUME_AI:<uuid|name>" = Voice Library,
 # "CUSTOM_VOICE:<uuid>" = a saved custom voice; a bare name → HUME_AI. Swap via CORVIN_HUME_VOICE.
@@ -673,7 +708,21 @@ async def main():
     ap.add_argument("--mute", action="store_true", help="with --live: text only, no Hume audio")
     ap.add_argument("--snapshot", metavar="TAG", help="save the character's mind to .memory/snapshots/<TAG>")
     ap.add_argument("--restore", metavar="TAG", help="restore the character's mind from a snapshot")
+    ap.add_argument("--talk-model", metavar="M", help="conversational model (Corvin's voice): haiku|sonnet|opus or a full id")
+    ap.add_argument("--engine-model", metavar="M", help="engine-process model (salience/reflection/deliberation): haiku|sonnet|opus or a full id")
     args = ap.parse_args()
+
+    # Resolve model knobs (CLI > env > default) BEFORE any engine is built.
+    global MODEL, ENGINE_MODEL
+    if args.talk_model:
+        MODEL = resolve_model(args.talk_model)
+    if args.engine_model:
+        ENGINE_MODEL = resolve_model(args.engine_model)
+    apply_engine_model(ENGINE_MODEL)
+    REPLAY["meta"]["model"] = MODEL
+    REPLAY["meta"]["engine_model"] = ENGINE_MODEL or "default(sonnet-4-6)"
+    print(f"   ⚙ conversational model: {MODEL}   |   engine-process model: "
+          f"{ENGINE_MODEL or 'default (claude-sonnet-4-6)'}")
 
     if args.snapshot:
         snapshot(args.snapshot); return
