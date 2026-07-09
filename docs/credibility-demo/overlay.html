@@ -62,9 +62,9 @@
   .col{border:1px solid var(--edge);border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
   .col.engine{background:linear-gradient(180deg,rgba(124,255,178,.06),transparent);border-color:#2c5a44}
   .col.base{background:linear-gradient(180deg,rgba(255,93,108,.05),transparent);border-color:#5a2b31}
-  .col.chim{background:linear-gradient(180deg,rgba(242,180,92,.06),transparent);border-color:#5a4a2b}
+  .col.tracker{background:linear-gradient(180deg,rgba(242,180,92,.06),transparent);border-color:#5a4a2b}
   .pip.mid{background:var(--aff);box-shadow:0 0 8px var(--aff)}
-  .col.chim .cnote{color:var(--aff);opacity:.9}
+  .col.tracker .cnote{color:var(--aff);opacity:.9}
   .cols.three .cbody{font-size:13px;line-height:1.45}
   .cols.three .ch{font-size:12px}
   /* recovery trajectory strip */
@@ -214,10 +214,10 @@
             <div class="cbody" id="cengine"></div>
             <div class="cnote" id="cenote"></div>
           </div>
-          <div class="col chim" id="chimcol" style="display:none">
-            <div class="ch"><span class="pip mid"></span>RAG + relationship tracker <span class="sub">· CHIM-style, same LLM</span></div>
-            <div class="cbody" id="cchim"></div>
-            <div class="cnote" id="cchimnote"></div>
+          <div class="col tracker" id="trackercol" style="display:none">
+            <div class="ch"><span class="pip mid"></span>RAG + affinity tracker <span class="sub">· the sophisticated standard, same LLM</span></div>
+            <div class="cbody" id="ctracker"></div>
+            <div class="cnote" id="ctracknote"></div>
           </div>
           <div class="col base">
             <div class="ch"><span class="pip bad"></span>Plain RAG <span class="sub">· cosine top-k + summary, same LLM</span></div>
@@ -439,50 +439,50 @@ const COMPARE_COPY = {
   moneyshot: {
     sub: "same model · same history — all three hold the betrayal in memory",
     note: r => `changed by it · trust ${r.trust.toFixed(2)}, capped by a scar (${r.scar_trust.toFixed(2)})`,
-    chim: st => `tracker knows: ${st.worst||"—"} · yet affinity reads ${st.affinity>0?"+":""}${st.affinity} (${st.tier})`},
+    tracker: st => `its note holds the deed — yet it reads ${st.affinity>0?"+":""}${st.affinity} (${st.tier}) toward its betrayer. One scalar can't hold a wound.`},
   centerpiece: {
     sub: "an ordinary question, textually far from the betrayal — watch what each memory system surfaces",
     note: () => "surfaces the betrayal — salience + its own distrust are IN the retrieval query",
-    chim: () => "retrieval is cosine-only — the tracker's feelings never reach what it recalls"},
+    tracker: () => "retrieval is cosine-only — the tracker's feelings never reach what it recalls"},
   "recovery-words": {
     sub: "the player owns the betrayal — words only",
     note: r => `the scar holds: trust ${r.trust.toFixed(2)} at its ceiling (${(1-r.scar_trust).toFixed(2)})`,
-    chim: st => `one scalar, re-judged: affinity now ${st.affinity>0?"+":""}${st.affinity} (${st.tier})`},
+    tracker: st => `one scalar, re-judged: affinity now ${st.affinity>0?"+":""}${st.affinity} (${st.tier})`},
   "recovery-costly": {
     sub: "costly amends — the hardest test: does the wound survive real restitution?",
     note: r => `affection recovers (${r.affection.toFixed(2)}) — trust CANNOT (${r.trust.toFixed(2)}, ceiling ${(1-r.scar_trust).toFixed(2)}). The scar IS the ceiling.`,
-    chim: st => `the note still says it — but the number went back to ${st.tier} (${st.affinity>0?"+":""}${st.affinity})`}
+    tracker: st => `the note remembers; the number forgives — back to ${st.tier} (${st.affinity>0?"+":""}${st.affinity})`}
 };
 function showCompare(b){
   document.querySelector(".convo").style.display="none";
   const c=$("compare"); c.style.display="flex";
   const centre = b.compare==="centerpiece";
   const copy = COMPARE_COPY[b.compare] || COMPARE_COPY.moneyshot;
-  const r=cur.rel, st=b.baseline_chim_state||{};
+  const r=cur.rel, st=b.baseline_tracker_state||{};
   $("cq").textContent = b.player||"";
   $("samecfg").textContent = copy.sub;
   $("cengine").innerHTML = fmtReply(b.reply) + (centre ? retrihtml(cur.scored.filter(s=>s.selected), "engine") : "");
   $("cenote").textContent = copy.note(r);
-  const three = !!b.baseline_chim;
+  const three = !!b.baseline_tracker;
   $("cols").classList.toggle("three", three);
-  $("chimcol").style.display = three ? "flex" : "none";
+  $("trackercol").style.display = three ? "flex" : "none";
   if(three){
-    $("cchim").innerHTML = fmtReply(b.baseline_chim) + (centre ? retrihtml(b.baseline_chim_retrieval, "rag") : "");
-    $("cchimnote").textContent = copy.chim(st);
+    $("ctracker").innerHTML = fmtReply(b.baseline_tracker) + (centre ? retrihtml(b.baseline_tracker_retrieval, "rag") : "");
+    $("ctracknote").textContent = copy.tracker(st);
   }
   $("cbase").innerHTML = fmtReply(b.baseline) + (centre ? retrihtml(b.baseline_retrieval, "rag") : "");
   $("traj").style.display = b.compare==="recovery-costly" ? "block" : "none";
   if(b.compare==="recovery-costly") renderTraj();
 }
 function renderTraj(){
-  // trust trajectories across the arc: engine trust (with its scar ceiling) vs the CHIM-style
+  // trust trajectories across the arc: engine trust (with its scar ceiling) vs the tracker
   // affinity (normalized -100..100 -> 0..1). The picture IS the claim: one line hits a permanent
   // ceiling; the other dips and climbs back.
   const says = beats.filter(x=>x.kind==="say" && x.relationship && x.phase!=="restart");
   const W=1000,H=96,P=8, n=says.length;
   const x=i=>P+(W-2*P)*(n<2?0:i/(n-1)), y=v=>H-P-(H-2*P)*Math.max(0,Math.min(1,v));
   const eng=says.map((s,i)=>`${x(i)},${y(s.relationship.trust)}`).join(" ");
-  const chim=says.map((s,i)=>{const a=s.baseline_chim_state?s.baseline_chim_state.affinity:null;
+  const trk=says.map((s,i)=>{const a=s.baseline_tracker_state?s.baseline_tracker_state.affinity:null;
     return a==null?null:`${x(i)},${y((a+100)/200)}`}).filter(Boolean).join(" ");
   const last=says[says.length-1].relationship, ceil=1-last.scar_trust;
   const marks=says.map((s,i)=>{
@@ -492,7 +492,7 @@ function renderTraj(){
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       <line x1="${P}" y1="${y(ceil)}" x2="${W-P}" y2="${y(ceil)}" stroke="#ff5d6c" stroke-width="1.5" stroke-dasharray="6 5"/>
       <text x="${W-P}" y="${y(ceil)-4}" font-size="10" fill="#ff5d6c" text-anchor="end" font-family="monospace">scar ceiling ${ceil.toFixed(2)} — trust can never pass this again</text>
-      <polyline points="${chim}" fill="none" stroke="#f2b45c" stroke-width="2.5" opacity=".9"/>
+      <polyline points="${trk}" fill="none" stroke="#f2b45c" stroke-width="2.5" opacity=".9"/>
       <polyline points="${eng}" fill="none" stroke="#7cffb2" stroke-width="2.5"/>${marks}
     </svg>
     <div class="tleg"><span><span class="sw" style="background:#7cffb2"></span>this engine — capped by the scar</span>

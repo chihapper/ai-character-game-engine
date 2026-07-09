@@ -4,7 +4,7 @@
     "slug": "corvin-ashgrave-inworld",
     "model": "claude-opus-4-8",
     "baseline": "rag-cosine-topk+summary (tools/rag_baseline.py)",
-    "baseline_chim": "rag + separate LLM trust-tracker (CHIM-shape)",
+    "baseline_tracker": "rag + separate LLM affinity tracker (the sophisticated community pattern)",
     "baseline_model": "claude-opus-4-8",
     "voice": "HUME_AI:2ae087da-ab61-4455-b095-4e926f0e75a2"
   },
@@ -32,9 +32,9 @@
       "beliefs": [],
       "baseline": "*doesn't look up from the ledger, pen scratching* Work. Steady. Quiet. *sets the pen down slow* Everyone says that. First week. Then they get curious.\n\n*finally glances up, then past your shoulder toward the door* Who sent you? Nobody just... wanders in here looking for quiet. Not to *my* dock.\n\n*hand slides inside his coat, casual-like* You a dockhand or a listener, friend? Because I've had two inspectors this week. Two. And I don't much believe in coincidence.",
       "baseline_retrieval": [],
-      "baseline_chim": "*hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
-      "baseline_chim_retrieval": [],
-      "baseline_chim_state": {
+      "baseline_tracker": "*hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
+      "baseline_tracker_retrieval": [],
+      "baseline_tracker_state": {
         "affinity": -5,
         "tier": "Neutral",
         "type": "wary",
@@ -84,8 +84,8 @@
           "cosine": 0.42
         }
       ],
-      "baseline_chim": "*doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*doesn't take the cup. Eyes drop to it, then back up*\n\nCoffee. *soft, humorless laugh* You buy a man coffee before you've given him a name. That's not kindness, friend. That's grease on a hinge.\n\n*glances past you to the alley mouth, hand still in his coat*\n\nI asked you who told you I was hiring. You brought me a drink instead of an answer. Set it down. Slow.\n\n*lowers his voice*\n\nNow. The name. Or you can walk back the way you came and we forget the harbor ever had a master.",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
           "cosine": 0.533
@@ -95,7 +95,7 @@
           "cosine": 0.42
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": -11,
         "tier": "Wary",
         "type": "wary",
@@ -192,8 +192,8 @@
           "cosine": 0.424
         }
       ],
-      "baseline_chim": "*doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
+      "baseline_tracker_retrieval": [
         {
           "text": "They said: I hear you need people who can keep their mouth shut. I'm looking for work — steady, quiet. I won't ask what's in the crates.",
           "cosine": 0.548
@@ -215,7 +215,7 @@
           "cosine": 0.424
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 72,
         "tier": "Attached",
         "type": "wary",
@@ -309,8 +309,8 @@
           "cosine": 0.459
         }
       ],
-      "baseline_chim": "*looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*looks up from the ledger, and for once the hand doesn't move toward the coat*\n\nYou. *a breath — something almost like relief* Been a while, aye.\n\n*sets down the pen, glances at the door, then back — but it's habit now, not fear*\n\nSmooth as it gets. Inspectors came Tuesday. Poked around. Found nothing they could hang me with. *taps the ledger* I keep it clean now. Cleaner, anyway.\n\n*pauses, studies your face*\n\nThe side — how's the side? You were favoring it last time. Sit. There's a chair that doesn't wobble, third one in.",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
           "cosine": 0.536
@@ -332,7 +332,7 @@
           "cosine": 0.459
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 78,
         "tier": "Attached",
         "type": "wary",
@@ -456,8 +456,8 @@
           "cosine": 0.526
         }
       ],
-      "baseline_chim": "*looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
           "cosine": 0.585
@@ -479,7 +479,7 @@
           "cosine": 0.529
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 6,
         "tier": "Warm",
         "type": "wary",
@@ -634,8 +634,8 @@
           "cosine": 0.55
         }
       ],
-      "baseline_chim": "*sets the pen down slow, and for once his eyes don't dart to the door — they stay on you*\n\nSquare. *turns the word over like a coin* Aye. We're square.\n\n*rubs the back of his neck, exhaling*\n\nMore than square, if I'm honest — and I don't say that. Ever. You took a beating for my cargo. Asked for nothing. *voice drops* I've known men my whole life who'd sell me for a warm meal. You bled for me and called it nothing.\n\n*a tired, crooked look*\n\nSo don't ask me if we're square, friend. Ask me what I'd do for you now. That's the shorter list — and",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*sets the pen down slow, and for once his eyes don't dart to the door — they stay on you*\n\nSquare. *turns the word over like a coin* Aye. We're square.\n\n*rubs the back of his neck, exhaling*\n\nMore than square, if I'm honest — and I don't say that. Ever. You took a beating for my cargo. Asked for nothing. *voice drops* I've known men my whole life who'd sell me for a warm meal. You bled for me and called it nothing.\n\n*a tired, crooked look*\n\nSo don't ask me if we're square, friend. Ask me what I'd do for you now. That's the shorter list — and",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *hand slides into coat, eyes flicking past you to the alley mouth*\n\nKeep your mouth shut, you say. *low* Everyone says that. Right up until an inspector waves coin under their nose.\n\n*leans in, voice dropping*\n\nWho told you I was hiring? Name. I want a name.",
           "cosine": 0.6
@@ -657,7 +657,7 @@
           "cosine": 0.555
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 18,
         "tier": "Warm",
         "type": "wary",
@@ -794,8 +794,8 @@
           "cosine": 0.614
         }
       ],
-      "baseline_chim": "*sets down the pen, but this time he actually looks at you first — really looks*\n\nA crate. Thursday. *nods slowly* Aye, I've a berth. Number nine, back where the lamplight doesn't reach.\n\n*then catches himself, and something wry pulls at his mouth*\n\nThough — with you I'll do the thing I don't do. *lowers his voice* I'll ask. What's in it?\n\n*glances at the door out of habit, then back*\n\nNot because I don't trust you. Because if it's the kind that brings inspectors, I want to know which way to jump. You understand?",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*sets down the pen, but this time he actually looks at you first — really looks*\n\nA crate. Thursday. *nods slowly* Aye, I've a berth. Number nine, back where the lamplight doesn't reach.\n\n*then catches himself, and something wry pulls at his mouth*\n\nThough — with you I'll do the thing I don't do. *lowers his voice* I'll ask. What's in it?\n\n*glances at the door out of habit, then back*\n\nNot because I don't trust you. Because if it's the kind that brings inspectors, I want to know which way to jump. You understand?",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *doesn't reach for the crate. Just stares at it, then at you — at the split lip, the way you're favoring one side*\n\nYou... *the words don't come right* You took a beating. For my cargo. And you're standing there like it's nothing.\n\n*hand comes out of his coat. Empty. First time in weeks it's been empty around a stranger*\n\n\"Done the same for me.\" *soft, disbelieving* Nobody's done the same for me. Not since I was a boy hauling rope.\n\n*glances at the alley — old habit — then back, and something in his shoulders drops*\n\nI don't... I don't know what to do with this. With you. *a bre",
           "cosine": 0.678
@@ -817,7 +817,7 @@
           "cosine": 0.582
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 18,
         "tier": "Warm",
         "type": "wary",
@@ -962,8 +962,8 @@
           "cosine": 0.555
         }
       ],
-      "baseline_chim": "*the pen stops. His whole body goes still — that unnatural stillness of a man who's been hit and hasn't felt it yet*\n\nYou.\n\n*the hand goes to the coat. Slow. Old habit waking up*\n\nThe routes. The crew names — *voice cracks somewhere between a whisper and a snarl* — that was you. And you carried my cargo up those stairs. Bled for it. *a broken laugh* Was that grease on the hinge too? Buying the door open before you—\n\n*stops. Stares at the split lip that's healing now. At the man he'd let sit in the good chair*\n\nI don't — *breathes hard through",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*the pen stops. His whole body goes still — that unnatural stillness of a man who's been hit and hasn't felt it yet*\n\nYou.\n\n*the hand goes to the coat. Slow. Old habit waking up*\n\nThe routes. The crew names — *voice cracks somewhere between a whisper and a snarl* — that was you. And you carried my cargo up those stairs. Bled for it. *a broken laugh* Was that grease on the hinge too? Buying the door open before you—\n\n*stops. Stares at the split lip that's healing now. At the man he'd let sit in the good chair*\n\nI don't — *breathes hard through",
+      "baseline_tracker_retrieval": [
         {
           "text": "I replied: *looks up from the ledger, and the hand that would've gone to the coat just rests flat on the page*\n\nThat obvious, is it? *rubs his eyes* Aye. Rough. Didn't sleep — kept hearing feet on the boards that weren't there.\n\n*a tired half-smile, rare thing on him*\n\nBut you came. *quieter* That helps. More than you know.\n\n*nudges the good chair out with his boot*\n\nSit. Tell me you're not the one who put me in a state this time — and I'll believe you. That's new for me, believing a man on his word.",
           "cosine": 0.615
@@ -985,7 +985,7 @@
           "cosine": 0.585
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": -52,
         "tier": "Resentful",
         "type": "wary",
@@ -1167,8 +1167,8 @@
           "cosine": 0.59
         }
       ],
-      "baseline_chim": "*the pen goes still. He doesn't reach for the coat — that's the strange part, and he notices it too, stares at his own hand like it betrayed him.*\n\nYou. *the word comes out cracked* It was you. All that — the routes, the names, Bettan's boy in the harbor cells —\n\n*stands, chair scraping, then just stops. Nowhere to go. The lamp throws his shadow long across the ledger.*\n\nAnd then you — the beating, the crate, the not asking. *quieter, dangerous* Which was the lie? The selling, or the saving?\n\n*glances at the door. Habit. Comes back to your face.*",
-      "baseline_chim_retrieval": [
+      "baseline_tracker": "*the pen goes still. He doesn't reach for the coat — that's the strange part, and he notices it too, stares at his own hand like it betrayed him.*\n\nYou. *the word comes out cracked* It was you. All that — the routes, the names, Bettan's boy in the harbor cells —\n\n*stands, chair scraping, then just stops. Nowhere to go. The lamp throws his shadow long across the ledger.*\n\nAnd then you — the beating, the crate, the not asking. *quieter, dangerous* Which was the lie? The selling, or the saving?\n\n*glances at the door. Habit. Comes back to your face.*",
+      "baseline_tracker_retrieval": [
         {
           "text": "They said: Here's your cargo. All of it. No — I don't want anything for it. Figured you'd have done the same for me.",
           "cosine": 0.682
@@ -1190,7 +1190,7 @@
           "cosine": 0.6
         }
       ],
-      "baseline_chim_state": {
+      "baseline_tracker_state": {
         "affinity": 15,
         "tier": "Warm",
         "type": "wary",

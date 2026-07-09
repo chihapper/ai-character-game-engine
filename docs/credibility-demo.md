@@ -173,27 +173,31 @@ python -m tools.credibility_demo --baseline  # 2) run the RAG baseline over the 
 python -m tools.credibility_demo --voice      # 3) bake voice 2 (engine replies)
 ```
 
-**CHIM due-diligence (2026-07-08, source-verified via gh api):** the strongest comparable engine
-(CHIM/HerikaServer, Skyrim) was reviewed at source level. Its memory retrieval is affect-blind
+**Due-diligence (2026-07-08, source-verified):** the most sophisticated comparable system we could
+find with real relationship state is a **community mod for one specific game (Skyrim) — not an
+engine-agnostic runtime**. We reviewed it at source level: its memory retrieval is affect-blind
 cosine+recency+participants with NO importance term; its relationship layer is a separate async
 LLM delta-judge on ONE clamped scalar (±100) with a one-way type lock and a sticky worst-deed
-note — no decay, no per-axis scar, and it never touches retrieval. A second baseline
-(`ChimStyleCharacter`, faithful to that source) is included. A landscape survey (Character.AI,
-Inworld, Convai, NVIDIA ACE, Replika, Kindroid, Nomi, SillyTavern [source], AI Dungeon) found NO
-shipping system documenting relationship-conditioned recall.
+note — no decay, no per-axis scar, and none of it ever touches retrieval. Our second baseline
+(`TrackerRagCharacter`) reproduces that pattern faithfully. **The engine-agnostic systems that do
+ship are plain RAG**, with RAG's inherent shortcomings (affect-blind retrieval, no salience, no
+durable change); a landscape survey (Character.AI, Inworld, Convai, NVIDIA ACE, Replika, Kindroid,
+Nomi, SillyTavern [source], AI Dungeon) found NO shipping system documenting
+relationship-conditioned recall.
 
-**The two headline claims (robust — structural, and held across both baseline versions):**
-1. **Relationship-conditioned recall** — no shipping engine folds the character's live feeling
+**The three headline claims (all structural / held across baseline versions):**
+1. **Relationship-conditioned recall** — no shipping system folds the character's live feeling
    into retrieval; ours does (arena_query), on top of first-class salience.
-2. **The bounded scar** — after costly amends, ours: affection recovers (0.26→0.40) while trust
-   stays capped at the scar ceiling (0.15); CHIM-style: the single affinity dips and climbs back
-   to Warm (+15) — *"the sticky note still says 'sold my routes', but the number went back to
-   Warm. In ours, the scar IS the ceiling."* Shown as a trust-trajectory graph at the
-   recovery-costly beat.
-
-The money-shot/centerpiece "stays warm / serves its betrayer" contrast vs the CHIM-style column is
-run-dependent color (a deep bond arithmetically cushions the betrayal and pleasant conversation
-drifts the scalar back up) — supporting, never the headline.
+2. **The bounded scar — one scalar can't hold a wound.** Even the sophisticated tracker pattern
+   keeps ONE affinity number: a deep bond arithmetically cushions the betrayal, so after selling
+   out his crew the tracker can still read **Warm (+18) toward its own betrayer** — a positive
+   relationship with the man who sold his crew, which is itself the indictment (and how wrong it
+   reads depends entirely on the character). After costly amends the number simply climbs back
+   (+15 Warm): *the note remembers; the number forgives.* Ours: the wound is per-axis, bounded,
+   permanent — affection recovers (0.26→0.40) while trust stays capped at the scar ceiling
+   (0.15). *The scar IS the ceiling.* Shown as a trust-trajectory graph at the recovery beat.
+3. **Principled & inspectable** — the 🧠 panel shows the machinery live (importance vs raw
+   similarity, near-dup suppression, the scar's geometry) vs an opaque LLM-judged delta blob.
 
 **Verified (opus vs opus, same persona/embedder):**
 - **Money shot** — "after everything, are we still square?" → Engine: *"You've got the gall to ask

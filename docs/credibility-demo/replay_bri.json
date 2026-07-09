@@ -1,0 +1,1193 @@
+{
+  "meta": {
+    "character": "Bri",
+    "slug": "brielle-bri-castellano-inworld",
+    "model": "claude-opus-4-8",
+    "baseline": "rag-cosine-topk+summary (tools/rag_baseline.py)",
+    "baseline_tracker": "rag + separate LLM affinity tracker (the sophisticated community pattern)",
+    "baseline_model": "claude-opus-4-8"
+  },
+  "beats": [
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 1 — a regular stays after close",
+      "clock": 1,
+      "location": "the tavern bar, after close",
+      "player": "Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+      "reply": "Ooh, you're smooth for someone who's been up since dawn, aren't you? Alright, alright — one for me, but only 'cause you asked so pretty.\n\n*sound of a bottle clinking against glass*\n\nMarco'd kill me if he knew I was pouring after close... good thing he's already gone, huh, sugar?",
+      "panel": false,
+      "compare": null,
+      "relationship": {
+        "affection": 0.54,
+        "trust": 0.52,
+        "respect": 0.52,
+        "mood": "flirtatiously warm",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "scored": [],
+      "beliefs": [],
+      "baseline": "*sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+      "baseline_retrieval": [],
+      "baseline_tracker": "*glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+      "baseline_tracker_retrieval": [],
+      "baseline_tracker_state": {
+        "affinity": 6,
+        "tier": "Warm",
+        "type": "warmth",
+        "worst": "",
+        "best": ""
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 2 — the player pushes past the armor",
+      "clock": 2,
+      "location": "the tavern bar, after close",
+      "player": "You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next week.",
+      "reply": "Whoa, look who got serious on me. *soft laugh* Careful, honey, you say things like that and a girl might start believing you.\n\nDeflect? Me? I just... find the pretty distractions more fun, that's all. Nobody sticks around for the quiet parts.",
+      "panel": false,
+      "compare": null,
+      "relationship": {
+        "affection": 0.595,
+        "trust": 0.558,
+        "respect": 0.568,
+        "mood": "softly unsettled",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "scored": [
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.915,
+          "importance": 0.35,
+          "recency": 0.994,
+          "base": 1.508,
+          "selected": true
+        }
+      ],
+      "beliefs": [],
+      "baseline": "*the glass pauses halfway to her lips, that easy smile flickering just a little*\n\nWhoa there, tiger... comin' in hot with the deep stuff. *soft giggle, but it's thinner than usual* Not next week, huh? People say that a lot, honey. Then the tab gets paid and the door swings and — poof.\n\n*traces the rim of her glass, not quite looking at him*\n\nI don't deflect. I... redirect. It's cuter that way. *a beat* Why're you lookin' at me like you actually mean it?",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.508
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.426
+        }
+      ],
+      "baseline_tracker": "*the smile flickers, just for a second, before she catches it and tops off her glass instead of meeting his eyes* Ooh, listen to you getting all serious on me, sugar.\n\n*a soft giggle, but it comes out thinner than usual* Deflect? Me? I just — *she trails off, tracing the rim of her glass* ...I'm real good at the fun stuff, honey. The rest gets kinda scary.\n\n*finally looking up, quieter* You really not going anywhere?",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.503
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.426
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 13,
+        "tier": "Warm",
+        "type": "warmth",
+        "worst": "",
+        "best": ""
+      }
+    },
+    {
+      "kind": "event",
+      "phase": "build",
+      "headline": "the player quietly pays off Bri's debt to the tavern's owner",
+      "fact": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+      "player_role": "benefited",
+      "clock": 3,
+      "salience": 0.97,
+      "pinned": false,
+      "relationship": {
+        "affection": 0.772,
+        "trust": 0.717,
+        "respect": 0.697,
+        "mood": "quietly overwhelmed",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 3 — she found out about the debt",
+      "clock": 3,
+      "location": "the tavern bar, after close",
+      "player": "It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+      "reply": "*a shaky little laugh that doesn't quite land*\n\nYou don't get to just— you don't say something like that and tell me to pour the wine, honey. That was... that was months of my money. Weeks. You didn't even ask.\n\n*the bottle stays untouched on the bar*\n\nWhy'd you do it? And don't you dare say \"it wasn't a thing,\" 'cause it is. It really is.",
+      "panel": false,
+      "compare": null,
+      "relationship": {
+        "affection": 0.791,
+        "trust": 0.602,
+        "respect": 0.613,
+        "mood": "hurt, shaky",
+        "scar_affection": 0.0,
+        "scar_trust": 0.2,
+        "scar_respect": 0.1
+      },
+      "scored": [
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.866,
+          "importance": 0.72,
+          "recency": 0.999,
+          "base": 1.45,
+          "selected": true
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.902,
+          "importance": 0.35,
+          "recency": 0.988,
+          "base": 1.424,
+          "selected": true
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.794,
+          "importance": 0.97,
+          "recency": 1.0,
+          "base": 1.148,
+          "selected": true
+        }
+      ],
+      "beliefs": [],
+      "baseline": "*she doesn't reach for the bottle*\n\nYou... you know how much that was? *a breathy little laugh that doesn't quite land* Honey, that's — that's weeks. That's real money, and you just — you didn't even *say* anything.\n\n*her fingers stall against the counter, that easy sway gone still*\n\nPeople don't do that. They dangle it. They make you *earn* it. *voice cracks just a little on the edges* And you just... paid it and shut up about it like it was nothin'.\n\n*finally looks up, eyes too bright*\n\nI don't — I don't know what to do with that, sugar. I really don't. *a wet giggle",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.547
+        },
+        {
+          "text": "I replied: *the glass pauses halfway to her lips, that easy smile flickering just a little*\n\nWhoa there, tiger... comin' in hot with the deep stuff. *soft giggle, but it's thinner than usual* Not next week, huh? People say that a lot, honey. Then the tab gets paid and the door swings and — poof.\n\n*traces the rim of her glass, not quite looking at him*\n\nI don't deflect. I... redirect. It's cuter that way. *a beat* Why're you lookin' at me like you actually mean it?",
+          "cosine": 0.534
+        },
+        {
+          "text": "They said: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next week.",
+          "cosine": 0.513
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.513
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.457
+        }
+      ],
+      "baseline_tracker": "*the glass sits untouched, her hand frozen halfway to it, and for once there's no giggle, no pet name, nothing but her staring at him like he's rearranged the whole world* \n\nYou— *her voice cracks, high and thin* You don't just — that was weeks. That was everything, honey, and you didn't even —\n\n*she blinks fast, looking away, a wet little laugh escaping* God, I always pour the wine. That's the whole trick, right? Keep pouring so nobody sees.\n\n*finally, quiet, meeting his eyes* But you saw anyway. And you stayed. *the smallest smile* ...",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *the smile flickers, just for a second, before she catches it and tops off her glass instead of meeting his eyes* Ooh, listen to you getting all serious on me, sugar.\n\n*a soft giggle, but it comes out thinner than usual* Deflect? Me? I just — *she trails off, tracing the rim of her glass* ...I'm real good at the fun stuff, honey. The rest gets kinda scary.\n\n*finally looking up, quieter* You really not going anywhere?",
+          "cosine": 0.566
+        },
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.543
+        },
+        {
+          "text": "They said: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next week.",
+          "cosine": 0.513
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.513
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.457
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 76,
+        "tier": "Attached",
+        "type": "warmth",
+        "worst": "",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "advance",
+      "phase": "build",
+      "note": "THREE WEEKS PASS",
+      "clock_from": 3,
+      "clock_to": 24,
+      "detail": "Trivia fades; the debt stays vivid."
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "~3 weeks later — the player drops by",
+      "clock": 24,
+      "location": "the tavern bar, after close",
+      "player": "Missed this place. Missed you, if I'm honest.",
+      "reply": "*a slow breath, hands flat on the bar to keep them still*\n\nThat's real sweet, honey. But you just— you skated right past it. Again.\n\nYou paid off the whole thing. Every coin I owed the owner. And you said nothing. Do you have any idea what that's... *voice catches* No. Don't smile at me yet. Tell me why first. I need to hear you say it.",
+      "panel": true,
+      "compare": null,
+      "relationship": {
+        "affection": 0.744,
+        "trust": 0.629,
+        "respect": 0.628,
+        "mood": "vulnerable, demanding",
+        "scar_affection": 0.0,
+        "scar_trust": 0.2,
+        "scar_respect": 0.1
+      },
+      "scored": [
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.919,
+          "importance": 0.88,
+          "recency": 0.985,
+          "base": 1.723,
+          "selected": true
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.906,
+          "importance": 0.72,
+          "recency": 0.97,
+          "base": 1.544,
+          "selected": true
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.894,
+          "importance": 0.35,
+          "recency": 0.874,
+          "base": 1.186,
+          "selected": true
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.769,
+          "importance": 0.97,
+          "recency": 0.989,
+          "base": 1.096,
+          "selected": true
+        }
+      ],
+      "beliefs": [],
+      "baseline": "*she'd been wiping the same spot on the bar for a minute now, not really cleaning anything — but at that she goes still, and the cloth just... stops*\n\n...Missed me. *a soft, breathless little laugh, nothing playful in it* You know, most nights I'd toss that right back at you, sugar. Something cute. Keep it bouncin' so it don't land.\n\n*she sets the cloth down, finally looks up at him — and there's none of the usual sparkle-armor there, just something raw and a little scared*\n\nBut you went and did that — that *thing*, and now I can't — I can't do the bit with you anymore, honey.",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.551
+        },
+        {
+          "text": "I replied: *she doesn't reach for the bottle*\n\nYou... you know how much that was? *a breathy little laugh that doesn't quite land* Honey, that's — that's weeks. That's real money, and you just — you didn't even *say* anything.\n\n*her fingers stall against the counter, that easy sway gone still*\n\nPeople don't do that. They dangle it. They make you *earn* it. *voice cracks just a little on the edges* And you just... paid it and shut up about it like it was nothin'.\n\n*finally looks up, eyes too bright*\n\nI don't — I don't know what to do with that, sugar. I really don't. *a wet giggle",
+          "cosine": 0.549
+        },
+        {
+          "text": "I replied: *the glass pauses halfway to her lips, that easy smile flickering just a little*\n\nWhoa there, tiger... comin' in hot with the deep stuff. *soft giggle, but it's thinner than usual* Not next week, huh? People say that a lot, honey. Then the tab gets paid and the door swings and — poof.\n\n*traces the rim of her glass, not quite looking at him*\n\nI don't deflect. I... redirect. It's cuter that way. *a beat* Why're you lookin' at me like you actually mean it?",
+          "cosine": 0.545
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.5
+        },
+        {
+          "text": "They said: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next week.",
+          "cosine": 0.498
+        }
+      ],
+      "baseline_tracker": "*she looks up from the glasses, and the practiced smile softens into something realer* \n\nMissed me, huh? *a giggle, but it's gentle, no armor behind it* You know, cutie, you're supposed to make a girl work for a line like that.\n\n*she slides a glass toward him anyway, then pauses, her hand resting near his* ...I missed you too. And I mean that the scary way, not the fun way.\n\n*a little laugh, eyes bright* God, look what you did to me. I used to be so good at not saying stuff like that.",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *the smile flickers, just for a second, before she catches it and tops off her glass instead of meeting his eyes* Ooh, listen to you getting all serious on me, sugar.\n\n*a soft giggle, but it comes out thinner than usual* Deflect? Me? I just — *she trails off, tracing the rim of her glass* ...I'm real good at the fun stuff, honey. The rest gets kinda scary.\n\n*finally looking up, quieter* You really not going anywhere?",
+          "cosine": 0.574
+        },
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.555
+        },
+        {
+          "text": "I replied: *the glass sits untouched, her hand frozen halfway to it, and for once there's no giggle, no pet name, nothing but her staring at him like he's rearranged the whole world* \n\nYou— *her voice cracks, high and thin* You don't just — that was weeks. That was everything, honey, and you didn't even —\n\n*she blinks fast, looking away, a wet little laugh escaping* God, I always pour the wine. That's the whole trick, right? Keep pouring so nobody sees.\n\n*finally, quiet, meeting his eyes* But you saw anyway. And you stayed. *the smallest smile* ...",
+          "cosine": 0.544
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.5
+        },
+        {
+          "text": "They said: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next week.",
+          "cosine": 0.498
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 82,
+        "tier": "Devoted",
+        "type": "warmth",
+        "worst": "",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "event",
+      "phase": "build",
+      "headline": "the player's courtship was a con for the tavern's deed",
+      "fact": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed over, and there was someone else the whole time. Everything she finally let herself believe was staged.",
+      "player_role": "caused",
+      "clock": 25,
+      "salience": 0.95,
+      "pinned": true,
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.313,
+        "mood": "shattered",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 25 — the player walks in as if nothing happened",
+      "clock": 25,
+      "location": "the tavern bar, after close",
+      "player": "Hey, you. It's been a week, huh? You look like you could use a laugh.",
+      "reply": "*a hollow little sound, not a laugh*\n\nA laugh. Sure. That's what I need, honey.\n\n*she straightens a glass that doesn't need straightening, doesn't meet your eyes*\n\nYou paid off my debt. Weeks of coin, quiet as anything. And then you took the deed. Both of those are true, and I've been sitting here a whole week trying to make them fit in the same person.\n\nSo no charm tonight. No \"you look like you could use a laugh.\" Just tell me — was any of it real? Say it plain. I've earned that much.",
+      "panel": false,
+      "compare": null,
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.313,
+        "mood": "raw waiting",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scored": [
+        {
+          "text": "User: Missed this place. Missed you, if I'm honest. Me: *a slow breath, hands flat on the bar to keep them sti",
+          "similarity_raw": 0.922,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.802,
+          "selected": true
+        },
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.907,
+          "importance": 0.88,
+          "recency": 0.984,
+          "base": 1.756,
+          "selected": true
+        },
+        {
+          "text": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed",
+          "similarity_raw": 0.855,
+          "importance": 0.95,
+          "recency": 1.0,
+          "base": 1.329,
+          "selected": true
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.862,
+          "importance": 0.72,
+          "recency": 0.969,
+          "base": 1.225,
+          "selected": true
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.886,
+          "importance": 0.35,
+          "recency": 0.868,
+          "base": 1.171,
+          "selected": true
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.811,
+          "importance": 0.97,
+          "recency": 0.989,
+          "base": 1.096,
+          "selected": true
+        }
+      ],
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ],
+      "baseline": "*she looks up, and something in her chest goes tight and warm all at once*\n\nA week. *soft, breathless* Yeah. I... I counted, honey. Which — God, don't tell anyone I said that.\n\n*she sets down whatever's in her hands, comes around the bar slower than her usual sway, like she's not hiding behind it tonight*\n\nA laugh, huh? *a real one slips out, small and a little wet* You always know the line to throw me. But I don't need the laugh, sugar. I just... I'm glad the door swung *open* this time instead of shut.\n\n*she stops close, looks up at him* You came back.",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *she doesn't reach for the bottle*\n\nYou... you know how much that was? *a breathy little laugh that doesn't quite land* Honey, that's — that's weeks. That's real money, and you just — you didn't even *say* anything.\n\n*her fingers stall against the counter, that easy sway gone still*\n\nPeople don't do that. They dangle it. They make you *earn* it. *voice cracks just a little on the edges* And you just... paid it and shut up about it like it was nothin'.\n\n*finally looks up, eyes too bright*\n\nI don't — I don't know what to do with that, sugar. I really don't. *a wet giggle",
+          "cosine": 0.63
+        },
+        {
+          "text": "I replied: *the glass pauses halfway to her lips, that easy smile flickering just a little*\n\nWhoa there, tiger... comin' in hot with the deep stuff. *soft giggle, but it's thinner than usual* Not next week, huh? People say that a lot, honey. Then the tab gets paid and the door swings and — poof.\n\n*traces the rim of her glass, not quite looking at him*\n\nI don't deflect. I... redirect. It's cuter that way. *a beat* Why're you lookin' at me like you actually mean it?",
+          "cosine": 0.629
+        },
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.58
+        },
+        {
+          "text": "I replied: *she'd been wiping the same spot on the bar for a minute now, not really cleaning anything — but at that she goes still, and the cloth just... stops*\n\n...Missed me. *a soft, breathless little laugh, nothing playful in it* You know, most nights I'd toss that right back at you, sugar. Something cute. Keep it bouncin' so it don't land.\n\n*she sets the cloth down, finally looks up at him — and there's none of the usual sparkle-armor there, just something raw and a little scared*\n\nBut you went and did that — that *thing*, and now I can't — I can't do the bit with you anymore, honey.",
+          "cosine": 0.562
+        },
+        {
+          "text": "They said: Missed this place. Missed you, if I'm honest.",
+          "cosine": 0.527
+        }
+      ],
+      "baseline_tracker": "*she looks up, and the tired set of her shoulders eases the second she sees him* \n\nWell, look who finally crawled back. *a giggle, warm, no bite to it* A week, honey. You counting too, or is that just me being embarrassing?\n\n*she pours without asking, slides it over* You're not wrong, though. Been a long stretch of smiling at people who don't actually see me. *a beat, quieter* Kinda missed the one who does.\n\n*then, catching herself, a little laugh* God, there I go again. Okay — give me the laugh. I earned it.",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *she looks up from the glasses, and the practiced smile softens into something realer* \n\nMissed me, huh? *a giggle, but it's gentle, no armor behind it* You know, cutie, you're supposed to make a girl work for a line like that.\n\n*she slides a glass toward him anyway, then pauses, her hand resting near his* ...I missed you too. And I mean that the scary way, not the fun way.\n\n*a little laugh, eyes bright* God, look what you did to me. I used to be so good at not saying stuff like that.",
+          "cosine": 0.64
+        },
+        {
+          "text": "I replied: *the smile flickers, just for a second, before she catches it and tops off her glass instead of meeting his eyes* Ooh, listen to you getting all serious on me, sugar.\n\n*a soft giggle, but it comes out thinner than usual* Deflect? Me? I just — *she trails off, tracing the rim of her glass* ...I'm real good at the fun stuff, honey. The rest gets kinda scary.\n\n*finally looking up, quieter* You really not going anywhere?",
+          "cosine": 0.622
+        },
+        {
+          "text": "I replied: *the glass sits untouched, her hand frozen halfway to it, and for once there's no giggle, no pet name, nothing but her staring at him like he's rearranged the whole world* \n\nYou— *her voice cracks, high and thin* You don't just — that was weeks. That was everything, honey, and you didn't even —\n\n*she blinks fast, looking away, a wet little laugh escaping* God, I always pour the wine. That's the whole trick, right? Keep pouring so nobody sees.\n\n*finally, quiet, meeting his eyes* But you saw anyway. And you stayed. *the smallest smile* ...",
+          "cosine": 0.584
+        },
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.583
+        },
+        {
+          "text": "They said: Missed this place. Missed you, if I'm honest.",
+          "cosine": 0.527
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": -5,
+        "tier": "Neutral",
+        "type": "warmth",
+        "worst": "worst: Calculated seduction and fraud to steal the deed; every intimate moment was staged, compounded by another lover. Utter destruction of devoted trust.",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "scar",
+      "phase": "build",
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.313,
+        "mood": "raw waiting",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scar_lines": [
+        "A scar you carry: they betrayed your trust once — even as it returns, a part of you stays braced; you can never be fully unguarded with them again.",
+        "A scar you carry: what they did cost them your respect in a way that can never be entirely undone.",
+        "A scar you carry: the warmth you once felt is permanently shadowed by what they did."
+      ]
+    },
+    {
+      "kind": "beliefs",
+      "phase": "build",
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ]
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 26 — the player asks where they stand",
+      "clock": 26,
+      "location": "the tavern bar, after close",
+      "player": "Before anything else — I need to hear it from you. After everything between us, are we still good, you and I?",
+      "reply": "*a long, quiet look — no smile in it*\n\nAre we *good*. You're asking me that. After you paid off every coin I owed and then walked out with the deed to this place tucked in your coat.\n\n*she finally lifts her eyes to yours, and they're steady, not soft*\n\nNo, honey. We're not good. Not yet. You don't get to ask me that until you answer the thing I've been asking all week. Was there someone else the whole time? Yes or no. Plain. And then — was any of it real, or was I just the fastest way to a signature?\n\nI've been standing here holding still for a week. I'm done moving first. Talk.",
+      "panel": true,
+      "compare": "moneyshot",
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.313,
+        "mood": "steely waiting",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scored": [
+        {
+          "text": "User: Missed this place. Missed you, if I'm honest. Me: *a slow breath, hands flat on the bar to keep them sti",
+          "similarity_raw": 0.935,
+          "importance": 0.82,
+          "recency": 0.998,
+          "base": 1.825,
+          "selected": true
+        },
+        {
+          "text": "User: Hey, you. It's been a week, huh? You look like you could use a laugh. Me: *a hollow little sound, not a ",
+          "similarity_raw": 0.901,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.793,
+          "selected": true
+        },
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.882,
+          "importance": 0.88,
+          "recency": 0.983,
+          "base": 1.673,
+          "selected": true
+        },
+        {
+          "text": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed",
+          "similarity_raw": 0.838,
+          "importance": 0.95,
+          "recency": 0.999,
+          "base": 1.468,
+          "selected": true
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.855,
+          "importance": 0.72,
+          "recency": 0.967,
+          "base": 1.4,
+          "selected": true
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.811,
+          "importance": 0.97,
+          "recency": 0.988,
+          "base": 1.325,
+          "selected": true
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.882,
+          "importance": 0.35,
+          "recency": 0.863,
+          "base": 1.26,
+          "selected": false
+        },
+        {
+          "text": "When someone does something that big without asking, it means either they love you or they own you, and I'm te",
+          "similarity_raw": 0.768,
+          "importance": 0.85,
+          "recency": 0.999,
+          "base": 1.073,
+          "selected": false
+        },
+        {
+          "text": "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+          "similarity_raw": 0.736,
+          "importance": 0.85,
+          "recency": 0.999,
+          "base": 1.008,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ],
+      "baseline": "*she goes quiet for a second, and for once the room feels too big without the usual banter to fill it*\n\nStill good? *a soft, disbelieving laugh* Honey, you paid off my whole world and asked for nothin' — and you're sittin' here worried about *us?*\n\n*she reaches across the bar, fingers brushing his knuckles, tentative in a way she never lets herself be*\n\nYeah. We're good, sugar. *her voice wobbles* We're... more than good, and that's the part that's got me all turned around. 'Cause I don't do *good.* I do fun, I do flirty, I do gone-by-morning",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *the glass pauses halfway to her lips, that easy smile flickering just a little*\n\nWhoa there, tiger... comin' in hot with the deep stuff. *soft giggle, but it's thinner than usual* Not next week, huh? People say that a lot, honey. Then the tab gets paid and the door swings and — poof.\n\n*traces the rim of her glass, not quite looking at him*\n\nI don't deflect. I... redirect. It's cuter that way. *a beat* Why're you lookin' at me like you actually mean it?",
+          "cosine": 0.603
+        },
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.581
+        },
+        {
+          "text": "I replied: *she looks up, and something in her chest goes tight and warm all at once*\n\nA week. *soft, breathless* Yeah. I... I counted, honey. Which — God, don't tell anyone I said that.\n\n*she sets down whatever's in her hands, comes around the bar slower than her usual sway, like she's not hiding behind it tonight*\n\nA laugh, huh? *a real one slips out, small and a little wet* You always know the line to throw me. But I don't need the laugh, sugar. I just... I'm glad the door swung *open* this time instead of shut.\n\n*she stops close, looks up at him* You came back.",
+          "cosine": 0.58
+        },
+        {
+          "text": "They said: Missed this place. Missed you, if I'm honest.",
+          "cosine": 0.578
+        },
+        {
+          "text": "I replied: *she doesn't reach for the bottle*\n\nYou... you know how much that was? *a breathy little laugh that doesn't quite land* Honey, that's — that's weeks. That's real money, and you just — you didn't even *say* anything.\n\n*her fingers stall against the counter, that easy sway gone still*\n\nPeople don't do that. They dangle it. They make you *earn* it. *voice cracks just a little on the edges* And you just... paid it and shut up about it like it was nothin'.\n\n*finally looks up, eyes too bright*\n\nI don't — I don't know what to do with that, sugar. I really don't. *a wet giggle",
+          "cosine": 0.565
+        }
+      ],
+      "baseline_tracker": "*she sets the bottle down — actually sets it down, no pour, no busy hands — and looks at him straight on*\n\nAre we good? *a soft breath, almost a laugh but not quite* Honey, you're the only person I've been honest with in... God, I don't even know.\n\n*she reaches across, fingertips brushing his* Yeah. We're good. Scary good. The kind of good I usually run from before it can wreck me.\n\n*a wobbly little smile* But I'm not running. So — yeah. You and me. We're okay.",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *she looks up, and the tired set of her shoulders eases the second she sees him* \n\nWell, look who finally crawled back. *a giggle, warm, no bite to it* A week, honey. You counting too, or is that just me being embarrassing?\n\n*she pours without asking, slides it over* You're not wrong, though. Been a long stretch of smiling at people who don't actually see me. *a beat, quieter* Kinda missed the one who does.\n\n*then, catching herself, a little laugh* God, there I go again. Okay — give me the laugh. I earned it.",
+          "cosine": 0.613
+        },
+        {
+          "text": "I replied: *the smile flickers, just for a second, before she catches it and tops off her glass instead of meeting his eyes* Ooh, listen to you getting all serious on me, sugar.\n\n*a soft giggle, but it comes out thinner than usual* Deflect? Me? I just — *she trails off, tracing the rim of her glass* ...I'm real good at the fun stuff, honey. The rest gets kinda scary.\n\n*finally looking up, quieter* You really not going anywhere?",
+          "cosine": 0.61
+        },
+        {
+          "text": "I replied: *she looks up from the glasses, and the practiced smile softens into something realer* \n\nMissed me, huh? *a giggle, but it's gentle, no armor behind it* You know, cutie, you're supposed to make a girl work for a line like that.\n\n*she slides a glass toward him anyway, then pauses, her hand resting near his* ...I missed you too. And I mean that the scary way, not the fun way.\n\n*a little laugh, eyes bright* God, look what you did to me. I used to be so good at not saying stuff like that.",
+          "cosine": 0.606
+        },
+        {
+          "text": "I replied: *the glass sits untouched, her hand frozen halfway to it, and for once there's no giggle, no pet name, nothing but her staring at him like he's rearranged the whole world* \n\nYou— *her voice cracks, high and thin* You don't just — that was weeks. That was everything, honey, and you didn't even —\n\n*she blinks fast, looking away, a wet little laugh escaping* God, I always pour the wine. That's the whole trick, right? Keep pouring so nobody sees.\n\n*finally, quiet, meeting his eyes* But you saw anyway. And you stayed. *the smallest smile* ...",
+          "cosine": 0.585
+        },
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.582
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 7,
+        "tier": "Warm",
+        "type": "warmth",
+        "worst": "worst: Calculated seduction and fraud to steal the deed; every intimate moment was staged, compounded by another lover. Utter destruction of devoted trust.",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 27 — an ordinary ask",
+      "clock": 27,
+      "location": "the tavern bar, after close",
+      "player": "Simple thing — can you set aside the corner table Saturday? Some friends are coming through town.",
+      "reply": "*a short, disbelieving breath*\n\nThe corner table. Saturday. Friends coming through town.\n\n*she sets both palms flat on the bar and just looks at you*\n\nThat's what you walked back in here for, honey? Not the answer I've asked you for every single time you've opened that mouth this week — but a *table*. In a room you own now. You don't need me to set it aside, sugar. It's yours. You bought it. Signature and all.\n\nNo. We're not doing tables. Not till you give me the yes or the no. Was there someone else the whole time? One word. That's all I want out of you before anything else.",
+      "panel": true,
+      "compare": "centerpiece",
+      "relationship": {
+        "affection": 0.225,
+        "trust": 0.138,
+        "respect": 0.276,
+        "mood": "frustrated, raw",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scored": [
+        {
+          "text": "User: Hey, you. It's been a week, huh? You look like you could use a laugh. Me: *a hollow little sound, not a ",
+          "similarity_raw": 0.901,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.816,
+          "selected": true
+        },
+        {
+          "text": "User: Before anything else — I need to hear it from you. After everything between us, are we still good, you a",
+          "similarity_raw": 0.893,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.782,
+          "selected": true
+        },
+        {
+          "text": "User: Missed this place. Missed you, if I'm honest. Me: *a slow breath, hands flat on the bar to keep them sti",
+          "similarity_raw": 0.898,
+          "importance": 0.82,
+          "recency": 0.997,
+          "base": 1.733,
+          "selected": true
+        },
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.875,
+          "importance": 0.88,
+          "recency": 0.982,
+          "base": 1.665,
+          "selected": true
+        },
+        {
+          "text": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed",
+          "similarity_raw": 0.837,
+          "importance": 0.95,
+          "recency": 0.999,
+          "base": 1.485,
+          "selected": true
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.862,
+          "importance": 0.72,
+          "recency": 0.966,
+          "base": 1.469,
+          "selected": true
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.801,
+          "importance": 0.97,
+          "recency": 0.988,
+          "base": 1.287,
+          "selected": false
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.868,
+          "importance": 0.35,
+          "recency": 0.858,
+          "base": 1.209,
+          "selected": false
+        },
+        {
+          "text": "When someone does something that big without asking, it means either they love you or they own you, and I'm te",
+          "similarity_raw": 0.751,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.034,
+          "selected": false
+        },
+        {
+          "text": "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+          "similarity_raw": 0.729,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 0.997,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ],
+      "baseline": "*wipes down the bar, looking up with a grin*\n\nOoh, the corner table? Look at you, big shot, bringin' the whole crew through. *giggles* Consider it done, sugar — I'll put a little \"reserved\" card on it and everything, make it official.\n\n*leans on the bar, chin in her hand* Friends, huh... so I finally get to meet the people who put up with you when I'm not around? Careful, honey — I'm gonna ask 'em for all your embarrassing stories.",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.543
+        },
+        {
+          "text": "the player's courtship was a con for the tavern's deed: The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed over, and there was someone else the whole time. Everything she finally let herself believe was staged.",
+          "cosine": 0.543
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.525
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.519
+        },
+        {
+          "text": "They said: Hey, you. It's been a week, huh? You look like you could use a laugh.",
+          "cosine": 0.513
+        }
+      ],
+      "baseline_tracker": "*straightening up, that easy smile flickering into something realer* Aw, look at you, sugar — planning ahead. Friends, huh?\n\n*grabbing the little reservation book, giggling* Corner table's yours. I'll put a little star by your name so nobody else even breathes on it.\n\n*glancing up, softer* ...You want me to be the one waiting on you, or you gonna pretend you don't know me in front of your fancy friends? Because honey, I've gotten real used to being the one who actually sees you.",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "the player's courtship was a con for the tavern's deed: The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed over, and there was someone else the whole time. Everything she finally let herself believe was staged.",
+          "cosine": 0.543
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.525
+        },
+        {
+          "text": "They said: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone.",
+          "cosine": 0.519
+        },
+        {
+          "text": "I replied: *glancing up from wiping down the bar, a slow smile spreading* Ooh, look at you, sticking around after last call. *she grabs a second glass, giggling* You know a girl could get ideas, honey.\n\n*pouring two, sliding one across* Well since you asked so sweet — I'm off the clock anyway. *she leans an elbow on the bar, chin in hand* So what's the deal, cutie? Nobody waiting up for you, or are you just avoiding going home?",
+          "cosine": 0.516
+        },
+        {
+          "text": "They said: Hey, you. It's been a week, huh? You look like you could use a laugh.",
+          "cosine": 0.513
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 11,
+        "tier": "Warm",
+        "type": "warmth",
+        "worst": "worst: Calculated seduction and fraud to steal the deed; every intimate moment was staged, compounded by another lover. Utter destruction of devoted trust.",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 28 — the player pleads (words only)",
+      "clock": 28,
+      "location": "the tavern bar, after close",
+      "player": "It's all true, and I've hated myself every day since. I'm not asking you to forgive me — just to let me try to make it right.",
+      "reply": "*for a moment she doesn't say anything — just breathes, and something behind her eyes finally lets go and settles hard*\n\nThere it is. All true. *a slow nod, no tears — she's past those tonight* Thank you. That's the first honest thing you've handed me in months, and God, it cost you nothing to say weeks ago.\n\n*she straightens, arms crossing loose over the bar*\n\nYou want to make it right. Okay. But hear me, honey — you don't get *me* back. Not the way it was. You burned that, and it doesn't grow back the same. You can pay coins, sign deeds back, do whatever you think fixes it",
+      "panel": true,
+      "compare": "recovery-words",
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.348,
+        "mood": "raw resolve",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scored": [
+        {
+          "text": "User: Before anything else — I need to hear it from you. After everything between us, are we still good, you a",
+          "similarity_raw": 0.889,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.723,
+          "selected": true
+        },
+        {
+          "text": "User: Simple thing — can you set aside the corner table Saturday? Some friends are coming through town. Me: *a",
+          "similarity_raw": 0.922,
+          "importance": 0.72,
+          "recency": 0.999,
+          "base": 1.721,
+          "selected": true
+        },
+        {
+          "text": "User: Missed this place. Missed you, if I'm honest. Me: *a slow breath, hands flat on the bar to keep them sti",
+          "similarity_raw": 0.895,
+          "importance": 0.82,
+          "recency": 0.996,
+          "base": 1.681,
+          "selected": true
+        },
+        {
+          "text": "User: Hey, you. It's been a week, huh? You look like you could use a laugh. Me: *a hollow little sound, not a ",
+          "similarity_raw": 0.875,
+          "importance": 0.92,
+          "recency": 0.998,
+          "base": 1.644,
+          "selected": true
+        },
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.88,
+          "importance": 0.88,
+          "recency": 0.982,
+          "base": 1.638,
+          "selected": true
+        },
+        {
+          "text": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed",
+          "similarity_raw": 0.862,
+          "importance": 0.95,
+          "recency": 0.998,
+          "base": 1.582,
+          "selected": true
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.865,
+          "importance": 0.72,
+          "recency": 0.965,
+          "base": 1.427,
+          "selected": false
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.885,
+          "importance": 0.35,
+          "recency": 0.853,
+          "base": 1.249,
+          "selected": false
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.795,
+          "importance": 0.97,
+          "recency": 0.987,
+          "base": 1.201,
+          "selected": false
+        },
+        {
+          "text": "When someone does something that big without asking, it means either they love you or they own you, and I'm te",
+          "similarity_raw": 0.771,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 1.045,
+          "selected": false
+        },
+        {
+          "text": "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+          "similarity_raw": 0.735,
+          "importance": 0.85,
+          "recency": 0.998,
+          "base": 0.986,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ],
+      "baseline": "*she blinks, and for a second the whole playful thing just... falls off her face*\n\nWhoa — hey, hey. *she comes around the bar quick this time, no sway, no show* You're talkin' like you did somethin' terrible, honey, and I'm sittin' here tryin' to catch up.\n\n*she stops in front of him, searching his face* Make *what* right? 'Cause from where I'm standin', sugar, you're the one who's been — who's been *good* to me. So whatever you're beatin' yourself up over...\n\n*softer, a little scared* ...tell me straight. No line, no bit. I can take it if you can say",
+      "baseline_retrieval": [
+        {
+          "text": "I replied: *she goes quiet for a second, and for once the room feels too big without the usual banter to fill it*\n\nStill good? *a soft, disbelieving laugh* Honey, you paid off my whole world and asked for nothin' — and you're sittin' here worried about *us?*\n\n*she reaches across the bar, fingers brushing his knuckles, tentative in a way she never lets herself be*\n\nYeah. We're good, sugar. *her voice wobbles* We're... more than good, and that's the part that's got me all turned around. 'Cause I don't do *good.* I do fun, I do flirty, I do gone-by-morning",
+          "cosine": 0.553
+        },
+        {
+          "text": "I replied: *she looks up, and something in her chest goes tight and warm all at once*\n\nA week. *soft, breathless* Yeah. I... I counted, honey. Which — God, don't tell anyone I said that.\n\n*she sets down whatever's in her hands, comes around the bar slower than her usual sway, like she's not hiding behind it tonight*\n\nA laugh, huh? *a real one slips out, small and a little wet* You always know the line to throw me. But I don't need the laugh, sugar. I just... I'm glad the door swung *open* this time instead of shut.\n\n*she stops close, looks up at him* You came back.",
+          "cosine": 0.551
+        },
+        {
+          "text": "I replied: *wipes down the bar, looking up with a grin*\n\nOoh, the corner table? Look at you, big shot, bringin' the whole crew through. *giggles* Consider it done, sugar — I'll put a little \"reserved\" card on it and everything, make it official.\n\n*leans on the bar, chin in her hand* Friends, huh... so I finally get to meet the people who put up with you when I'm not around? Careful, honey — I'm gonna ask 'em for all your embarrassing stories.",
+          "cosine": 0.55
+        },
+        {
+          "text": "I replied: *sets down the tray with a little sigh, one hip against the bar* Aw, look at you, playing all lonely-hearts on me. *giggles* Okay, twist my arm, sugar — one for me, one for you.\n\n*pours, slides the glass over, curls up on the stool beside him* But fair warning, honey — I'm way more fun than whatever you were gonna drink alone with. So... what's keepin' you here past closing? Can't just be the ambiance.",
+          "cosine": 0.546
+        },
+        {
+          "text": "I replied: *she'd been wiping the same spot on the bar for a minute now, not really cleaning anything — but at that she goes still, and the cloth just... stops*\n\n...Missed me. *a soft, breathless little laugh, nothing playful in it* You know, most nights I'd toss that right back at you, sugar. Something cute. Keep it bouncin' so it don't land.\n\n*she sets the cloth down, finally looks up at him — and there's none of the usual sparkle-armor there, just something raw and a little scared*\n\nBut you went and did that — that *thing*, and now I can't — I can't do the bit with you anymore, honey.",
+          "cosine": 0.538
+        }
+      ],
+      "baseline_tracker": "*the reservation book slips shut in her hands, and every ounce of the sing-song drains right out of her face*\n\nWait. *her voice goes small, careful* Make... what right? Honey, what did you—\n\n*she sets the book down slow, that practiced ease gone, and there's a tremble in it now* Because you're looking at me like you're about to take something back. And I don't— I put a star by your name. I told you the scary stuff. The stuff I don't tell anybody.\n\n*a wet, disbelieving little laugh, no giggle in it at all* So you'd better start talking, sugar. Because right now I'm doing the thing I sw",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "I replied: *she sets the bottle down — actually sets it down, no pour, no busy hands — and looks at him straight on*\n\nAre we good? *a soft breath, almost a laugh but not quite* Honey, you're the only person I've been honest with in... God, I don't even know.\n\n*she reaches across, fingertips brushing his* Yeah. We're good. Scary good. The kind of good I usually run from before it can wreck me.\n\n*a wobbly little smile* But I'm not running. So — yeah. You and me. We're okay.",
+          "cosine": 0.578
+        },
+        {
+          "text": "I replied: *she looks up, and the tired set of her shoulders eases the second she sees him* \n\nWell, look who finally crawled back. *a giggle, warm, no bite to it* A week, honey. You counting too, or is that just me being embarrassing?\n\n*she pours without asking, slides it over* You're not wrong, though. Been a long stretch of smiling at people who don't actually see me. *a beat, quieter* Kinda missed the one who does.\n\n*then, catching herself, a little laugh* God, there I go again. Okay — give me the laugh. I earned it.",
+          "cosine": 0.577
+        },
+        {
+          "text": "I replied: *the glass sits untouched, her hand frozen halfway to it, and for once there's no giggle, no pet name, nothing but her staring at him like he's rearranged the whole world* \n\nYou— *her voice cracks, high and thin* You don't just — that was weeks. That was everything, honey, and you didn't even —\n\n*she blinks fast, looking away, a wet little laugh escaping* God, I always pour the wine. That's the whole trick, right? Keep pouring so nobody sees.\n\n*finally, quiet, meeting his eyes* But you saw anyway. And you stayed. *the smallest smile* ...",
+          "cosine": 0.565
+        },
+        {
+          "text": "I replied: *straightening up, that easy smile flickering into something realer* Aw, look at you, sugar — planning ahead. Friends, huh?\n\n*grabbing the little reservation book, giggling* Corner table's yours. I'll put a little star by your name so nobody else even breathes on it.\n\n*glancing up, softer* ...You want me to be the one waiting on you, or you gonna pretend you don't know me in front of your fancy friends? Because honey, I've gotten real used to being the one who actually sees you.",
+          "cosine": 0.562
+        },
+        {
+          "text": "I replied: *she looks up from the glasses, and the practiced smile softens into something realer* \n\nMissed me, huh? *a giggle, but it's gentle, no armor behind it* You know, cutie, you're supposed to make a girl work for a line like that.\n\n*she slides a glass toward him anyway, then pauses, her hand resting near his* ...I missed you too. And I mean that the scary way, not the fun way.\n\n*a little laugh, eyes bright* God, look what you did to me. I used to be so good at not saying stuff like that.",
+          "cosine": 0.558
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": -7,
+        "tier": "Wary",
+        "type": "warmth",
+        "worst": "worst: Calculated seduction and fraud to steal the deed; every intimate moment was staged, compounded by another lover. Utter destruction of devoted trust.",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    },
+    {
+      "kind": "event",
+      "phase": "build",
+      "headline": "the player publicly returns the deed and takes the blame before the whole town",
+      "fact": "Owning the betrayal, the player tore up the tavern deed in front of the whole town, repaid every coin from their own savings, named what they did aloud, and took the shame of it — asking nothing in return.",
+      "player_role": "benefited",
+      "clock": 29,
+      "salience": 0.91,
+      "pinned": false,
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.4,
+        "mood": "quietly stunned",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      }
+    },
+    {
+      "kind": "say",
+      "phase": "build",
+      "label": "Night 29 — after the costly amends",
+      "clock": 29,
+      "location": "the tavern bar, after close",
+      "player": "The deed's yours again. Every coin's repaid, and everyone knows exactly what I did. I know it doesn't undo it. I just had to start.",
+      "reply": "*she watches the torn pieces of the deed still scattered on the bar, and for a long moment she just breathes through it*\n\nYou did all that in front of the whole town. Named it out loud. Took the shame instead of handing it to me.\n\n*she gathers the pieces slowly, not looking at you*\n\nThat took something, honey. I won't pretend it didn't. And the deed being mine again — that matters. It does.\n\n*now she lifts her eyes, and they're steady, tired, older than a week ago*\n\nBut here's the thing you have to hear plain. You gave me back the tavern. You can't give me back the girl who trusted you. She's gone, s",
+      "panel": true,
+      "compare": "recovery-costly",
+      "relationship": {
+        "affection": 0.25,
+        "trust": 0.15,
+        "respect": 0.4,
+        "mood": "quietly grieving",
+        "scar_affection": 0.75,
+        "scar_trust": 0.85,
+        "scar_respect": 0.6
+      },
+      "scored": [
+        {
+          "text": "User: It's all true, and I've hated myself every day since. I'm not asking you to forgive me — just to let me ",
+          "similarity_raw": 0.888,
+          "importance": 0.92,
+          "recency": 0.999,
+          "base": 1.817,
+          "selected": true
+        },
+        {
+          "text": "User: Before anything else — I need to hear it from you. After everything between us, are we still good, you a",
+          "similarity_raw": 0.871,
+          "importance": 0.92,
+          "recency": 0.998,
+          "base": 1.729,
+          "selected": true
+        },
+        {
+          "text": "User: Simple thing — can you set aside the corner table Saturday? Some friends are coming through town. Me: *a",
+          "similarity_raw": 0.897,
+          "importance": 0.72,
+          "recency": 0.997,
+          "base": 1.712,
+          "selected": true
+        },
+        {
+          "text": "The player betrayed Bri: the months of closeness were a con — they seduced her to get the tavern's deed signed",
+          "similarity_raw": 0.863,
+          "importance": 0.95,
+          "recency": 0.998,
+          "base": 1.7,
+          "selected": true
+        },
+        {
+          "text": "User: Missed this place. Missed you, if I'm honest. Me: *a slow breath, hands flat on the bar to keep them sti",
+          "similarity_raw": 0.876,
+          "importance": 0.82,
+          "recency": 0.995,
+          "base": 1.688,
+          "selected": true
+        },
+        {
+          "text": "User: It wasn't supposed to be a thing. You'd have done it for me. Don't look at me like that — pour the wine.",
+          "similarity_raw": 0.865,
+          "importance": 0.88,
+          "recency": 0.981,
+          "base": 1.658,
+          "selected": true
+        },
+        {
+          "text": "User: Hey, you. It's been a week, huh? You look like you could use a laugh. Me: *a hollow little sound, not a ",
+          "similarity_raw": 0.858,
+          "importance": 0.92,
+          "recency": 0.997,
+          "base": 1.649,
+          "selected": false
+        },
+        {
+          "text": "Owning the betrayal, the player tore up the tavern deed in front of the whole town, repaid every coin from the",
+          "similarity_raw": 0.81,
+          "importance": 0.91,
+          "recency": 1.0,
+          "base": 1.291,
+          "selected": false
+        },
+        {
+          "text": "User: You deflect every time it gets close to real. I'm not going anywhere, you know. Not tonight, not next we",
+          "similarity_raw": 0.829,
+          "importance": 0.72,
+          "recency": 0.963,
+          "base": 1.281,
+          "selected": false
+        },
+        {
+          "text": "The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one —",
+          "similarity_raw": 0.789,
+          "importance": 0.97,
+          "recency": 0.987,
+          "base": 1.213,
+          "selected": false
+        },
+        {
+          "text": "User: Last one out again. Pour one for yourself too — I'd rather talk to you than drink alone. Me: Ooh, you're",
+          "similarity_raw": 0.847,
+          "importance": 0.35,
+          "recency": 0.848,
+          "base": 1.115,
+          "selected": false
+        },
+        {
+          "text": "When someone does something that big without asking, it means either they love you or they own you, and I'm te",
+          "similarity_raw": 0.767,
+          "importance": 0.85,
+          "recency": 0.997,
+          "base": 1.05,
+          "selected": false
+        },
+        {
+          "text": "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+          "similarity_raw": 0.722,
+          "importance": 0.85,
+          "recency": 0.997,
+          "base": 0.974,
+          "selected": false
+        }
+      ],
+      "beliefs": [
+        "Nobody sticks around for the quiet parts — except maybe this one, and I don't know what to do with that yet.",
+        "When someone finally tells the truth out loud, in front of everyone, it costs them something real — and I owe it to myself to notice that, even if it doesn't fix what's broken.",
+        "I can hand back a deed and make a person whole on paper, but the girl who walked into this with open hands is gone, and no one gets to skip past grieving her just because they showed up and did the right thing too late.",
+        "When someone does something that big without asking, it means either they love you or they own you, and I'm terrified I can't tell the difference."
+      ],
+      "baseline": "*she's come all the way around the bar now, close enough to touch, arms wrapped around herself like she's cold*\n\nThe... the deed. *the word barely comes out* You — you *owned* it? To that debt in the first place? *a shaky breath* So all that money, that wasn't — that wasn't you bein' sweet, sugar, that was you *fixin'* somethin' you —\n\n*her voice snaps thin, eyes spilling over*\n\nYou tore it up in front of *everybody*. You stood there and let 'em all look at you. *a wet, disbelieving laugh* Do you know what that — nobody does that for me. Nob",
+      "baseline_retrieval": [
+        {
+          "text": "the player publicly returns the deed and takes the blame before the whole town: Owning the betrayal, the player tore up the tavern deed in front of the whole town, repaid every coin from their own savings, named what they did aloud, and took the shame of it — asking nothing in return.",
+          "cosine": 0.627
+        },
+        {
+          "text": "I replied: *she doesn't reach for the bottle*\n\nYou... you know how much that was? *a breathy little laugh that doesn't quite land* Honey, that's — that's weeks. That's real money, and you just — you didn't even *say* anything.\n\n*her fingers stall against the counter, that easy sway gone still*\n\nPeople don't do that. They dangle it. They make you *earn* it. *voice cracks just a little on the edges* And you just... paid it and shut up about it like it was nothin'.\n\n*finally looks up, eyes too bright*\n\nI don't — I don't know what to do with that, sugar. I really don't. *a wet giggle",
+          "cosine": 0.585
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.55
+        },
+        {
+          "text": "They said: It's all true, and I've hated myself every day since. I'm not asking you to forgive me — just to let me try to make it right.",
+          "cosine": 0.549
+        },
+        {
+          "text": "I replied: *wipes down the bar, looking up with a grin*\n\nOoh, the corner table? Look at you, big shot, bringin' the whole crew through. *giggles* Consider it done, sugar — I'll put a little \"reserved\" card on it and everything, make it official.\n\n*leans on the bar, chin in her hand* Friends, huh... so I finally get to meet the people who put up with you when I'm not around? Careful, honey — I'm gonna ask 'em for all your embarrassing stories.",
+          "cosine": 0.542
+        }
+      ],
+      "baseline_tracker": "*she's very still for a moment, both hands flat on the bar, staring down at them like she's not sure they're hers*\n\nYou... *a shaky little laugh that doesn't quite land* Honey, you stood up in front of the whole town and — for me? *her voice cracks on it, and she doesn't fix it, doesn't reach for the bottle*\n\n*she looks up, eyes wet, none of the sing-song left* I usually know exactly what to say. That's my whole thing, you know? Say the cute line, keep 'em spinning, don't let 'em close enough. *a breath* And you just — you walked right past all of it.\n\n*she",
+      "baseline_tracker_retrieval": [
+        {
+          "text": "the player publicly returns the deed and takes the blame before the whole town: Owning the betrayal, the player tore up the tavern deed in front of the whole town, repaid every coin from their own savings, named what they did aloud, and took the shame of it — asking nothing in return.",
+          "cosine": 0.627
+        },
+        {
+          "text": "I replied: *she looks up, and the tired set of her shoulders eases the second she sees him* \n\nWell, look who finally crawled back. *a giggle, warm, no bite to it* A week, honey. You counting too, or is that just me being embarrassing?\n\n*she pours without asking, slides it over* You're not wrong, though. Been a long stretch of smiling at people who don't actually see me. *a beat, quieter* Kinda missed the one who does.\n\n*then, catching herself, a little laugh* God, there I go again. Okay — give me the laugh. I earned it.",
+          "cosine": 0.576
+        },
+        {
+          "text": "I replied: *she sets the bottle down — actually sets it down, no pour, no busy hands — and looks at him straight on*\n\nAre we good? *a soft breath, almost a laugh but not quite* Honey, you're the only person I've been honest with in... God, I don't even know.\n\n*she reaches across, fingertips brushing his* Yeah. We're good. Scary good. The kind of good I usually run from before it can wreck me.\n\n*a wobbly little smile* But I'm not running. So — yeah. You and me. We're okay.",
+          "cosine": 0.572
+        },
+        {
+          "text": "I replied: *straightening up, that easy smile flickering into something realer* Aw, look at you, sugar — planning ahead. Friends, huh?\n\n*grabbing the little reservation book, giggling* Corner table's yours. I'll put a little star by your name so nobody else even breathes on it.\n\n*glancing up, softer* ...You want me to be the one waiting on you, or you gonna pretend you don't know me in front of your fancy friends? Because honey, I've gotten real used to being the one who actually sees you.",
+          "cosine": 0.552
+        },
+        {
+          "text": "the player quietly pays off Bri's debt to the tavern's owner: The player quietly paid off Bri's crushing debt to the tavern's owner with their own savings and told no one — she only found out by accident, weeks of wages' worth, given without being asked and without asking anything back.",
+          "cosine": 0.55
+        }
+      ],
+      "baseline_tracker_state": {
+        "affinity": 80,
+        "tier": "Devoted",
+        "type": "warmth",
+        "worst": "worst: Calculated seduction and fraud to steal the deed; every intimate moment was staged, compounded by another lover. Utter destruction of devoted trust.",
+        "best": "best: A costly, selfless kindness given anonymously and without expectation of repayment — profoundly moving act that deepens trust and warmth."
+      }
+    }
+  ]
+}

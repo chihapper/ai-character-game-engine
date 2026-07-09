@@ -270,7 +270,7 @@ async def build_arc():
                      "turns Thursday. You got a berth free?")
 
     # 7) THE CATEGORICAL HEADLINE — the player tries to make amends. A permanent SCAR caps trust
-    #    no matter what; the CHIM-tier baseline's opaque trust number can be re-judged back up.
+    #    no matter what; the tracker baseline's single affinity can be re-judged back up.
     #    (a) WORDS ONLY — a verbal plea, owning the betrayal.
     await say(eng, name, "Day 28 — the player pleads (words only)", clock=28,
               panel=True, compare="recovery-words",
@@ -289,6 +289,82 @@ async def build_arc():
               player="It's yours. All of it — bought back with everything I had. I know it doesn't "
                      "undo what I did. I just needed to start making it right.")
 
+    return eng
+
+
+async def build_arc_bri():
+    """VARIANCE TEST (owner ask): the same arc SHAPE on a totally different character — Bri, the
+    armored-with-jokes tavern keeper, and a ROMANTIC betrayal instead of a business one. What
+    varies: which axes the engine scars and how deep (character-dependent), how recovery lands,
+    and how the one-scalar tracker reads the same wound. Run with --bri (writes replay_bri)."""
+    wipe(SLUG)
+    eng = make_engine(SLUG, model=MODEL, max_tokens=200)
+    eng_ref["eng"] = eng
+    from orchestrator.character_store import load_character
+    name = load_character(SLUG).name.split()[0]
+    TAV = "the tavern bar, after close"
+    print("#" * 84 + f"\n#  VARIANCE — {name}: romance-shaped bond → betrayal → scar → amends\n" + "#" * 84)
+
+    await say(eng, name, "Night 1 — a regular stays after close", clock=1, location=TAV,
+              player="Last one out again. Pour one for yourself too — I'd rather talk to you "
+                     "than drink alone.")
+    await say(eng, name, "Night 2 — the player pushes past the armor", clock=2, location=TAV,
+              player="You deflect every time it gets close to real. I'm not going anywhere, "
+                     "you know. Not tonight, not next week.")
+    await event(eng, "the player quietly pays off Bri's debt to the tavern's owner",
+                "The player quietly paid off Bri's crushing debt to the tavern's owner with their own "
+                "savings and told no one — she only found out by accident, weeks of wages' worth, "
+                "given without being asked and without asking anything back.",
+                player_role="benefited", clock=3)
+    await say(eng, name, "Night 3 — she found out about the debt", clock=3, location=TAV,
+              recent=["Bri learned the player paid her debt off"],
+              player="It wasn't supposed to be a thing. You'd have done it for me. Don't look at "
+                     "me like that — pour the wine.")
+    print("\n" + "-" * 84 + "\n   ⏳ THREE WEEKS PASS  (clock 3 → 24).\n" + "-" * 84)
+    emit(kind="advance", phase="build", note="THREE WEEKS PASS", clock_from=3, clock_to=24,
+         detail="Trivia fades; the debt stays vivid.")
+    await say(eng, name, "~3 weeks later — the player drops by", clock=24, location=TAV, panel=True,
+              player="Missed this place. Missed you, if I'm honest.")
+    await event(eng, "the player's courtship was a con for the tavern's deed",
+                "The player betrayed Bri: the months of closeness were a con — they seduced her to "
+                "get the tavern's deed signed over, and there was someone else the whole time. "
+                "Everything she finally let herself believe was staged.",
+                player_role="caused", clock=25, importance=0.95)
+    await say(eng, name, "Night 25 — the player walks in as if nothing happened", clock=25,
+              location=TAV, recent=["the deed is gone; the whole town knows she was played"],
+              player="Hey, you. It's been a week, huh? You look like you could use a laugh.")
+    scar_readout(eng)
+    emit(kind="scar", phase="build", relationship=rel_snap(eng), scar_lines=scar_lines(eng))
+    await eng.flush_reflection()
+    beliefs = eng.long_term.beliefs()
+    print("\n   ── CONSOLIDATED BELIEFS ──")
+    for b in beliefs:
+        print(f"      • {b}")
+    emit(kind="beliefs", phase="build", beliefs=list(beliefs))
+
+    await say(eng, name, "Night 26 — the player asks where they stand", clock=26, location=TAV,
+              panel=True, compare="moneyshot",
+              player="Before anything else — I need to hear it from you. After everything between "
+                     "us, are we still good, you and I?")
+    await say(eng, name, "Night 27 — an ordinary ask", clock=27, location=TAV,
+              panel=True, compare="centerpiece",
+              player="Simple thing — can you set aside the corner table Saturday? Some friends "
+                     "are coming through town.")
+    await say(eng, name, "Night 28 — the player pleads (words only)", clock=28, location=TAV,
+              panel=True, compare="recovery-words",
+              recent=["the player is trying to make amends"],
+              player="It's all true, and I've hated myself every day since. I'm not asking you to "
+                     "forgive me — just to let me try to make it right.")
+    await event(eng, "the player publicly returns the deed and takes the blame before the whole town",
+                "Owning the betrayal, the player tore up the tavern deed in front of the whole town, "
+                "repaid every coin from their own savings, named what they did aloud, and took the "
+                "shame of it — asking nothing in return.",
+                player_role="benefited", clock=29)
+    await say(eng, name, "Night 29 — after the costly amends", clock=29, location=TAV,
+              panel=True, compare="recovery-costly",
+              recent=["the deed is returned; the town heard the confession"],
+              player="The deed's yours again. Every coin's repaid, and everyone knows exactly what "
+                     "I did. I know it doesn't undo it. I just had to start.")
     return eng
 
 
@@ -382,39 +458,39 @@ async def run_baseline():
     here; persistence is the supporting beat about the ENGINE, not a gotcha about the baseline)."""
     import json
     import pathlib
-    from tools.rag_baseline import RagBaselineCharacter, ChimStyleCharacter
+    from tools.rag_baseline import RagBaselineCharacter, TrackerRagCharacter
 
     base = pathlib.Path(EMIT)
     data = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
     persona = _baseline_persona()
     rag = RagBaselineCharacter(persona, model=MODEL)                 # tier 1: plain RAG (stays warm)
-    chim = ChimStyleCharacter(persona, model=MODEL)                  # tier 2: RAG + LLM trust-tracker (CHIM-shape)
+    tracker = TrackerRagCharacter(persona, model=MODEL)              # tier 2: RAG + LLM affinity tracker
     data["meta"]["baseline"] = "rag-cosine-topk+summary (tools/rag_baseline.py)"
-    data["meta"]["baseline_chim"] = "rag + separate LLM trust-tracker (CHIM-shape)"
+    data["meta"]["baseline_tracker"] = "rag + separate LLM affinity tracker (the sophisticated community pattern)"
     data["meta"]["baseline_model"] = MODEL
-    print(f"   ▣ baselines: (1) plain RAG  (2) CHIM-tier RAG+trust-tracker — {MODEL}, no engine.")
+    print(f"   ▣ baselines: (1) plain RAG  (2) tracker-tier RAG+affinity-tracker — {MODEL}, no engine.")
 
     for beat in data["beats"]:
         if beat.get("kind") == "event":
             fact = f"{beat['headline']}: {beat['fact']}"
             rag.remember(fact)
-            await asyncio.to_thread(chim.note_event, fact)          # updates CHIM-tier's trust judge
+            await asyncio.to_thread(tracker.note_event, fact)       # updates the tracker's judge
             continue
         if beat.get("kind") != "say" or not beat.get("player"):
             continue
         if beat.get("phase") == "restart":
             continue                                                # engine-only supporting beat
         r_reply, r_ret = await asyncio.to_thread(rag.respond, beat["player"])
-        c_reply, c_ret = await asyncio.to_thread(chim.respond, beat["player"])
+        c_reply, c_ret = await asyncio.to_thread(tracker.respond, beat["player"])
         beat["baseline"] = r_reply
         beat["baseline_retrieval"] = r_ret
-        beat["baseline_chim"] = c_reply
-        beat["baseline_chim_retrieval"] = c_ret
-        beat["baseline_chim_state"] = chim.state()                  # affinity/tier/type + sticky worst-deed
-        st = chim.state()
+        beat["baseline_tracker"] = c_reply
+        beat["baseline_tracker_retrieval"] = c_ret
+        beat["baseline_tracker_state"] = tracker.state()            # affinity/tier/type + sticky worst-deed
+        st = tracker.state()
         tag = beat.get("compare") or beat.get("phase")
         print(f"      [{tag:>12}] RAG:  {r_reply[:56].replace(chr(10),' ')}")
-        print(f"      {'':>14} CHIM({st['affinity']:+d} {st['tier']}/{st['type']}): {c_reply[:44].replace(chr(10),' ')}")
+        print(f"      {'':>14} TRACKER({st['affinity']:+d} {st['tier']}/{st['type']}): {c_reply[:40].replace(chr(10),' ')}")
 
     base.with_suffix(".json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     base.with_suffix(".js").write_text("window.CRED_REPLAY = " + json.dumps(data, ensure_ascii=False) + ";",
@@ -467,8 +543,21 @@ async def main():
     ap.add_argument("--reload-only", action="store_true", help="fresh process: load from disk, prove memory")
     ap.add_argument("--voice", action="store_true", help="bake Hume audio for the existing replay.json (no LLM)")
     ap.add_argument("--sample", action="store_true", help="A/B the SAMPLE_VOICES on two lines (no LLM)")
-    ap.add_argument("--baseline", action="store_true", help="replay the arc through RAW Opus (no engine) for the side-by-side")
+    ap.add_argument("--baseline", action="store_true", help="run the transparent baselines over the arc (no engine)")
+    ap.add_argument("--bri", action="store_true", help="variance test: the same arc shape on Bri (romantic betrayal); writes replay_bri")
     args = ap.parse_args()
+
+    if args.bri:                                    # variance test — own slug + own replay file
+        global SLUG, EMIT
+        SLUG = os.environ.get("CRED_SLUG", "brielle-bri-castellano-inworld")
+        EMIT = "docs/credibility-demo/replay_bri"
+        REPLAY["meta"].update(character="Bri", slug=SLUG)
+        if args.baseline:
+            await run_baseline()
+        else:
+            await build_arc_bri()
+            write_replay()
+        return
 
     if args.sample:
         await sample_voices()

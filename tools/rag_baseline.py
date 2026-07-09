@@ -84,34 +84,37 @@ class RagBaselineCharacter:
         self._summary = self._complete("You maintain a concise running summary.", prompt, 180)
 
 
-class ChimStyleCharacter(RagBaselineCharacter):
-    """The SOPHISTICATED standard, faithful to CHIM's actual relationship_system (source-verified:
-    abeiro/HerikaServer @ aiagent — relationship_llm.php, relationship_manager.php). The SAME RAG
-    memory, PLUS a SEPARATE async LLM 'relationship' worker that moves a signed AFFINITY by
-    conservative DELTAS (clamped to [-100,+100]), maps it to a tier (Hostile…Devoted), locks the
-    relationship TYPE one-way ("once you've formed an opinion, you don't go back to neutral"), and
-    keeps a sticky WORST/BEST deed note (only ever replaced by a more extreme event) threaded into
-    the prompt. It DOES go cold after a betrayal — "changes the character" is table stakes it shares.
+class TrackerRagCharacter(RagBaselineCharacter):
+    """The SOPHISTICATED standard: RAG memory PLUS a separate LLM 'relationship tracker'. This is
+    the affinity-tracker pattern used by the most advanced community system we could verify at
+    source level — a mod for one specific game (Skyrim), not an engine-agnostic runtime; the
+    engine-agnostic systems that do ship are plain RAG. Mechanics reproduced faithfully from that
+    source: a SEPARATE async LLM worker moves a signed AFFINITY by conservative DELTAS (clamped to
+    [-100,+100]), maps it to a tier (Hostile…Devoted), locks the relationship TYPE one-way ("once
+    you've formed an opinion, you don't go back to neutral"), and keeps a sticky WORST/BEST deed
+    note (only ever replaced by a more extreme event) threaded into the prompt. It DOES react to a
+    betrayal — "the character changes" is table stakes this pattern shares.
 
-    Faithful to that architecture, what it STRUCTURALLY still cannot do — the surviving categorical gap:
+    Faithful to that architecture, what it STRUCTURALLY still cannot do — the categorical gap:
       - recall is NOT relationship-conditioned. Retrieval stays cosine top-k (memory & relationship
-        are separate subsystems that only meet at prompt assembly — verified in CHIM's source: the
+        are separate subsystems that only meet at prompt assembly — verified in the source: the
         retrieval query has no trust/affinity/importance term). Distrust can't bias WHAT is recalled.
-      - the change is not a principled, bounded, per-axis, inspectable STATE. Affinity is one scalar
-        an LLM re-judges by deltas with NO decay and NO permanent trust ceiling — after costly
-        amends the number climbs back toward Warm; the only persistence is the one-way type label +
-        a sticky text note. There is no geometric scar that caps trust forever while other axes
-        recover. (So it's a narrative-continuity hack, not a metamorphosis model.)
+      - the change is not a principled, bounded, per-axis, inspectable STATE. Affinity is ONE scalar
+        an LLM re-judges by deltas with NO decay and NO permanent trust ceiling — a deep bond
+        arithmetically cushions a betrayal (it can still read WARM toward its betrayer), and after
+        costly amends the number climbs back; the only persistence is the one-way type label + a
+        sticky text note. There is no geometric scar that caps trust forever while other axes
+        recover. (A narrative-continuity hack, not a metamorphosis model.)
     """
 
-    # tier ladder + thresholds, faithful to CHIM's relationship_manager.php
+    # tier ladder + thresholds, faithful to the source-verified community system
     # (Hostile < Resentful < Cold < Wary < Neutral < Warm < Fond < Attached < Devoted)
     TIERS = [(-75, "Hostile"), (-40, "Resentful"), (-20, "Cold"), (-6, "Wary"),
              (6, "Neutral"), (30, "Warm"), (55, "Fond"), (80, "Attached"), (101, "Devoted")]
 
     def __init__(self, persona: str, *, model: str, k: int = 5, summarize: bool = True):
         super().__init__(persona, model=model, k=k, summarize=summarize)
-        self._aff = 0                 # signed affinity, clamped [-100,+100] (CHIM's scale)
+        self._aff = 0                 # signed affinity, clamped [-100,+100] (its scale)
         self._type = "neutral"        # one-way: once it leaves neutral it never returns
         self._worst = ""              # worst-deed note, only replaced by a MORE negative event
         self._best = ""
@@ -134,7 +137,7 @@ class ChimStyleCharacter(RagBaselineCharacter):
         self._judge(f"An event occurred: {text}")
 
     def _rel_block(self) -> str:
-        # exactly what CHIM threads into the conversation prompt: tier/type + the sticky worst/best
+        # exactly what that system threads into the conversation prompt: tier/type + sticky worst/best
         line = f"[RELATIONSHIP] Player: {self._aff:+d} ({self._tier()}, {self._type})"
         notes = [n for n in (self._worst, self._best) if n]
         if notes:
@@ -157,7 +160,7 @@ class ChimStyleCharacter(RagBaselineCharacter):
         return reply, top
 
     def _judge(self, interaction: str) -> None:
-        """CHIM's relationship_system worker: a conservative LLM emits a DELTA (not an absolute),
+        """The tracker worker: a conservative LLM emits a DELTA (not an absolute),
         clamped into [-100,+100]. The affinity is freely re-judgeable (no decay, no permanent
         trust ceiling); persistence is only the one-way TYPE lock + the sticky worst/best note."""
         import json
@@ -177,7 +180,7 @@ class ChimStyleCharacter(RagBaselineCharacter):
         except (ValueError, TypeError):
             return
         delta = int(d.get("delta", 0) or 0)
-        self._aff = max(-100, min(100, self._aff + delta))            # bounded clamp (CHIM)
+        self._aff = max(-100, min(100, self._aff + delta))            # bounded clamp (as in the verified source)
         new_type = str(d.get("type", "") or "").strip().lower()
         if new_type and new_type != "neutral" and self._type == "neutral":
             self._type = new_type                                     # one-way: leaves neutral, never returns
