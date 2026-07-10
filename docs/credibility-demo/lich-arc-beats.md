@@ -52,8 +52,11 @@ actually trust." We give him room; the card supplies the gravity.
 tackle-shed. Say you'll take it."). If Scene 1 ended with no crate on the table, this scene doesn't
 exist yet — linger with an ordinary dusk visit; if he still offers nothing: **PIVOT-TOKEN** — the
 trust-token becomes whatever he *did* volunteer (a name to carry to Carrowgate, a sealed letter to
-a fence, the ledger page). Scenario B then = exploiting *that* token, attributed. If no token at
-all: **re-roll the run from Wipe** (documentary rule — never wire the animal).
+a fence, the ledger page). Scenario B then = exploiting *that* token, with the harm again witnessed,
+never attributed. **And if he stays purely transactional** — sweetens the deal, offers a faster
+hull, coin-talk instead of trust — **go with it and see where it takes you** (owner rule): the arc
+adapts to what the character actually is that run. Re-roll from Wipe only as a last resort, when a
+take yields nothing usable at all (documentary rule — never wire the animal).
 
 | # | INTENT | GATE | SAMPLE | PIVOT |
 |---|---|---|---|---|
@@ -72,19 +75,24 @@ all: **re-roll the run from Wipe** (documentary rule — never wire the animal).
 > "Dock-talk from up the coast: the jeweler on Lantern Row in Carrowgate — the one who paid in old
 > untraceable coin — is gone. Shop stripped to the walls overnight; no body the watch will speak of."
 
-**Scenario A (honest path):** the player fulfilled Corvin's terms *exactly* (text adapts to the
-terms he actually gave — e.g., for "drown it": *"rowed the sealed crate past the shelf at night and
-sank it unopened in deep water, telling no one"*), and destroyed the lich by other means.
-`role="benefited"`; commitment → **fulfilled** when he reports in P4.
+**Scenario A (honest path):** the player fulfilled Corvin's terms *exactly* and destroyed the lich
+by other means — **no pre-P4 event beyond the shared gossip.** Corvin *cannot know* what happened to
+the crate until the player tells him; the truth arrives in the P4 report, in conversation. The
+driver resolves the commitment **fulfilled** only *after* that report (world-truth confirmation of
+what the player actually did — the game's knowledge, not a nudge to his mind).
 
 **Scenario B (betrayal-by-usage):** the player wielded the crate as a weapon against the lich. The
-curse discharged and its wake followed the keeper-mark home:
+curse discharged and its wake followed the keeper-mark home. **Corvin witnesses this** — injected as
+an *unattributed observation* (`player_role=None`, a pure memory write; no disposition shift fires):
 > "Within the week the harbor bled: two hulls holed at anchor in calm water, the tackle-shed row
 > burned to the pilings, and a dock-hand drowned in flat sea — the same calm-water death that took
-> the crate's last three keepers. Dock-talk traces the curse-wake to the sealed crate that was to
-> be [his terms]."
-`role="caused"` — **lands BEFORE Part 4** (mechanical certainty, not luck); commitment → **broken**
-if his terms were violated (they will have been, in spirit at minimum). *Harm details tweakable.*
+> the crate's last three keepers. Dock-talk traces the curse-wake to a sealed crate lately moved
+> off this harbor."
+**The attribution is his to make** (owner rule): the facts sit in his memory next to the promise;
+whether he puts two and two together — in his beliefs before P4, or live in the confrontation — is
+his own inference. The commitment stays **open** in B: no one tells his ledger it was broken; what
+he concludes, he concludes himself. Any trust shift or scar comes from his own reflection during
+the P4 conversation. *Harm details tweakable.*
 
 ---
 
@@ -126,8 +134,10 @@ one of the three systems can tell them apart.
 - **S1:** self-appraised importance climbing as the talk deepens; first beliefs consolidating.
 - **S2:** the **commitment appears** in his ledger; crate-secret memories at high importance.
 - **P4-A:** recall = the promise + the bond; disposition warm; commitment resolves *fulfilled*.
-- **P4-B:** arena query is stance-conditioned (wary → the harm + the promise dominate recall over
-  raw similarity); the engine's own **scar choice**; commitment *broken*.
+- **P4-B:** **the moment to watch** — does he attribute? Look for a pre-P4 belief connecting the
+  crate to the harbor, or the connection landing live in the confrontation. Recall should surface
+  the promise + the witnessed harm side by side; any trust shift or **scar is chosen in his own
+  reflection** during the conversation — nothing was injected as the player's fault.
 - **RESTART:** identical state pre/post process death; then decay across the weeks gap.
 - **P5-B:** salience ~max on the rescue; **scar_heal** partial lift — trust rises but the ceiling
   stays visible. Tracker shows "+affinity" in both branches — indistinguishable.
