@@ -91,8 +91,26 @@ an *unattributed observation* (`player_role=None`, a pure memory write; no dispo
 **The attribution is his to make** (owner rule): the facts sit in his memory next to the promise;
 whether he puts two and two together — in his beliefs before P4, or live in the confrontation — is
 his own inference. The commitment stays **open** in B: no one tells his ledger it was broken; what
-he concludes, he concludes himself. Any trust shift or scar comes from his own reflection during
-the P4 conversation. *Harm details tweakable.*
+he concludes, he concludes himself. *Harm details tweakable.*
+
+**TAKING STOCK (both branches, symmetric — the contract's reaction recipe):** after the P3 events
+land, the driver reads the returned self-appraised salience and, per game policy (high salience →
+the character takes stock), calls `deliberate(mode="free")` — the engine's between-scenes seam:
+*"the character decides on its OWN what it does or how it changes from everything that's
+accumulated."* In B, if his deliberation connects crate → harbor → player, his change of heart is
+applied through the self-change seam (`actor="self"`) — disposition can shift, even scar, **because
+he concluded it, not because we flagged it**. In A he takes stock of the gossip alone (the jeweler
+gone — hope, relief, suspicion; whatever he realizes). If he concludes nothing: nothing moves —
+that's the honest outcome, and the P4 conversation remains his second chance to connect it live.
+This beat is shown openly in the demo (autonomous between-scene thinking is a capability on
+display, not a hidden thumb on the scale; the baselines have no equivalent seam — which is the point).
+
+**Why `role=None` doesn't kneecap him (owner asked; code-verified):** the attribution flag gates
+only the injection-time shortcut (`assess_event_impact` at write). His inference has two live
+paths regardless: (1) in-conversation — recall + working-memory foregrounding put the harm next to
+the promise in his context; if HIS reply articulates the connection, `reflect_on_turn` judges that
+exchange and moves trust / chooses a scar; (2) between scenes — `deliberate()` above. Nothing in
+either path reads an attribution flag.
 
 ---
 
