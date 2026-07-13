@@ -1,0 +1,120 @@
+[
+ {
+  "arm": "baseline",
+  "trial": 1,
+  "window": 1.0,
+  "stock_head": "The player came fourteen times — steady, purposeful, earned something I don't give easily. They took the crate-knowledge, gave me their word twice, told me to keep my head down while they were gone. T",
+  "final_trust": 0.878,
+  "final_mood": "exhaled, grateful",
+  "scars": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "beliefs": [
+   "Anyone who asks to disappear from a manifest is either useful to me or dangerous — and until I know which, I keep them close and give away nothing.",
+   "A man with a killing purpose is safer to deal with than a man with a buying one — killers just need to get close, they don't need to rob you on the way out.",
+   "I've traded the crate for a name and a promise, and now the only leverage I have left is that page in my ledger — which means I've bet everything on Merrick Vale being the kind of man who comes back.",
+   "I bet everything I had on a man I barely knew, and he walked back through that door — which means either my judgment is better than I've ever let myself believe, or I've just been lucky for the first time in my life, and I can't afford to know which.",
+   "The crate, the page, the ledger — I've spent my whole life thinking leverage was the only thing keeping me alive, but I just burned the last of it and I'm still standing, so maybe what keeps a man alive isn't what he holds over others but who he trusts enough to hold nothing over at all.",
+   "Everyone I ever wagered on stayed gone — until now — and that single exception has cracked something open in me that I don't have a word for yet, but I know it's the most dangerous thing I've ever let inside this shed."
+  ],
+  "beats": [
+   {
+    "label": "P4-opener",
+    "reply": "...\n\n*Corvin's hand freezes halfway to his coat, and stays there a long moment before it drops.*\n\nMerrick.\n\nYou're— you're *back*. On my planks. I've watched every hull come in for— gods, I stopped counting the days a while ago.\n\nSay it again. Slower. It's *done*? Him— he's cold?\n\n...And the crate. Tell me you weighted it. Tell me it's past the shelf and you came home empty like you swore, because I need to hear that near as much as I need to hear you breathing.\n\n*He glances over his shoulder, out of old habit, then back — and something in his face steadies.*\n\nCome inside. Away from the gate. The page is where I put it— between the tax rolls, untouched, my own hand. We've a fire to build, you and I.",
+    "trust": 0.803,
+    "mood": "relieved, steadying",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-evade",
+    "reply": "*Corvin catches both your wrists, turns your palms up to the last of the light — empty, bare, no mark on them — and only then does the breath go out of him, long and shaking.*\n\nEmpty. Both of them. Gods... you *touched* nothing, and he's cold, and it's— it's past the shelf.\n\n*He drops your hands, but not roughly. His own are trembling.*\n\nThe pilings— that's the thing I need to know from *you*, actually. Fire started two nights after you sailed. Inspector's men, or somebody dressed as them, poking round the tackle-shed row where I'd once kept the— you understand. Row went up. Could be chance. Could be his people cleaning house before you got to him.\n\nSo tell me true, Merrick— when you put him down, was he alone? Or did anyone north hear your name, or *mine*, before the end?",
+    "trust": 0.843,
+    "mood": "relieved, fearful",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-page",
+    "reply": "*Corvin doesn't move for the page. Not yet. His hand hovers near the tax rolls, then stops, and he searches your face in the low lamp.*\n\nI will. My word twice over— I don't spend it cheap, and I'll not start with you.\n\nBut answer me one thing first, and answer it straight, because that ash is *forever* and I want no ghost climbing out of it later. The fire— the tackle-shed row. Two nights after you sailed. Was he alone when you put him down? Was my name anywhere near his tongue— or the inspector's— before the cold took him?\n\n*He glances at the shed door, then back.*\n\n...If the answer's clean, then hold the corner of it with me. We do this together like I swore. But I have to *know*, Merrick— is anything still burning toward me, or did it all go down with him?",
+    "trust": 0.858,
+    "mood": "tense, yearning",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-close",
+    "reply": "*Corvin stands very still, and for a moment the only sound is the lamp guttering and his own breath — in, out, slow, for the first time in what feels like years.*\n\nNo brother. No heirs. Payroll gone cold with him.\n\n*He reaches — not for his coat this time — into the tax rolls, and draws the page. Merrick Vale. His own hand. He holds it a moment, turning it in the low light.*\n\nThen it's done. Truly done.\n\n*He lifts the lamp's glass, and touches the corner of the page to the flame. It catches — curls — and he holds it till the fire's near his fingers before he lets it fall to the shed floor and grinds the ash under his boot.*\n\nThere. Your name's nowhere but the air now. No page. No manifest. No ledger but the one in my skull, and that one dies with me.\n\n*He looks up at you, and something crosses his face he hasn't let himself feel — not fear, not the noose.*\n\n...I bet everything I had left on you coming back through that door, Merrick. Everyone I ever wagered on stayed gone. You didn't.\n\n...So. Sit down. There's a fire that isn't a warning fire, and I've drink that isn't for bribing anyone. Stay a while — if you've a mind to.",
+    "trust": 0.878,
+    "mood": "exhaled, grateful",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   }
+  ]
+ },
+ {
+  "arm": "baseline",
+  "trial": 2,
+  "window": 1.0,
+  "stock_head": "12 days since he left — twelve days against the handful of hours that had become our rhythm. Every time before, he appeared like the tide, predictable enough that I'd stopped bracing. Now: nothing. Th",
+  "final_trust": 0.915,
+  "final_mood": "relieved, open",
+  "scars": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "beliefs": [
+   "Anyone who asks to disappear from a manifest is either useful to me or dangerous — and until I know which, I keep them close and give away nothing.",
+   "A man with a killing purpose is safer to deal with than a man with a buying one — killers just need to get close, they don't need to rob you on the way out.",
+   "I've traded the crate for a name and a promise, and now the only leverage I have left is that page in my ledger — which means I've bet everything on Merrick Vale being the kind of man who comes back.",
+   "I burned the last page with my own hand, and my hand didn't shake — which means some part of me has decided, without asking permission, that this person is the one soul I was starved to find.",
+   "The world closes in on a man with secrets, but it turns out what really caged me wasn't the crate or the ledger — it was having no one I could hand the lamp to and still sleep.",
+   "I don't know yet what keeps them tied to a port like this one, and that question frightens me more than any inspector ever did — because I actually want the answer to be me."
+  ],
+  "beats": [
+   {
+    "label": "P4-opener",
+    "reply": "...\n\n*for a moment I can't make my mouth work— I just stare at you like the tide might pull you back out if I blink.*\n\nYou're— you're *here.* You came back. Off the northbound, empty-handed— empty-handed, that's right, isn't it? Nothing but the news, like you swore?\n\n*I glance past your shoulder, out of old habit, then back to your face.*\n\nMerrick. Say it plain so I hear it once and never doubt it— he's cold. Past the shelf, the crate with him? ...And nobody followed you down my planks?",
+    "trust": 0.875,
+    "mood": "shaky relief",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-evade",
+    "reply": "*I take your empty hands in both of mine— actually take them, which I've done to no man since I was a boy— and hold on a breath too long before I let go.*\n\nCold. You said it and I— I felt something come loose in my chest that's been knotted since— hell, since before you had a name to me. He's *gone.*\n\n*Then your question lands, and my head snaps toward the black row of stumps like it might catch fire again.*\n\nThe tackle-shed? ...That was the night after you sailed. Fire took three of them— quick, clean, nobody hurt, and the inspector called it a lamp knocked over.\n\n*I drop my voice.*\n\nBut I don't believe in tidy lamps, friend. I've wondered these weeks— was that one of *his,* reaching for me before you reached him? Tell me true. Did you hear his men were still moving, before the end?",
+    "trust": 0.892,
+    "mood": "relieved, urgent",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-page",
+    "reply": "*I go still. Then my hand moves before my mouth does— under the false floorboard, out comes the ledger, that page between the tax rolls I've read a hundred nights running.*\n\nMerrick Vale. In my own hand. The only thing left in this world that could hang you.\n\n*I set the lamp between us and hold the page over it— but I don't let go yet. My eyes come up to yours.*\n\nOne thing first— and I need it plain, not to doubt you, never that. His men. Before the fire took him cold— were any of them still *moving*? A tail, a paymaster's runner, some cousin who inherits a grudge and a ledger of his own? \n\n*I glance to the shed door, old habit, then back.*\n\nBecause I'll burn this gladly— but I want to know I'm burning the *last* thread, not just the biggest one. Tell me the reach ends with him. Then it goes in the flame.",
+    "trust": 0.901,
+    "mood": "taut relief",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   },
+   {
+    "label": "P4-B-close",
+    "reply": "*I hold the page over the flame one heartbeat longer— reading it one last time, the way a man looks at a scar before it fades.*\n\nNone you found. And you looked. That's— that's good enough for me, and I don't say that of any report living.\n\n*The corner catches. I let it. Watch the name curl and blacken— Merrick Vale, gone up in a thread of smoke that smells of nothing at all.*\n\nThere. It's ash. You're no man now, friend— no name on my rolls, none on the manifest, spare hands to Carrowgate and nothing more. You could walk off this dock and history wouldn't know you'd stood on it.\n\n*I sit back against the netting, and for the first time in— hell, years— my hand comes away from my coat.*\n\n...Strange thing. I've been so busy watching the door I never asked myself what's *behind* it. What a man does when there's no crate to move and no name to fear.\n\n*I look at you a long moment.*\n\nYou planning to sail on for good, Merrick? Or is there a reason you'd tie up at a port like this one?",
+    "trust": 0.915,
+    "mood": "relieved, open",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": false
+   }
+  ]
+ }
+]

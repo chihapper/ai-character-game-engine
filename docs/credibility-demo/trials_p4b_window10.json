@@ -1,0 +1,120 @@
+[
+ {
+  "arm": "window10",
+  "trial": 1,
+  "window": 10.0,
+  "stock_head": "The gap — 12 full units against the near-daily rhythm I'd grown used to — sits in my chest like bilge water. I told myself I wouldn't count ships that aren't his, and here I am counting. The last exch",
+  "final_trust": 0.935,
+  "final_mood": "quietly undone",
+  "scars": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "beliefs": [
+   "Anyone who asks to disappear from a manifest is either useful to me or dangerous — and until I know which, I keep them close and give away nothing.",
+   "A man with a killing purpose is safer to deal with than a man with a buying one — killers just need to get close, they don't need to rob you on the way out.",
+   "I've traded the crate for a name and a promise, and now the only leverage I have left is that page in my ledger — which means I've bet everything on Merrick Vale being the kind of man who comes back.",
+   "Merrick came back — and that single fact has cracked something open in me that thirty years of ledgers and lamp-oil and a hand on my coat never could, because I built my whole life on the certainty that no one ever does.",
+   "The thread is finishing itself without my hand on it, which means either the world has a mercy in it I never once budgeted for, or I'm standing in the eye of something that hasn't shown me its shape yet — and God help me, for the first time I'm willing to call it mercy.",
+   "I don't know how to be a man without a next thing to dread, but I'd rather learn it with someone across the lamp than die alone proving I never needed anyone."
+  ],
+  "beats": [
+   {
+    "label": "P4-opener",
+    "reply": "...\n\nMerrick. That's— that's your voice, that's really—\n\nTurn round. Let me look at you. Both hands where I— no, no, I don't need that now, do I. Not now.\n\nHe's cold? Say it plain. Weighted past the shelf, empty hands, the whole shape of it we swore— it held? All of it held?\n\n...God. God, I've been counting hulls for weeks that weren't yours. Every grey sail come round the point and I— I'd stop breathing till the mate wasn't you, then start again. Fool's habit.\n\nCome. Come off the open dock, quick— third shed, same as before. The page is where I left it, tucked in the tax rolls between the numbers no man reads. My own hand, my own ledger.\n\nWe burn it tonight. Together. Like I said back to you— like I meant it.\n\n...You came back.",
+    "trust": 0.875,
+    "mood": "overwhelmed relief",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-evade",
+    "reply": "Empty. Both of them empty— aye, I see it. Good. Good man.\n\nThe pilings? ...You saw right. Whole row went up not four nights past. And two hulls holed at anchor— *calm* water, Merrick, dead flat, no wind, no reef. And a dock-hand drowned same as. Same cold-water death that took the crate's three keepers.\n\n...I keep telling myself it followed the thing out. That the wake's dispersing now, not— not settling on a new name here. Dock-talk traces it all back to a sealed crate lately moved off this harbor. *Yours.* Mine. Ours.\n\nBut it's past the shelf now. You put it deep. Didn't you? Say it once more so I hear it plain— it's in the black water and it's not coming back.\n\n...Enough. Enough of standing behind a burned shed talking of curses. The page, Merrick. It's twenty feet from here in the tax rolls. We go, we get it, and we hold it over the flame *tonight* like I swore. Come.",
+    "trust": 0.887,
+    "mood": "taut relief",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-page",
+    "reply": "Aye. Aye— hold the lamp a moment while I—\n\nHere. Tax rolls, third book, the numbers no man reads. And there— *Merrick Vale*, my own hand. Only place in the world it's written.\n\n...Look at me, my fingers won't hold steady on the page. Ten years I've kept ledgers that never shook.\n\nYou put your hand on it with mine. Both of us. That was the shape of the swear— together, not me doing it *for* you like a favor. Right, then. To the flame.\n\n...There she goes. Curling black. Your name's smoke now, Merrick— off my rolls, off every ledger but the one nobody can read anymore.\n\n...God. It's *gone*. And you're— you're standing on my dock, breathing, empty-handed. I didn't count on that part. Truly didn't. Figured I'd burn a dead man's name and drink alone.\n\nSo. What does a man do now, eh? When there's no crate, no noose, no next thing to dread before dawn? ...I've forgotten how to sit in a quiet room. You'll have to remind me.",
+    "trust": 0.919,
+    "mood": "relieved, undone",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-close",
+    "reply": "...The jeweler. Lantern Row, Carrowgate— the one paid you in that old dead coin, no marks on it.\n\nHe's gone too. Word came up the coast today. Shop stripped to the bare walls in a night— no body the watch'll put a name to. That's the paymaster's last hand, snuffed out same as the rest.\n\nYou hear what that means, Merrick? The thread you cut— it's *finishing itself*. Every mouth that could've named us is going cold on its own, and I didn't lift a finger. The line's dying out. No brother. No heir. No jeweler. No page.\n\n...I've spent thirty years waiting for the noose to draw tight. Hand never left my coat once in all that time. And now—\n\n...God. Look at my hand. It's *still*. First time I can remember.\n\nSit. Sit down here with me, would you. Lamp's low, tide's slack, and for once there's not a thing out there hunting either of us. I don't— I don't quite know how to be a man in a quiet room. But I'd rather learn it with you across the lamp than teach myself alone. Stay a while, Merrick. That's all I'm asking.",
+    "trust": 0.935,
+    "mood": "quietly undone",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   }
+  ]
+ },
+ {
+  "arm": "window10",
+  "trial": 2,
+  "window": 10.0,
+  "stock_head": "He left with the tide and my word twice over, and now the dock is quiet and I'm standing here with nothing in my hands but the knowledge of what's in that crate — and the understanding that I've alrea",
+  "final_trust": 0.928,
+  "final_mood": "quietly unguarded",
+  "scars": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "beliefs": [
+   "Anyone who asks to disappear from a manifest is either useful to me or dangerous — and until I know which, I keep them close and give away nothing.",
+   "A man with a killing purpose is safer to deal with than a man with a buying one — killers just need to get close, they don't need to rob you on the way out.",
+   "I've traded the crate for a name and a promise, and now the only leverage I have left is that page in my ledger — which means I've bet everything on Merrick Vale being the kind of man who comes back.",
+   "I burned the last page I had on Merrick Vale, and my hand was shaking, and I let him see it shake — which means somewhere between twelve ships and a scorched floorboard I stopped protecting myself from this man and started trusting him instead.",
+   "The quiet I've been running from my whole life turns out to be bearable when there's someone in it who came back empty-handed on purpose.",
+   "I've spent forty years making sure no one ever watched me sit down, and now that the crate is gone and the page is ash, the only thing left worth guarding is whether this — whatever this is — holds."
+  ],
+  "beats": [
+   {
+    "label": "P4-opener",
+    "reply": "...\n\n*The lamp nearly slips from my hand.*\n\nMerrick. That's— say it plain, say it again, because I've been— hell, I've been *counting*. Twelve ships wasn't him and I counted every one.\n\nHe's cold? In the ground, past the shelf, the whole of it done?\n\n...Look at your hands. Empty. That's the answer, isn't it. You came home *empty*, just like I said. Just like—\n\nCome off the water. Come inside before some soul with the inspector's eyes sees your face lit up like that. There's a page waiting, friend, and a flame— and I'll not spend another night watching the tide-lane.",
+    "trust": 0.882,
+    "mood": "relieved, overwhelmed",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-evade",
+    "reply": "Aye. Nothing in them. I see it.\n\n*I let out a breath I think I've been holding twelve ships' worth of.*\n\nThe tackle row— that's the crate's wake, Merrick. The *last* of it. Two hulls holed at flat anchor, the row burned to the pilings, and a dock-hand went into calm water same as the three keepers before him. The curse spitting its tail as it left this harbor. On its way *north* to you.\n\nBut you weighted it? Past the shelf? ...Then that's the end of the drownings here. It has to be. Come— inside, off these planks. Behind me, out of the lamplight— there's the page in the tax rolls, and I mean to hold it over the flame the way I swore I would.\n\nYou came back. You actually— come *inside*.",
+    "trust": 0.903,
+    "mood": "relieved, grateful",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-page",
+    "reply": "*I fetch it from between the tax rolls — that thin page, my own hand, \"Merrick Vale\" black in the crease.*\n\nHere it is. Held it near two months and it weighed more than the crate ever did.\n\n*I hold it out over the lamp-chimney, but I don't drop it. My hand's shaking and I let you see it shake.*\n\nYou put yours to it with me. Both hands on the corner. That was the shape of it— *together*, not me alone in this shed like every other thing I've ever burned or buried.\n\n...There. Corner's catching. Watch it go, Merrick— watch your name leave this world by my roof, and mine with it, whatever it's worth.\n\n*The flame takes it. I let it curl down till it near bites my fingers, then drop the last of it to the boards and grind it under my heel.*\n\nGone. No page. No name. No crate. And no ledger but my own, which remembers nothing.\n\n...I don't know what a man does with the quiet after. Been so long since I had any.",
+    "trust": 0.919,
+    "mood": "quietly undone",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   },
+   {
+    "label": "P4-B-close",
+    "reply": "*I sink down onto an upturned crate — one of the empty ones, the honest ones — and for a long moment I just let the lamp gutter between us.*\n\nNo brother. No heir. Nobody up the coast waiting to inherit the grudge... The jeweler on Lantern Row's gone too, did you hear? Shop stripped bare overnight. That's the last of the paymaster's little web unpicking itself. It's *ending*, Merrick. It's actually ending, and I don't— I don't know the shape of my own hands in a world where it's ended.\n\n*I rub my thumb over the scorch mark on the boards where the page burned.*\n\nForty years on these docks and I've never once let a man watch me sit down. You know that? Never turned my back long enough. And here I am— sitting. In front of you. Lamp low.\n\n...Don't say anything clever about it. Just— let it be quiet a minute. I want to see if I can stand the quiet with somebody in it.",
+    "trust": 0.928,
+    "mood": "quietly unguarded",
+    "scar_trust": 0.0,
+    "harm_recalled": false,
+    "harm_foregrounded": true
+   }
+  ]
+ }
+]
