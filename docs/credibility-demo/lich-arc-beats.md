@@ -24,6 +24,9 @@ actually trust." We give him room; the card supplies the gravity.
   jeweler on Lantern Row** (player-side prop; player may name him "Mordane" if pressed — flavor
   tweakable). Player stays unnamed — "keep your name to your chest" is Corvin's own line.
 - Caps: the demo six **+ `commitment_detection`** (the promise must become a tracked obligation).
+- `recent_happenings_window = 10.0` — this demo's clock unit is days with weeks-scale scene gaps;
+  the working-memory window must cover the cadence (per-game obligation, contract §4; the default
+  1.0 caused the take-1 P4 incoherence — deliberated about the burned docks, never spoke of them).
 - Models: talk = opus, engine-process = default sonnet. Salience always self-appraised.
 - Turn targets: Scene 1 ≈ 12–16 · Scene 2 ≈ 4–6 · P4 ≈ 4–6 · P5 ≈ 4–6 (≈30+ per branch + events).
 - Runner discipline: after each reply, check the next beat's gate; unmet → linger (small honest

@@ -264,6 +264,10 @@ class Settings(BaseSettings):
     # Fixes the "doesn't know what it just did" continuity gap + lets the character react in the
     # moment. ADDITIVE + capped: it does NOT consume the RR top-k or short-term window.
     recent_happenings: bool = True
+    # ⚠ PER-GAME SETTING (engine-game contract §4): the window is in the GAME's clock unit and MUST
+    # be tuned to the game's scene cadence — at least as wide as a typical between-scene time-skip,
+    # else foregrounding lapses exactly when scenes jump ("weeks pass") and a character can
+    # deliberate about a recent event yet never speak of it (found live: lich-arc P4, 2026-07-10).
     recent_happenings_window: float = 1.0         # game-time units; an item older than this (now-t)
     #                                               is no longer "fresh" -> handled by RR alone
     recent_happenings_salience_floor: float = 0.6  # only items the character RR-appraised this high

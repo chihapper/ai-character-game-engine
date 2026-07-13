@@ -32,6 +32,13 @@ from tools._harness import make_engine, set_flags, wipe
 
 set_flags(commitment_detection=True)          # the package promise must become a tracked obligation
 
+from orchestrator.config import get_settings
+
+# THIS demo's clock unit is DAYS with weeks-scale scene gaps -> widen working-memory foregrounding
+# to the demo's cadence. Per-game obligation (engine-game contract §4 + config.py note): the window
+# is in the game's clock unit and must cover a typical between-scene time-skip.
+get_settings().recent_happenings_window = 10.0
+
 from orchestrator.character_store import load_character
 from orchestrator.context import RespondRequest, Situation
 

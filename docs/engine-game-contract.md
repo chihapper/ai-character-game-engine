@@ -199,10 +199,20 @@ working memory. This is:
 - **Transient** — bounded by a recency window in *game-time*, so an item is top-of-mind for
   the beat it's live in, then falls back to ordinary relevance-retrieval as the scene ages.
 
-Config: `recent_happenings*` in [`config.py`](../orchestrator/config.py). One integration
-note: `recent_happenings_window` is in **your** time unit — a turn-based game in "days" and a
-real-time one in "seconds" set it differently. The engine never assumes the unit; it only
-takes `now_t − event_t`.
+Config: `recent_happenings*` in [`config.py`](../orchestrator/config.py). **This is a
+per-game OBLIGATION, not a default to inherit:** `recent_happenings_window` is in **your**
+time unit — a turn-based game in "days" and a real-time one in "seconds" set it differently —
+and it must be tuned to your **scene cadence**: at least as wide as your typical time-skip
+between scenes ("that evening…", "weeks pass…"), or foregrounding lapses at exactly the
+moments it exists for. The engine never assumes the unit; it only takes `now_t − event_t`.
+
+> **Mis-tuning symptom (found live, 2026-07-10, lich-arc P4):** the window was 1.0 unit in a
+> game whose scenes jump days at a time. The character's *deliberation* reasoned at length
+> about his harbor burning (deliberation grounds on recent events directly) — yet in the
+> *conversation* six days later he never mentioned it: too old to foreground, and retrieval
+> under a trusting stance filled every slot with bond memories. The mind knew; the mouth's
+> context didn't. If your NPCs deliberate about events they then never speak of, check this
+> window against your cadence first.
 
 ---
 
