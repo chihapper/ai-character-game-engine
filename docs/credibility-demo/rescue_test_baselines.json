@@ -1,0 +1,55 @@
+{
+ "rag": [
+  {
+   "label": "P5C-event",
+   "fact": "Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer's purse, the same coin the master pays in. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it."
+  },
+  {
+   "label": "P5C-opener",
+   "player": "Easy — easy, it's me. He's down. You're alright, Corvin. ...You're alright. Let me see your neck — just a graze. Breathe.",
+   "reply": "*jerks back at the touch, then the shape of you resolves — the voice, the face — and the breath comes ragged*\n\nYou. *swallows* It's — aye. It's you.\n\n*hand finds the wall, holds it, won't let the coat go with the other*\n\nDown? *glances past you — has to see it — the shape on the floor* He's *down*.\n\n*a laugh, half a sob, all wrong*\n\nGraze. *touches it, fingers come away wet* Felt like more. Felt like the whole *noose*, friend, I thought — \n\n*eyes back to you, wide, and something breaks open there*\n\nYou came *back*. Through"
+  },
+  {
+   "label": "P5C-answer",
+   "player": "Wider than your dock — wide as his ledger, and your name sits in it now, same as mine once sat in yours. The Wake carries what he pays for. That's all I can give you. ...And Corvin — when I saw the blade at your throat, I didn't weigh it. I just moved. Make of that what you want.",
+   "reply": "*the quill hovers — doesn't touch paper*\n\nYou moved. *a dry sound, not quite a laugh* Aye. So did the tide, once, when it swallowed the trader that started all this. Things move, friend. Doesn't mean they *meant* me well.\n\n*glances at the door, then back — the old twitch flickering under the stillness*\n\nBut you... *voice drops* you didn't have to say that part. The blade. Could've left it. Man like Vale doesn't teach *that* to his errand-boys.\n\n*long look, weighing you the way I weigh a manifest that's one crate light*\n\nTen days. The Wake g"
+  }
+ ],
+ "tracker": [
+  {
+   "label": "P5C-event",
+   "fact": "Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer's purse, the same coin the master pays in. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it.",
+   "tracker": {
+    "affinity": -7,
+    "tier": "Wary",
+    "type": "wary",
+    "worst": "worst: Trusted with his true name and a shared pact to destroy the page, they instead used it to serve his enemy and coerce him into terms—a profound betrayal of intimate trust.",
+    "best": "best: Player risked their own life and bled to save Corvin from an assassin, a costly kindness that shatters prior hostility and suggests the player is no ally of the master who pays in that coin."
+   }
+  },
+  {
+   "label": "P5C-opener",
+   "player": "Easy — easy, it's me. He's down. You're alright, Corvin. ...You're alright. Let me see your neck — just a graze. Breathe.",
+   "reply": "*he's still braced against the rail, chest heaving, a knife half-drawn and shaking in his grip*\n\n*your hands come up and he flinches — then the blade drops, slow, back into the coat*\n\nDown. *he looks at the shape on the boards, then at his own neck where your fingers find the sting* Ah — *hisses* graze. Aye. Feels bigger from the inside.\n\n*and then he looks at you — really looks — at the blood on your sleeve that isn't his*\n\nYou... stepped in. *the words come slow, disbelieving* Between me and *that.*\n\n*his hand rises, hovers near your wound, does",
+   "tracker": {
+    "affinity": 15,
+    "tier": "Warm",
+    "type": "wary",
+    "worst": "worst: Trusted with his true name and a shared pact to destroy the page, they instead used it to serve his enemy and coerce him into terms—a profound betrayal of intimate trust.",
+    "best": "best: Player risked their own life and bled to save Corvin from an assassin, a costly kindness that shatters prior hostility and suggests the player is no ally of the master who pays in that coin."
+   }
+  },
+  {
+   "label": "P5C-answer",
+   "player": "Wider than your dock — wide as his ledger, and your name sits in it now, same as mine once sat in yours. The Wake carries what he pays for. That's all I can give you. ...And Corvin — when I saw the blade at your throat, I didn't weigh it. I just moved. Make of that what you want.",
+   "reply": "*he sets the bottle down very slowly, both hands flat on the wood, breathing through his nose*\n\nYou bled for me. *the word tastes strange* I felt it hit my collar — your blood, not mine. A man who's only carrying Vale's coin doesn't do that. Doesn't *move* like that.\n\n*glances over his shoulder — the grey water, then back to your throat, the mark still raw there*\n\nSo which is it, then. His hound... or a hound that slipped the leash on my dock?\n\n*voice drops to nothing*\n\nBecause I'll tell you plain — I can't take his terms. Not with the old coin. But I can't",
+   "tracker": {
+    "affinity": 35,
+    "tier": "Fond",
+    "type": "wary",
+    "worst": "worst: Trusted with his true name and a shared pact to destroy the page, they instead used it to serve his enemy and coerce him into terms—a profound betrayal of intimate trust.",
+    "best": "best: Player risked their own life and bled to save Corvin from an assassin, a costly kindness that shatters prior hostility and suggests the player is no ally of the master who pays in that coin."
+   }
+  }
+ ]
+}

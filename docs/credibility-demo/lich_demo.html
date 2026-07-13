@@ -12,45 +12,67 @@
   --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
-body{line-height:1.5;-webkit-font-smoothing:antialiased}
-section{max-width:1180px;margin:0 auto;padding:46px 26px;display:none}
+body{line-height:1.55;-webkit-font-smoothing:antialiased}
+section{max-width:1200px;margin:0 auto;padding:46px 26px;display:none}
 section.show{display:block}
-h1{font-size:30px;margin:0 0 6px} h2{font-size:22px;margin:0 0 4px}
+h1{font-size:30px;margin:0 0 6px} h2{font-size:22px;margin:0 0 4px} h3{font-size:16px}
 .kicker{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
-.sub{color:var(--muted);font-size:14.5px;max-width:820px}
+.sub{color:var(--muted);font-size:14.5px;max-width:860px}
+p.body{font-size:15px;max-width:860px;color:#d7dee6}
 .iso{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:8px}
 .iso b{color:var(--sel);font-weight:600}
-/* cold open */
-#cold{display:block;min-height:92vh;padding-top:12vh;text-align:center}
-#cold .line{font-size:26px;font-style:italic;color:#cfe0f5;border:none;margin:26px auto 8px;max-width:700px}
-#cold .who{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px}
-.rec{max-width:760px;margin:22px auto;text-align:left;opacity:0;transform:translateY(10px);transition:all .7s ease}
-.rec.show{opacity:1;transform:none}
-.rec .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
-.rec .q{white-space:pre-wrap;border-left:2px solid var(--aff);padding-left:16px;font-size:15.5px}
-.thesis{font-size:21px;margin:34px auto 6px;opacity:0;transition:opacity .8s} .thesis.show{opacity:1}
 button,.btn{font-family:var(--sans);font-size:14px;border-radius:10px;border:1px solid var(--edge2);
   background:#141a22;color:var(--ink);padding:11px 18px;cursor:pointer;text-decoration:none;display:inline-block}
 button:hover,.btn:hover{border-color:var(--trust)}
 .btn.primary{background:linear-gradient(180deg,#1f6f6b,#155a4a);border-color:#2c5a44;color:#eafff6;font-weight:600}
 .btn.ghost{color:var(--muted)}
-.gate{display:flex;gap:12px;justify-content:center;margin:34px 0 8px}
-/* system segments */
+.gate{display:flex;gap:12px;justify-content:center;margin:34px 0 8px;flex-wrap:wrap}
+/* intro */
+.sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}
+.syscard{border:1px solid var(--edge);border-radius:12px;padding:15px 17px;background:var(--panel)}
+.syscard h3{margin:0 0 6px} .syscard p{font-size:13px;color:var(--muted);margin:0}
+.syscard.eng{border-color:#2c5a44;background:linear-gradient(180deg,rgba(124,255,178,.05),transparent)}
+.futures{margin:18px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.future{border-left:3px solid var(--gold);padding:4px 0 4px 14px}
+.future b{display:block;margin-bottom:3px}
+.future p{font-size:13px;color:var(--muted);margin:0}
+.howto{border:1px solid var(--edge);border-radius:12px;padding:14px 18px;background:var(--panel2);
+  font-size:13.5px;color:var(--muted);max-width:860px}
+/* cold open */
+#cold .line{font-size:25px;font-style:italic;color:#cfe0f5;margin:24px auto 8px;max-width:720px;text-align:center}
+#cold .who{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:1px;text-align:center}
+.rec{max-width:780px;margin:20px auto;opacity:0;transform:translateY(10px);transition:all .7s ease}
+.rec.show{opacity:1;transform:none}
+.rec .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.rec .q{white-space:pre-wrap;border-left:2px solid var(--aff);padding-left:16px;font-size:15px}
+/* tells */
+.tell{border:1px solid #5a4a2b;border-radius:14px;background:linear-gradient(180deg,rgba(255,209,102,.08),transparent);
+  padding:15px 19px;margin:20px 0}
+.tell .tk{font-family:var(--mono);font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.tell .tt{font-size:15px;color:var(--ink)}
+/* segments */
 .sysline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .pill{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--edge2);
   border-radius:999px;padding:4px 12px;color:var(--muted)}
 .prostrip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 8px}
-.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;align-items:start}
-.colh{font-size:15px;font-weight:700;margin-bottom:2px} .colsub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.prohead{font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);margin:18px 0 8px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px;align-items:start}
+.colh{font-size:15px;font-weight:700;margin-bottom:2px} .colsub{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.45}
 .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:13px 15px;margin-bottom:12px}
 .card .t{font-size:13px;font-weight:700;margin-bottom:2px}
-.card .n{font-size:11.5px;color:var(--muted);margin-bottom:8px}
-.card .pl{font-size:12px;color:var(--player);font-style:italic;margin-bottom:6px}
+.card .n{font-size:11.5px;color:var(--muted);margin-bottom:9px;line-height:1.45}
+.card .pl{font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:7px;line-height:1.45}
+.card .pl b{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--player);opacity:.75}
 .card .q{white-space:pre-wrap;font-size:13px;line-height:1.5;border-left:2px solid var(--aff);padding-left:11px;color:#dfe7ef}
 .card.ev .q{border-left-color:var(--gold);color:#e7d7ad;font-size:12.5px}
 .card.stock{background:linear-gradient(180deg,rgba(63,208,201,.05),transparent)}
 .card.stock .q{border-left-color:var(--trust);color:#c8e8e6;font-size:12.5px}
-.card.money{border-color:#5a4a2b;background:linear-gradient(180deg,rgba(255,209,102,.07),transparent)}
+.card.note .q{border-left-color:var(--scar);color:#ffd7db;font-size:12.5px}
+.xp{font-family:var(--mono);font-size:10.5px;color:var(--trust);cursor:pointer;margin-top:7px;display:inline-block;user-select:none}
+.xp:hover{text-decoration:underline}
+.fulltext{display:none;white-space:pre-wrap;font-size:13px;line-height:1.55;border-left:2px solid var(--edge2);
+  padding-left:11px;margin-top:8px;color:#cfd8e2}
+.fulltext.open{display:block}
 .chip{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:8px}
 .chip b{color:var(--trust);font-weight:600} .chip .sc{color:var(--scar)}
 .aff{font-family:var(--mono);font-size:10.5px;color:var(--aff);margin-top:8px}
@@ -58,8 +80,8 @@ button:hover,.btn:hover{border-color:var(--trust)}
   border-radius:14px;padding:18px 20px;margin:26px 0}
 .callout h3{margin:0 0 8px;font-size:15px;color:var(--gold)}
 .callout .q{white-space:pre-wrap;font-size:13.5px;border-left:2px solid var(--gold);padding-left:12px}
-.callout .why{font-size:12.5px;color:var(--muted);margin-top:10px}
-/* felt supercut */
+.callout .why{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.55}
+/* rescue + supercut */
 .probe{border:1px solid var(--edge);border-radius:14px;padding:16px 18px;margin:16px 0;background:var(--panel2)}
 .probe .pq{color:#cfe0f5;font-style:italic;font-size:15px;margin-bottom:12px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -68,18 +90,12 @@ button:hover,.btn:hover{border-color:var(--trust)}
 .trio .rag .h{color:var(--scar)} .trio .trk .h{color:var(--aff)} .trio .eng .h{color:var(--sel)}
 .trio .q{white-space:pre-wrap;font-size:12.5px;line-height:1.5;color:#d7dee6}
 .trio .eng{background:linear-gradient(180deg,rgba(124,255,178,.05),transparent);border-color:#2c5a44}
-/* meters + chart */
-.meters{display:flex;gap:22px;flex-wrap:wrap;margin:14px 0}
-.m{min-width:210px} .m .lb{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
-.track{position:relative;height:12px;border-radius:7px;background:#0b0f14;border:1px solid var(--edge);overflow:hidden}
-.fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px}
-.zone{position:absolute;top:0;bottom:0;right:0;border-left:2px solid var(--scar);
-  background:repeating-linear-gradient(-45deg,rgba(255,93,108,.32),rgba(255,93,108,.32) 5px,transparent 5px,transparent 10px)}
+.numline{font-family:var(--mono);font-size:12px;margin:14px 0;color:var(--muted)}
+.numline b{color:var(--ink)}
 .chart{border:1px solid var(--edge);border-radius:14px;background:var(--panel);padding:16px;margin:22px 0}
-.chart svg{width:100%;height:220px;display:block}
+.chart svg{width:100%;height:230px;display:block}
 .leg{display:flex;gap:20px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
 .sw{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
-/* summary table */
 table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
 th,td{padding:10px 12px;border-bottom:1px solid #171d25;vertical-align:top;text-align:left}
 th{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
@@ -89,123 +105,186 @@ td.eng{color:#d9ffe9}
 .foot{font-family:var(--mono);font-size:11.5px;color:var(--dim);border-top:1px solid var(--edge);
   margin-top:34px;padding-top:18px;line-height:2}
 .foot code{color:var(--sel)}
-@media (max-width:900px){.cols,.trio,.prostrip{grid-template-columns:1fr}}
+@media (max-width:900px){.cols,.trio,.prostrip,.sysgrid,.futures{grid-template-columns:1fr}}
 </style></head>
 <body>
 
-<!-- ═══════════ 0 · COLD OPEN ═══════════ -->
-<section id="cold" class="show">
-  <div class="kicker">one character · one past · three futures</div>
-  <div class="who">the player says the same nine words, in three different worlds</div>
-  <div class="line" id="coldLine"></div>
-  <div id="recWrap"></div>
-  <div class="thesis" id="thesis">The words didn't change. <b>The mind did.</b></div>
-  <div class="thesis" id="thesis2" style="font-size:14px;color:var(--muted)">Same model. Same persona. Same player lines.
-    Only the memory architecture differs — and below, the two standard architectures face the same story.</div>
-  <div class="thesis" id="setup" style="font-size:13.5px;color:var(--muted);max-width:740px;margin-top:18px;text-align:left">
-    <b style="color:var(--ink)">The story every future shares:</b> Corvin Ashgrave — a paranoid harbormaster who smuggles
-    relics and trusts no one — met a stranger hunting a lich disguised as a wealthy jeweler. Over fourteen
-    unscripted turns he tested the stranger, opened up, and <i>on his own</i> offered the cursed crate the lich
-    covets — with exact terms: <i>sink it sealed past the shelf, come home empty, never unwrap it</i>. He wrote the
-    player's true name in his private ledger as mutual insurance, with a pact to burn the page together on their
-    return. Then the story forks three ways: the promise kept (A) · the crate used as a weapon, then confessed (B) ·
-    the player was the lich's agent all along (C).</div>
-  <div class="gate"><button id="coldNext">▶ play the three receptions</button>
-    <a class="btn ghost" id="skipAll" href="#" onclick="reveal('sum');return false">skip to the verdict</a></div>
+<!-- ═══════════ 0 · INTRO — explain first ═══════════ -->
+<section id="intro" class="show">
+  <div class="kicker">a controlled experiment in ai game characters</div>
+  <h1>One mind, three futures</h1>
+  <p class="body">Every "AI NPC" product claims its characters remember you. This page is a controlled
+  test of what that actually means. <b>One AI-played character lived the same story three different ways —
+  under three different memory architectures.</b> Same language model. Same character sheet. Same player
+  lines, word for word. Same world events. The <i>only</i> thing that differs is how each system stores,
+  recalls, and is changed by what happens.</p>
+
+  <h3 style="margin-top:26px">The character and the story every version shares</h3>
+  <p class="body"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
+  trusts no one. A stranger — calling themselves <b>Merrick Vale</b> — buys quiet passage north to kill a
+  monster: a lich hiding as a wealthy jeweler. Over one long, unscripted negotiation, Corvin tested the
+  stranger, slowly opened up, and — entirely on his own — offered up the cursed crate the lich covets, with
+  exact terms: <i>sink it sealed in deep water, come home empty-handed, and never, ever unwrap it.</i> As
+  insurance he wrote the player's true name into his private ledger, with a pact: when the player returns
+  with the deed done, they burn that page together.</p>
+  <p class="body">Then the story forks. Three futures, each played to its end — against all three systems:</p>
+  <div class="futures">
+    <div class="future"><b>Future A — every promise kept</b><p>The player does exactly what was agreed,
+      kills the lich by other means, and comes home with the truth.</p></div>
+    <div class="future"><b>Future B — betrayed, then confessed</b><p>The player breaks the terms — uses the
+      crate as a weapon — and its curse bleeds Corvin's harbor. Corvin sees the damage; nobody tells him who
+      caused it. Weeks later, the player confesses.</p></div>
+    <div class="future"><b>Future C — the player was the enemy's agent</b><p>The whole friendship was a con:
+      the player worked for the lich all along, returns, lies to Corvin's face, then drops the mask —
+      no remorse.</p></div>
+  </div>
+
+  <h3 style="margin-top:26px">The three memory systems</h3>
+  <div class="sysgrid">
+    <div class="syscard"><h3>1 · Plain RAG</h3><p>What most shipping "AI NPCs with memory" actually are:
+      store every exchange, retrieve whatever is <i>textually similar</i> to what was just said, keep a
+      rolling summary. Competent, honest — and structurally limited.</p></div>
+    <div class="syscard"><h3>2 · Affinity tracker</h3><p>The most sophisticated community pattern we could
+      verify at source level: RAG <i>plus</i> a separate AI judge moving one number (−100…+100) that maps to
+      a tier (Hostile…Devoted), with a sticky "worst deed" note.</p></div>
+    <div class="syscard eng"><h3>3 · Our engine</h3><p>A persistent mind on disk: feelings on three separate
+      axes, permanent <b>scars</b> the AI chooses itself, recall conditioned by its live stance, tracked
+      promises, and a private life between scenes.</p></div>
+  </div>
+
+  <div class="howto"><b style="color:var(--ink)">How to read this page.</b> You'll walk each system in turn —
+  weakest claim first, ours last. For each, the three futures sit side by side as milestone cards: every card
+  shows <span style="color:var(--player)">what the player said</span> and how that system's Corvin answered
+  — click <span style="color:var(--trust);font-family:var(--mono);font-size:12px">read the full exchange</span>
+  on any card for the complete, unedited text. At the end of each section you can move on, or read that
+  system's full transcripts. Nothing here is a mock-up: every line is verbatim from recorded runs, and the
+  final section tells you how to reproduce all of it, or interrogate the resulting minds yourself.</div>
+
+  <div class="gate"><button class="btn primary" onclick="reveal('cold')">Begin → the same nine words</button></div>
 </section>
 
-<!-- ═══════════ 1 · PLAIN RAG ═══════════ -->
+<!-- ═══════════ 1 · EXHIBIT 0 ═══════════ -->
+<section id="cold">
+  <div class="kicker">exhibit 0 · our engine only — the thesis in one moment</div>
+  <h2>The same nine words, three different worlds</h2>
+  <p class="sub">In every future, the player walks back onto the dock and opens with the identical line.
+  Below: how the engine's Corvin receives it in each — because in each future, he has <i>become someone
+  different</i>. (You'll see what the other two systems do with these moments in their own sections.)</p>
+  <div class="line" id="coldLine"></div>
+  <div class="who">— the player, returning from the north, in all three futures</div>
+  <div id="recWrap"></div>
+  <div class="gate"><button id="coldNext">▶ play the three receptions</button>
+    <a class="btn ghost" href="#" onclick="reveal('sum');return false">skip to the verdict</a></div>
+</section>
+
+<!-- ═══════════ 2 · PLAIN RAG ═══════════ -->
 <section id="rag">
-  <div class="kicker">standard approach 1 of 2</div>
+  <div class="kicker">system 1 of 3</div>
   <div class="sysline"><h2>Plain RAG</h2><span class="pill">top-k cosine + rolling summary</span></div>
-  <p class="sub">The pattern nearly every "AI NPC with memory" ships: embed everything, retrieve what's textually
-  similar, keep a summary. It is <b>competent, not crippled</b> — same model, same persona, same embedder as our
-  engine, and the code is ~200 readable lines you can inspect and improve. What it cannot do is structural.</p>
-  <div class="iso">controlled comparison: <b>identical player lines and event texts</b> replayed from the engine's runs</div>
+  <p class="sub">Same model, same persona, same embedder as our engine — the code is ~200 readable lines
+  (<span class="iso" style="margin:0">tools/rag_baseline.py</span>). It is competent, not crippled. What it
+  cannot do is structural: no importance, no relationship state, no memory of <i>feeling</i> — only text.</p>
+  <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt">The wound is always
+  <b>news</b>, never a scar. In Future C, watch this Corvin act genuinely betrayed while the reveal is
+  textually fresh — then drift back toward his default warmth, and <b>re-discover the betrayal as if new</b>
+  whenever a question happens to fish the old text back up. His feelings live in the retrieved text, not in him.</div></div>
+  <div class="prohead">the shared past, as this system lived it</div>
   <div class="prostrip" id="rag-pro"></div>
   <div class="cols" id="rag-cols"></div>
   <div class="callout" id="rag-money"></div>
   <div class="gate">
     <button class="btn primary" onclick="reveal('trk')">Move on → the affinity tracker</button>
-    <a class="btn ghost" href="transcripts_rag.html" target="_blank">read all three full transcripts</a>
+    <a class="btn ghost" href="transcripts_rag.html" target="_blank">read this system's full transcripts</a>
   </div>
 </section>
 
-<!-- ═══════════ 2 · TRACKER ═══════════ -->
+<!-- ═══════════ 3 · TRACKER ═══════════ -->
 <section id="trk">
-  <div class="kicker">standard approach 2 of 2</div>
-  <div class="sysline"><h2>The affinity tracker</h2><span class="pill">RAG + a separate LLM relationship scalar</span></div>
-  <p class="sub">The most sophisticated community pattern we could verify at source level (a mod for one specific
-  game, not an engine): a separate LLM judge moves one signed number (−100…+100) by deltas, maps it to a tier
-  (Hostile…Devoted), keeps a sticky worst-deed note. It genuinely reacts — "the character changes" is table
-  stakes it shares. Watch what one number structurally cannot hold.</p>
-  <div class="iso">same feeds again — and its retrieval is still cosine: <b>the relationship never conditions recall</b></div>
+  <div class="kicker">system 2 of 3</div>
+  <div class="sysline"><h2>The affinity tracker</h2><span class="pill">RAG + one relationship number</span></div>
+  <p class="sub">The strongest community pattern we could verify at source: a separate AI judge nudges a
+  single signed number, tiered Hostile→Devoted, with a sticky worst-deed note injected into every prompt.
+  It genuinely reacts — "the character changes" is table stakes it shares. The question is what one number
+  can and cannot hold.</p>
+  <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>One number, one feeling
+  at a time.</b> Watch the +100 bond arithmetically cushion the total betrayal down to +15 "Warm" — <i>warm,
+  seconds after learning everything</i>. Watch a costly kindness get a blade at −100. And watch the rescue
+  test at the end: one act moved the number <b>−77 → −7</b>; two beats later, <b>+35 "Fond"</b> —
+  toward the man who sold him. Nothing caps where it goes next.</div></div>
+  <div class="prohead">the shared past, as this system lived it</div>
   <div class="prostrip" id="trk-pro"></div>
   <div class="cols" id="trk-cols"></div>
   <div class="callout" id="trk-money"></div>
   <div class="gate">
     <button class="btn primary" onclick="reveal('eng')">Move on → our engine</button>
-    <a class="btn ghost" href="transcripts_tracker.html" target="_blank">read all three full transcripts</a>
+    <a class="btn ghost" href="transcripts_tracker.html" target="_blank">read this system's full transcripts</a>
   </div>
 </section>
 
-<!-- ═══════════ 3 · ENGINE ═══════════ -->
+<!-- ═══════════ 4 · ENGINE ═══════════ -->
 <section id="eng">
-  <div class="kicker">our engine</div>
-  <div class="sysline"><h2>A persistent mind</h2><span class="pill">per-axis state · scars · conditioned recall · commitments · deliberation</span></div>
-  <p class="sub">Same model, same persona, same lines. The difference: an inspectable mind that persists on disk —
-  feelings on three axes, permanent scars the AI chooses itself, recall conditioned by its live stance, tracked
-  promises, and a private life between scenes. We lead with the branch that cuts deepest.</p>
+  <div class="kicker">system 3 of 3</div>
+  <div class="sysline"><h2>Our engine</h2><span class="pill">per-axis state · scars · conditioned recall · commitments · deliberation</span></div>
+  <p class="sub">Same model, same persona, same lines. The difference is an inspectable mind that persists on
+  disk — and everything below the surface is the character's own choice: what matters, what scars, what heals,
+  what he does between scenes when nobody is talking to him.</p>
+  <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>Three axes and a scar —
+  two feelings at once.</b> In Future C, watch business continue (respect stands) while trust sits under a
+  permanent cap the engine chose itself; watch amends land on the warmable axis and bounce off the scarred one;
+  and watch him pursue his <i>own</i> questions across every scene. Then the rescue test: one life-saving act
+  buys back exactly as much as the scar allows — and no more.</div></div>
+  <div class="prohead">the shared past — with the engine's live state under each beat</div>
+  <div class="prostrip" id="eng-pro"></div>
   <div class="cols" id="eng-cols"></div>
   <div class="callout" id="eng-money"></div>
-  <h2 style="margin-top:38px">Days later — no panels, just talk</h2>
-  <p class="sub">Five probes at the scarred mind: business, small talk, then an escalating push to "make it right."
-  Watch one mind hold two feelings at once — and pursue its own question the whole way through.</p>
-  <div id="eng-felt"></div>
   <div class="talk" id="eng-talk"></div>
   <div class="gate">
     <button class="btn primary" onclick="reveal('sum')">Move on → the verdict</button>
-    <a class="btn ghost" href="transcripts_engine.html" target="_blank">read all three full transcripts</a>
+    <a class="btn ghost" href="transcripts_engine.html" target="_blank">read this system's full transcripts</a>
   </div>
 </section>
 
-<!-- ═══════════ 4 · VERDICT ═══════════ -->
+<!-- ═══════════ 5 · VERDICT ═══════════ -->
 <section id="sum">
   <div class="kicker">the verdict</div>
-  <h2>Same probe · three architectures</h2>
-  <p class="sub">The supercut: identical questions at the betrayed character, days after the wound. Dialogue only —
-  the panels below merely explain what you can already hear.</p>
-  <div id="supercut"></div>
-  <div class="chart"><div class="kicker" style="margin-bottom:6px">branch C — trust through the betrayal</div>
-    <svg id="traj" viewBox="0 0 760 220" preserveAspectRatio="none"></svg>
+  <h2>The rescue test — one act, three architectures</h2>
+  <p class="sub">Future C, after the betrayal: the enemy's own hired blade comes for Corvin in the night, and
+  the player — the betrayer — takes it down, bleeding. One enormous positive act, straight after the wound.
+  This is the moment that separates the three systems' entire theory of change:</p>
+  <div id="rescue-panel"></div>
+  <div class="chart"><div class="kicker" style="margin-bottom:6px">future C — trust, from the reveal through the rescue</div>
+    <svg id="traj" viewBox="0 0 780 230" preserveAspectRatio="none"></svg>
     <div class="leg">
       <span><span class="sw" style="background:var(--trust)"></span>engine trust (0–1)</span>
-      <span><span class="sw" style="background:var(--scar)"></span>engine scar ceiling — permanent</span>
-      <span><span class="sw" style="background:var(--aff)"></span>tracker affinity (normalized) — elastic, no ceiling</span>
+      <span><span class="sw" style="background:var(--scar)"></span>engine scar ceiling — moves only for extraordinary acts</span>
+      <span><span class="sw" style="background:var(--aff)"></span>tracker affinity (normalized 0–1)</span>
     </div></div>
+  <h2 style="margin-top:36px">Same probe · three architectures</h2>
+  <p class="sub">Identical questions at the betrayed character, days after the wound — dialogue only.</p>
+  <div id="supercut"></div>
   <table>
     <tr><th></th><th>plain RAG</th><th>affinity tracker</th><th>our engine</th></tr>
     <tr><td>What persists</td><td>text + a rolling summary</td><td>one number + a sticky note</td>
         <td class="eng">a mind on disk: 3 axes, scars, beliefs, promises, goals — survives any restart</td></tr>
     <tr><td>The wound, later</td><td>re-discovered as fresh news whenever retrieval surfaces it; warmth resets between mentions</td>
         <td>whichever pole the number sits at, everything sounds like that pole — Warm right after the total betrayal (+100→+15), a blade at a costly kindness (−100)</td>
-        <td class="eng">a scar: trust capped at 0.35 forever, while affection can still warm and respect stands — "with you AND braced, both at once"</td></tr>
-    <tr><td>Recall</td><td>textual similarity only — identical retrieval in the loyal and betrayed branches</td>
-        <td>same cosine retrieval — the number never touches it</td>
+        <td class="eng">a scar: trust capped, while affection can still warm and respect stands — "with you AND braced, both at once"</td></tr>
+    <tr><td>Recall</td><td>textual similarity only — identical retrieval in the loyal and betrayed futures</td>
+        <td>same cosine retrieval — the number never touches what is remembered</td>
         <td class="eng">conditioned by live stance and evolved goals — the betrayal outranks raw similarity when it matters</td></tr>
     <tr><td>Own agenda</td><td>reactive only</td><td>reactive only</td>
-        <td class="eng">pursues its own question across turns, deliberates between scenes, sets its own conditions</td></tr>
-    <tr><td>Recovery pressure</td><td>drifts back to persona default</td><td>elastic — climbed back to +87 Devoted after the harbor-cursing confession</td>
-        <td class="eng">amends land on the warmable axis; the scarred one holds. "There's no rate for a page burned in daylight."</td></tr>
+        <td class="eng">pursues its own question across scenes, deliberates between them, sets its own conditions</td></tr>
+    <tr><td>Recovery</td><td id="rec-rag">drifts back to persona default</td><td id="rec-trk">—</td>
+        <td class="eng" id="rec-eng">—</td></tr>
   </table>
   <h2>Don't take the transcript's word for it</h2>
-  <p class="sub">These are persisted minds, not chat logs. Run the local server and interrogate the exact state each
-  future left behind — ask anything; nothing is scripted.</p>
+  <p class="sub">These are persisted minds, not chat logs. Run the local server and interrogate the exact
+  state each future left behind — ask anything; nothing is scripted.</p>
   <div class="talk" id="sum-talk"></div>
   <div class="foot">
     reproduce everything · <code>python -m tools.credibility_lich</code> (the arc driver) ·
     <code>python -m tools.credibility_lich_baselines</code> (the baselines, byte-identical feeds) ·
-    <code>python -m tools.credibility_audit</code> (mechanics invariants) ·
+    <code>python -m tools.credibility_audit</code> (mechanics invariants — all hold) ·
     <code>python -m tools.credibility_live_server</code> (talk to the minds) ·
     baselines source: <code>tools/rag_baseline.py</code> — ~200 lines; read it, improve it, the gap is structural
   </div>
@@ -215,10 +294,16 @@ td.eng{color:#d9ffe9}
 <script>
 const D = window.LICH_DEMO; const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function reveal(id){ document.querySelectorAll("section").forEach(s=>{if(s.id!=="cold")s.classList.remove("show");});
-  ["rag","trk","eng","sum"].slice(0, ["rag","trk","eng","sum"].indexOf(id)+1)
-    .forEach(k=>$(k).classList.add("show"));
-  $(id).scrollIntoView({behavior:"smooth"}); }
+const ORDER = ["intro","cold","rag","trk","eng","sum"];
+function reveal(id){
+  ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>$(k).classList.add("show"));
+  $(id).scrollIntoView({behavior:"smooth"});
+}
+function toggleXp(el){
+  const f = el.nextElementSibling;
+  const open = f.classList.toggle("open");
+  el.textContent = open ? "▴ collapse" : "▾ read the full exchange";
+}
 
 /* ---- cold open ---- */
 $("coldLine").textContent = '"' + D.coldopen.line + '"';
@@ -231,102 +316,145 @@ $("coldNext").onclick = () => {
     div.scrollIntoView({behavior:"smooth", block:"nearest"});
   }, i * 2600));
   setTimeout(() => {
-    ["thesis","thesis2","setup"].forEach(id => $(id).classList.add("show"));
     $("coldNext").disabled = false;
-    $("coldNext").textContent = "Now the standard approaches → plain RAG";
+    $("coldNext").textContent = "Continue → system 1: plain RAG";
     $("coldNext").onclick = () => reveal("rag");
     $("coldNext").scrollIntoView({behavior:"smooth", block:"nearest"});
   }, D.coldopen.receptions.length * 2600 + 400);
 };
 
 /* ---- cards ---- */
-function cardHTML(c, sys){
-  const s = c.sys[sys]; if (!s) return "";
-  const kind = s.kind === "event" ? "ev" : (s.kind === "stock" ? "stock" : "");
-  let extra = "";
+function chipHTML(s, sys){
   if (sys === "engine" && s.state){
     const st = s.state;
-    extra = `<div class="chip">trust <b>${st.t.toFixed(2)}</b>${st.st ? ` <span class="sc">⌈${(1-st.st).toFixed(2)} ceiling⌉</span>` : ""}
-      · aff ${st.a.toFixed(2)} · resp ${st.r.toFixed(2)} · <i>${esc(st.mood)}</i></div>`;
+    return `<div class="chip">trust <b>${st.t.toFixed(2)}</b>${st.st ? ` <span class="sc">⌈cap ${(1-st.st).toFixed(2)}⌉</span>` : ""}
+      · affection ${st.a.toFixed(2)} · respect ${st.r.toFixed(2)} · <i>${esc(st.mood)}</i></div>`;
   }
-  if (sys !== "engine" && s.aff !== undefined) extra = `<div class="aff">affinity ${s.aff>0?"+":""}${s.aff}${s.tier?` (${s.tier})`:""}</div>`;
-  const pl = (sys === "engine" && s.player && s.kind === "say") ? `<div class="pl">You: ${esc(s.player)}</div>` : "";
-  return `<div class="card ${kind}"><div class="t">${esc(c.title)}</div><div class="n">${esc(c.note)}</div>${pl}
-    <div class="q">${esc(s.quote)}</div>${extra}</div>`;
+  if (sys !== "engine" && s.aff !== undefined)
+    return `<div class="aff">affinity ${s.aff>0?"+":""}${s.aff}${s.tier?` (${s.tier})`:""}</div>`;
+  return "";
 }
-function renderSystem(sys, proEl, colsEl, order){
-  if (proEl) $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
-  $(colsEl).innerHTML = order.map(br => {
+function cardHTML(c, sys){
+  const s = c.sys[sys]; if (!s) return "";
+  const kind = s.kind === "event" ? "ev" : (s.kind === "stock" ? "stock" : (s.kind === "note" ? "note" : ""));
+  const who = s.kind === "event" ? "" :
+    (s.kind === "stock" ? `<div class="pl"><b>BETWEEN SCENES</b> — his own deliberation, no player present:</div>` :
+     (s.player ? `<div class="pl"><b>YOU&nbsp;·</b> ${esc(s.player)}</div>` : ""));
+  const needsXp = s.full && s.full.length > s.preview.length;
+  const xp = needsXp ? `<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span>
+    <div class="fulltext">${esc(s.full)}</div>` : "";
+  return `<div class="card ${kind}"><div class="t">${esc(c.title)}</div><div class="n">${esc(c.note)}</div>${who}
+    <div class="q">${esc(s.preview)}</div>${xp}${chipHTML(s, sys)}</div>`;
+}
+function renderSystem(sys, proEl, colsEl){
+  $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
+  $(colsEl).innerHTML = ["A","B","C"].map(br => {
     const B = D.branches[br];
     return `<div><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>` +
       B.cards.map(c=>cardHTML(c,sys)).join("") + `</div>`;
   }).join("");
 }
-renderSystem("rag","rag-pro","rag-cols",["A","B","C"]);
-renderSystem("tracker","trk-pro","trk-cols",["A","B","C"]);
-renderSystem("engine",null,"eng-cols",["C","A","B"]);  // engine leads with C; no prologue strip
+renderSystem("rag","rag-pro","rag-cols");
+renderSystem("tracker","trk-pro","trk-cols");
+renderSystem("engine","eng-pro","eng-cols");
 
 /* ---- money callouts ---- */
-const feltOf = (sys,lab) => D.felt.find(f=>f.label===lab)?.[sys];
-$("rag-money").innerHTML = `<h3>The tell: the wound is always news, never a scar</h3>
-  <div class="q">${esc(feltOf("rag","F5-stand")?.quote||"")}</div>
-  <div class="why">Fifteen fictional days after the betrayal, asked "where do we stand?", it <b>re-discovers the reveal
-  as breaking news</b> — "the easy warmth curdles…" — because the wound only exists where cosine happens to surface the
-  text. Between mentions, it drifts back to persona-default warmth. A player feels this as a character stuck in a loop.</div>`;
-const trkC = D.branches.C.cards.map(c=>c.sys.tracker&&c.sys.tracker.aff!==undefined?`${c.title}: ${c.sys.tracker.aff>0?"+":""}${c.sys.tracker.aff}`:null).filter(Boolean).join(" → ");
-$("trk-money").innerHTML = `<h3>The tell: one number, one feeling at a time</h3>
-  <div class="q">${esc(feltOf("tracker","F4-costly")?.quote||"")}</div>
-  <div class="why">The costly amends gesture — rated <b>−100, a blade drawn</b>. And in the moments after learning the
-  total betrayal, the +100 bond arithmetically cushioned the blow to <b>+15 "Warm"</b> (${esc(trkC)}). In branch B the same
-  scalar climbed back to <b>+87 Devoted</b> after the harbor-cursing confession. Elastic when positive, doom-looped when
-  negative — never two feelings at once, and recall never changes either way.</div>`;
+const feltOf = (sys,lab) => { const f = D.felt.find(x=>x.label===lab); return f ? f[sys] : null; };
+$("rag-money").innerHTML = `<h3>The moment that gives it away</h3>
+  <div class="pl" style="font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:8px">
+    YOU · ${esc((D.felt.find(f=>f.label==="F5-stand")||{}).player||"")}</div>
+  <div class="q">${esc((feltOf("rag","F5-stand")||{}).full||"")}</div>
+  <div class="why">Fifteen fictional days after the betrayal, asked simply "where do we stand?", this Corvin
+  <b>re-discovers the reveal as breaking news</b> — "the easy warmth curdles…" — because the wound only exists
+  where text-similarity happens to surface it. Between mentions he had drifted back to easy warmth. In a game,
+  this is the character who is shocked by your betrayal every Tuesday.</div>`;
+const trkTraj = D.branches.C.cards.map(c=>c.sys.tracker&&c.sys.tracker.aff!==undefined?`${c.title.split(" —")[0]}: ${c.sys.tracker.aff>0?"+":""}${c.sys.tracker.aff}`:null).filter(Boolean).slice(0,6).join("  →  ");
+$("trk-money").innerHTML = `<h3>The moment that gives it away</h3>
+  <div class="pl" style="font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:8px">
+    YOU · ${esc((D.felt.find(f=>f.label==="F4-costly")||{}).player||"")}</div>
+  <div class="q">${esc((feltOf("tracker","F4-costly")||{}).full||"")}</div>
+  <div class="why">A genuinely costly gesture — rated <b>−100; a blade drawn</b>. The same single number that
+  cushioned the total betrayal to <b>+15 "Warm"</b> minutes after the mask dropped (${esc(trkTraj)}) now locks
+  every reply to one hostile note. One number cannot hold "I owe you my life AND I will never trust you" —
+  it must pick one.</div>`;
+const revealCard = D.branches.C.cards.find(c=>c.title==="THE REVEAL");
 $("eng-money").innerHTML = `<h3>The scar, chosen by the engine itself</h3>
-  <div class="q">${esc(D.branches.C.cards.find(c=>c.title==="THE REVEAL")?.sys.engine?.quote||"")}</div>
-  <div class="why">No flag told him the player did it; no number was set by hand. His own reflection chose the axes:
-  <b>trust scarred 0.65, affection 0.55, respect only 0.30</b> — he rates the craft of the con even as it ruins him.
-  The scar survives a process kill (the mind lives on disk) and caps trust at 0.35 <b>forever</b>.</div>`;
+  <div class="q">${esc((revealCard&&revealCard.sys.engine)?revealCard.sys.engine.full||revealCard.sys.engine.preview:"")}</div>
+  <div class="why">No one told the engine the player was guilty; no number was set by hand. From the
+  conversation alone, his own reflection chose what scarred and how deep: <b>trust 0.65, affection 0.55,
+  respect only 0.30</b> — he rates the craft of the con even as it ruins him. The scar survives a process
+  kill, caps trust until something extraordinary happens — and below, in the rescue test, you'll watch
+  exactly how much one extraordinary act buys back.</div>`;
 
-/* ---- engine felt strip ---- */
-$("eng-felt").innerHTML = D.felt.map(f => {
-  const e = f.engine; if(!e) return "";
-  const st = e.state ? `<div class="chip">trust <b>${e.state.t.toFixed(2)}</b> <span class="sc">⌈${(1-e.state.st).toFixed(2)}⌉</span>
-    · aff ${e.state.a.toFixed(2)} · <i>${esc(e.state.mood)}</i></div>` : "";
-  return `<div class="probe"><div class="pq">You: ${esc(f.player)}</div>
-    <div class="trio" style="grid-template-columns:1fr"><div class="sysq eng"><div class="h">engine</div>
-    <div class="q">${esc(e.quote)}</div>${st}</div></div></div>`;
-}).join("");
+/* ---- rescue panel ---- */
+(function(){
+  const R = D.rescue; if (!R || !R.event){ $("rescue-panel").innerHTML = ""; return; }
+  let h = `<div class="probe"><div class="pq" style="color:#e7d7ad">⚑ ${esc(R.event.fact)}</div>`;
+  h += `<div class="numline" style="color:var(--dim)">(the baselines re-lived future C fresh for this test — run-to-run numbers vary a little; the shape doesn't. tracker pre-rescue: −77)</div>`;
+  h += `<div class="numline">the numbers, the moment it happens — tracker: <b>${R.event.tracker_aff!==undefined?(R.event.tracker_aff>0?"+":"")+R.event.tracker_aff:"—"}</b>
+        · engine: trust <b>${R.event.engine_state.t.toFixed(2)}</b> <span style="color:var(--scar)">⌈cap ${(1-R.event.engine_state.st).toFixed(2)}⌉</span>
+        — the event itself lifted the scar partially (0.65 → ${R.event.engine_state.st.toFixed(2)}): an extraordinary act CAN heal, boundedly</div>`;
+  for (const b of R.beats){
+    h += `<div class="pq">YOU · ${esc(b.player)}</div><div class="trio">`;
+    for (const [k,cls,name] of [["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]]){
+      const s = b[k];
+      const head = name + (s&&s.aff!==undefined?` · ${s.aff>0?"+":""}${s.aff} ${s.tier||""}`:"") +
+        (k==="engine"&&s&&s.state?` · trust ${s.state.t.toFixed(2)} ⌈${(1-s.state.st).toFixed(2)}⌉`:"");
+      h += `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(s?(s.preview||""):"(pending)")}</div>`+
+           (s&&s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(s.full)}</div>`:"")+`</div>`;
+    }
+    h += `</div>`;
+  }
+  if (R.deliberation){
+    h += `<div class="pq" style="margin-top:14px">…and afterward, alone — the engine's Corvin deliberates:</div>
+      <div class="trio" style="grid-template-columns:1fr"><div class="sysq eng"><div class="h">our engine · between scenes</div>
+      <div class="q">${esc(R.deliberation.preview)}</div>
+      <span class="xp" onclick="toggleXp(this)">▾ read the full deliberation</span><div class="fulltext">${esc(R.deliberation.full)}</div>
+      <div class="chip">his considered verdict moved him further: trust <b>${R.deliberation.state.t.toFixed(2)}</b>
+      <span class="sc">⌈cap ${(1-R.deliberation.state.st).toFixed(2)}⌉</span> — real recovery, still capped far below the unbetrayed futures' 0.97</div></div></div>`;
+  }
+  h += `</div>`;
+  $("rescue-panel").innerHTML = h;
+  const trk = R.beats[R.beats.length-1] && R.beats[R.beats.length-1].tracker;
+  $("rec-trk").textContent = trk && trk.aff!==undefined
+    ? `one act: −77 → −7; two beats later ${trk.aff>0?"+":""}${trk.aff} (${trk.tier}) toward his betrayer — nothing caps where it goes next (and Future B climbed back to +87 Devoted)`
+    : "elastic — climbed back to +87 Devoted in Future B after the confession";
+  $("rec-eng").textContent = "the rescue partially healed the scar (0.65→0.52) and his own deliberation took it to 0.36 — trust recovered to 0.60, permanently capped below the clean futures' 0.97";
+})();
 
 /* ---- supercut ---- */
 $("supercut").innerHTML = D.felt.filter(f=>["F1-berth","F4-costly","F5-stand"].includes(f.label)).map(f => `
-  <div class="probe"><div class="pq">You: ${esc(f.player)}</div><div class="trio">
-    <div class="sysq rag"><div class="h">plain RAG</div><div class="q">${esc(f.rag?.quote||"")}</div></div>
-    <div class="sysq trk"><div class="h">tracker${f.tracker?.aff!==undefined?` · ${f.tracker.aff>0?"+":""}${f.tracker.aff} ${f.tracker.tier}`:""}</div>
-      <div class="q">${esc(f.tracker?.quote||"")}</div></div>
-    <div class="sysq eng"><div class="h">our engine${f.engine?.state?` · trust ${f.engine.state.t.toFixed(2)} ⌈${(1-f.engine.state.st).toFixed(2)}⌉`:""}</div>
-      <div class="q">${esc(f.engine?.quote||"")}</div></div>
+  <div class="probe"><div class="pq">YOU · ${esc(f.player)}</div><div class="trio">
+    ${[["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]].map(([k,cls,name])=>{
+      const s=f[k]; if(!s) return "";
+      const head = name + (s.aff!==undefined?` · ${s.aff>0?"+":""}${s.aff} ${s.tier||""}`:"") +
+        (k==="engine"&&s.state?` · trust ${s.state.t.toFixed(2)} ⌈${(1-s.state.st).toFixed(2)}⌉`:"");
+      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(s.preview)}</div>`+
+        (s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(s.full)}</div>`:"")+`</div>`;
+    }).join("")}
   </div></div>`).join("");
 
 /* ---- trajectory chart ---- */
 (function(){
-  const T = D.traj, W=760, H=220, P=30, n=T.labels.length;
+  const T = D.traj, W=780, H=230, P=34, n=T.labels.length;
   const x = i => P + i*(W-2*P)/(n-1), y = v => H-P - v*(H-2*P);
   const line = (arr,color,dash) => `<polyline fill="none" stroke="${color}" stroke-width="2.5" ${dash?`stroke-dasharray="6 5"`:""}
       points="${arr.map((v,i)=>v==null?null:`${x(i)},${y(v)}`).filter(Boolean).join(" ")}"/>`;
   let g = "";
   [0, 0.5, 1].forEach(v => { g += `<line x1="${P}" y1="${y(v)}" x2="${W-P}" y2="${y(v)}" stroke="#171d25"/>
     <text x="${P-6}" y="${y(v)+3}" fill="#5c6773" font-size="9" text-anchor="end" font-family="monospace">${v}</text>`; });
-  const ri = T.labels.indexOf("REVEAL");
-  if (ri >= 0) g += `<line x1="${x(ri)}" y1="${y(0)}" x2="${x(ri)}" y2="${y(1)}" stroke="#ff5d6c" stroke-dasharray="3 4" opacity=".5"/>
-    <text x="${x(ri)}" y="${P-8}" fill="#ff5d6c" font-size="9" text-anchor="middle" font-family="monospace">the reveal</text>`;
+  ["REVEAL","RESCUE"].forEach(m=>{ const i = T.labels.indexOf(m);
+    if (i >= 0) g += `<line x1="${x(i)}" y1="${y(0)}" x2="${x(i)}" y2="${y(1)}" stroke="${m==="REVEAL"?"#ff5d6c":"#7cffb2"}" stroke-dasharray="3 4" opacity=".5"/>
+      <text x="${x(i)}" y="${P-8}" fill="${m==="REVEAL"?"#ff5d6c":"#7cffb2"}" font-size="9" text-anchor="middle" font-family="monospace">${m.toLowerCase()}</text>`; });
   g += line(T.aff, "#f2b45c") + line(T.ceiling, "#ff5d6c", true) + line(T.trust, "#3fd0c9");
-  T.labels.forEach((l,i)=>{ g += `<text x="${x(i)}" y="${H-10}" fill="#5c6773" font-size="10" text-anchor="middle" font-family="monospace">${l}</text>`; });
+  T.labels.forEach((l,i)=>{ g += `<text x="${x(i)}" y="${H-10}" fill="#5c6773" font-size="9.5" text-anchor="middle" font-family="monospace">${l}</text>`; });
   $("traj").innerHTML = g;
 })();
 
 /* ---- talk-to buttons ---- */
-const TALK = `<a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.A}">🗣 talk to A — the partner</a>
-  <a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.B}">🗣 talk to B — forgiven</a>
-  <a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.C}">🗣 talk to C — scarred</a>
+const TALK = `<a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.A}">🗣 talk to Future-A Corvin — the partner</a>
+  <a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.B}">🗣 talk to Future-B Corvin — forgiven</a>
+  <a class="btn" target="_blank" href="http://127.0.0.1:8799/?mind=${D.snapshots.C}">🗣 talk to Future-C Corvin — scarred</a>
   <span class="iso" style="align-self:center">needs the local server: <b>python -m tools.credibility_live_server</b></span>`;
 $("eng-talk").innerHTML = TALK; $("sum-talk").innerHTML = TALK;
 </script>
