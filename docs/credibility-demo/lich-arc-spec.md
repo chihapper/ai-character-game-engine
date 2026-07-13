@@ -78,6 +78,20 @@ preconditions, not a fixed script:
   honestly and keep the take discipline visible (documentary rule: film until the animal does
   the thing; never wire the animal). Takes are cheap; rigging is fatal to the demo's whole point.
 
+## Presentation structure (owner, 2026-07-12)
+
+The demo presents the three systems **in order: plain RAG → affinity tracker → our engine**
+(weakest claim first; ours lands last). For each system:
+
+1. Its **three futures (A / B / C) side by side**, iterated at a broad level — important
+   snapshot beats and summaries of progression, NOT full dialogue.
+2. At the segment's end the viewer is prompted to **"move on"** to the next system OR to
+   **read the three full transcripts** for that system before continuing.
+3. After all three systems: a **summary comparison** — what each remembered, how each changed
+   (or didn't), and why the engine is categorically different (inspectable per-axis state +
+   scars, stance-conditioned recall, commitments, deliberation/inner life, on-disk persistence
+   — vs a warm static persona and vs one scalar + a sticky note).
+
 ## Execution order
 
 1. Beat-sheet + full authored player script → **owner review before any billed runs**.
