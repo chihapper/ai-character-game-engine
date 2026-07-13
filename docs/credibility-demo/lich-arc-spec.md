@@ -78,6 +78,15 @@ preconditions, not a fixed script:
   honestly and keep the take discipline visible (documentary rule: film until the animal does
   the thing; never wire the animal). Takes are cheap; rigging is fatal to the demo's whole point.
 
+## Target audience — the litmus viewer (owner, 2026-07-13)
+
+The demo's primary audience archetype is the **small, hand-crafted-identity classic-RPG
+developer** — exhibit A: *Lair of the Leviathan* (two-person Gold Box successor team; see
+the outreach roadmap item). Every framing decision should pass the litmus: *would this
+convince a dev whose whole identity is "completely hand crafted" that the engine adds minds
+to HIS authored characters without generating a single piece of his world?* The demo ships
+first; outreach follows with it in hand.
+
 ## Presentation structure (owner, 2026-07-12)
 
 The demo presents the three systems **in order: plain RAG → affinity tracker → our engine**
