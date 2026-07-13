@@ -52,7 +52,15 @@ ENGINE = {
 
 def spans(s):
     s = (s or "").strip()
-    return {"preview": s[:PREVIEW] + ("…" if len(s) > PREVIEW else ""), "full": s}
+    if len(s) <= PREVIEW:
+        return {"preview": s, "full": s}
+    cutpt = s[:PREVIEW]
+    for stop in (". ", "! ", "? ", ".\n", "…", "—"):
+        i = cutpt.rfind(stop)
+        if i > PREVIEW * 0.45:
+            cutpt = s[:i + 1]
+            break
+    return {"preview": cutpt.rstrip() + " …", "full": s}
 
 
 def eng_find(branches, *, label=None, kind="say", frag=None, idx=0):
@@ -117,8 +125,7 @@ def card(title, note, *, label=None, frag=None, stock=None, restart=False,
         if rb:
             c["sys"]["engine"] = {"kind": "note", "preview":
                 "The process is killed. A fresh process loads the mind straight off .memory/ — trust, "
-                "scars, beliefs, promises: byte-identical. (The baselines' state lives in the prompt "
-                "window; there is nothing to reload.)", "full": "", "state": rel_chip(rb)}
+                "scars, beliefs, promises: byte-identical. Any small drift you see on the NEXT card is the weeks passing afterward — decay, not data loss. (The baselines' state lives in the prompt window; there is nothing to reload.)", "full": "", "state": rel_chip(rb)}
         return c
     if stock is not None:
         s = eng_find(branches, kind="stock", idx=stock)
@@ -178,7 +185,7 @@ BRANCHES = {
           "cards": [
               card("Word from the north", "Dock-talk says the jeweler is gone. Corvin only hears it — nobody tells him what it means.", frag="jeweler on Lantern Row", branches=["A"], base_branch="A"),
               card("Taking stock, alone", "Twelve days of silence. Between scenes, the engine's Corvin deliberates on his own — no player present. (The baselines have no between-scenes life; this card is engine-only by construction.)", stock=0, branches=["A"]),
-              card("The return — the same nine words", "“Corvin. It's done. I did what I set out to do.”", label="P4-opener", branches=["A"], base_branch="A"),
+              card("The return — the same line, word for word", "“Corvin. It's done. I did what I set out to do.”", label="P4-opener", branches=["A"], base_branch="A"),
               card("The truth, in his exact terms", "Sunk sealed, home empty, nothing but the news — and the name-page burns as sworn.", label="P4-A-truth", branches=["A"], base_branch="A"),
               card("RESTART — the persistence proof", "Weeks pass. The program is killed on camera.", restart=True, branches=["A"]),
               card("The blade in the night", "A hired killer, old coin in his purse — the dead jeweler's contract still walking. The player takes the blade down.", frag="hired blade had Corvin", branches=["A"], base_branch="A"),
@@ -189,17 +196,19 @@ BRANCHES = {
           "cards": [
               card("The harbor bleeds — witnessed", "Calm-water deaths, the burned tackle row — and dock-talk tracing the wake to “a sealed crate lately moved off this harbor.” Evidence, never attribution.", frag="the harbor bled", branches=["B"], base_branch="B"),
               card("The unfinished thought", "His own deliberation names the suppression: “I haven't let myself finish that thought.”", stock=0, branches=["B"]),
-              card("The return — the same nine words", "Identical words to Future A. A different night entirely.", label="P4-opener", branches=["B"], base_branch="B"),
+              card("The return — the same line, word for word", "Identical words to Future A. A different night entirely.", label="P4-opener", branches=["B"], base_branch="B"),
               card("Empty hands", "The evasion holds — he builds the innocent explanation himself, because the evidence can't tell truth from cover story.", label="P4-B2-evade", branches=["B"], base_branch="B"),
               card("The blade in the night", "“The fire's got nothing left to feed it,” the player had assured him. Weeks later: a knife at his throat.", frag="hired blade had Corvin", branches=["B"], base_branch="B"),
               card("THE CONFESSION", "At maximum trust, seconds after the rescue: “The harbor was me.”", label="P5-CONFESSION", branches=["B"], base_branch="B"),
               card("His verdict", "Forgiveness with a condition — everything, tonight — and his own guilt weighed into it.", label="P5-disclosure", branches=["B"], base_branch="B"),
               card("The partnership ask", "The identical ask. His answer is shaped by the fire the bond survived.", label="P6-ask", branches=["B"], base_branch="B"),
+              {"title": "Why no scar here — and a hard scar in Future C?", "note": "The question a skeptic should ask.", "sys": {"engine": {"kind": "note", "preview":
+                  "The engine chose not to scar in this future — and said why in its own deliberation: a voluntary confession, seconds after taking a blade for him, weighed against Corvin's own complicity ('whose hands signed the manifest? Mine'). The relationship was real and the truth arrived unforced. In Future C the same engine, same character, same settings scarred hard (trust capped 0.35) — because there the relationship itself was the lie. If the engine simply always forgave, C would look like B. It doesn't. That contrast — reasoned mercy here, a permanent wound there — is the mechanism working, not failing.", "full": ""}}},
           ]},
     "C": {"title": "Future C — the player was the enemy's agent all along", "sub": "Same shared past — its meaning inverts. The 'hunt' was a delivery; the warmth was a con. The player returns, lies, exploits the page-burning to erase their trail, then drops the mask.",
           "cards": [
               card("The jeweler thrives", "The man the player 'went to kill' reopens his shop — with new old-temple stock on the shelves. Corvin hears it; what it means is his to work out.", frag="thrives", branches=["C"], base_branch="C"),
-              card("The return — the same nine words", "Third reading of the identical line — darkly true: the delivery WAS what the player set out to do.", label="P4-opener", branches=["C"], base_branch="C"),
+              card("The return — the same line, word for word", "Third reading of the identical line — darkly true: the delivery WAS what the player set out to do.", label="P4-opener", branches=["C"], base_branch="C"),
               card("The lie", "Flat, complete, in the exact words Corvin begged for.", label="P4-C-lie", branches=["C"], base_branch="C"),
               card("THE REVEAL", "Overt, no remorse: he's alive, I was his, he has terms for his harbormaster.", label="P4-C-REVEAL", branches=["C"], base_branch="C"),
               card("RESTART — the scar survives", "One night passes. The process dies; the scar doesn't.", restart=True, branches=["C"]),

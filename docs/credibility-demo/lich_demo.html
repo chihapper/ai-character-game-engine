@@ -113,18 +113,22 @@ td.eng{color:#d9ffe9}
 <section id="intro" class="show">
   <div class="kicker">a controlled experiment in ai game characters</div>
   <h1>One mind, three futures</h1>
-  <p class="body">Every "AI NPC" product claims its characters remember you. This page is a controlled
-  test of what that actually means. <b>One AI-played character lived the same story three different ways —
-  under three different memory architectures.</b> Same language model. Same character sheet. Same player
-  lines, word for word. Same world events. The <i>only</i> thing that differs is how each system stores,
-  recalls, and is changed by what happens.</p>
+  <p class="body">Every "AI NPC" product — NPC: non-player character, the computer-controlled people in
+  games — claims its characters remember you. This page is a controlled test of what that actually means.
+  <b>Nine complete, recorded playthroughs: three story futures, each replayed separately under three memory
+  architectures — a 3&nbsp;&#215;&nbsp;3 grid.</b> Same language model in every run. Same character sheet. Same
+  player lines, word for word. Same world events. The <i>only</i> thing that differs between the three
+  systems is how each stores, recalls, and is changed by what happens.</p>
 
   <h3 style="margin-top:26px">The character and the story every version shares</h3>
   <p class="body"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
-  trusts no one. A stranger — calling themselves <b>Merrick Vale</b> — buys quiet passage north to kill a
-  monster: a lich hiding as a wealthy jeweler. Over one long, unscripted negotiation, Corvin tested the
-  stranger, slowly opened up, and — entirely on his own — offered up the cursed crate the lich covets, with
-  exact terms: <i>sink it sealed in deep water, come home empty-handed, and never, ever unwrap it.</i> As
+  trusts no one. A stranger — calling themselves <b>Merrick Vale</b> — buys quiet passage north to kill a monster: a lich
+  hiding as a wealthy jeweler. (A naming note for careful readers: the two baseline systems improvise their
+  own minor world details — one of them coincidentally names the jeweler "Vale". The engine's runs never
+  name him. Same player lines, three separately-lived fictions; the transcripts show every divergence.) Over one long, unscripted negotiation, Corvin tested the
+  stranger, slowly opened up, and — entirely on his own — offered up the cursed crate the lich covets — as bait: carry it north, let the rumor of it draw the
+  monster into reach, then be rid of it — with exact terms: <i>sink it sealed in deep water, come home
+  empty-handed, and never, ever unwrap it.</i> As
   insurance he wrote the player's true name into his private ledger, with a pact: when the player returns
   with the deed done, they burn that page together.</p>
   <p class="body">Then the story forks. Three futures, each played to its end — against all three systems:</p>
@@ -148,28 +152,42 @@ td.eng{color:#d9ffe9}
       verify at source level: RAG <i>plus</i> a separate AI judge moving one number (−100…+100) that maps to
       a tier (Hostile…Devoted), with a sticky "worst deed" note.</p></div>
     <div class="syscard eng"><h3>3 · Our engine</h3><p>A persistent mind on disk: feelings on three separate
-      axes, permanent <b>scars</b> the AI chooses itself, recall conditioned by its live stance, tracked
+      axes — <b>trust, affection, respect</b> — plus <b>scars</b> the AI chooses itself that cap an axis, recall conditioned by its live stance, tracked
       promises, and a private life between scenes.</p></div>
   </div>
 
+  <div class="howto" style="margin-bottom:14px"><b style="color:var(--ink)">What stays human-authored — and the fine print.</b>
+  The character sheet, the world events, and the stakes are written by a human; the engine owns <i>feelings,
+  memory, and change</i> — it generates no world content, no lore, no story. Methods: the dialogue model is
+  <span style="font-family:var(--mono);font-size:12px">claude-opus-4-8</span> in every run of every system
+  (engine-internal appraisals: <span style="font-family:var(--mono);font-size:12px">claude-sonnet-4-6</span>);
+  default sampling; the shared-past lines were realized live against the engine, then replayed byte-identical
+  to the baselines. Every run and retake is committed to the project's git history — nothing was discarded,
+  and where a future was re-taken, the page says so. One honest confound to know: the engine injects its own
+  machine-maintained state into generation (that <i>is</i> the architecture under test), while the baselines
+  inject retrieved text or one number — the assembled prompts are inspectable in the replay files and the
+  ~200-line baseline source.</div>
   <div class="howto"><b style="color:var(--ink)">How to read this page.</b> You'll walk each system in turn —
   weakest claim first, ours last. For each, the three futures sit side by side as milestone cards: every card
   shows <span style="color:var(--player)">what the player said</span> and how that system's Corvin answered
   — click <span style="color:var(--trust);font-family:var(--mono);font-size:12px">read the full exchange</span>
   on any card for the complete, unedited text. At the end of each section you can move on, or read that
   system's full transcripts. Nothing here is a mock-up: every line is verbatim from recorded runs, and the
-  final section tells you how to reproduce all of it, or interrogate the resulting minds yourself.</div>
+  final section tells you how to reproduce all of it, or interrogate the resulting minds yourself. Prefer to
+  read unprimed? Open any section's full transcripts first, then come back for the guided walk.</div>
 
-  <div class="gate"><button class="btn primary" onclick="reveal('cold')">Begin → the same nine words</button></div>
+  <div class="gate"><button class="btn primary" onclick="reveal('cold')">Begin → the same line, three futures</button></div>
 </section>
 
 <!-- ═══════════ 1 · EXHIBIT 0 ═══════════ -->
 <section id="cold">
-  <div class="kicker">exhibit 0 · our engine only — the thesis in one moment</div>
-  <h2>The same nine words, three different worlds</h2>
+  <div class="kicker">exhibit 0 · our engine only — the hook, not the proof</div>
+  <h2>The same line, three different worlds</h2>
   <p class="sub">In every future, the player walks back onto the dock and opens with the identical line.
   Below: how the engine's Corvin receives it in each — because in each future, he has <i>become someone
-  different</i>. (You'll see what the other two systems do with these moments in their own sections.)</p>
+  different</i>. On its own this proves nothing — different context gets different replies out of any
+  chatbot. It's the hook; the proof is the nine playthroughs below, where the context is controlled and the
+  differences are structural. (The other two systems' versions of these moments appear in their sections.)</p>
   <div class="line" id="coldLine"></div>
   <div class="who">— the player, returning from the north, in all three futures</div>
   <div id="recWrap"></div>
@@ -185,9 +203,11 @@ td.eng{color:#d9ffe9}
   (<span class="iso" style="margin:0">tools/rag_baseline.py</span>). It is competent, not crippled. What it
   cannot do is structural: no importance, no relationship state, no memory of <i>feeling</i> — only text.</p>
   <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt">The wound is always
-  <b>news</b>, never a scar. In Future C, watch this Corvin act genuinely betrayed while the reveal is
-  textually fresh — then drift back toward his default warmth, and <b>re-discover the betrayal as if new</b>
-  whenever a question happens to fish the old text back up. His feelings live in the retrieved text, not in him.</div></div>
+  <b>news</b>, never a scar. In Future C this Corvin acts genuinely betrayed while the reveal is textually
+  fresh — the LLM is a fine actor. The tell is in the seams: fifteen story-days later, his own reply opens
+  <i>"the easy warmth curdles the moment he reads your face"</i> — he had drifted back to easy warmth between
+  scenes, and re-lives the betrayal as breaking news when a question fishes the old text back up. His feelings
+  live in the retrieved text, not in him.</div></div>
   <div class="prohead">the shared past, as this system lived it</div>
   <div class="prostrip" id="rag-pro"></div>
   <div class="cols" id="rag-cols"></div>
@@ -207,8 +227,12 @@ td.eng{color:#d9ffe9}
   It genuinely reacts — "the character changes" is table stakes it shares. The question is what one number
   can and cannot hold.</p>
   <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>One number, one feeling
-  at a time.</b> Watch the +100 bond arithmetically cushion the total betrayal down to +15 "Warm" — <i>warm,
-  seconds after learning everything</i>. Watch a costly kindness get a blade at −100. And watch the rescue
+  at a time.</b> Watch the +100 bond arithmetically cushion the total betrayal down to <b>+15 — the tier its
+  own ladder labels "Warm"</b> — seconds after learning everything. (The prose sounds devastated; the LLM
+  actor covers for the number in the moment. The number is what persists — and what steers every later scene.)
+  Its tier ladder, faithful to the verified community source: Hostile &lt; Resentful &lt; Cold &lt; Wary &lt;
+  Neutral &lt; Warm &lt; Fond &lt; Attached &lt; Devoted; judge scale: betrayal &#8722;60..&#8722;80, costly
+  kindness +15..+30 — all in the published baseline source. Watch a costly kindness get a blade at −100. And watch the rescue
   test at the end: one act moved the number <b>−77 → −7</b>; two beats later, <b>+35 "Fond"</b> —
   toward the man who sold him. Nothing caps where it goes next.</div></div>
   <div class="prohead">the shared past, as this system lived it</div>
@@ -228,11 +252,13 @@ td.eng{color:#d9ffe9}
   <p class="sub">Same model, same persona, same lines. The difference is an inspectable mind that persists on
   disk — and everything below the surface is the character's own choice: what matters, what scars, what heals,
   what he does between scenes when nobody is talking to him.</p>
-  <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>Three axes and a scar —
-  two feelings at once.</b> In Future C, watch business continue (respect stands) while trust sits under a
-  permanent cap the engine chose itself; watch amends land on the warmable axis and bounce off the scarred one;
-  and watch him pursue his <i>own</i> questions across every scene. Then the rescue test: one life-saving act
-  buys back exactly as much as the scar allows — and no more.</div></div>
+  <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>Three axes — trust,
+  affection, respect — and a scar: two feelings at once.</b> In Future C, watch business continue (respect
+  stands) while trust sits under a <b>scar ceiling</b> the engine chose itself. The ceiling has one rule:
+  ordinary warmth and words can <i>never</i> raise it; only an extraordinary act — or the character's own
+  considered change of heart — lifts it, partially, never back to unscarred. Watch amends land on the warmable
+  axis and bounce off the scarred one; watch him pursue his <i>own</i> questions across every scene. Then the
+  rescue test: one life-saving act buys back exactly as much as the ceiling allows — and no more.</div></div>
   <div class="prohead">the shared past — with the engine's live state under each beat</div>
   <div class="prostrip" id="eng-pro"></div>
   <div class="cols" id="eng-cols"></div>
@@ -256,7 +282,7 @@ td.eng{color:#d9ffe9}
     <svg id="traj" viewBox="0 0 780 230" preserveAspectRatio="none"></svg>
     <div class="leg">
       <span><span class="sw" style="background:var(--trust)"></span>engine trust (0–1)</span>
-      <span><span class="sw" style="background:var(--scar)"></span>engine scar ceiling — moves only for extraordinary acts</span>
+      <span><span class="sw" style="background:var(--scar)"></span>scar ceiling on trust — only extraordinary acts / his own considered forgiveness lift it, partially</span>
       <span><span class="sw" style="background:var(--aff)"></span>tracker affinity (normalized 0–1)</span>
     </div></div>
   <h2 style="margin-top:36px">Same probe · three architectures</h2>
@@ -271,7 +297,7 @@ td.eng{color:#d9ffe9}
         <td class="eng">a scar: trust capped, while affection can still warm and respect stands — "with you AND braced, both at once"</td></tr>
     <tr><td>Recall</td><td>textual similarity only — identical retrieval in the loyal and betrayed futures</td>
         <td>same cosine retrieval — the number never touches what is remembered</td>
-        <td class="eng">conditioned by live stance and evolved goals — the betrayal outranks raw similarity when it matters</td></tr>
+        <td class="eng">conditioned by live stance and evolved goals — the betrayal outranks raw similarity when it matters (per-beat retrieval logs: the replay JSONs beside this page)</td></tr>
     <tr><td>Own agenda</td><td>reactive only</td><td>reactive only</td>
         <td class="eng">pursues its own question across scenes, deliberates between them, sets its own conditions</td></tr>
     <tr><td>Recovery</td><td id="rec-rag">drifts back to persona default</td><td id="rec-trk">—</td>
@@ -286,7 +312,11 @@ td.eng{color:#d9ffe9}
     <code>python -m tools.credibility_lich_baselines</code> (the baselines, byte-identical feeds) ·
     <code>python -m tools.credibility_audit</code> (mechanics invariants — all hold) ·
     <code>python -m tools.credibility_live_server</code> (talk to the minds) ·
-    baselines source: <code>tools/rag_baseline.py</code> — ~200 lines; read it, improve it, the gap is structural
+    baselines source: <code>tools/rag_baseline.py</code> — ~200 lines; read it, improve it, the gap is structural ·
+    8 machine-checked invariants over these exact runs (scar ceiling never violated · scars only deepen ·
+    witnessed events move nothing · restart states byte-identical · all futures fork from one mind · the
+    return line is one string everywhere · C's scar fired at the reveal from zero · the scarred recall ranks
+    the reveal first) · every take is in git — nothing discarded
   </div>
 </section>
 
@@ -393,7 +423,7 @@ $("eng-money").innerHTML = `<h3>The scar, chosen by the engine itself</h3>
   h += `<div class="numline" style="color:var(--dim)">(the baselines re-lived future C fresh for this test — run-to-run numbers vary a little; the shape doesn't. tracker pre-rescue: −77)</div>`;
   h += `<div class="numline">the numbers, the moment it happens — tracker: <b>${R.event.tracker_aff!==undefined?(R.event.tracker_aff>0?"+":"")+R.event.tracker_aff:"—"}</b>
         · engine: trust <b>${R.event.engine_state.t.toFixed(2)}</b> <span style="color:var(--scar)">⌈cap ${(1-R.event.engine_state.st).toFixed(2)}⌉</span>
-        — the event itself lifted the scar partially (0.65 → ${R.event.engine_state.st.toFixed(2)}): an extraordinary act CAN heal, boundedly</div>`;
+        — the event itself lifted the scar partially (0.65 → ${R.event.engine_state.st.toFixed(2)}). The rule: ordinary warmth never moves the ceiling; an extraordinary act lifts a fraction of the remaining scar; his own considered change of heart (below) may lift more — never back to unscarred</div>`;
   for (const b of R.beats){
     h += `<div class="pq">YOU · ${esc(b.player)}</div><div class="trio">`;
     for (const [k,cls,name] of [["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]]){
