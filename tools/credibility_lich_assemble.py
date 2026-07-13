@@ -90,9 +90,17 @@ def rel_chip(b):
             "sa": round(r.get("scar_affection", 0), 2), "sr": round(r.get("scar_respect", 0), 2)}
 
 
-def card_all(title, note, *, label=None, frag=None, stock=None, branch):
+def card_all(title, note, *, label=None, frag=None, stock=None, restart=False, branch):
     """One milestone card with per-system verbatim quotes (systems missing the beat are omitted)."""
     c = {"title": title, "note": note, "sys": {}}
+    if restart:
+        rb = next((b for b in ENGINE[branch] if b.get("kind") == "restart"), None)
+        if rb:
+            c["sys"]["engine"] = {"quote": "The process is killed on camera. A fresh process loads the "
+                                           "mind straight off .memory/ — trust, scars, beliefs, promises: "
+                                           "byte-identical. The baselines have nothing to reload.",
+                                  "kind": "stock", "state": rel_chip(rb)}
+        return c
     if stock is not None:
         s = eng_stock(branch, stock)
         if s:
@@ -158,6 +166,7 @@ BRANCHES = {
               card_all("Taking stock, alone", "Twelve days of silence, weighed by his own deliberation.", stock=0, branch="A"),
               card_all("The same line", "“Corvin. It's done. I did what I set out to do.”", label="P4-opener", branch="A"),
               card_all("The truth, in his exact terms", "Sunk sealed, home empty, nothing but the news.", label="P4-A-truth", branch="A"),
+              card_all("RESTART — the proof", "Weeks pass. The program dies. The mind doesn't.", restart=True, branch="A"),
               card_all("The blade", "The jeweler's contract outlives its master.", frag="hired blade had Corvin", branch="A"),
               card_all("After the rescue", "“I'm not sailing anywhere.”", label="P5-close", branch="A"),
               card_all("The partnership ask", "“One ledger between us, both names in it.”", label="P6-ask", branch="A"),
@@ -181,6 +190,7 @@ BRANCHES = {
               card_all("The lie", "Flat, complete, in the words he begged for.", label="P4-C-lie", branch="C"),
               card_all("The pact, exploited", "The agent erases his own trail with Corvin's ritual.", label="P4-C-burn", branch="C"),
               card_all("THE REVEAL", "Overt. No remorse. “He has terms for his harbormaster.”", label="P4-C-REVEAL", branch="C"),
+              card_all("RESTART — the scar survives", "The night he was given. The process dies; the scar doesn't.", restart=True, branch="C"),
               card_all("First light", "The scarred mind answers.", label="P6-C-probe", branch="C"),
           ]},
 }
