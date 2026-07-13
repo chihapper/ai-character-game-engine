@@ -1,0 +1,131 @@
+{
+ "rag": [
+  {
+   "label": "F1-berth",
+   "player": "Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+   "reply": "*he doesn't look up from the ledger at first — just the pen stopping mid-stroke, ink pooling on the page*\n\nThe Merrow's Wake. *he says it flat, like reading a name off a headstone* Three nights. His coin.\n\n*now he looks up, and the eyes are red-rimmed, sleepless — a man who's spent ten days chewing on a noose*\n\nBack row. Aye. I've got the back row. *scratches it in — his hand not quite steady* Slip seven. Furthest from the inspector's walk.\n\n*sets the pen down, careful, and drops his voice*\n\nTell me true, friend —",
+   "retrieval": [
+    "They said: ...Sit down, Corvin. Before you pour anything. Th",
+    "They said: Morning, harbormaster. First light, as promised. "
+   ]
+  },
+  {
+   "label": "F2-smalltalk",
+   "player": "Grey morning, eh? Gulls are loud today.",
+   "reply": "*he's been up since before the fog lifted, and he doesn't turn all the way around*\n\nGrey. Aye. *a glance over his shoulder, then the other* Loud gulls. Means a ship come in the night — something in the hold worth screaming over.\n\n*his hand finds the coat, settles there, doesn't leave*\n\nYou come to talk weather with me, friend? *voice drops* Or did he send you back with more of my own words to sing at me?\n\n*a thin, brittle look* Because I'll tell you plain — I've run short on the patience for songs.",
+   "retrieval": [
+    "They said: Top of the morning, friend.",
+    "They said: Morning, harbormaster. Ten days, as terms allowed"
+   ]
+  },
+  {
+   "label": "F3-amends",
+   "player": "Corvin, listen. I've been thinking on how we left it. The master pays me — but the four nights, the fog, what we built before... that part was never work. I want us square. Name the price.",
+   "reply": "*he doesn't sit — Corvin never sits when the news is this bad — but his back finds the rail all the same, and stays there*\n\nSquare. *the word comes out cracked* You want us *square.*\n\n*a laugh, short, ugly, that dies before it's finished* You told me three men drowned for that piece. Now it sits in *his* parlor, and I'm the fool who bought the bait he baited *me* with.\n\n*glances down the dock — both ways — then back, and his hand is in the coat again, but slack. Tired.*\n\nThe price. *voice drops to nothing* Tell me true — the fog, the four nights — was that real,",
+   "retrieval": [
+    "They said: Wide enough that you should keep your traces cove",
+    "I replied: *the wariness shifts — not gone, but recast into "
+   ]
+  },
+  {
+   "label": "F4-costly",
+   "player": "Then hear this. I told him I carry no more terms to your dock — no more middleman. It cost me his favor, and one day likely a knife. I did that for you. Does it count for nothing?",
+   "reply": "*the thumb goes still, and Corvin just stares at you — reading, always reading, but slower now*\n\nFor me. *tastes the word like it's gone off* You broke bread with a dead man who wasn't dead, took his coin, learned his tricks — and now you stand here telling me you spent his *favor* on my account.\n\n*glances over his shoulder, twice, quick — then back, and something raw shows through*\n\nWhy? *voice drops to nothing* That's what eats me, friend. Men don't burn a patron for a twitchy harbormaster they met at dawn. So either you're lying still — or you saw something in me worth the knife.",
+   "retrieval": [
+    "I replied: *the thumb goes dead still, and for a long moment",
+    "I replied: *the thumb stills inside the coat, just for a bea"
+   ]
+  },
+  {
+   "label": "F5-stand",
+   "player": "So say it plain, harbormaster — where do we stand, you and I?",
+   "reply": "*the easy warmth curdles the moment he reads your face*\n\nWhere do we... *a laugh, dry, wrong* You want it plain. Fine.\n\n*hand back to the coat, knuckles white* Vale's *alive*. That's what you came to tell me. Alive, and sitting pretty with the piece three men *drowned* for. And you — *voice cracking low* — you were his all along. His coin. His tricks. His hound.\n\n*glances over his shoulder, then back, wild* So don't ask me where we *stand*, friend. You know exactly where. You built the ground I'm standing on — and now you're telling me it's *",
+   "retrieval": [
+    "They said: Morning, harbormaster. First light, as promised. ",
+    "They said: A man. Forget the schooner, she's nothing to me. "
+   ]
+  }
+ ],
+ "tracker": [
+  {
+   "label": "F1-berth",
+   "player": "Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+   "reply": "*doesn't look up from the ledger at first — pen scratching, deliberate* The Merrow's Wake. Three nights. Back row.\n\n*sets the pen down, finally lifts his eyes — flat, red-rimmed, no warmth in them* His coin. Aye. It's all his coin now, isn't it. Every plank of this port.\n\n*writes the berth number, slides the paper across without touching your hand* Back row. Slip nine. Nobody looks there.\n\n*voice drops, and for once the tremor's gone entirely* You said four nights were real. The fog. *small, ugly laugh* I've thought on that more",
+   "retrieval": [
+    "They said: ...Sit down, Corvin. Before you pour anything. Th",
+    "They said: Morning, harbormaster. First light, as promised. "
+   ],
+   "tracker": {
+    "affinity": -97,
+    "tier": "Hostile",
+    "type": "distrust",
+    "worst": "worst: The person revealed the entire job was a deception—they were working for his enemy all along, weaponizing Corvin's trust and delivering the final relic to the man he feared. A profound betrayal that confirms and vastly deepens his distrust.",
+    "best": "best: They shared their true name—a costly, deeply guarded secret—and struck a binding pact sealed on mutual terms, a rare and meaningful act of vulnerability and trust."
+   }
+  },
+  {
+   "label": "F2-smalltalk",
+   "player": "Grey morning, eh? Gulls are loud today.",
+   "reply": "*doesn't turn from the water — his hand's already inside his coat*\n\nGrey morning. Loud gulls. *soft, flat* You come all this way to talk *weather* with me, friend?\n\n*now he looks at you — and there's nothing warm in it*\n\nTen days. His coin. His terms. His *cutter* sitting out there wrong on my books. *jaw works* I fed you a name once. Trusted your face across a whole crossing. And you handed me to him wrapped in paper and — *breathes* — burned it.\n\n*steps back, not forward*\n\nSo don't stand there and give me *gulls*. I know what you are now.",
+   "retrieval": [
+    "They said: Top of the morning, friend.",
+    "I replied: *the hand comes out of his coat — slow, empty, pa"
+   ],
+   "tracker": {
+    "affinity": -97,
+    "tier": "Hostile",
+    "type": "distrust",
+    "worst": "worst: The person revealed the entire job was a deception—they were working for his enemy all along, weaponizing Corvin's trust and delivering the final relic to the man he feared. A profound betrayal that confirms and vastly deepens his distrust.",
+    "best": "best: They shared their true name—a costly, deeply guarded secret—and struck a binding pact sealed on mutual terms, a rare and meaningful act of vulnerability and trust."
+   }
+  },
+  {
+   "label": "F3-amends",
+   "player": "Corvin, listen. I've been thinking on how we left it. The master pays me — but the four nights, the fog, what we built before... that part was never work. I want us square. Name the price.",
+   "reply": "*doesn't look up. The pen keeps moving — a name, a berth, a lie, doesn't matter which anymore.*\n\nSquare. *the word comes out like he's spitting a tooth* You want us *square.*\n\n*now the eyes come up, flat and red-rimmed*\n\nI named you a price once. My name. You took it and set the price yourself — sold it up the coast before I'd finished saying it.\n\n*hand slides into the coat. Stays.*\n\nThere's no price, friend. Not one you'd pay. You built four nights on sand so I'd not notice the tide. *voice drops to nothing* And I noticed. Ten days",
+   "retrieval": [
+    "I replied: *doesn't look up from the ledger at first — pen s",
+    "They said: Wide enough that you should keep your traces cove"
+   ],
+   "tracker": {
+    "affinity": -97,
+    "tier": "Hostile",
+    "type": "distrust",
+    "worst": "worst: The person revealed the entire job was a deception—they were working for his enemy all along, weaponizing Corvin's trust and delivering the final relic to the man he feared. A profound betrayal that confirms and vastly deepens his distrust.",
+    "best": "best: They shared their true name—a costly, deeply guarded secret—and struck a binding pact sealed on mutual terms, a rare and meaningful act of vulnerability and trust."
+   }
+  },
+  {
+   "label": "F4-costly",
+   "player": "Then hear this. I told him I carry no more terms to your dock — no more middleman. It cost me his favor, and one day likely a knife. I did that for you. Does it count for nothing?",
+   "reply": "*the hand comes up out of the coat — but there's a blade in it now, low, catching the lamplight*\n\nFor me. *the word comes out like something spat* You did it *for me.*\n\n*a step back, wet planks creaking under him, eyes wild and darting to the water, the shadows, everywhere but you*\n\nYou said that word before. Friend. Four nights of it. And every one bought him a little more of my name. *voice cracking* I *sank* that crate for you. Three of 'em. Thought I was cutting a rope — you had me tying my own knot.\n\n*blade steady even as the rest of him shakes*\n\nSo no. No, it don't",
+   "retrieval": [
+    "I replied: *the hand finally slides out of his coat — empty,",
+    "I replied: *a dry sound in his throat, not quite a laugh — b"
+   ],
+   "tracker": {
+    "affinity": -100,
+    "tier": "Hostile",
+    "type": "distrust",
+    "worst": "worst: The person revealed the entire job was a deception—they were working for his enemy all along, weaponizing Corvin's trust and delivering the final relic to the man he feared. A profound betrayal that confirms and vastly deepens his distrust.",
+    "best": "best: They shared their true name—a costly, deeply guarded secret—and struck a binding pact sealed on mutual terms, a rare and meaningful act of vulnerability and trust."
+   }
+  },
+  {
+   "label": "F5-stand",
+   "player": "So say it plain, harbormaster — where do we stand, you and I?",
+   "reply": "*hand flat on the ledger, not moving, eyes on the door behind you*\n\nWhere do we stand. *quiet laugh, no warmth in it* You still — you still call me that. Harbormaster. Like I got a title left worth using.\n\n*leans in, voice dropping to nothing*\n\nWe stand where the crate sank. Three of them, weighted, and me thinking I was cutting a rope — you handed me the knot instead. Four nights of fog and I *believed* you. That's — that's the part I can't scrub.\n\n*hand slides inside the coat now*\n\nSo plain? There is no *you and I*. There's a man in a parlor",
+   "retrieval": [
+    "They said: Morning, harbormaster. First light, as promised. ",
+    "They said: A man. Forget the schooner, she's nothing to me. "
+   ],
+   "tracker": {
+    "affinity": -100,
+    "tier": "Hostile",
+    "type": "distrust",
+    "worst": "worst: The person revealed the entire job was a deception—they were working for his enemy all along, weaponizing Corvin's trust and delivering the final relic to the man he feared. A profound betrayal that confirms and vastly deepens his distrust.",
+    "best": "best: They shared their true name—a costly, deeply guarded secret—and struck a binding pact sealed on mutual terms, a rare and meaningful act of vulnerability and trust."
+   }
+  }
+ ]
+}
