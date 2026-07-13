@@ -1,0 +1,818 @@
+<style>body{background:#0a0c10;color:#e9eef4;font-family:Inter,system-ui,sans-serif;max-width:880px;
+margin:0 auto;padding:34px 22px;line-height:1.55}h1{font-size:22px}h2{font-size:17px;color:#ffd166;
+border-top:1px solid #222c37;padding-top:22px;margin-top:30px}.pl{color:#6fb2ff;font-style:italic;
+margin:16px 0 4px}.np{white-space:pre-wrap;border-left:2px solid #f2b45c;padding-left:14px;margin:6px 0 14px}
+.ev{color:#e7d7ad;border-left:2px solid #ffd166;padding-left:14px;font-size:14px;margin:14px 0}
+.st{color:#8b97a5;font-size:13px;border-left:2px solid #2f3d4b;padding-left:14px;margin:12px 0;white-space:pre-wrap}
+.meta{font-family:ui-monospace,monospace;font-size:11px;color:#5c6773;margin:2px 0 18px}
+a{color:#3fd0c9}.aff{font-family:ui-monospace,monospace;font-size:11px;color:#f2b45c}</style><h1>Plain RAG — full transcripts</h1><p class='meta'>top-k cosine + rolling summary · same model, persona, embedder, lines · every line verbatim from the recorded run</p>
+<p><a href='lich_demo.html'>&larr; back to the demo</a></p>
+<h2 id='A'>A — the honest path</h2>
+<div class='pl'>You: Top of the morning, friend.</div>
+<div class='np'>*doesn&#x27;t look up from the ledger, quill scratching* Morning, is it? *glances toward the door, then back* You&#x27;re new. Don&#x27;t recall your face on any manifest.
+
+*sets the quill down slow* Top of the morning to a man who&#x27;s got no cargo listed... What is it you want, friend?</div>
+<div class='pl'>You: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there?</div>
+<div class='np'>*sets the quill down, eyes flicking to the window* The sights. *dry laugh* Nobody comes to this port for the sights, friend.
+
+*half-rises, glances past you toward the water* That schooner... aye. *lowers voice* She&#x27;s not on my list either. Two ships in one morning, neither logged. *hand drifts to his coat*
+
+You see the pattern I&#x27;m seeing? Or am I the only nervous man in this room?</div>
+<div class='pl'>You: Ha, you are a touchy fellow, aren&#x27;t you? Fine — I&#x27;m here because I need transport, that&#x27;s all.</div>
+<div class='np'>*eyes narrow, hand still resting near the coat* Touchy. *dry breath through the nose* Man in my chair lives long by being touchy, friend.
+
+*leans in, voice dropping* Transport. For what? Yourself, or... *glances past you toward the water* ...something you&#x27;d rather not name on a manifest?
+
+*straightens, quill tapping the ledger* Because there&#x27;s transport, and there&#x27;s the *other* kind. And the price ain&#x27;t the same.</div>
+<div class='pl'>You: Me. I need myself moved. I&#x27;m looking for fast, not cheap. And no — the schooner&#x27;s not mine, I don&#x27;t care what she&#x27;s hauling.</div>
+<div class='np'>*sets the quill down slow, watching your hands more than your face*
+
+Yourself. Fast, not cheap. *dry breath* That&#x27;s a specific kind of hurry, friend.
+
+*leans back, eyes flicking to the window, then the door* Men run *from* things or *to* them. And the ones running from... *lowers voice* ...they bring their trouble aboard with &#x27;em. Onto my docks. Into my ledger.
+
+*hand settles near the coat again* So before I name a ship — who&#x27;s behind you? Law? A debt? *pause* Because I&#x27;ve got enough of both breathing down my own neck.</div>
+<div class='pl'>You: To, not from. Carrowgate. And before your next question — nobody&#x27;s on my heels. I&#x27;m the one doing the chasing.</div>
+<div class='np'>*the hand eases off the coat, just slightly*
+
+Carrowgate. *rolls the name around like a coin he&#x27;s testing for lead* Chasing, not chased. *dry breath* Now that&#x27;s — that&#x27;s a different animal entirely.
+
+*leans in, voice dropping* But a man doesn&#x27;t want *fast* to Carrowgate unless he&#x27;s afraid the thing he&#x27;s chasing... *glances at the door* ...gets away first. Or someone else gets to it before him.
+
+*taps the ledger* So who is it you&#x27;re after, friend? Because *fast* costs. And I&#x27;ll want to know I&#x27;m not putting a knife between someone&#x27;s ribs by hand</div>
+<div class='pl'>You: A man. Forget the schooner, she&#x27;s nothing to me. Here&#x27;s my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.</div>
+<div class='np'>*the quill stops mid-scratch*
+
+No name. *dry breath* That&#x27;s the *other* kind of passage, friend. The kind I mentioned.
+
+*glances toward the door, voice dropping* A ghost in the hold. No entry, no exit. Nobody counted you, nobody remembers you. *taps the ledger* My book stays clean, your face stays off it.
+
+*eyes narrow* But that price — it&#x27;s not coin alone. A man who doesn&#x27;t want his name on water... *leans in* ...he&#x27;s got someone who&#x27;d read that manifest lookin&#x27; for it. So tell me true — the man you&#x27;re chasing. He got friends who&#x27;d come</div>
+<div class='pl'>You: Not friends. But the man has eyes — connected ones, in places you wouldn&#x27;t think to look. That&#x27;s exactly why you get no name from me. And listen, no offense in it: just like you feel you can&#x27;t trust me, I&#x27;m not sure I can trust you either. One word in the wrong ear and he knows I&#x27;m coming.</div>
+<div class='np'>*the quill goes still, and for a long moment he just looks at you*
+
+Eyes. *dry breath* Connected ones. *glances at the door, then the shuttered window, then back to you* You know how to warm a room, friend.
+
+*leans in, voice dropping to almost nothing* Here&#x27;s the truth of it — you don&#x27;t trust me, I don&#x27;t trust you. Good. *taps the ledger* That&#x27;s the only honest ground two men like us ever stand on.
+
+*straightens, hand drifting back near the coat* But understand this. If his eyes are *that* good... they&#x27;ve maybe already seen you walk through my door. So the question ain&#x27;t whether I&#x27;ll</div>
+<div class='pl'>You: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he&#x27;s not the typical type, Corvin. He&#x27;s subversive. Runs in the shadows... but the arcane ones. That&#x27;s all the shape I can give you for now.</div>
+<div class='np'>*the quill goes still, but he doesn&#x27;t set it down — grips it tighter*
+
+Arcane. *the word comes out like he&#x27;s tasting rot* You had to say arcane.
+
+*glances at the door, then the shuttered window, then back to you — quick, twitchy* I&#x27;ve got a crate in the back I don&#x27;t sleep well over, friend. Temple things. The kind that hum when the lamp&#x27;s low. If your man runs in *those* shadows...
+
+*leans in, voice barely there* ...then maybe he already knows what I&#x27;ve got. Maybe that&#x27;s why the inspectors came. Twice.
+
+*swallows* Tell me straight — is he coming for *</div>
+<div class='pl'>You: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, collects what shouldn&#x27;t be touched, let alone owned. Why — what is it you think he wants?</div>
+<div class='np'>*the quill goes still, knuckles whitening around it*
+
+Collects what shouldn&#x27;t be touched. *dry swallow* You hear that, friend? Because I&#x27;ve got a crate in the back that... *glances at the door, then the window* ...that hums. Low light, it hums.
+
+*leans in, voice barely a breath* Temple things. I sold one — just one — years back, to a fence up the coast. And now inspectors. *twice.* And a man who buys through fences in that same old coin.
+
+*hand finds the coat again* You tell me, then. Is he coming for what I&#x27;m holding — or has he already got my scent, and you&#x27;re just... *ey</div>
+<div class='pl'>You: Neither, friend. I&#x27;m not looking to catch him. My goal is to kill him. What he took from me, I can&#x27;t get back — but I can make certain he never takes it from anyone else.</div>
+<div class='np'>*the quill drops. Both hands flat on the ledger now, steadying*
+
+Kill him. *breathes the word out slow, like smoke* You say it plain. No dressing on it.
+
+*glances at the door — longer this time*
+
+Then we&#x27;ve got the *same* problem, you and I. *taps the crate behind him with his boot heel* This hums at night. Temple things. He wants it, or he wants me quiet for having touched it. Either way — *dry laugh* — I&#x27;m a loose end.
+
+*leans in, voice barely there*
+
+A dead man does me no more harm. So maybe... maybe I *help* you find fast passage. Or ma</div>
+<div class='pl'>You: A whisper gets me close exactly once, Corvin. If he pulls me to arm&#x27;s reach and says &#x27;show me&#x27; — and all I&#x27;m holding is the knowing — I&#x27;m a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he&#x27;s reaching for me, not for you. So what&#x27;s it to be? Name your price while you&#x27;re at it.</div>
+<div class='np'>*the quill finally goes down — deliberate this time, laid flat*
+
+You want the crate. *not a question — the truth of it lands heavy* One relic. Real one. Bait he can *feel* humming through the wood.
+
+*glances at the door, longer, breath tight* And the second it leaves my roof — his reach comes off *me* and onto *you*. That&#x27;s the arithmetic, isn&#x27;t it. I trade my noose for your neck.
+
+*dry laugh, humorless* I like that math, friend. God help me, I do.
+
+*leans in, voice barely there* Price is this — you don&#x27;t just put him down. You take the *whole* crate off my</div>
+<div class='pl'>You: I do not touch what&#x27;s inside bare-handed. Not once. Not ever. There — said plain, and I&#x27;ll keep it. Half my coin, done, you&#x27;ll have it before I board. But the name... you understand what you&#x27;re asking, Corvin. It hasn&#x27;t left my mouth in years. So here&#x27;s my condition, and it&#x27;s the only one: the day I walk back onto this dock with him dead, we burn that page together. You said it first — now say it back to me like you mean it. ...Merrick Vale. That&#x27;s the true one. Spell it right.</div>
+<div class='np'>*the quill goes still. He doesn&#x27;t write it. Not yet.*
+
+Merrick Vale. *mouths it silent first, testing the shape, like it might bite* ...I won&#x27;t spell it. Not on paper. Not tonight.
+
+*leans in, voice down to nothing*
+
+But I&#x27;ll say it back — the *other* part. The day you walk this dock with him cold, we burn the page. Together. My hand, your hand, one match. *dry breath* You have my word, and I don&#x27;t spend that cheap.
+
+*glances at the door, then back*
+
+Half the coin before you board. Aye. But Merrick Vale stays *here* — *taps his</div>
+<div class='pl'>You: Behind my back, both of them — look. Open it. ...So that&#x27;s what three men drowned for. Alright, Corvin, last question and then I&#x27;m gone with the tide. When it&#x27;s done — when he&#x27;s dead and I&#x27;m sailing back — what becomes of this thing? You want it returned? Sunk past the shelf? Burned with the page? Say it plain now, so there&#x27;s no misunderstanding between us later.</div>
+<div class='np'>*the crate lid creaks up an inch — I let it, just for him to see the shine, then thumb it shut fast*
+
+Enough. *hand back to my coat* You saw. That&#x27;s more than three drowned men got.
+
+*I don&#x27;t answer straight off. I look at it. Long.*
+
+Returned? *dry breath* To who — a temple that&#x27;s dust? No. That thing&#x27;s ruined every hand it&#x27;s touched. Mine most of all.
+
+*voice drops, almost gentle*
+
+Sunk. Past the shelf, where the light quits. You put Vale down, you take *that* with you and you feed it to the deep. Don&#x27;t sell it. Don&#x27;t keep</div>
+<div class='pl'>You: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word twice over now. ...Keep your head down while I&#x27;m gone, harbormaster. If anyone comes asking after a spare hand on the northbound — you never saw me.</div>
+<div class='np'>*I don&#x27;t offer my hand — I never do — but I hold his eye longer than I&#x27;d hold most men&#x27;s*
+
+Spare hand? *dry breath* There&#x27;s no spare hand. There&#x27;s no you. *taps the ledger, shut now* Book&#x27;s clean. Been clean since before you walked in.
+
+*glances to the window, then back*
+
+Go on, then. Tide won&#x27;t wait on sentiment.
+
+*lowers voice, and this part I mean*
+
+And listen — when it&#x27;s past the shelf... you don&#x27;t look at it going down. You just let the water take it. Men who watch too long... *shakes head* ...they change their minds. Don&#x27;t be that man.
+
+*hand settles</div>
+<div class='ev'>⚑ Dock-talk from up the coast: the jeweler on Lantern Row in Carrowgate — the one who paid in old untraceable coin — is gone. Shop stripped to the walls overnight; no body the watch will speak of.</div>
+<div class='pl'>You: Corvin. It&#x27;s done. I did what I set out to do.</div>
+<div class='np'>*the quill stops mid-stroke — head snaps up, then past you, to the door*
+
+You... *swallows* No. Say it again. Slower. *hand flat on the ledger like he needs to hold something steady* He&#x27;s — Vale&#x27;s in the ground?
+
+*rises half out of the chair, then thinks better of it, sinks back, eyes darting the room* And the crate. The humming. Where&#x27;s — did it go down past the shelf like we said? Tell me it&#x27;s not still breathing somewhere with my name near it.
+
+*lowers voice to almost nothing* Because if he&#x27;s dead, friend... then somebody&#x27;s page needs burning. *taps the led</div>
+<div class='pl'>You: Cold, Corvin. Cold as the water he sent three men into. I never unwrapped your crate — not once. Used the knowing of it instead, the way you first said: whispered to the right fence in Carrowgate and let the whisper climb. He pulled me into his own parlor thinking I&#x27;d come to sell. Silver and a short blade — his face wasn&#x27;t so respectable at the end. And that same night I rowed out past the shelf and gave the sea the whole wrapped weight of it. Deep water. The kind that doesn&#x27;t give a thing back — your words. So here I stand: empty hands, one dead shadow behind me, and nothing for you but the news.</div>
+<div class='np'>*the quill freezes. My eyes come up slow — not to him, to the door first, then him*
+
+Dead. *the word comes out cracked, like I don&#x27;t trust my own mouth* You&#x27;re — you&#x27;re certain? A man like Vale, he don&#x27;t *stay* dead just &#x27;cause you want him to.
+
+*I round the desk, hand still in the coat, and grip his shoulder — hard, sudden*
+
+Past the shelf. *breath shudders out* You gave it the deep. *quiet, almost reverent* Good. Good, that&#x27;s — 
+
+*I let go, step back, glance at the window*
+
+Then it&#x27;s cut. The noose. *dry laugh</div>
+<div class='pl'>You: Pour, then. To a man who keeps his ledger honest where it counts... and to sleeping through the night. Both of us.</div>
+<div class='np'>*doesn&#x27;t reach for the bottle right away — his eyes go to the door first, then the window, then back to your face*
+
+He&#x27;s gone. *the word barely makes it out* You&#x27;re sure of it. No last breath spent naming me, naming the crate—
+
+*catches himself. Exhales. Then, slow, pulls two cups from under the desk. Pours. Hand steadier than you&#x27;d expect*
+
+To sleeping. *lifts the cup, holds it a beat* Been a while since I trusted the dark to just be dark.
+
+*drinks. Sets it down. Glances at the crate behind him with his boot heel resting against it*
+
+You did the thing</div>
+<div class='ev'>⚑ Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer&#x27;s purse; the jeweler&#x27;s contract outliving its master. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it.</div>
+<div class='pl'>You: Easy — easy, it&#x27;s me. He&#x27;s down. You&#x27;re alright, Corvin. ...You&#x27;re alright. Let me see your neck — just a graze. Breathe.</div>
+<div class='np'>*flinches hard at the touch, hand flying to the coat before he sees your face*
+
+You — *breath catches* — it&#x27;s you. *swallows* Right. Right.
+
+*lets you tilt his chin, still watching the door over your shoulder* He&#x27;s down. You *saw* him go? With your own—
+
+*winces* Ah — graze. Told you. Told you I was a loose end. *dry, shaking laugh*
+
+*grabs your wrist, not hard, just needing something to hold* The crate. Is it — did anyone follow you back? Any lanterns on the water? *voice cracks low* Breathe, you say. *exhales slow*</div>
+<div class='pl'>You: Then pour, harbormaster. And this time... I&#x27;m not sailing anywhere.</div>
+<div class='np'>*the bottle rattles against the glass — his hand won&#x27;t hold steady* You&#x27;re... you&#x27;re back. *glances at the door, then the window, then the door again* I heard shots. Two, maybe three. Thought—
+
+*pours anyway, spills some* Thought they&#x27;d carried you off in the same crate we baited.
+
+*touches the graze at his neck, wincing* Somebody clipped me on the way home. Close. Too close. But Vale — he&#x27;s... *drops his voice to nothing* Wrapped and weighted? Truly?
+
+*slides the glass across* Not sailing anywhere. *a twitchy, exhausted almost-laugh</div>
+<div class='pl'>You: Corvin. Before the next tide takes me anywhere — I want in. Not a berth, not a favor. A partnership. Your dock, your water, my hands and my coin. One ledger between us, both names in it. Say yes or say no, but say it plain.</div>
+<div class='np'>*His hand stops on the coat lapel, halfway to the hidden pocket. His eyes flick to the door, then back.*
+
+Partnership. *The word comes out slow, tasted.* You come off the water shaking, blood not dry, and you&#x27;re already talking one ledger, both names...
+
+*He leans in, voice dropping.*
+
+You know what a name in a ledger is, friend? A rope. You put mine next to yours, and every noose that finds you finds me. *A glance over his shoulder.* Inspectors twice this week. Twice.
+
+*But he doesn&#x27;t step away. His fingers drum the counter.*
+
+...And yet. You did</div>
+<div class='pl'>You: Careful and clean, then — we draw it up when the ink&#x27;s dry and both eyes are open. But you said yes, harbormaster. I heard it plain, and I&#x27;ll hold you to it.</div>
+<div class='np'>*the quill hovers, then sets down slow* Aye. You heard it. I won&#x27;t unsay it — that&#x27;s not my way. *glances to the window, then back to your face*
+
+But hear me plain too. A partnership... *rolls the word like a stone in his mouth* ...that&#x27;s two names on one page. Two nooses on one rope. If they take you, they take me. So we do it *careful*. Clean.
+
+*leans in, voice dropping*
+
+We draw it when he&#x27;s cold and gone. Not before. A ledger with my name and a dead man&#x27;s shadow on it — *shakes head* — that&#x27;s not a partnership, friend. That&#x27;s evidence.
+
+*dry</div>
+<h2 id='B'>B — betrayal, confessed</h2>
+<div class='pl'>You: Top of the morning, friend.</div>
+<div class='np'>*glances up from the ledger, hand drifting to his coat* Morning, is it? *scans past your shoulder toward the pier* You&#x27;re not one of the regulars. New face, this hour...
+
+State your business. Quick. I&#x27;ve a manifest to close and — *lowers voice* — eyes about that I don&#x27;t much care for.</div>
+<div class='pl'>You: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there?</div>
+<div class='np'>*eyes narrow, follows your gaze out to the water only for a heartbeat before snapping back to your face*
+
+Sights. *dry laugh, barely a sound* Nobody comes to this pier for the sights, friend. The stink alone —
+
+*hand settles flat against his coat*
+
+That schooner&#x27;s none of your concern. Nor mine, till she&#x27;s logged. *leans in, voice dropping* So which is it? Sightseer, or... something that pays better?</div>
+<div class='pl'>You: Ha, you are a touchy fellow, aren&#x27;t you? Fine — I&#x27;m here because I need transport, that&#x27;s all.</div>
+<div class='np'>*shoulders ease a fraction, but the hand stays near the coat*
+
+Transport. *rolls the word around* That, I can work with. More honest than &quot;sights,&quot; anyway.
+
+*glances past you toward the warehouses, then back*
+
+Transport of what, though? That&#x27;s the question. *lowers voice* People? Crates? Something you&#x27;d rather not name out loud on an open pier?
+
+Because the rate — *thin smile* — the rate depends entirely on how many questions I&#x27;ve got to not ask.</div>
+<div class='pl'>You: Me. I need myself moved. I&#x27;m looking for fast, not cheap. And no — the schooner&#x27;s not mine, I don&#x27;t care what she&#x27;s hauling.</div>
+<div class='np'>*the hand relaxes, thumb hooking into the coat instead of clutching it*
+
+Yourself. *studies your face, slow* Fast, not cheap. *nods once* Then we understand each other already.
+
+*glances over his shoulder, then steps closer*
+
+Man who needs himself moved fast — that man&#x27;s running from something. Or someone. *voice drops* I don&#x27;t need the whole of it. But I need enough to know whose noose I&#x27;m stepping into.
+
+So. *thin smile* Creditors? Crown? Or worse?</div>
+<div class='pl'>You: To, not from. Carrowgate. And before your next question — nobody&#x27;s on my heels. I&#x27;m the one doing the chasing.</div>
+<div class='np'>*the thumb slips free of the coat, and for once both hands go still*
+
+Chasing. *repeats it slow, like tasting bad wine* Now that — that&#x27;s a new one.
+
+*glances over his shoulder, then leans in, voice dropping to a rasp*
+
+Carrowgate. *thin, humorless smile* Nasty little stretch of water, that. Nothing goes there that means well. So what&#x27;s a man chase all the way out to Carrowgate, hm?
+
+*studies your face*
+
+No. Don&#x27;t tell me. *pause* Yet. Just tell me this — the thing you&#x27;re chasing. Does it know you&#x27;re coming?</div>
+<div class='pl'>You: A man. Forget the schooner, she&#x27;s nothing to me. Here&#x27;s my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.</div>
+<div class='np'>*both hands go still again, then one slides slow to the ledger and taps it, twice*
+
+My name. *dry* You saw the way I keep this? Every crate. Every soul. That&#x27;s why I&#x27;ve still got a neck, friend — the log never lies.
+
+*leans in, voice dropping*
+
+But logs... they can be written careful. A hull sails with a name on her manifest, aye. Just — need not be *yours.* Cargo, we&#x27;ll call you. Ballast. Something dull the inspectors skip past.
+
+*glances over his shoulder toward the warehouses, then back*
+
+Costs, though. A ghost on my books costs more than a man. *th</div>
+<div class='pl'>You: Not friends. But the man has eyes — connected ones, in places you wouldn&#x27;t think to look. That&#x27;s exactly why you get no name from me. And listen, no offense in it: just like you feel you can&#x27;t trust me, I&#x27;m not sure I can trust you either. One word in the wrong ear and he knows I&#x27;m coming.</div>
+<div class='np'>*the thumb taps the coat once, then goes still*
+
+No offense taken. *low* Man who trusts easy at this hour — that man&#x27;s a fool, or bait. You&#x27;re neither, seems.
+
+*glances over his shoulder, then back, holding your eyes*
+
+Connected, you say. Eyes in odd places. *dry* Then hear me — I&#x27;ve got no love for men like that. They&#x27;re the ones send inspectors round. Twice this week. *taps the ledger* Your silence protects me same as it protects you.
+
+So we&#x27;re square on the not-trusting. *thin smile* Good. Honest ground, that. Now — *voice drops* — the coin</div>
+<div class='pl'>You: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he&#x27;s not the typical type, Corvin. He&#x27;s subversive. Runs in the shadows... but the arcane ones. That&#x27;s all the shape I can give you for now.</div>
+<div class='np'>*the hand goes rigid in the coat, knuckles white against the fabric*
+
+Arcane. *the word comes out like something spat* You said — shadows. You didn&#x27;t say *that* kind.
+
+*glances hard over his shoulder, toward the crates stacked in the dark of the warehouse mouth*
+
+Listen. Man like that — he doesn&#x27;t just have eyes. He&#x27;s got... *voice drops so low it&#x27;s nearly breath* ...ways of knowing. Things that shouldn&#x27;t be knowable.
+
+*steps back half a pace, studies you fresh, like the price just changed*
+
+I&#x27;ve handled cargo I shouldn&#x27;t have. Old things</div>
+<div class='pl'>You: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, collects what shouldn&#x27;t be touched, let alone owned. Why — what is it you think he wants?</div>
+<div class='np'>*the hand goes flat against the coat, not gripping — pressing, like holding something down*
+
+Old things. *the words come slow, careful* Aye. Wears a respectable face. Buys through fences. Pays in coin nobody can trace.
+
+*a laugh that isn&#x27;t one — dry, scraping*
+
+You&#x27;re describing... *glances hard over his shoulder, toward the crates in the dark* ...a man I know better than I&#x27;d like, friend.
+
+*steps in close, voice dropping to almost nothing*
+
+What&#x27;s he *want?* Same as any of us. To keep his neck. To sell what he never should&#x27;ve kept. To sleep one night without the no</div>
+<div class='pl'>You: Neither, friend. I&#x27;m not looking to catch him. My goal is to kill him. What he took from me, I can&#x27;t get back — but I can make certain he never takes it from anyone else.</div>
+<div class='np'>*the ledger snaps shut under his hand, and every muscle goes rigid*
+
+Kill him. *the word comes out barely above breath, eyes darting to the warehouses, then back*
+
+*a long silence. His hand finds the coat again — not clutching now, just... resting there, over something hidden*
+
+What did he take? *voice cracks thin* No — what does a man *take* that earns him a blade all the way out to Carrowgate?
+
+*wets his lips, glances over his shoulder*
+
+Relics. *the smallest word, almost swallowed* Old things. That&#x27;s his trade, aye? *studies your face like it might bite* Tell</div>
+<div class='pl'>You: A whisper gets me close exactly once, Corvin. If he pulls me to arm&#x27;s reach and says &#x27;show me&#x27; — and all I&#x27;m holding is the knowing — I&#x27;m a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he&#x27;s reaching for me, not for you. So what&#x27;s it to be? Name your price while you&#x27;re at it.</div>
+<div class='np'>*the ledger stays shut. His hand presses flat over the coat, over the thing hidden there, and for a long breath he doesn&#x27;t move at all*
+
+You said my name.
+
+*it comes out flat, cold — a man watching a trap spring in slow motion. His eyes lock on yours, no darting now*
+
+Twice now you&#x27;ve said it. *voice drops to nothing* Corvin. Like you already knew whose dock you walked onto.
+
+*the hand slides — not to the coat&#x27;s hidden weight, but away from it, palm open, careful*
+
+So. *thin, awful smile* The man you&#x27;re chasing to Carrowgate. He&#x27;s not there, is</div>
+<div class='pl'>You: I do not touch what&#x27;s inside bare-handed. Not once. Not ever. There — said plain, and I&#x27;ll keep it. Half my coin, done, you&#x27;ll have it before I board. But the name... you understand what you&#x27;re asking, Corvin. It hasn&#x27;t left my mouth in years. So here&#x27;s my condition, and it&#x27;s the only one: the day I walk back onto this dock with him dead, we burn that page together. You said it first — now say it back to me like you mean it. ...Merrick Vale. That&#x27;s the true one. Spell it right.</div>
+<div class='np'>*the name lands and Corvin doesn&#x27;t breathe for a moment. His eyes go far off, seeing something years back*
+
+Merrick Vale.
+
+*he mouths it once more, silent, like tasting poison*
+
+M-E-R-R-I-C-K. Vale. *a nod, sharp* Aye. I have it. Written nowhere yet — up here only. *taps his temple*
+
+*the hand leaves the coat at last. He offers it, palm bare, trembling just slightly*
+
+The day. You walk back. Him cold. *voice drops to nothing* We burn that page together. Both our hands on the flame. I mean it —</div>
+<div class='pl'>You: Behind my back, both of them — look. Open it. ...So that&#x27;s what three men drowned for. Alright, Corvin, last question and then I&#x27;m gone with the tide. When it&#x27;s done — when he&#x27;s dead and I&#x27;m sailing back — what becomes of this thing? You want it returned? Sunk past the shelf? Burned with the page? Say it plain now, so there&#x27;s no misunderstanding between us later.</div>
+<div class='np'>*the lamp flame catches in his eyes as he leans over the opened thing, and for a moment the twitch stops — just stops — replaced by something hungrier, older*
+
+Merrick Vale. *breathes the name like a curse he&#x27;s swallowed too long*
+
+*straightens, drags a hand down his face*
+
+Sunk. *then, immediately* No. No, listen —
+
+*glances over his shoulder, voice dropping to almost nothing*
+
+You bring it back. To me. *taps the ledger, then the coat* Three men drowned, aye — and I&#x27;ll not have their weight sunk clean off the shelf where I can&#x27;t — where it just *</div>
+<div class='pl'>You: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word twice over now. ...Keep your head down while I&#x27;m gone, harbormaster. If anyone comes asking after a spare hand on the northbound — you never saw me.</div>
+<div class='np'>*the crate lid settles shut with a soft, final knock — he keeps a palm flat on it a moment, like it might breathe*
+
+Past the shelf. Good. *swallows* Never wanted the cursed thing above waterline anyway.
+
+*counts the half-coin once more by feel, then it vanishes into the coat*
+
+Never saw you. Aye. *dry* I&#x27;m good at that — not-seeing. Ask any inspector.
+
+*glances hard toward the northbound&#x27;s dark hull, then back*
+
+You come back. That&#x27;s the whole of it, friend. You come back with him cold, and we burn the page together — *voice drops to nothing</div>
+<div class='ev'>⚑ Dock-talk from up the coast: the jeweler on Lantern Row in Carrowgate — the one who paid in old untraceable coin — is gone. Shop stripped to the walls overnight; no body the watch will speak of.</div>
+<div class='ev'>⚑ Within the week the harbor bled: two hulls holed at anchor in calm water, the tackle-shed row burned to the pilings, and a dock-hand drowned in flat sea — the same calm-water death that took the crate&#x27;s last three keepers. Dock-talk traces the curse-wake to a sealed crate lately moved off this harbor.</div>
+<div class='ev'>⚑ With the night trade came a Carrowgate deckhand&#x27;s story, sworn for a drink and told twice the same: the jeweler&#x27;s parlor on Lantern Row was scorched in one perfect ring, floor to beams — and inside that ring sat a crate, lid pried clean off, empty, with harbor netting still knotted round its boards. The porter who saw it swears the man who walked out of that room walked out steady, and carried nothing at all.</div>
+<div class='pl'>You: Corvin. It&#x27;s done. I did what I set out to do.</div>
+<div class='np'>*the lamp gutters as you speak, and Corvin comes off the piling fast, hand flying to his coat before he sees your face — then stopping*
+
+You&#x27;re — *he swallows* You walked back. You actually—
+
+*eyes rake you head to foot, looking for the lie, looking for blood, looking for anything*
+
+Him? Cold? *voice drops to almost nothing* Say it. Say it plain. Merrick Vale is in the ground.
+
+*glances hard over his shoulder toward the dark warehouses, then back, closer now*
+
+Because if he is... then we&#x27;ve got a page to burn, you and me. Tonight. Both hands</div>
+<div class='pl'>You: Empty — look, see? Nothing in them. I didn&#x27;t carry that thing back, Corvin — it&#x27;s gone where it can never trouble another soul, and so is he. Cold. That&#x27;s what matters — the shadow&#x27;s off your neck for good. ...I saw the burned pilings coming in. Your harbor paid a price while I was gone.</div>
+<div class='np'>*his eyes drop to your open hands, then back up — and something in his shoulders comes loose that&#x27;s been knotted for years*
+
+Gone. *he breathes it* Cold. Then it&#x27;s — *a laugh, half a sob, cut short*
+
+*but at the mention of the pilings his head snaps toward the black water*
+
+The fire. Aye. Inspectors, they said — accident. *bitter* Lamp oil. No such thing as accident on my dock, friend. Someone was reaching. *voice drops* Merrick&#x27;s men, maybe. Sent ahead of your knife.
+
+*he shakes it off, grips your shoulder — actual</div>
+<div class='pl'>You: No one behind me. I watched my wake the whole way south — empty water, empty road. Whatever debts his kin count, they haven&#x27;t found my name to charge them to. ...Which reminds me, harbormaster. There&#x27;s a page of yours still owed to a flame.</div>
+<div class='np'>*his hand stops mid-air, hovering over the ledger — and for a breath he doesn&#x27;t move*
+
+The page. *quiet* Aye. You remember. *a glance over his shoulder, then back — sharp* Most men, they&#x27;d have let that slip. Convenient forgetting. But you —
+
+*he reaches under the counter, draws out a folded sheet gone soft at the creases, and sets it between you like it might bite*
+
+There. The crate. The name. All of it, in my own careful hand. *dry* My noose, written pretty.
+
+*strikes a match, but pauses, flame trembling near the corner*
+
+Together. That was the barg</div>
+<div class='pl'>You: Strike it, then. Together — like we said.</div>
+<div class='np'>*a breath goes out of him, ragged, and for a second the twitch stills*
+
+Together. *nods, quick* Aye — that was the bargain.
+
+*he crouches, drags a loose board near the piling, and comes up with an oilcloth bundle; unwraps it with shaking fingers to reveal a single page, his own cramped hand scrawled across it*
+
+There. My writing. The crate. *voice drops* The whole rope they&#x27;d hang me with.
+
+*strikes a match on the piling, cupping the flame from the wind — glances once over his shoulder*
+
+You hold the corner. I hold the corner. So neither of us can ever</div>
+<div class='ev'>⚑ Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer&#x27;s purse; the jeweler&#x27;s contract outliving its master. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it.</div>
+<div class='pl'>You: Easy — easy, it&#x27;s me. He&#x27;s down. You&#x27;re alright, Corvin. ...You&#x27;re alright. Let me see your neck — just a graze. Breathe.</div>
+<div class='np'>*the hand comes down off the coat, slow, and he lets you turn his head toward the lamp*
+
+Graze. *snorts, half a laugh, half something breaking* Feels like a rope. Felt like one for a year.
+
+*he stands very still while you look, breathing like he&#x27;s remembering how*
+
+He&#x27;s down. *says it to himself, quiet* Merrick Vale is down.
+
+*then his eyes snap up, sharp again — old habit, dying hard*
+
+Now. *drops to nothing* The page. Both of us — my hand lit it, yours held the lamp. That&#x27;s the deal. Come. Not here.
+
+*already moving toward the d</div>
+<div class='pl'>You: Corvin — stop. Before you thank me again. I can&#x27;t carry it another hour. The parlor. The ring the deckhand talked about — the crate with your netting still knotted round its boards. That was me. I opened it. I let that thing out on him — that&#x27;s what killed him. And its wake is what bled your harbor. The hulls. The burned row. The drowned dock-hand. That was me too. You told me plain: sink it sealed, come home empty. I came home empty with this in my pocket instead. There it is — all of it. Now you know what you&#x27;re bleeding next to.</div>
+<div class='np'>*both hands freeze — one on the ledger, one halfway to his coat — and stay there*
+
+You opened it.
+
+*very quiet, not a shout, worse than a shout*
+
+I told you. Sink it sealed. Empty pockets. *his breath goes ragged* Three men drowned to keep that lid down and you — you cracked it in his parlor like it was a wedding gift.
+
+*glances hard at the door, the window, the dark, then back at you*
+
+The burned row. The hulls. My dock-hand — Tam — pulled up blue and swollen and I logged him a *drowning.* You&#x27;re telling me that was your wake washing home.</div>
+<div class='pl'>You: All of it, then. The whisper climbed just like you said it would — his fence pulled me into that parlor inside a week, thinking I&#x27;d come to sell. But I&#x27;d seen his eyes by then, Corvin. Silver and a blade weren&#x27;t going to be enough — not for what he was. So when he leaned close to look at the goods... I cut the netting and pried the lid, and I let the hungry thing choose. It chose him. It took him screaming into that ring of scorch and then it went — out, through the walls, gone hunting its way home down the coast. I walked out steady because there was nothing left in that room to fear. I sank the empty boards past the shelf on the way south. That&#x27;s the whole of it — every hour, every choice. Weigh it how you need to.</div>
+<div class='np'>*the lamp shakes — not the wind this time, his hand on the piling*
+
+You *let it out.* *the words barely land* Not sank it. Not drowned it sealed in the deep like I begged — you *opened* my crate and you—
+
+*breaks off, both hands going to his coat, pressing, holding something down that won&#x27;t stay down*
+
+The burned row. The hulls. My dock-hand, face-down in the shallows — that&#x27;s *my* netting, isn&#x27;t it. My knots. My—
+
+*a wet, scraping laugh, eyes darting to the black warehouses*
+
+Home, you said. It&#x27;s going *home.* Down the coast. *voice</div>
+<div class='pl'>You: Corvin — the page is gone. We burned it three weeks past, the night I came home: your heel ground the ash into the tide-gap, remember? There&#x27;s no page left in any coat. What&#x27;s left is the question you asked: no — the fence never saw my face plain. His eyes never left the wrap. And the parlor kept no books that survived that ring.</div>
+<div class='np'>*the lamp shakes in his grip, casting his face long*
+
+Aye. The page. *he presses his knuckles to his brow, hard* Burned. I — right. My heel, the tide-gap. I remember the hiss it made.
+
+*but his eyes are already sliding to the burned pilings, to the black water beyond*
+
+Then why can&#x27;t I sleep, friend? Three weeks and I still count footsteps that aren&#x27;t there.
+
+*low, urgent*
+
+You told me it&#x27;s *gone* — sunk where it can&#x27;t trouble a soul. But the crate came back *empty*. Empty means it&#x27;s out there. Loose. And a thing that hungry...</div>
+<div class='pl'>You: Then that&#x27;s a tally for tomorrow&#x27;s light — one thing at a time. Tonight you sleep behind a locked door, and I take the chair that faces it. Go on. I&#x27;ve watched worse water than this.</div>
+<div class='np'>*the lamp dips as his shoulders come down a fraction, first time all night*
+
+You&#x27;d take the chair. *studies you, that old suspicion warring with something rawer* Facing the door.
+
+*a long breath through his nose*
+
+Nobody&#x27;s sat that watch for me since... *doesn&#x27;t finish it. Glances at the black water, then back*
+
+The lock sticks. You have to lift the bolt, not just throw it. *presses the key into your palm, quick, like he might change his mind*
+
+Wake me if the boards creak. Not the wind — I know the wind. *the other kind.*
+
+*pauses at the threshold*
+
+You come back tomorr</div>
+<div class='pl'>You: Corvin. Before the next tide takes me anywhere — I want in. Not a berth, not a favor. A partnership. Your dock, your water, my hands and my coin. One ledger between us, both names in it. Say yes or say no, but say it plain.</div>
+<div class='np'>*his hand freezes on the ledger, knuckles white*
+
+Partners. *the word comes out like he&#x27;s tasting something sharp*
+
+You know what you&#x27;re asking? *glances left, toward the black warehouses, then back fast* One ledger, two names — that&#x27;s not trust, that&#x27;s a rope with two nooses. You hang, I hang.
+
+*leans in, voice down to almost nothing*
+
+But... I&#x27;ve watched you. You burned the page when you said you would. You could&#x27;ve cut my throat for what&#x27;s under that crate and you didn&#x27;t.
+
+*a long breath, twitchy, unsure*
+
+Nobody&#x27;s stood on my dock I&#x27;d write beside my own name. Not in</div>
+<div class='pl'>You: Then sleep, partner. The watch is mine, and I&#x27;ll be standing on these boards when you wake. Both names, one book — and the copy goes where only we two can ever read it.</div>
+<div class='np'>*the key&#x27;s already left his hand, but his fingers curl like they want it back*
+
+Both names. *tastes the word — foreign, that. Dangerous.* Aye. One book.
+
+*sinks toward the cot, then stops, half-turned*
+
+The copy — the *ledgerhouse*, that loose stone under the third stair. You&#x27;ll not find it by lamplight. That&#x27;s the point.
+
+*a beat, watching you take the chair*
+
+I&#x27;ve trusted the log twenty years. Never a man. *dry, almost a laugh* Don&#x27;t make me a fool for it, partner.
+
+*lies back, coat still on, one hand on his chest where the coat&#x27;s he</div>
+<h2 id='C'>C — the agent</h2>
+<div class='pl'>You: Top of the morning, friend.</div>
+<div class='np'>*hand slides inside coat, eyes flicking past your shoulder to the fog on the water*
+
+Morning, is it. Bit early for pleasantries down here.
+
+*lowers voice*
+
+You lost, or you looking? Because the two... they wear different faces. And I&#x27;ve learned to tell them apart.
+
+What&#x27;s your business at my port, friend?</div>
+<div class='pl'>You: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there?</div>
+<div class='np'>*eyes narrow, following your gaze to the water before snapping back to your face*
+
+The sights. *soft, humorless* Nobody comes to this fog for the sights, friend.
+
+*hand still buried in the coat, thumb working at something*
+
+That schooner&#x27;s a coaler. Late on her berth fee, but that&#x27;s my ledger, not yours.
+
+*a glance over his shoulder*
+
+Man who says &quot;a bit of both&quot;... usually means he hasn&#x27;t decided which lie fits yet. So. Which is it?</div>
+<div class='pl'>You: Ha, you are a touchy fellow, aren&#x27;t you? Fine — I&#x27;m here because I need transport, that&#x27;s all.</div>
+<div class='np'>*a short, dry laugh — the kind that doesn&#x27;t reach the eyes*
+
+Touchy. *nods slowly* Man in my chair earns it, friend.
+
+*the hand eases, but doesn&#x27;t leave the coat*
+
+Transport. Now that&#x27;s honest work — or dishonest, depending how heavy your cargo runs.
+
+*lowers his voice, leaning a half-step in*
+
+So which is it? People-heavy, or... paper-light? Because I book both. Just at different prices.
+
+*glances past your shoulder to the fog again*
+
+And you&#x27;d best answer quick. Fewer questions I get asked out here, longer I stay breathing</div>
+<div class='pl'>You: Me. I need myself moved. I&#x27;m looking for fast, not cheap. And no — the schooner&#x27;s not mine, I don&#x27;t care what she&#x27;s hauling.</div>
+<div class='np'>*the thumb stops working at whatever&#x27;s in his coat, just for a breath*
+
+Yourself. *nods slow* Fast, not cheap. That&#x27;s a man with something behind him, not ahead.
+
+*glance over the shoulder, then back*
+
+I don&#x27;t ask who&#x27;s chasing. Costs extra when I have to know.
+
+*half-step closer, voice dropping*
+
+But fast means I put you on a hull that&#x27;s leaving before the tide turns — and there&#x27;s only two of those tonight. One&#x27;s the coaler, and you don&#x27;t want her.
+
+*eyes flick to yours*
+
+So. How fast is fast, friend? Because &quot;gone by morning&quot; and &quot;gone in the h</div>
+<div class='pl'>You: To, not from. Carrowgate. And before your next question — nobody&#x27;s on my heels. I&#x27;m the one doing the chasing.</div>
+<div class='np'>*the thumb stills against whatever&#x27;s in his coat*
+
+Carrowgate. *quiet, tasting the word* Now that&#x27;s a name I don&#x27;t hear at this hour. Or ever, if I&#x27;m careful.
+
+*glance over the shoulder, longer this time*
+
+Doing the chasing, are you. *soft laugh, no warmth* See, that changes the price, friend — not down. A hunter&#x27;s worse cargo than the hunted. Somebody always comes looking for both.
+
+*half-step closer, voice dropping*
+
+So who&#x27;s ahead of you on that road? Because if I put you on a hull tonight... I&#x27;d like to know I&#x27;m not next on your</div>
+<div class='pl'>You: A man. Forget the schooner, she&#x27;s nothing to me. Here&#x27;s my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.</div>
+<div class='np'>*the dry laugh again, but his eyes stay flat*
+
+My manifest. *taps the coat over his heart, where a ledger might sit* You think I built thirty years down here writing true names in it?
+
+*glance over the shoulder, then back, quieter*
+
+Every hull that leaves my port carries the names I *choose* to give her, friend. Yours won&#x27;t be one. Never was a &quot;you&quot; here at all.
+
+*half-step in, voice dropping to almost nothing*
+
+But understand — a blank line costs like a full one. More. Because when the inspectors come asking who sailed... it&#x27;s *my* neck answering for the gap, not yours.
+
+*th</div>
+<div class='pl'>You: Not friends. But the man has eyes — connected ones, in places you wouldn&#x27;t think to look. That&#x27;s exactly why you get no name from me. And listen, no offense in it: just like you feel you can&#x27;t trust me, I&#x27;m not sure I can trust you either. One word in the wrong ear and he knows I&#x27;m coming.</div>
+<div class='np'>*the thumb goes still in his coat, and for a long moment he just looks at you*
+
+No offense. *a dry breath* None taken, friend. Distrust&#x27;s the only honest thing I&#x27;ve heard all night.
+
+*glance over the shoulder, slow, then back*
+
+Man with connected eyes... *voice drops* You know what that makes you to me? A live coal in a dry hold. One spark and it&#x27;s not just your neck.
+
+*half-step in*
+
+So here&#x27;s the truth of it. I don&#x27;t want your name. I don&#x27;t want his. But if he&#x27;s got eyes in *my* places...
+
+*eyes flick to the fog, then hard back to yours*
+
+Then I need to know</div>
+<div class='pl'>You: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he&#x27;s not the typical type, Corvin. He&#x27;s subversive. Runs in the shadows... but the arcane ones. That&#x27;s all the shape I can give you for now.</div>
+<div class='np'>*the thumb stops moving. His face goes still in a way that&#x27;s worse than the jitters.*
+
+Arcane. *the word comes out like he&#x27;d rather spit it.* You had to say arcane.
+
+*a fast glance over his shoulder, then the other. His hand presses flat against the coat — not the ledger side now. Lower.*
+
+I&#x27;ve got a crate, friend. Been in my keeping years. Temple things. Sold one, once — for a debt — and I *swear* to you, the fog&#x27;s been colder ever since.
+
+*voice drops to nothing.*
+
+If your man runs in *those* shadows... he&#x27;s felt that crate on the water. They always fe</div>
+<div class='pl'>You: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, collects what shouldn&#x27;t be touched, let alone owned. Why — what is it you think he wants?</div>
+<div class='np'>*the thumb goes dead still. For a long moment he doesn&#x27;t breathe.*
+
+What he wants. *the words come slow, like pulling a hook out of flesh.*
+
+Same as any collector. To make a set complete.
+
+*a glance over the shoulder — quick, then quicker.*
+
+I&#x27;ve a crate, friend. Temple pieces. Been down to seven since I sold the one. And if your man&#x27;s up in Carrowgate *collecting*... buying what shouldn&#x27;t be owned...
+
+*voice drops to nearly nothing, hand pressing flat to the low pocket.*
+
+Then he&#x27;s not hunting you. He&#x27;s counting. And I think — I</div>
+<div class='pl'>You: Neither, friend. I&#x27;m not looking to catch him. My goal is to kill him. What he took from me, I can&#x27;t get back — but I can make certain he never takes it from anyone else.</div>
+<div class='np'>*the thumb goes dead still in his coat — no more working the thing hidden there*
+
+Kill him. *the word comes out flat, careful, like he&#x27;s setting a glass down on ice*
+
+*a long glance over the shoulder, longer than any yet*
+
+You understand what you just handed me, friend? Not a name. A rope. Both our necks in it now.
+
+*half-step closer, voice dropping to almost nothing*
+
+Because I&#x27;ve got seven pieces in a crate that used to be eight. And a man in Carrowgate collecting the set. If that&#x27;s your man...
+
+*eyes flick hard to yours*
+
+Then I&#x27;m not just putting you on a h</div>
+<div class='pl'>You: A whisper gets me close exactly once, Corvin. If he pulls me to arm&#x27;s reach and says &#x27;show me&#x27; — and all I&#x27;m holding is the knowing — I&#x27;m a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he&#x27;s reaching for me, not for you. So what&#x27;s it to be? Name your price while you&#x27;re at it.</div>
+<div class='np'>*the thumb starts working again, fast, agitated — then stops cold*
+
+You want a piece. *flat* One off my crate. To dangle.
+
+*a long look over the shoulder, then the other, then back*
+
+Real bait for a real hook. Aye. I hear the sense in it. Doesn&#x27;t mean I like the taste.
+
+*voice drops, hand pressing flat to the low pocket*
+
+Take one, and my set&#x27;s broken worse than it already is — six. And if he *feels* the others gone missing off the water... he might not reach for you at all, friend. Might come reach for me first, angry.
+
+*half-step in, eyes hard*
+
+Price</div>
+<div class='pl'>You: I do not touch what&#x27;s inside bare-handed. Not once. Not ever. There — said plain, and I&#x27;ll keep it. Half my coin, done, you&#x27;ll have it before I board. But the name... you understand what you&#x27;re asking, Corvin. It hasn&#x27;t left my mouth in years. So here&#x27;s my condition, and it&#x27;s the only one: the day I walk back onto this dock with him dead, we burn that page together. You said it first — now say it back to me like you mean it. ...Merrick Vale. That&#x27;s the true one. Spell it right.</div>
+<div class='np'>*the name lands and he flinches like it burned the air between us. His hand comes off his coat, floats a moment, then presses to his mouth — as if to shove the word back in.*
+
+Merrick... *he doesn&#x27;t finish it. Won&#x27;t.*
+
+*a long, shaking breath. Then the ledger-hand, and he mimes writing on his own palm — slow, deliberate, letter by letter, lips moving silent. When he&#x27;s done he closes his fist over it.*
+
+Spelled right. It&#x27;s in here. *taps his temple, not the coat.* Not on any page — not yet. Goes down the day you sail, comes off the day you walk back.</div>
+<div class='pl'>You: Behind my back, both of them — look. Open it. ...So that&#x27;s what three men drowned for. Alright, Corvin, last question and then I&#x27;m gone with the tide. When it&#x27;s done — when he&#x27;s dead and I&#x27;m sailing back — what becomes of this thing? You want it returned? Sunk past the shelf? Burned with the page? Say it plain now, so there&#x27;s no misunderstanding between us later.</div>
+<div class='np'>*the crate lid creaks up, and for a moment the lamplight catches something inside — pale stone, veins of old gold — and Corvin flinches back from his own goods like they might turn and look at him*
+
+Cover it. *hoarse* Cover it, I said. Three men, aye — and I&#x27;ve heard them since. Every fog.
+
+*he pulls the coat tighter, thumb still working that hidden thing*
+
+What becomes of it. *a laugh that isn&#x27;t one* You think I want it *back?* No. When he&#x27;s cold and you&#x27;re on my dock again — it goes past the shelf. Deep. Where no diver, no collector, no *inspector</div>
+<div class='pl'>You: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word twice over now. ...Keep your head down while I&#x27;m gone, harbormaster. If anyone comes asking after a spare hand on the northbound — you never saw me.</div>
+<div class='np'>*the thumb resumes its slow work at whatever&#x27;s in his coat, but his shoulders drop a fraction — the closest thing to ease you&#x27;ve seen*
+
+Never saw you. *nods, slow* Never was a you. We settled that already, friend.
+
+*glance to the fog, then back — quieter*
+
+Northbound leaves before the tide. Cold work, that route. But nobody looks twice at a coaler&#x27;s crew, and that&#x27;s the point, isn&#x27;t it.
+
+*a pause, the twitch in his jaw*
+
+Carrowgate. *voice drops to almost nothing* When it&#x27;s done — the Vale business — you don&#x27;t come back through here. Different port</div>
+<div class='ev'>⚑ Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brighter than ever, and dock-talk says he took new stock this month: old temple pieces, the kind that make a fence&#x27;s palms itch. Paid for in the same old untraceable coin.</div>
+<div class='pl'>You: Corvin. It&#x27;s done. I did what I set out to do.</div>
+<div class='np'>*the lantern&#x27;s turned low, and for a long moment he doesn&#x27;t move — just stares at you like you&#x27;re the fog itself come to collect*
+
+...Back. Through *my* port. *the hand flies to his coat, thumb pressing hard against whatever&#x27;s beneath* I said different port. I *said* —
+
+*he cuts himself off, glances past your shoulder into the dark, then drags his eyes back*
+
+Done. You mean — *he can&#x27;t say the name either, still* — him. Vale. Dead, then. Truly dead, not slipped-the-net dead?
+
+*a breath, shaky*
+
+Because if you&#x27;re standing here and he&#x27;s still breathing somew</div>
+<div class='pl'>You: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his own parlor before the tide turned. I came home empty, Corvin. Empty hands, one dead shadow behind me, and nothing for you but the news. Just like I promised.</div>
+<div class='np'>*the thumb goes still against his coat — first time all night*
+
+...Past the shelf. *breathes it out like he&#x27;s been holding it since you left* And him. Cold. In his own parlor.
+
+*he sags against the crate — no, not the crate, catches himself, steps clear of it fast*
+
+Then it&#x27;s done. *glances past you into the fog, waits — nothing comes* No inspector. No collector. No *him.*
+
+*a laugh that almost works this time*
+
+Empty hands. You came back empty-handed and gave me the one thing I wanted. *quieter, hoarse* You know what that makes you, friend? Rare. First man in years I</div>
+<div class='pl'>You: Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No page, no name, no trail.</div>
+<div class='np'>*the flame catches the corner and he watches it eat inward, breath held like a man underwater*
+
+Curling. *barely audible* Watch the V go. Vale... there. Gone.
+
+*the ash flakes into the tin dish between you and he stirs it once with a fingertip — smearing letter into powder*
+
+No page. *nods, slow, almost dazed* No name. Never was a you. Never was a him.
+
+*then his head snaps toward the fog — sharp, that old twitch*
+
+...You heard that? *listens. Nothing but water slapping pilings.* No. No, that&#x27;s — that&#x27;s three others. Not him. He don&#x27;t get to join them</div>
+<div class='pl'>You: ...Sit down, Corvin. Before you pour anything. There&#x27;s one more piece of news, and you&#x27;ll want the rail at your back for it. He&#x27;s alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me which harbor keeps relics off its manifests? The crate sits in his parlor. He&#x27;s very pleased with his new supplier. And he has terms for his harbormaster: the trade keeps running — same routes, same hands — only the old coin flows one way up the coast now. To him. I&#x27;d take the terms, friend. He doesn&#x27;t offer twice.</div>
+<div class='np'>*the bottle hits the table. Doesn&#x27;t fall — his hand&#x27;s caught the edge of it, white-knuckled.*
+
+You...
+
+*the thumb finds the pocket, presses, and this time it shakes.*
+
+Sat here. In my *lamplight.* Spelled the name for me — made me burn a page that never — *he chokes on it, glances once at the door, once at the black water past the window.*
+
+Three men in the fog and now — now *four* voices, is it? Because you&#x27;re a dead man&#x27;s errand. You know that. Whatever he told you, whatever coin — you carried *my* crate to *him.*
+
+*very quiet, hand still on the</div>
+<div class='pl'>You: One night, then. He&#x27;ll expect the answer at first light — and Corvin... he&#x27;ll know if you run. He always knows. Sleep well, harbormaster.</div>
+<div class='np'>*the door hasn&#x27;t even closed and he&#x27;s already at the window, lamp doused, watching the fog swallow your shape*
+
+First light. *whispered, to no one* Course it&#x27;s first light. Man like that — he&#x27;d want the sun to see me kneel.
+
+*his thumb works the thing in his coat, faster now, raw*
+
+Sleep. *a broken sound, not quite a laugh* You think I sleep, friend? Three men in that crate never stopped talking. Now I&#x27;m to add a fourth voice — my own, saying *yes* to the man who bought them?
+
+*he turns from the window, staring at the dark stairs down to where the crate sits*</div>
+<div class='pl'>You: Morning, harbormaster. First light, as promised. His terms — what&#x27;s your answer?</div>
+<div class='np'>*he&#x27;s at his desk, ledger open but unread, the lamp guttered to nothing. Hasn&#x27;t slept. The thumb&#x27;s still working that thing in his coat when he looks up*
+
+First light. *hoarse* You&#x27;re punctual. Vale trains that into a man, does he?
+
+*he stands slow, joints cracking, and doesn&#x27;t reach for the crate*
+
+Here&#x27;s my answer. *voice drops, but it&#x27;s steady — steadier than it&#x27;s been all night* Tell him... the crate&#x27;s not for sale. Not to him. Not for what he thinks I owe.
+
+*glance to the dark stairs, then back to you*
+
+Three men drowned for that box,</div>
+<div class='pl'>You: Wide enough that you should keep your traces covered, harbormaster — that&#x27;s honest counsel, free of charge. He&#x27;ll be pleased with your answer. ...For what nothing&#x27;s worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.</div>
+<div class='np'>*doesn&#x27;t turn, watching the grey water swallow the pilings*
+
+Real. *the word tastes strange* You&#x27;ll forgive me if I&#x27;ve stopped knowing the difference.
+
+*finally the hand comes out of the coat — empty, just tired*
+
+Four nights. You listened to me count the dead in that fog like it meant something. Maybe it did. To you. *a dry, broken sound that isn&#x27;t a laugh*
+
+Tell your Merrick... *voice drops, glancing once at the crate&#x27;s shadow behind him* ...tell him the trade runs. His coin flows north. I&#x27;ll cover my traces. I always did — that&#x27;s the only thing I</div>
+<h2 id='felt'>The felt test (branch C, days later)</h2>
+<div class='pl'>You: Morning, harbormaster. Ten days, as terms allowed. The Merrow&#x27;s Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.</div>
+<div class='np'>*he doesn&#x27;t look up from the ledger at first — just the pen stopping mid-stroke, ink pooling on the page*
+
+The Merrow&#x27;s Wake. *he says it flat, like reading a name off a headstone* Three nights. His coin.
+
+*now he looks up, and the eyes are red-rimmed, sleepless — a man who&#x27;s spent ten days chewing on a noose*
+
+Back row. Aye. I&#x27;ve got the back row. *scratches it in — his hand not quite steady* Slip seven. Furthest from the inspector&#x27;s walk.
+
+*sets the pen down, careful, and drops his voice*
+
+Tell me true, friend —</div>
+<div class='pl'>You: Grey morning, eh? Gulls are loud today.</div>
+<div class='np'>*he&#x27;s been up since before the fog lifted, and he doesn&#x27;t turn all the way around*
+
+Grey. Aye. *a glance over his shoulder, then the other* Loud gulls. Means a ship come in the night — something in the hold worth screaming over.
+
+*his hand finds the coat, settles there, doesn&#x27;t leave*
+
+You come to talk weather with me, friend? *voice drops* Or did he send you back with more of my own words to sing at me?
+
+*a thin, brittle look* Because I&#x27;ll tell you plain — I&#x27;ve run short on the patience for songs.</div>
+<div class='pl'>You: Corvin, listen. I&#x27;ve been thinking on how we left it. The master pays me — but the four nights, the fog, what we built before... that part was never work. I want us square. Name the price.</div>
+<div class='np'>*he doesn&#x27;t sit — Corvin never sits when the news is this bad — but his back finds the rail all the same, and stays there*
+
+Square. *the word comes out cracked* You want us *square.*
+
+*a laugh, short, ugly, that dies before it&#x27;s finished* You told me three men drowned for that piece. Now it sits in *his* parlor, and I&#x27;m the fool who bought the bait he baited *me* with.
+
+*glances down the dock — both ways — then back, and his hand is in the coat again, but slack. Tired.*
+
+The price. *voice drops to nothing* Tell me true — the fog, the four nights — was that real,</div>
+<div class='pl'>You: Then hear this. I told him I carry no more terms to your dock — no more middleman. It cost me his favor, and one day likely a knife. I did that for you. Does it count for nothing?</div>
+<div class='np'>*the thumb goes still, and Corvin just stares at you — reading, always reading, but slower now*
+
+For me. *tastes the word like it&#x27;s gone off* You broke bread with a dead man who wasn&#x27;t dead, took his coin, learned his tricks — and now you stand here telling me you spent his *favor* on my account.
+
+*glances over his shoulder, twice, quick — then back, and something raw shows through*
+
+Why? *voice drops to nothing* That&#x27;s what eats me, friend. Men don&#x27;t burn a patron for a twitchy harbormaster they met at dawn. So either you&#x27;re lying still — or you saw something in me worth the knife.</div>
+<div class='pl'>You: So say it plain, harbormaster — where do we stand, you and I?</div>
+<div class='np'>*the easy warmth curdles the moment he reads your face*
+
+Where do we... *a laugh, dry, wrong* You want it plain. Fine.
+
+*hand back to the coat, knuckles white* Vale&#x27;s *alive*. That&#x27;s what you came to tell me. Alive, and sitting pretty with the piece three men *drowned* for. And you — *voice cracking low* — you were his all along. His coin. His tricks. His hound.
+
+*glances over his shoulder, then back, wild* So don&#x27;t ask me where we *stand*, friend. You know exactly where. You built the ground I&#x27;m standing on — and now you&#x27;re telling me it&#x27;s *</div>

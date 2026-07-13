@@ -155,6 +155,9 @@ def build_app():
         importance: float | None = None  # None -> he appraises it himself
         magnitude: float | None = None   # optional coarse objective-scale hint (0..1)
 
+    class TagIn(BaseModel):
+        tag: str = ""
+
     app = FastAPI(title="Credibility — free-hand")
 
     @app.get("/", response_class=HTMLResponse)
@@ -241,6 +244,22 @@ def build_app():
         async with _LOCK:
             demo.restore(BASELINE)
             _rebuild_engine()          # _seed_clock() runs inside; clock continues above the baseline
+            STATE["turns"] = 0
+            return JSONResponse(_state_dict())
+
+    @app.post("/api/mind")
+    async def mind(b: TagIn) -> JSONResponse:
+        """Swap the persisted mind to a named snapshot (demo: talk to A-final / B-final / C-final
+        Corvin). Restores the snapshot onto .memory/, rebuilds the engine, reseeds the clock."""
+        tag = (b.tag or "").strip()
+        if not tag:
+            return JSONResponse({"error": "no tag"}, status_code=400)
+        async with _LOCK:
+            try:
+                demo.restore(tag)
+            except SystemExit:
+                return JSONResponse({"error": f"no snapshot '{tag}'"}, status_code=404)
+            _rebuild_engine()
             STATE["turns"] = 0
             return JSONResponse(_state_dict())
 
@@ -370,6 +389,14 @@ tr.sel td.star{color:var(--sel)} tr.dim td{opacity:.5}
   <header>
     <div class="who"><div class="name" id="hName">…</div><div class="role" id="hRole"></div></div>
     <div class="model" id="hModel"></div>
+    <select id="mindSel" title="swap the persisted mind (demo snapshots)" style="background:#0b0f14;border:1px solid var(--edge2);border-radius:8px;color:var(--muted);font-size:11px;padding:5px 7px">
+      <option value="">— mind: current —</option>
+      <option value="lich-A6-final">A · the honest partner</option>
+      <option value="lich-B2-final">B · confessed &amp; forgiven</option>
+      <option value="lich-C-felt-final">C · betrayed &amp; scarred</option>
+      <option value="lich-branch-point">the branch point (pre-fork)</option>
+      <option value="arc-baseline">old scripted arc (scarred)</option>
+    </select>
     <div class="badge"><span class="dot"></span>loaded from <b>.memory/</b> · <span id="hTurns">0</span> turns</div>
   </header>
   <main>
@@ -590,8 +617,17 @@ $("brainBody").addEventListener("mouseout",e=>{const c=e.target.closest(".mem");
 $("memPop").addEventListener("mouseenter",()=>clearTimeout(popTimer));
 $("memPop").addEventListener("mouseleave",()=>{$("memPop").style.display="none";});
 $("msg").addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} });
+async function switchMind(tag){
+  if(!tag) return;
+  const res=await fetch("/api/mind",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tag})});
+  if(res.ok){ const d=await res.json(); $("convo").innerHTML=""; paintState(d);
+    addLine("player","— mind —","<em>now talking to: "+esc(tag)+"</em>"); }
+}
+$("mindSel").addEventListener("change",e=>switchMind(e.target.value));
 (async()=>{ const d=await (await fetch("/api/state")).json(); paintState(d);
-  if(d.mute_default===false) {} $("msg").focus(); })();
+  const m=new URLSearchParams(location.search).get("mind");
+  if(m){ $("mindSel").value=m; await switchMind(m); }
+  $("msg").focus(); })();
 </script>
 </body></html>"""
 
