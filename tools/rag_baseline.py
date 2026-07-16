@@ -68,7 +68,7 @@ class RagBaselineCharacter:
         ctx = f"Summary of your history with this person:\n{self._summary}\n\n" if self._summary else ""
         user = (f"{ctx}Relevant memories (most similar to what was just said):\n{recalled}\n\n"
                 f'The person says: "{player}"\n\nReply as the character — a few lines.')
-        reply = self._complete(self._persona, user, 200)
+        reply = self._complete(self._persona, user, 1024)  # PARITY: same reply ceiling as the engine's runs (a lower cap here would clip the baselines mid-sentence and cook the comparison)
         # standard pattern: store the exchange (both sides), then refresh the rolling summary
         self.remember(f"They said: {player}")
         self.remember(f"I replied: {reply}")
@@ -151,7 +151,7 @@ class TrackerRagCharacter(RagBaselineCharacter):
         user = (f"{self._rel_block()}\n\n{ctx}"
                 f"Relevant memories (most similar to what was just said):\n{recalled}\n\n"
                 f'The person says: "{player}"\n\nReply as the character — a few lines.')
-        reply = self._complete(self._persona, user, 200)
+        reply = self._complete(self._persona, user, 1024)  # PARITY: same reply ceiling as the engine's runs (a lower cap here would clip the baselines mid-sentence and cook the comparison)
         self.remember(f"They said: {player}")
         self.remember(f"I replied: {reply}")
         if self._summarize:
