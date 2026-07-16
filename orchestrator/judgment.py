@@ -61,7 +61,13 @@ async def complete(system: str | list, prompt: str, *, role: str = "salience",
     resolved = model_for(role, model)
 
     async def _once(budget: int) -> str:
-        llm = AnthropicLLM(model=resolved, max_tokens=budget)
+        # "local/<name>" routes the judge seat to an OpenAI-compatible endpoint (llama-server /
+        # vLLM) — the ONE swap point for self-hosted judgment models (LOCAL_JUDGE_BASE_URL).
+        if resolved.startswith("local/"):
+            from .adapters.llm_openai_compat import OpenAICompatLLM
+            llm: object = OpenAICompatLLM(model=resolved[len("local/"):], max_tokens=budget)
+        else:
+            llm = AnthropicLLM(model=resolved, max_tokens=budget)
         parts: list[str] = []
         async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
             parts.append(delta)

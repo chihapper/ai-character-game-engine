@@ -60,3 +60,6 @@ tts_bakeoff_out/
 
 # Credibility Demo — pre-baked Hume audio (large, regenerate with: python -m tools.credibility_demo --voice)
 docs/credibility-demo/audio/
+
+# local judge-audition model weights + runtime
+.models/
