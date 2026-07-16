@@ -25,12 +25,18 @@ and the future overlay reads it. Engine talk model = opus; engine-process = defa
 import argparse
 import asyncio
 import json
+import os
 import pathlib
 
 from tools import credibility_demo as demo   # bootstrap() + the demo-six set_flags at import
 from tools._harness import make_engine, set_flags, wipe
 
 set_flags(commitment_detection=True)          # the package promise must become a tracked obligation
+
+# Rerun isolation (model-comparison runs): a different slug keeps the canonical Corvin mind and
+# its snapshots untouched; a different emit basename keeps the canonical replay files untouched.
+demo.SLUG = os.environ.get("CRED_LICH_SLUG", demo.SLUG)
+demo.apply_engine_model(demo.ENGINE_MODEL)    # CRED_ENGINE_MODEL — demo.main() applies it, we must too
 
 from orchestrator.config import get_settings
 
@@ -43,14 +49,15 @@ from orchestrator.character_store import load_character
 from orchestrator.context import RespondRequest, Situation
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-OUT = REPO / "docs" / "credibility-demo" / "replay_lich"
+OUT = REPO / "docs" / "credibility-demo" / os.environ.get("CRED_LICH_EMIT", "replay_lich")
 DOCK = demo.DOCK
 SHED = "back of the tackle-shed, after dark"
 
 STATE: dict = {"eng": None, "clock": 41.0, "branch": "shared", "turns": 0}
 _LOCK = asyncio.Lock()
 REPLAY: dict = {"meta": {"character": "Corvin", "slug": demo.SLUG, "arc": "lich",
-                         "model": demo.MODEL, "engine_model": "default (claude-sonnet-4-6)"},
+                         "model": demo.MODEL,
+                         "engine_model": demo.ENGINE_MODEL or "default (claude-sonnet-4-6)"},
                 "beats": []}
 
 
