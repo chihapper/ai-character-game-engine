@@ -195,12 +195,27 @@ td.eng{color:#d9ffe9}
   Below: how the engine's Corvin receives it in each — because in each future, he has <i>become someone
   different</i>. On its own this proves nothing — different context gets different replies out of any
   chatbot. It's the hook; the proof is the nine playthroughs below, where the context is controlled and the
-  differences are structural. (The other two systems' versions of these moments appear in their sections.)</p>
+  differences are structural. One thing to hold onto: the "shared past" is shared <i>input</i> — the
+  player's lines and the world's events are identical in every run, but each system's Corvin lived them in
+  his own words. You'll see all three versions of that past next, before the futures fork.</p>
   <div class="line" id="coldLine"></div>
   <div class="who">— the player, returning from the north, in all three futures</div>
   <div id="recWrap"></div>
   <div class="gate"><button id="coldNext">▶ play the three receptions</button>
     <a class="btn ghost" href="#" onclick="reveal('sum');return false">skip to the verdict</a></div>
+</section>
+
+<!-- ═══════════ 1b · BEFORE THE FORK ═══════════ -->
+<section id="fork">
+  <div class="kicker">the shared past · all three systems</div>
+  <h2>Before the fork — the same lines, three Corvins</h2>
+  <p class="sub">Three key beats of the shared story, exactly as each system lived them. The player's words
+  (blue) are identical in every column; each Corvin's answer is his own. This is the last time the three
+  versions of him stand on common ground — everything after forks into the three futures.</p>
+  <div id="fork-beats"></div>
+  <div class="gate">
+    <button class="btn primary" onclick="reveal('rag')">Continue → system 1: plain RAG</button>
+  </div>
 </section>
 
 <!-- ═══════════ 2 · PLAIN RAG ═══════════ -->
@@ -216,8 +231,6 @@ td.eng{color:#d9ffe9}
   <i>"the easy warmth curdles the moment he reads your face"</i> — he had drifted back to easy warmth between
   scenes, and re-lives the betrayal as breaking news when a question fishes the old text back up. His feelings
   live in the retrieved text, not in him.</div></div>
-  <div class="prohead">the shared past, as this system lived it</div>
-  <div class="prostrip" id="rag-pro"></div>
   <div class="cols" id="rag-cols"></div>
   <div class="callout" id="rag-money"></div>
   <div class="gate">
@@ -243,8 +256,6 @@ td.eng{color:#d9ffe9}
   kindness +15..+30 — all in the published baseline source. Watch a costly kindness get a blade at −100. And watch the rescue
   test at the end: one act moved the number <b>−77 → −7</b>; two beats later, <b>+35 "Fond"</b> —
   toward the man who sold him. Nothing caps where it goes next.</div></div>
-  <div class="prohead">the shared past, as this system lived it</div>
-  <div class="prostrip" id="trk-pro"></div>
   <div class="cols" id="trk-cols"></div>
   <div class="callout" id="trk-money"></div>
   <div class="gate">
@@ -267,8 +278,6 @@ td.eng{color:#d9ffe9}
   considered change of heart — lifts it, partially, never back to unscarred. Watch amends land on the warmable
   axis and bounce off the scarred one; watch him pursue his <i>own</i> questions across every scene. Then the
   rescue test: one life-saving act buys back exactly as much as the ceiling allows — and no more.</div></div>
-  <div class="prohead">the shared past — with the engine's live state under each beat</div>
-  <div class="prostrip" id="eng-pro"></div>
   <div class="cols" id="eng-cols"></div>
   <div class="callout" id="eng-money"></div>
   <div class="talk" id="eng-talk"></div>
@@ -332,7 +341,7 @@ td.eng{color:#d9ffe9}
 <script>
 const D = window.LICH_DEMO; const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const ORDER = ["intro","cold","rag","trk","eng","sum"];
+const ORDER = ["intro","cold","fork","rag","trk","eng","sum"];
 function reveal(id){
   ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>$(k).classList.add("show"));
   $(id).scrollIntoView({behavior:"smooth"});
@@ -355,8 +364,8 @@ $("coldNext").onclick = () => {
   }, i * 2600));
   setTimeout(() => {
     $("coldNext").disabled = false;
-    $("coldNext").textContent = "Continue → system 1: plain RAG";
-    $("coldNext").onclick = () => reveal("rag");
+    $("coldNext").textContent = "Continue → the shared past, three ways";
+    $("coldNext").onclick = () => reveal("fork");
     $("coldNext").scrollIntoView({behavior:"smooth", block:"nearest"});
   }, D.coldopen.receptions.length * 2600 + 400);
 };
@@ -385,16 +394,33 @@ function cardHTML(c, sys){
     <div class="q">${esc(s.preview)}</div>${xp}${chipHTML(s, sys)}</div>`;
 }
 function renderSystem(sys, proEl, colsEl){
-  $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
+  if (proEl && $(proEl)) $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
   $(colsEl).innerHTML = ["A","B","C"].map(br => {
     const B = D.branches[br];
     return `<div><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>` +
       B.cards.map(c=>cardHTML(c,sys)).join("") + `</div>`;
   }).join("");
 }
-renderSystem("rag","rag-pro","rag-cols");
-renderSystem("tracker","trk-pro","trk-cols");
-renderSystem("engine","eng-pro","eng-cols");
+renderSystem("rag",null,"rag-cols");
+renderSystem("tracker",null,"trk-cols");
+renderSystem("engine",null,"eng-cols");
+
+/* ---- before-the-fork: three shared beats, three Corvins each ---- */
+$("fork-beats").innerHTML = [1,3,4].map(i => {
+  const c = D.prologue[i]; if (!c) return "";
+  const player = (c.sys.engine && c.sys.engine.player) || (c.sys.rag && c.sys.rag.player) || "";
+  return `<div class="probe"><div style="font-weight:700;font-size:14px;margin-bottom:2px">${esc(c.title)}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">${esc(c.note)}</div>
+    <div class="pq">YOU · ${esc(player)}</div><div class="trio">
+    ${[["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]].map(([k,cls,name])=>{
+      const sy = c.sys[k]; if (!sy) return "";
+      const head = name + (sy.aff!==undefined?` · ${sy.aff>0?"+":""}${sy.aff}`:"") +
+        (k==="engine"&&sy.state?` · trust ${sy.state.t.toFixed(2)}`:"");
+      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(sy.preview)}</div>`+
+        (sy.full&&sy.full.length>sy.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(sy.full)}</div>`:"")+`</div>`;
+    }).join("")}
+  </div></div>`;
+}).join("");
 
 /* ---- money callouts ---- */
 const feltOf = (sys,lab) => { const f = D.felt.find(x=>x.label===lab); return f ? f[sys] : null; };
