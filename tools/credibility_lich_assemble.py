@@ -299,6 +299,17 @@ DEMO = {
 
 (DOCS / "lich_demo_data.js").write_text("window.LICH_DEMO = " + json.dumps(DEMO, ensure_ascii=False) + ";",
                                         encoding="utf-8")
+# cache-bust: stamp the page's data-script URL with a content hash so a re-assembled dataset can
+# never be masked by a browser-cached lich_demo_data.js (bit us during review).
+import hashlib, re as _re
+_h = hashlib.sha1((DOCS / "lich_demo_data.js").read_bytes()).hexdigest()[:10]
+_page = DOCS / "lich_demo.html"
+if _page.exists():
+    _html = _page.read_text(encoding="utf-8")
+    _html2 = _re.sub(r'src="lich_demo_data\.js[^"]*"', f'src="lich_demo_data.js?h={_h}"', _html)
+    if _html2 != _html:
+        _page.write_text(_html2, encoding="utf-8")
+        print(f"   page data-script stamped ?h={_h}")
 print("✔ lich_demo_data.js | prologue", len(PROLOGUE), "| cards",
       {k: len(v["cards"]) for k, v in BRANCHES.items()}, "| felt", len(FELT),
       "| rescue beats", len(RESCUE["beats"]), "| rescue baselines:", bool(rescue_b),
