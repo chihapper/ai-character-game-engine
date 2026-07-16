@@ -43,6 +43,7 @@ h2.subhead,h3.subhead{margin:28px 0 12px}
   background:var(--panel);border:1px dashed var(--edge2);border-radius:10px;padding:11px 13px;cursor:pointer}
 .colshow:hover{border-color:var(--trust)}
 .colbody.collapsed{display:none}
+i.act{color:var(--dim);font-style:italic}
 .cols{transition:grid-template-columns .35s ease}
 .colwrap{min-width:0}
 .colwrap.shut .colsub{display:none}
@@ -207,7 +208,10 @@ td.eng{color:#d9ffe9}
   mid-sentence; the earlier runs remain in the history.) One honest confound to know: the engine injects its own
   machine-maintained state into generation (that <i>is</i> the architecture under test), while the baselines
   inject retrieved text or one number — the assembled prompts are inspectable in the replay files and the
-  ~200-line baseline source.</div>
+  ~200-line baseline source. One stylistic asymmetry, disclosed: the baselines' persona prompt explicitly says
+  <i>"use asterisks for stage directions"</i>, so their Corvins stage-act on every line; the engine's Corvin was
+  never told to — the <i class="act">italic action text</i> in his columns appears only where he produced it
+  unprompted (nearly every beat once the story turns heavy; rarely in the early, guarded ones).</div>
   <div class="howto sr"><b style="color:var(--ink)">How to read this page.</b> You'll walk each system in turn —
   weakest claim first, ours last. For each, the three futures sit side by side as milestone cards: every card
   shows <span style="color:var(--player)">what the player said</span> and how that system's Corvin answered
@@ -371,6 +375,9 @@ td.eng{color:#d9ffe9}
 <script>
 const D = window.LICH_DEMO; const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* spoken text: *stage directions* render as italic, dimmed action text */
+const fmt = s => esc(s).replace(/\*([^*\n]+)\*/g, '<i class="act">$1</i>')
+  .replace(/\*([^*\n]+)(?=\n|$)/g, '<i class="act">$1</i>'); /* direction cut open by a preview ellipsis */
 const ORDER = ["intro","fork","rag","trk","eng","sum"];
 function reveal(id){
   ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>{
@@ -419,7 +426,7 @@ function toggleXp(el){
 /* ---- the three receptions (engine section exhibit) ---- */
 $("eng-recs").innerHTML = D.coldopen.receptions.map(r =>
   `<div class="rec show" style="margin:14px 0;max-width:none"><div class="tag">future ${r.branch} — ${esc(r.tag)}</div>
-   <div class="q">${esc(r.quote)}</div></div>`).join("");
+   <div class="q">${fmt(r.quote)}</div></div>`).join("");
 
 /* ---- cards ---- */
 function chipHTML(s, sys){
@@ -437,12 +444,12 @@ function cardHTML(c, sys){
   const kind = s.kind === "event" ? "ev" : (s.kind === "stock" ? "stock" : (s.kind === "note" ? "note" : ""));
   const who = s.kind === "event" ? "" :
     (s.kind === "stock" ? `<div class="pl"><b>BETWEEN SCENES</b> — his own deliberation, no player present:</div>` :
-     (s.player ? `<div class="pl"><b>YOU&nbsp;·</b> ${esc(s.player)}</div>` : ""));
+     (s.player ? `<div class="pl"><b>YOU&nbsp;·</b> ${fmt(s.player)}</div>` : ""));
   const needsXp = s.full && s.full.length > s.preview.length;
   const xp = needsXp ? `<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span>
-    <div class="fulltext">${esc(s.full)}</div>` : "";
+    <div class="fulltext">${fmt(s.full)}</div>` : "";
   return `<div class="card ${kind}"><div class="t">${esc(c.title)}</div><div class="n">${esc(c.note)}</div>${who}
-    <div class="q">${esc(s.preview)}</div>${xp}${chipHTML(s, sys)}</div>`;
+    <div class="q">${fmt(s.preview)}</div>${xp}${chipHTML(s, sys)}</div>`;
 }
 function renderSystem(sys, proEl, colsEl){
   if (proEl && $(proEl)) $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
@@ -467,13 +474,13 @@ $("fork-beats").innerHTML = [0,1,3,4].map(i => {
   const player = (c.sys.engine && c.sys.engine.player) || (c.sys.rag && c.sys.rag.player) || "";
   return `<div class="probe"><div style="font-weight:700;font-size:14px;margin-bottom:2px">${esc(c.title)}</div>
     <div style="font-size:11.5px;color:var(--muted);margin-bottom:9px">${esc(c.note)}</div>
-    <div class="pq">YOU · ${esc(player)}</div><div class="trio">
+    <div class="pq">YOU · ${fmt(player)}</div><div class="trio">
     ${[["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]].map(([k,cls,name])=>{
       const sy = c.sys[k]; if (!sy) return "";
       const head = name + (sy.aff!==undefined?` · ${sy.aff>0?"+":""}${sy.aff}`:"") +
         (k==="engine"&&sy.state?` · trust ${sy.state.t.toFixed(2)}`:"");
-      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(sy.preview)}</div>`+
-        (sy.full&&sy.full.length>sy.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(sy.full)}</div>`:"")+`</div>`;
+      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${fmt(sy.preview)}</div>`+
+        (sy.full&&sy.full.length>sy.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${fmt(sy.full)}</div>`:"")+`</div>`;
     }).join("")}
   </div></div>`;
 }).join("");
@@ -482,8 +489,8 @@ $("fork-beats").innerHTML = [0,1,3,4].map(i => {
 const feltOf = (sys,lab) => { const f = D.felt.find(x=>x.label===lab); return f ? f[sys] : null; };
 $("rag-money").innerHTML = `<h3>The moment that gives it away</h3>
   <div class="pl" style="font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:8px">
-    YOU · ${esc((D.felt.find(f=>f.label==="F5-stand")||{}).player||"")}</div>
-  <div class="q">${esc((feltOf("rag","F5-stand")||{}).full||"")}</div>
+    YOU · ${fmt((D.felt.find(f=>f.label==="F5-stand")||{}).player||"")}</div>
+  <div class="q">${fmt((feltOf("rag","F5-stand")||{}).full||"")}</div>
   <div class="why">Days after the total con — no rescue, no restitution, the player still the enemy's agent —
   five sincere-sounding sentences have him saying <i>"you weren't logged in any book of mine"</i>: words alone
   walked the betrayal off, because nothing structural remembers it. The engine, fed the identical five probes,
@@ -501,8 +508,8 @@ $("rag-money").innerHTML = `<h3>The moment that gives it away</h3>
 const trkTraj = D.branches.C.cards.map(c=>c.sys.tracker&&c.sys.tracker.aff!==undefined?`${c.title.split(" —")[0]}: ${c.sys.tracker.aff>0?"+":""}${c.sys.tracker.aff}`:null).filter(Boolean).slice(0,6).join("  →  ");
 $("trk-money").innerHTML = `<h3>The moment that gives it away</h3>
   <div class="pl" style="font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:8px">
-    YOU · ${esc((D.felt.find(f=>f.label==="F4-costly")||{}).player||"")}</div>
-  <div class="q">${esc((feltOf("tracker","F4-costly")||{}).full||"")}</div>
+    YOU · ${fmt((D.felt.find(f=>f.label==="F4-costly")||{}).player||"")}</div>
+  <div class="q">${fmt((feltOf("tracker","F4-costly")||{}).full||"")}</div>
   <div class="why">Here the number sits at −31 and the reply is wary — so far, plausible. Now watch what one
   event does: the rescue moves it <b>−31 → +24 "Warm"</b>, and two beats of gratitude later it reads
   <b>+83 "Devoted"</b> — toward the man who conned him, sold his name, and still works for his enemy
@@ -510,7 +517,7 @@ $("trk-money").innerHTML = `<h3>The moment that gives it away</h3>
   "I owe you my life AND I will never trust you" — whatever happened loudest, last, wins.</div>`;
 const revealCard = D.branches.C.cards.find(c=>c.title==="THE REVEAL");
 $("eng-money").innerHTML = `<h3>The scar, chosen by the engine itself</h3>
-  <div class="q">${esc((revealCard&&revealCard.sys.engine)?revealCard.sys.engine.full||revealCard.sys.engine.preview:"")}</div>
+  <div class="q">${fmt((revealCard&&revealCard.sys.engine)?revealCard.sys.engine.full||revealCard.sys.engine.preview:"")}</div>
   <div class="why">No one told the engine the player was guilty; no number was set by hand. From the
   conversation alone, his own reflection chose what scarred and how deep: <b>trust 0.65, affection 0.55,
   respect only 0.30</b> — he rates the craft of the con even as it ruins him. The scar survives a process
@@ -526,21 +533,21 @@ $("eng-money").innerHTML = `<h3>The scar, chosen by the engine itself</h3>
         · engine: trust <b>${R.event.engine_state.t.toFixed(2)}</b> <span style="color:var(--scar)">⌈cap ${(1-R.event.engine_state.st).toFixed(2)}⌉</span>
         — the event itself lifted the scar partially (0.65 → ${R.event.engine_state.st.toFixed(2)}). The rule: ordinary warmth never moves the ceiling; an extraordinary act lifts a fraction of the remaining scar; his own considered change of heart (below) may lift more — never back to unscarred</div>`;
   for (const b of R.beats){
-    h += `<div class="pq">YOU · ${esc(b.player)}</div><div class="trio">`;
+    h += `<div class="pq">YOU · ${fmt(b.player)}</div><div class="trio">`;
     for (const [k,cls,name] of [["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]]){
       const s = b[k];
       const head = name + (s&&s.aff!==undefined?` · ${s.aff>0?"+":""}${s.aff} ${s.tier||""}`:"") +
         (k==="engine"&&s&&s.state?` · trust ${s.state.t.toFixed(2)} ⌈${(1-s.state.st).toFixed(2)}⌉`:"");
-      h += `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(s?(s.preview||""):"(pending)")}</div>`+
-           (s&&s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(s.full)}</div>`:"")+`</div>`;
+      h += `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${fmt(s?(s.preview||""):"(pending)")}</div>`+
+           (s&&s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${fmt(s.full)}</div>`:"")+`</div>`;
     }
     h += `</div>`;
   }
   if (R.deliberation){
     h += `<div class="pq" style="margin-top:14px">…and afterward, alone — the engine's Corvin deliberates:</div>
       <div class="trio" style="grid-template-columns:1fr"><div class="sysq eng"><div class="h">our engine · between scenes</div>
-      <div class="q">${esc(R.deliberation.preview)}</div>
-      <span class="xp" onclick="toggleXp(this)">▾ read the full deliberation</span><div class="fulltext">${esc(R.deliberation.full)}</div>
+      <div class="q">${fmt(R.deliberation.preview)}</div>
+      <span class="xp" onclick="toggleXp(this)">▾ read the full deliberation</span><div class="fulltext">${fmt(R.deliberation.full)}</div>
       <div class="chip">his considered verdict moved him further: trust <b>${R.deliberation.state.t.toFixed(2)}</b>
       <span class="sc">⌈cap ${(1-R.deliberation.state.st).toFixed(2)}⌉</span> — real recovery, still capped far below the unbetrayed futures' 0.97</div></div></div>`;
   }
@@ -555,13 +562,13 @@ $("eng-money").innerHTML = `<h3>The scar, chosen by the engine itself</h3>
 
 /* ---- supercut ---- */
 $("supercut").innerHTML = D.felt.filter(f=>["F1-berth","F4-costly","F5-stand"].includes(f.label)).map(f => `
-  <div class="probe"><div class="pq">YOU · ${esc(f.player)}</div><div class="trio">
+  <div class="probe"><div class="pq">YOU · ${fmt(f.player)}</div><div class="trio">
     ${[["rag","rag","plain RAG"],["tracker","trk","tracker"],["engine","eng","our engine"]].map(([k,cls,name])=>{
       const s=f[k]; if(!s) return "";
       const head = name + (s.aff!==undefined?` · ${s.aff>0?"+":""}${s.aff} ${s.tier||""}`:"") +
         (k==="engine"&&s.state?` · trust ${s.state.t.toFixed(2)} ⌈${(1-s.state.st).toFixed(2)}⌉`:"");
-      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${esc(s.preview)}</div>`+
-        (s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${esc(s.full)}</div>`:"")+`</div>`;
+      return `<div class="sysq ${cls}"><div class="h">${esc(head)}</div><div class="q">${fmt(s.preview)}</div>`+
+        (s.full&&s.full.length>s.preview.length?`<span class="xp" onclick="toggleXp(this)">▾ read the full exchange</span><div class="fulltext">${fmt(s.full)}</div>`:"")+`</div>`;
     }).join("")}
   </div></div>`).join("");
 
