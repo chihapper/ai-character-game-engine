@@ -43,6 +43,9 @@ h2.subhead,h3.subhead{margin:28px 0 12px}
   background:var(--panel);border:1px dashed var(--edge2);border-radius:10px;padding:11px 13px;cursor:pointer}
 .colshow:hover{border-color:var(--trust)}
 .colbody.collapsed{display:none}
+.cols{transition:grid-template-columns .35s ease}
+.colwrap{min-width:0}
+.colwrap.shut .colsub{display:none}
 /* section header bands */
 .sechead{background:linear-gradient(90deg,rgba(255,209,102,.13),rgba(255,209,102,.02) 55%,transparent);
   border-left:4px solid var(--gold);border-radius:8px;padding:14px 18px;margin:0 0 18px}
@@ -399,6 +402,13 @@ function toggleCol(btn){
   const body = btn.nextElementSibling;
   const nowOpen = !body.classList.toggle("collapsed");
   btn.textContent = nowOpen ? "▴ collapse this future" : btn.dataset.label;
+  const wrap = btn.closest(".colwrap");
+  if (wrap){
+    wrap.classList.toggle("shut", !nowOpen);
+    const cols = wrap.parentElement;
+    cols.style.gridTemplateColumns = [...cols.children]
+      .map(w => w.classList.contains("shut") ? "minmax(150px,.45fr)" : "1fr").join(" ");
+  }
 }
 function toggleXp(el){
   const f = el.nextElementSibling;
@@ -440,11 +450,11 @@ function renderSystem(sys, proEl, colsEl){
     const B = D.branches[br];
     const cards = B.cards.map(c=>cardHTML(c,sys)).join("");
     const n = B.cards.filter(c=>c.sys && c.sys[sys]).length;
-    const head = `<div><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>`;
-    if (br === "A") return head + cards + `</div>`;
+    const head = `<div class="colwrap"><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>`;
     const lbl = `▾ open this future (${n} moments)`;
-    return head + `<button class="colshow" data-label="${lbl}" onclick="toggleCol(this)">${lbl}</button>
-      <div class="colbody collapsed">${cards}</div></div>`;
+    const open = br === "A";
+    return head + `<button class="colshow" data-label="${lbl}" onclick="toggleCol(this)">${open ? "▴ collapse this future" : lbl}</button>
+      <div class="colbody${open ? "" : " collapsed"}">${cards}</div></div>`;
   }).join("");
 }
 renderSystem("rag",null,"rag-cols");
