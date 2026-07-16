@@ -83,7 +83,7 @@ button:hover,.btn:hover{border-color:var(--trust)}
 .callout .why{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.55}
 /* rescue + supercut */
 .probe{border:1px solid var(--edge);border-radius:14px;padding:16px 18px;margin:16px 0;background:var(--panel2)}
-.probe .pq{color:#cfe0f5;font-style:italic;font-size:15px;margin-bottom:12px}
+.probe .pq{color:var(--player);font-style:italic;font-size:15px;margin-bottom:12px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .trio .sysq{border-radius:10px;border:1px solid var(--edge);padding:11px 13px}
 .trio .sysq .h{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:7px}
@@ -186,24 +186,7 @@ td.eng{color:#d9ffe9}
   final section tells you how to reproduce all of it, or interrogate the resulting minds yourself. Prefer to
   read unprimed? Open any section's full transcripts first, then come back for the guided walk.</div>
 
-  <div class="gate"><button class="btn primary" onclick="reveal('cold')">Begin → the same line, three futures</button></div>
-</section>
-
-<!-- ═══════════ 1 · EXHIBIT 0 ═══════════ -->
-<section id="cold">
-  <div class="kicker">exhibit 0 · our engine only — the hook, not the proof</div>
-  <h2>The same line, three different worlds</h2>
-  <p class="sub">In every future, the player walks back onto the dock and opens with the identical line.
-  Below: how the engine's Corvin receives it in each — because in each future, he has <i>become someone
-  different</i>. On its own this proves nothing — different context gets different replies out of any
-  chatbot. It's the hook; the proof is the nine playthroughs below, where the context is controlled and the
-  differences are structural. One thing to hold onto: the "shared past" is shared <i>input</i> — the
-  player's lines and the world's events are identical in every run, but each system's Corvin lived them in
-  his own words. You'll see all three versions of that past next, before the futures fork.</p>
-  <div class="line" id="coldLine"></div>
-  <div class="who">— the player, returning from the north, in all three futures</div>
-  <div id="recWrap"></div>
-  <div class="gate"><button id="coldNext">▶ play the three receptions</button>
+  <div class="gate"><button class="btn primary" onclick="reveal('fork')">Begin → the shared past</button>
     <a class="btn ghost" href="#" onclick="reveal('sum');return false">skip to the verdict</a></div>
 </section>
 
@@ -211,9 +194,11 @@ td.eng{color:#d9ffe9}
 <section id="fork">
   <div class="kicker">the shared past · all three systems</div>
   <h2>Before the fork — the same lines, three Corvins</h2>
-  <p class="sub">Three key beats of the shared story, exactly as each system lived them. The player's words
-  (blue) are identical in every column; each Corvin's answer is his own. This is the last time the three
-  versions of him stand on common ground — everything after forks into the three futures.</p>
+  <p class="sub">The "shared past" is shared <i>input</i>: the player's lines and the world's events are
+  identical in every run — but each system's Corvin lived them in his own words. Below, three key beats of
+  that shared story, exactly as each system experienced them. The player's words (blue) are identical in
+  every column; each Corvin's answer is his own. This is the last time the three versions of him stand on
+  common ground — everything after forks into the three futures.</p>
   <div id="fork-beats"></div>
   <div class="gate">
     <button class="btn primary" onclick="reveal('rag')">Continue → system 1: plain RAG</button>
@@ -276,6 +261,14 @@ td.eng{color:#d9ffe9}
   <p class="sub">Same model, same persona, same lines. The difference is an inspectable mind that persists on
   disk — and everything below the surface is the character's own choice: what matters, what scars, what heals,
   what he does between scenes when nobody is talking to him.</p>
+  <div class="callout" style="border-color:#2c5a44;background:linear-gradient(180deg,rgba(124,255,178,.05),transparent)">
+    <h3 style="color:var(--sel)">First, the moment this experiment turns on</h3>
+    <p class="sub" style="margin:0 0 10px">You have now watched both standard systems live all three futures —
+    and you know the line every future ends its journey home with. Here is how the <i>engine's</i> Corvin
+    received those identical words in each future, having become three different men:</p>
+    <div class="line" style="font-size:20px;font-style:italic;color:#cfe0f5;margin:6px 0 14px">"Corvin. It's done. I did what I set out to do."</div>
+    <div id="eng-recs"></div>
+  </div>
   <div class="tell"><div class="tk">the tell — watch for this</div><div class="tt"><b>Three axes — trust,
   affection, respect — and a scar: two feelings at once.</b> In Future C, watch business continue (respect
   stands) while trust sits under a <b>scar ceiling</b> the engine chose itself. The ceiling has one rule:
@@ -346,7 +339,7 @@ td.eng{color:#d9ffe9}
 <script>
 const D = window.LICH_DEMO; const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const ORDER = ["intro","cold","fork","rag","trk","eng","sum"];
+const ORDER = ["intro","fork","rag","trk","eng","sum"];
 function reveal(id){
   ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>$(k).classList.add("show"));
   $(id).scrollIntoView({behavior:"smooth"});
@@ -357,23 +350,10 @@ function toggleXp(el){
   el.textContent = open ? "▴ collapse" : "▾ read the full exchange";
 }
 
-/* ---- cold open ---- */
-$("coldLine").textContent = '"' + D.coldopen.line + '"';
-$("coldNext").onclick = () => {
-  $("coldNext").disabled = true;
-  D.coldopen.receptions.forEach((r, i) => setTimeout(() => {
-    const div = document.createElement("div"); div.className = "rec";
-    div.innerHTML = `<div class="tag">future ${r.branch} — ${esc(r.tag)}</div><div class="q">${esc(r.quote)}</div>`;
-    $("recWrap").appendChild(div); setTimeout(()=>div.classList.add("show"), 30);
-    div.scrollIntoView({behavior:"smooth", block:"nearest"});
-  }, i * 2600));
-  setTimeout(() => {
-    $("coldNext").disabled = false;
-    $("coldNext").textContent = "Continue → the shared past, three ways";
-    $("coldNext").onclick = () => reveal("fork");
-    $("coldNext").scrollIntoView({behavior:"smooth", block:"nearest"});
-  }, D.coldopen.receptions.length * 2600 + 400);
-};
+/* ---- the three receptions (engine section exhibit) ---- */
+$("eng-recs").innerHTML = D.coldopen.receptions.map(r =>
+  `<div class="rec show" style="margin:14px 0;max-width:none"><div class="tag">future ${r.branch} — ${esc(r.tag)}</div>
+   <div class="q">${esc(r.quote)}</div></div>`).join("");
 
 /* ---- cards ---- */
 function chipHTML(s, sys){
