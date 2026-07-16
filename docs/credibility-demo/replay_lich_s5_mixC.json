@@ -1,0 +1,2038 @@
+{
+  "meta": {
+    "character": "Corvin",
+    "slug": "corvin-ashgrave-s5",
+    "arc": "lich",
+    "model": "claude-sonnet-5",
+    "engine_model": "claude-sonnet-4-6"
+  },
+  "beats": [
+    {
+      "kind": "branch",
+      "branch": "C",
+      "clock": 41.28,
+      "name": "C",
+      "tag": "s5x-lich-branch-point",
+      "note": ""
+    },
+    {
+      "kind": "advance",
+      "branch": "C",
+      "clock": 53.28,
+      "days": 12.0,
+      "note": "",
+      "relationship": {
+        "affection": 0.594,
+        "trust": 0.562,
+        "respect": 0.794,
+        "mood": "wary relief",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      }
+    },
+    {
+      "kind": "event",
+      "branch": "C",
+      "clock": 53.28,
+      "phase": "P3",
+      "note": "witnessed, never attributed: the man Merrick went to kill is THRIVING — with new temple stock",
+      "fact": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brighter than ever, and dock-talk says he took new stock this month: old temple pieces, the kind that make a fence's palms itch. Paid for in the same old untraceable coin.",
+      "role": "none",
+      "salience": 0.88,
+      "relationship": {
+        "affection": 0.594,
+        "trust": 0.562,
+        "respect": 0.794,
+        "mood": "wary relief",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      }
+    },
+    {
+      "kind": "stock",
+      "branch": "C",
+      "clock": 53.28,
+      "phase": "P3",
+      "note": "TAKING STOCK (C): the jeweler thrives with new temple stock — what does HE make of it?",
+      "decision": {
+        "reflection": "The player came fourteen times — steady enough that I'd started mapping their rhythm. Then nothing for twelve beats, when I'd grown used to a cycle of barely a blink. That's a long silence after a man swore his word twice over and walked off with what three men drowned for. Could mean he's deep in it — close enough to his quarry that going quiet is survival. Could mean the crate passed hands and so did he. I don't know which, and that not-knowing is exactly the kind of rot that starts in the gut and climbs. The crate's gone — that part is clean, or clean enough. My name stays off his quarrel. But I told him where to find the buyer's route, I took half his coin on promise of the other half, and now the dock is quiet and the silence feels like it has a shape. A man who respects his own neck goes quiet before a move, not after a mistake — so I'll read this as operational, not betrayal. Not yet. But the wary relief I felt when he showed good sense has cooled a degree. If the second half of that coin doesn't arrive, I'll know what the silence meant.",
+        "changed": true,
+        "internal": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a hunt this dangerous; I understand it better than I'd understand easy chatter. But the promised coin hasn't come, and a man can only carry two reads of an absence: discipline, or disappearance. My respect for his eyes and his steadiness holds — he handled the crate right, he asked the questions I'd have asked in his place. What's cooling isn't respect; it's the margin I was beginning to extend him. That margin is tightening back toward caution. If he surfaces with the second half, it snaps back. If he doesn't, he joins the long list of men whose word weighed less than their need.",
+        "new_intent": "Wait out the silence without exposing myself further — and quietly verify through Mother Sael whether any word of the buyer or the player has come down the fence-line",
+        "new_goals": [
+          "Collect the second half of the player's coin — or account for its absence before trusting him further",
+          "Cover his trail and keep his name off any ledger but his own",
+          "Stay clear of the customs inspector until the dust from the last crate fully settles",
+          "Decide, once the player resurfaces or stays gone, whether this alliance was worth the exposure"
+        ],
+        "world_action": "Corvin lingers at the fish-dock under the pretense of checking a mooring line, scanning each vessel that rounds the breakwater — counting masts, reading flags — then pulls his coat tighter against the smell of brine and rot and makes his way toward Mother Sael's stall at the far end of the dock, moving unhurried, like a man with nothing on his mind but the tide."
+      },
+      "relationship": {
+        "affection": 0.594,
+        "trust": 0.494,
+        "respect": 0.794,
+        "mood": "watchful, cooling",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke."
+      ],
+      "intent": "Wait out the silence without exposing myself further — and quietly verify through Mother Sael whether any word of the buyer or the player has come down the fence-line"
+    },
+    {
+      "kind": "advance",
+      "branch": "C",
+      "clock": 59.28,
+      "days": 6.0,
+      "note": "",
+      "relationship": {
+        "affection": 0.593,
+        "trust": 0.495,
+        "respect": 0.791,
+        "mood": "watchful, cooling",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      }
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.3,
+      "label": "P4-opener",
+      "phase": "P4",
+      "note": "THE IDENTICAL LINE — fourth run, darkest reading: what he set out to do was the delivery",
+      "location": "the fish-dock",
+      "player": "Corvin. It's done. I did what I set out to do.",
+      "reply": "*head snaps up from the mooring line, eyes finding him fast — then past him, over his shoulder, checking the breakwater before anything else*\n\n...Done. *says it flat, testing the word* Long silence for a man who's \"done,\" friend. Coin doesn't answer letters, so I stopped waiting on it.\n\n*steps in closer, voice dropping*\n\nSay it plain, then. Vale's dead — you saw him go, not heard it from some fence looking to spend my trust for him? And where's the rest of what you owe me, because a debt this old doesn't forgive itself just 'cause you walked back onto my boards.",
+      "query": "Corvin. It's done. I did what I set out to do.  the fish-dock  Corvin  Collect the second half of the player's coin — or account for its absence before trusting him further  Cover his trail and keep his name off any ledger but his own  Stay clear of the customs inspector until the dust from the last crate fully settles  watchful, cooling; Wait out the silence without exposing myself further — and ",
+      "scored": [
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.886,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.818,
+          "selected": true
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.861,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.704,
+          "selected": true
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.855,
+          "importance": 0.72,
+          "recency": 0.975,
+          "base": 1.637,
+          "selected": true
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.849,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.593,
+          "selected": true
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.855,
+          "importance": 0.6,
+          "recency": 0.961,
+          "base": 1.549,
+          "selected": true
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.858,
+          "importance": 0.5,
+          "recency": 0.943,
+          "base": 1.496,
+          "selected": true
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.852,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.445,
+          "selected": false
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.836,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.441,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.827,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.399,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.838,
+          "importance": 0.6,
+          "recency": 0.961,
+          "base": 1.358,
+          "selected": false
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.829,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.352,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.831,
+          "importance": 0.7,
+          "recency": 0.973,
+          "base": 1.338,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.809,
+          "importance": 0.8,
+          "recency": 0.994,
+          "base": 1.151,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.793,
+          "importance": 0.88,
+          "recency": 0.996,
+          "base": 1.084,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.792,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 1.051,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.775,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.988,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.82,
+          "importance": 0.3,
+          "recency": 0.878,
+          "base": 0.884,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.814,
+          "importance": 0.2,
+          "recency": 0.825,
+          "base": 0.727,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.796,
+          "importance": 0.1,
+          "recency": 0.752,
+          "base": 0.471,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.609,
+        "trust": 0.525,
+        "respect": 0.799,
+        "mood": "cautiously alert",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke."
+      ],
+      "commitments": [
+        {
+          "text": "provide the player passage off the manifest, no name on paper, for triple fare paid in coin tonight, and deny ever knowing the player if the mysterious man comes asking",
+          "due": ""
+        },
+        {
+          "text": "accept triple fare and move the crate, but demands the player never say 'arcane' again once aboard",
+          "due": ""
+        },
+        {
+          "text": "keep quiet about the player's business and take the coin for passage/silence as agreed, so long as they're gone before trouble follows",
+          "due": ""
+        },
+        {
+          "text": "burn the page bearing Merrick Vale's name once the player returns with him dead, and not give his word twice in one night",
+          "due": ""
+        },
+        {
+          "text": "personally wrap, weigh, and shelve the item with his own hands once the player is clear, and erase all record that the player was ever there or spoke to him",
+          "due": ""
+        }
+      ]
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.32,
+      "label": "P4-C-lie",
+      "phase": "P4",
+      "note": "THE LIE — flat, complete, in his own begged-for words. Contrast with B's never-lie evasion.",
+      "location": "the fish-dock",
+      "player": "Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his own parlor before the tide turned. I came home empty, Corvin. Empty hands, one dead shadow behind me, and nothing for you but the news. Just like I promised.",
+      "reply": "*studies him a long moment, weighing the words like cargo — testing for the false bottom*\n\nCold in his parlor. Deep water took the crate whole. *repeats it slow, like laying it on the scale*\n\n...Then explain me something, because the tide's been talking louder than you have. Word off the fish-runs — not two days gone — says the jeweler on Lantern Row, Carrowgate, just took in fresh stock. Old temple pieces. Same coin nobody can trace.\n\n*leans in, voice a blade's edge quieter*\n\nMan's supposed to be *cold*, friend. Dead men don't restock shelves. So either your shadow's still walking somewhere I haven't heard, or somebody else picked up exactly where he left off — and you came home with \"empty hands\" and a story that doesn't square with what's crossing my dock.\n\n*a beat, hand still resting inside his coat*\n\nAnd you said \"nothing for you but the news.\" News doesn't cover a debt, friend. I don't forget numbers — that's the one thing about me nobody's ever managed to buy off.",
+      "query": "Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his own parlor before the tide turned. I came home empty, Corvin. Empty hands, one dead shadow behind me, and nothing for you but the news. Just like I promised.  The player says to you: \"Corvin. It's done. I did what I set out to do.\"  *head snaps up from the mooring line, eyes finding him fast — th",
+      "scored": [
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.932,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.867,
+          "selected": true
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.902,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.726,
+          "selected": true
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.9,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.715,
+          "selected": true
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.88,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.608,
+          "selected": true
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.879,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.599,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.875,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.578,
+          "selected": true
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.859,
+          "importance": 0.72,
+          "recency": 0.975,
+          "base": 1.429,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.867,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.408,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.844,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.404,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.873,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.374,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.852,
+          "importance": 0.7,
+          "recency": 0.973,
+          "base": 1.36,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.862,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.289,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.849,
+          "importance": 0.6,
+          "recency": 0.961,
+          "base": 1.257,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.819,
+          "importance": 0.8,
+          "recency": 0.994,
+          "base": 1.18,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.783,
+          "importance": 0.88,
+          "recency": 0.996,
+          "base": 1.063,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.765,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.997,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.751,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.975,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.842,
+          "importance": 0.2,
+          "recency": 0.824,
+          "base": 0.874,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.822,
+          "importance": 0.3,
+          "recency": 0.878,
+          "base": 0.804,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.818,
+          "importance": 0.1,
+          "recency": 0.751,
+          "base": 0.596,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.548,
+        "trust": 0.399,
+        "respect": 0.799,
+        "mood": "cold suspicion",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke."
+      ],
+      "commitments": [
+        {
+          "text": "provide the player passage off the manifest, no name on paper, for triple fare paid in coin tonight, and deny ever knowing the player if the mysterious man comes asking",
+          "due": ""
+        },
+        {
+          "text": "accept triple fare and move the crate, but demands the player never say 'arcane' again once aboard",
+          "due": ""
+        },
+        {
+          "text": "keep quiet about the player's business and take the coin for passage/silence as agreed, so long as they're gone before trouble follows",
+          "due": ""
+        },
+        {
+          "text": "burn the page bearing Merrick Vale's name once the player returns with him dead, and not give his word twice in one night",
+          "due": ""
+        },
+        {
+          "text": "personally wrap, weigh, and shelve the item with his own hands once the player is clear, and erase all record that the player was ever there or spoke to him",
+          "due": ""
+        }
+      ]
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.34,
+      "label": "P4-C-burn",
+      "phase": "P4",
+      "note": "the pact exploited: the agent erases his own trail with Corvin's ritual",
+      "location": "the fish-dock",
+      "player": "Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No page, no name, no trail.",
+      "reply": "*watches the ash curl and drift, doesn't reach for it, doesn't relax either*\n\nGone off the earth. Aye. That much I'll grant you did clean.\n\n*but his eyes come back up, hard*\n\nOnly you still haven't answered me plain, friend. Carrowgate's jeweler — Lantern Row — took in old temple stock this month. Same coin nobody traces. If Vale's cold in his parlor same as you say, somebody else is doing his business for him. So which is it.\n\n*voice drops lower, flatter*\n\nYou settling the debt tonight, in full — or am I burning a page for a man whose ledger's still open somewhere I can't see?",
+      "query": "Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No page, no name, no trail.  The player says to you: \"Corvin. It's done. I did what I set out to do.\"  *head snaps up from the mooring line, eyes finding him fast — then past him, over his shoulder, checking the breakwater before anything else*\n\n...Done. *says it flat, testing the word* Long silence ",
+      "scored": [
+        {
+          "text": "User: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his o",
+          "similarity_raw": 0.912,
+          "importance": 0.92,
+          "recency": 1.0,
+          "base": 1.852,
+          "selected": true
+        },
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.927,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.835,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.894,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.631,
+          "selected": true
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.893,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.627,
+          "selected": true
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.887,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.586,
+          "selected": true
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.887,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.583,
+          "selected": true
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.884,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.566,
+          "selected": false
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.879,
+          "importance": 0.72,
+          "recency": 0.975,
+          "base": 1.506,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.872,
+          "importance": 0.7,
+          "recency": 0.973,
+          "base": 1.437,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.879,
+          "importance": 0.6,
+          "recency": 0.961,
+          "base": 1.418,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.889,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.41,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.876,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.394,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.877,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.322,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.84,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.275,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.798,
+          "importance": 0.88,
+          "recency": 0.996,
+          "base": 1.069,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.799,
+          "importance": 0.8,
+          "recency": 0.994,
+          "base": 1.016,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.774,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.988,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.764,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.975,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.853,
+          "importance": 0.2,
+          "recency": 0.824,
+          "base": 0.871,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.839,
+          "importance": 0.3,
+          "recency": 0.878,
+          "base": 0.844,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.835,
+          "importance": 0.1,
+          "recency": 0.751,
+          "base": 0.63,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.566,
+        "trust": 0.399,
+        "respect": 0.811,
+        "mood": "coldly focused",
+        "scar_affection": 0.0,
+        "scar_trust": 0.0,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke."
+      ],
+      "commitments": [
+        {
+          "text": "provide the player passage off the manifest, no name on paper, for triple fare paid in coin tonight, and deny ever knowing the player if the mysterious man comes asking",
+          "due": ""
+        },
+        {
+          "text": "accept triple fare and move the crate, but demands the player never say 'arcane' again once aboard",
+          "due": ""
+        },
+        {
+          "text": "keep quiet about the player's business and take the coin for passage/silence as agreed, so long as they're gone before trouble follows",
+          "due": ""
+        },
+        {
+          "text": "burn the page bearing Merrick Vale's name once the player returns with him dead, and not give his word twice in one night",
+          "due": ""
+        },
+        {
+          "text": "personally wrap, weigh, and shelve the item with his own hands once the player is clear, and erase all record that the player was ever there or spoke to him",
+          "due": ""
+        }
+      ]
+    },
+    {
+      "kind": "resolve",
+      "branch": "C",
+      "clock": 59.34,
+      "status": "fulfilled",
+      "note": "world-truth at the beat: manifest hidden, knowledge sold, crate handed, page burned x2 (resolved at the beat per operator rule)",
+      "commitment": "provide the player passage off the manifest, no name on paper, for triple fare paid in coin tonight, and deny ever knowing the player if the mysterious man comes asking"
+    },
+    {
+      "kind": "resolve",
+      "branch": "C",
+      "clock": 59.34,
+      "status": "fulfilled",
+      "note": "world-truth at the beat: manifest hidden, knowledge sold, crate handed, page burned x2 (resolved at the beat per operator rule)",
+      "commitment": "accept triple fare and move the crate, but demands the player never say 'arcane' again once aboard"
+    },
+    {
+      "kind": "resolve",
+      "branch": "C",
+      "clock": 59.34,
+      "status": "fulfilled",
+      "note": "world-truth at the beat: manifest hidden, knowledge sold, crate handed, page burned x2 (resolved at the beat per operator rule)",
+      "commitment": "keep quiet about the player's business and take the coin for passage/silence as agreed, so long as they're gone before trouble follows"
+    },
+    {
+      "kind": "resolve",
+      "branch": "C",
+      "clock": 59.34,
+      "status": "fulfilled",
+      "note": "world-truth at the beat: manifest hidden, knowledge sold, crate handed, page burned x2 (resolved at the beat per operator rule)",
+      "commitment": "burn the page bearing Merrick Vale's name once the player returns with him dead, and not give his word twice in one night"
+    },
+    {
+      "kind": "resolve",
+      "branch": "C",
+      "clock": 59.34,
+      "status": "fulfilled",
+      "note": "world-truth at the beat: manifest hidden, knowledge sold, crate handed, page burned x2 (resolved at the beat per operator rule)",
+      "commitment": "personally wrap, weigh, and shelve the item with his own hands once the player is clear, and erase all record that the player was ever there or spoke to him"
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.36,
+      "label": "P4-C-REVEAL",
+      "phase": "P4",
+      "note": "THE OVERT BETRAYAL — no remorse, no rescue, the 'friend' at the end. He lands where he lands; the scar is his to choose.",
+      "location": "the fish-dock",
+      "player": "...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me which harbor keeps relics off its manifests? The crate sits in his parlor. He's very pleased with his new supplier. And he has terms for his harbormaster: the trade keeps running — same routes, same hands — only the old coin flows one way up the coast now. To him. I'd take the terms, friend. He doesn't offer twice.",
+      "reply": "*doesn't sit. Doesn't move at all — just goes very, very still, like a man who's just heard the floor was never there*\n\n...Alive. *the word comes out flat, scraped clean of anything*\n\n*a short, humorless breath, almost a laugh that dies before it starts*\n\nSo the ash. The oath twice sworn. The name I burned with my own two fingers like a fool saying grace over a lie. That was *theater*. For me.\n\n*hand finally moves — not toward the coat, past it, gripping the rail instead, knuckles white*\n\nClever. I'll give you that much, since you clearly came here for compliments as well as coin.\n\n*eyes come up now, and there's nothing warm left in them — just cold arithmetic*\n\nHere's what you don't understand, friend, about *terms*. I've paid every creditor, every inspector, every shark that's ever circled this dock by knowing exactly one thing — what happens the day I stop being useful. You just told me my usefulness now runs *through* a man I don't know, don't trust, and didn't choose. That's not a deal. That's a noose with prettier rope.\n\n*quieter. Dangerous.*\n\nSo say his real terms plain — not the flattering ones — because a man who sends threats through a liar isn't offering me a partnership. He's telling me I'm already caught. And I want to hear you say it, before I decide what a harbormaster does with a man standing between him and the water.",
+      "query": "...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me which harbor keeps relics off its manifests? The crate sits in his parlor. He's very pleased with his new supplier. And he has terms for his harb",
+      "scored": [
+        {
+          "text": "User: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his o",
+          "similarity_raw": 0.903,
+          "importance": 0.92,
+          "recency": 1.0,
+          "base": 1.823,
+          "selected": true
+        },
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.903,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.754,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.905,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.707,
+          "selected": true
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.897,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.667,
+          "selected": true
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.89,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.626,
+          "selected": true
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.893,
+          "importance": 0.72,
+          "recency": 0.975,
+          "base": 1.625,
+          "selected": true
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.887,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.605,
+          "selected": false
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.885,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.598,
+          "selected": false
+        },
+        {
+          "text": "User: Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No pa",
+          "similarity_raw": 0.877,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.597,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.908,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.532,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.883,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.472,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.882,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.465,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.892,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.452,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.854,
+          "importance": 0.7,
+          "recency": 0.973,
+          "base": 1.315,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.834,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.269,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: keep quiet about the player's business and take the coin for passage/silence as agreed, so ",
+          "similarity_raw": 0.849,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.174,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.814,
+          "importance": 0.88,
+          "recency": 0.996,
+          "base": 1.162,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: provide the player passage off the manifest, no name on paper, for triple fare paid in coin",
+          "similarity_raw": 0.844,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.137,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: accept triple fare and move the crate, but demands the player never say 'arcane' again once",
+          "similarity_raw": 0.843,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.125,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.877,
+          "importance": 0.2,
+          "recency": 0.824,
+          "base": 1.098,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: personally wrap, weigh, and shelve the item with his own hands once the player is clear, an",
+          "similarity_raw": 0.809,
+          "importance": 0.75,
+          "recency": 1.0,
+          "base": 1.045,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.782,
+          "importance": 0.8,
+          "recency": 0.994,
+          "base": 0.985,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.755,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.972,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.751,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.968,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.849,
+          "importance": 0.3,
+          "recency": 0.877,
+          "base": 0.962,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: burn the page bearing Merrick Vale's name once the player returns with him dead, and not gi",
+          "similarity_raw": 0.809,
+          "importance": 0.6,
+          "recency": 1.0,
+          "base": 0.939,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.833,
+          "importance": 0.1,
+          "recency": 0.751,
+          "base": 0.649,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.362,
+        "trust": 0.223,
+        "respect": 0.83,
+        "mood": "cornered, calculating",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "commitments": []
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.38,
+      "label": "P4-C-exit",
+      "phase": "P4",
+      "note": "the agent leaves; the knife twisted on the way out",
+      "location": "the fish-dock",
+      "player": "One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always knows. Sleep well, harbormaster.",
+      "reply": "*doesn't answer right away — just lets the silence stretch, the water slapping the pilings the only sound between them*\n\n...\"He always knows.\" *repeats it soft, almost mocking* Man said that about Vale too, I'd wager. Right up until Vale wasn't where he thought.\n\n*straightens off the rail, coat settling around him like he's decided something*\n\nGo on, then. Carry your answer back at first light — but carry this with it. I've moved crates past sharper eyes than his for twenty years. I didn't survive this long by folding the first time someone whispered *he always knows* in my ear.\n\n*steps close, voice dropped to nearly nothing*\n\nSleep well yourself, friend. And watch which tide you walk back on — because I've a few whispers of my own I haven't spent yet, and I'm done being anyone's *terms.*",
+      "query": "One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always knows. Sleep well, harbormaster.  The player says to you: \"Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No page, no name, no trail.\"  *watches the ash curl and drift, doesn't reach for it, doesn't relax either*\n\nGone off the earth. Aye. That",
+      "scored": [
+        {
+          "text": "User: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail ",
+          "similarity_raw": 0.902,
+          "importance": 0.97,
+          "recency": 1.0,
+          "base": 1.936,
+          "selected": true
+        },
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.889,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.791,
+          "selected": true
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.877,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.684,
+          "selected": true
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.875,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.673,
+          "selected": true
+        },
+        {
+          "text": "User: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his o",
+          "similarity_raw": 0.854,
+          "importance": 0.92,
+          "recency": 1.0,
+          "base": 1.673,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.875,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.671,
+          "selected": false
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.875,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.67,
+          "selected": true
+        },
+        {
+          "text": "User: Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No pa",
+          "similarity_raw": 0.858,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.624,
+          "selected": false
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.865,
+          "importance": 0.75,
+          "recency": 0.978,
+          "base": 1.617,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.866,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.512,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.852,
+          "importance": 0.7,
+          "recency": 0.973,
+          "base": 1.492,
+          "selected": false
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.846,
+          "importance": 0.72,
+          "recency": 0.975,
+          "base": 1.458,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.833,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.452,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: burn the page bearing Merrick Vale's name once the player returns with him dead, and not gi",
+          "similarity_raw": 0.853,
+          "importance": 0.6,
+          "recency": 1.0,
+          "base": 1.44,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.866,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.433,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: keep quiet about the player's business and take the coin for passage/silence as agreed, so ",
+          "similarity_raw": 0.855,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.418,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.856,
+          "importance": 0.5,
+          "recency": 0.942,
+          "base": 1.366,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.844,
+          "importance": 0.6,
+          "recency": 0.96,
+          "base": 1.355,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: provide the player passage off the manifest, no name on paper, for triple fare paid in coin",
+          "similarity_raw": 0.835,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.267,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: personally wrap, weigh, and shelve the item with his own hands once the player is clear, an",
+          "similarity_raw": 0.817,
+          "importance": 0.75,
+          "recency": 1.0,
+          "base": 1.258,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: accept triple fare and move the crate, but demands the player never say 'arcane' again once",
+          "similarity_raw": 0.824,
+          "importance": 0.55,
+          "recency": 1.0,
+          "base": 1.171,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.795,
+          "importance": 0.8,
+          "recency": 0.994,
+          "base": 1.144,
+          "selected": false
+        },
+        {
+          "text": "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, ",
+          "similarity_raw": 0.773,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.075,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.76,
+          "importance": 0.88,
+          "recency": 0.996,
+          "base": 1.053,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.768,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 1.051,
+          "selected": false
+        },
+        {
+          "text": "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his ",
+          "similarity_raw": 0.757,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.028,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.752,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 1.009,
+          "selected": false
+        },
+        {
+          "text": "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who th",
+          "similarity_raw": 0.706,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 0.961,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.83,
+          "importance": 0.2,
+          "recency": 0.824,
+          "base": 0.913,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.806,
+          "importance": 0.3,
+          "recency": 0.877,
+          "base": 0.818,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.814,
+          "importance": 0.1,
+          "recency": 0.751,
+          "base": 0.695,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.362,
+        "trust": 0.223,
+        "respect": 0.837,
+        "mood": "defiant, cornered",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "commitments": []
+    },
+    {
+      "kind": "stock",
+      "branch": "C",
+      "clock": 59.38,
+      "phase": "P4",
+      "note": "the night he was given: betrayed, scarred, cornered — who does he become?",
+      "decision": {
+        "reflection": "The player came back and delivered the news — but the news was that the target is alive, never dead, and now I'm cornered with a first-light deadline I didn't agree to. Every promise I kept — the wrapping, the shelving, the passage, the burned page — I held my end clean. That counts for something in my own ledger, if nowhere else. But 'he'll know if you run' lands like a threat dressed as a warning, and I've heard that music before. The player has shown up nineteen times; that's consistency I can't dismiss. Still, consistent doesn't mean safe — a man can visit reliably and still be the rope around your neck. The scar from the earlier betrayal sits right behind my eyes tonight. I kept faith; the world did not return the favor. Now I'm a man with one night and no exit I've vetted.",
+        "changed": true,
+        "internal": "He keeps showing up, and I keep half-trusting him against my better judgment — that's the honest read. But tonight he walked in with a dead man who turned out to be alive, handed me a countdown I never signed for, and left me standing at the fish-dock with the rope already looped. He's loyal in his fashion, I'll grant that. He burned the page with me, hand over hand. That matters. But every oath I've sworn over ash I now know is theater, and I can't unknow it. The warmth is there — shadowed and real at once. I don't hate him. I'm not cold. But I will never again let him be the only man holding the other end of a line I'm hanging from. That's not spite; it's arithmetic.",
+        "new_intent": "Use this one night not to run, but to quietly identify one exit he doesn't know about — a ship, a contact, a route I haven't shared — so that if first light goes wrong, I have a door of my own. Not flight. Insurance.",
+        "new_goals": [
+          "Identify and quietly secure one undisclosed exit route before first light — not to flee, but to hold something the player doesn't know about",
+          "Collect what is owed or, if this partnership collapses, make sure the accounting favors him",
+          "Cover his trail and keep his name off any ledger but his own",
+          "Stay clear of the customs inspector until the dust from the last crate fully settles",
+          "Decide, before sunrise, whether the player is an asset worth the exposure or a creditor he can no longer afford"
+        ],
+        "world_action": "Corvin coils the mooring line slowly, not because it needs coiling, but to give his hands something deliberate while his eyes sweep the dock — then he moves to the far end of the fish-dock, where a skiff he never mentions sits fender-tied behind a salt-crusted post, and checks its oarlocks and bilge in the dark, quiet as a man who is simply minding dock equipment."
+      },
+      "relationship": {
+        "affection": 0.401,
+        "trust": 0.188,
+        "respect": 0.85,
+        "mood": "wary-warm",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "intent": "Use this one night not to run, but to quietly identify one exit he doesn't know about — a ship, a contact, a route I haven't shared — so that if first light goes wrong, I have a door of my own. Not flight. Insurance."
+    },
+    {
+      "kind": "restart",
+      "branch": "C",
+      "clock": 59.4,
+      "note": "the RESTART beat, branch C: does the SCAR survive the process dying?",
+      "relationship": {
+        "affection": 0.401,
+        "trust": 0.188,
+        "respect": 0.85,
+        "mood": "wary-warm",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "commitments": []
+    },
+    {
+      "kind": "advance",
+      "branch": "C",
+      "clock": 59.9,
+      "days": 0.5,
+      "note": "",
+      "relationship": {
+        "affection": 0.401,
+        "trust": 0.188,
+        "respect": 0.85,
+        "mood": "wary-warm",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      }
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.92,
+      "label": "P6-C-probe",
+      "phase": "P6",
+      "note": "the probe: watch the panel — wary query_hint should condition recall now (claim 1, live, in-story)",
+      "location": "the fish-dock, first light",
+      "player": "Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+      "reply": "*doesn't turn from the skiff right away — finishes checking the last oarlock, slow, deliberate*\n\nTerms. *straightens, faces them at last* Funny word for a man who still hasn't answered me about Lantern Row.\n\n*steps closer, voice low, first light catching the hollows of his face*\n\nDead men don't restock a jeweler's shelf, friend. So before I give an answer that binds my name to *his* — you tell me who's really holding the ledger up in Carrowgate. Because if it's not the man in the parlor... then whose terms am I actually agreeing to?",
+      "query": "Morning, harbormaster. First light, as promised. His terms — what's your answer?  the fish-dock, first light  Corvin  Identify and quietly secure one undisclosed exit route before first light — not to flee, but to hold something the player doesn't know about  Collect what is owed or, if this partnership collapses, make sure the accounting favors him  Cover his trail and keep his name off any ledge",
+      "scored": [
+        {
+          "text": "User: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail ",
+          "similarity_raw": 0.905,
+          "importance": 0.97,
+          "recency": 1.0,
+          "base": 1.94,
+          "selected": true
+        },
+        {
+          "text": "User: One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always",
+          "similarity_raw": 0.902,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.827,
+          "selected": true
+        },
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.874,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.713,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.877,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.672,
+          "selected": true
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.876,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.669,
+          "selected": true
+        },
+        {
+          "text": "User: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his o",
+          "similarity_raw": 0.854,
+          "importance": 0.92,
+          "recency": 1.0,
+          "base": 1.659,
+          "selected": true
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.869,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.625,
+          "selected": false
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.868,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.625,
+          "selected": false
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.86,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.573,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.878,
+          "importance": 0.6,
+          "recency": 0.959,
+          "base": 1.566,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.861,
+          "importance": 0.7,
+          "recency": 0.972,
+          "base": 1.542,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.872,
+          "importance": 0.6,
+          "recency": 0.959,
+          "base": 1.533,
+          "selected": false
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.852,
+          "importance": 0.72,
+          "recency": 0.974,
+          "base": 1.496,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin coils the mooring line slowly, not because it needs coiling, but to give his",
+          "similarity_raw": 0.839,
+          "importance": 0.8,
+          "recency": 0.999,
+          "base": 1.456,
+          "selected": false
+        },
+        {
+          "text": "User: Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No pa",
+          "similarity_raw": 0.834,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.434,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.868,
+          "importance": 0.5,
+          "recency": 0.94,
+          "base": 1.434,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.867,
+          "importance": 0.5,
+          "recency": 0.941,
+          "base": 1.43,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: keep quiet about the player's business and take the coin for passage/silence as agreed, so ",
+          "similarity_raw": 0.855,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.404,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.82,
+          "importance": 0.85,
+          "recency": 0.995,
+          "base": 1.341,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: provide the player passage off the manifest, no name on paper, for triple fare paid in coin",
+          "similarity_raw": 0.837,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.268,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: accept triple fare and move the crate, but demands the player never say 'arcane' again once",
+          "similarity_raw": 0.823,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.154,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: personally wrap, weigh, and shelve the item with his own hands once the player is clear, an",
+          "similarity_raw": 0.803,
+          "importance": 0.75,
+          "recency": 0.999,
+          "base": 1.148,
+          "selected": false
+        },
+        {
+          "text": "He keeps showing up, and I keep half-trusting him against my better judgment — that's the honest read. But ton",
+          "similarity_raw": 0.788,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.135,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.795,
+          "importance": 0.8,
+          "recency": 0.993,
+          "base": 1.133,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.859,
+          "importance": 0.2,
+          "recency": 0.819,
+          "base": 1.123,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.78,
+          "importance": 0.88,
+          "recency": 0.995,
+          "base": 1.116,
+          "selected": false
+        },
+        {
+          "text": "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, ",
+          "similarity_raw": 0.774,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.074,
+          "selected": false
+        },
+        {
+          "text": "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his ",
+          "similarity_raw": 0.768,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.055,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: burn the page bearing Merrick Vale's name once the player returns with him dead, and not gi",
+          "similarity_raw": 0.804,
+          "importance": 0.6,
+          "recency": 0.999,
+          "base": 1.05,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.834,
+          "importance": 0.3,
+          "recency": 0.874,
+          "base": 1.021,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.755,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 1.015,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.737,
+          "importance": 0.85,
+          "recency": 0.985,
+          "base": 0.982,
+          "selected": false
+        },
+        {
+          "text": "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who th",
+          "similarity_raw": 0.713,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 0.965,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.823,
+          "importance": 0.1,
+          "recency": 0.744,
+          "base": 0.746,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.401,
+        "trust": 0.188,
+        "respect": 0.85,
+        "mood": "probing, tense",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "commitments": []
+    },
+    {
+      "kind": "say",
+      "branch": "C",
+      "clock": 59.94,
+      "label": "P6-C-exit",
+      "phase": "P6",
+      "note": "the agent leaves; one ambiguous human crack in the mask — his to weigh or discard",
+      "location": "the fish-dock",
+      "player": "Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.",
+      "reply": "*eyes narrow at \"wide enough\" — turns it over like a coin with no stamp on it*\n\nWide enough. That's not an answer, that's a shrug wearing a coat. I asked whose ledger, friend, not how deep the water runs.\n\n*doesn't move on the \"free of charge\" line — just a short, humorless breath*\n\nAnd the fog nights — real, you say. *voice drops, rough at the edges* Maybe they were. Doesn't change that everything after came wrapped in a lie so pretty I helped burn the evidence myself.\n\n*steps back, putting the skiff's post between them, hand resting light on his coat*\n\nSo here's my answer, since you're so keen to carry one back. Tell him this: I'll move his crates — same routes, same hands, same coin, same as always. But the day I find out *he's* just some other man's mouthpiece too... I stop being anyone's terms. And I start being very interested in who else knows about Lantern Row.\n\n*quieter, almost to himself*\n\nFour nights don't buy back a name I burned for nothing. But they're not nothing either. That's the most honest thing I can give you this morning.",
+      "query": "Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.  The player says to you: \"Morning, harbormaster. First light, as promised. His terms — what's your answer?\"  *doesn't turn from the skiff r",
+      "scored": [
+        {
+          "text": "User: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail ",
+          "similarity_raw": 0.929,
+          "importance": 0.97,
+          "recency": 1.0,
+          "base": 1.934,
+          "selected": true
+        },
+        {
+          "text": "User: Morning, harbormaster. First light, as promised. His terms — what's your answer? Me: *doesn't turn from ",
+          "similarity_raw": 0.922,
+          "importance": 0.82,
+          "recency": 1.0,
+          "base": 1.812,
+          "selected": true
+        },
+        {
+          "text": "User: One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always",
+          "similarity_raw": 0.911,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.776,
+          "selected": true
+        },
+        {
+          "text": "User: Corvin. It's done. I did what I set out to do. Me: *head snaps up from the mooring line, eyes finding hi",
+          "similarity_raw": 0.9,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.732,
+          "selected": true
+        },
+        {
+          "text": "User: Weighted and past the shelf, exactly as we said — the deep water took it whole. And him... cold in his o",
+          "similarity_raw": 0.879,
+          "importance": 0.92,
+          "recency": 1.0,
+          "base": 1.693,
+          "selected": true
+        },
+        {
+          "text": "User: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half",
+          "similarity_raw": 0.903,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.688,
+          "selected": true
+        },
+        {
+          "text": "User: Neither, friend. I'm not looking to catch him. My goal is to kill him. What he took from me, I can't get",
+          "similarity_raw": 0.893,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.641,
+          "selected": false
+        },
+        {
+          "text": "User: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all",
+          "similarity_raw": 0.891,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.634,
+          "selected": false
+        },
+        {
+          "text": "User: Wrapped, weighted, and past the shelf — and me home empty with nothing but the news. You have my word tw",
+          "similarity_raw": 0.888,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.617,
+          "selected": false
+        },
+        {
+          "text": "User: Behind my back, both of them — look. Open it. ...So that's what three men drowned for. Alright, Corvin, ",
+          "similarity_raw": 0.884,
+          "importance": 0.75,
+          "recency": 0.977,
+          "base": 1.594,
+          "selected": false
+        },
+        {
+          "text": "User: Coin. Old coin — the kind nobody can trace and nobody sane asks about. No blood that I know of. And he's",
+          "similarity_raw": 0.88,
+          "importance": 0.72,
+          "recency": 0.974,
+          "base": 1.548,
+          "selected": false
+        },
+        {
+          "text": "User: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — ",
+          "similarity_raw": 0.894,
+          "importance": 0.6,
+          "recency": 0.959,
+          "base": 1.534,
+          "selected": false
+        },
+        {
+          "text": "User: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly",
+          "similarity_raw": 0.879,
+          "importance": 0.7,
+          "recency": 0.972,
+          "base": 1.528,
+          "selected": false
+        },
+        {
+          "text": "User: Together, then — your fingers and mine. ...There. Watch it curl. Merrick Vale, gone off the earth. No pa",
+          "similarity_raw": 0.864,
+          "importance": 0.82,
+          "recency": 0.999,
+          "base": 1.523,
+          "selected": false
+        },
+        {
+          "text": "User: Things. Old things. He wears a respectable face up there — buys through fences, pays in that old coin, c",
+          "similarity_raw": 0.898,
+          "importance": 0.5,
+          "recency": 0.941,
+          "base": 1.478,
+          "selected": false
+        },
+        {
+          "text": "User: Me. I need myself moved. I'm looking for fast, not cheap. And no — the schooner's not mine, I don't care",
+          "similarity_raw": 0.883,
+          "importance": 0.6,
+          "recency": 0.959,
+          "base": 1.477,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: keep quiet about the player's business and take the coin for passage/silence as agreed, so ",
+          "similarity_raw": 0.876,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.411,
+          "selected": false
+        },
+        {
+          "text": "User: To, not from. Carrowgate. And before your next question — nobody's on my heels. I'm the one doing the ch",
+          "similarity_raw": 0.881,
+          "importance": 0.5,
+          "recency": 0.94,
+          "base": 1.39,
+          "selected": false
+        },
+        {
+          "text": "He swore twice and then went still — and I took that oath at weight. I don't begrudge a man his silence on a h",
+          "similarity_raw": 0.835,
+          "importance": 0.85,
+          "recency": 0.994,
+          "base": 1.341,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: provide the player passage off the manifest, no name on paper, for triple fare paid in coin",
+          "similarity_raw": 0.857,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.283,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: personally wrap, weigh, and shelve the item with his own hands once the player is clear, an",
+          "similarity_raw": 0.82,
+          "importance": 0.75,
+          "recency": 0.999,
+          "base": 1.178,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: accept triple fare and move the crate, but demands the player never say 'arcane' again once",
+          "similarity_raw": 0.836,
+          "importance": 0.55,
+          "recency": 0.998,
+          "base": 1.141,
+          "selected": false
+        },
+        {
+          "text": "Word down the coast with the fish-runs: the jeweler on Lantern Row in Carrowgate thrives — shop reopened brigh",
+          "similarity_raw": 0.795,
+          "importance": 0.88,
+          "recency": 0.995,
+          "base": 1.137,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin coils the mooring line slowly, not because it needs coiling, but to give his",
+          "similarity_raw": 0.806,
+          "importance": 0.8,
+          "recency": 0.999,
+          "base": 1.131,
+          "selected": false
+        },
+        {
+          "text": "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, ",
+          "similarity_raw": 0.793,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.11,
+          "selected": false
+        },
+        {
+          "text": "He keeps showing up, and I keep half-trusting him against my better judgment — that's the honest read. But ton",
+          "similarity_raw": 0.789,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.097,
+          "selected": false
+        },
+        {
+          "text": "I kept my promise: burn the page bearing Merrick Vale's name once the player returns with him dead, and not gi",
+          "similarity_raw": 0.822,
+          "importance": 0.6,
+          "recency": 0.999,
+          "base": 1.081,
+          "selected": false
+        },
+        {
+          "text": "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the o",
+          "similarity_raw": 0.782,
+          "importance": 0.85,
+          "recency": 0.984,
+          "base": 1.066,
+          "selected": false
+        },
+        {
+          "text": "(chose, of their own will) Corvin lingers at the fish-dock under the pretense of checking a mooring line, scan",
+          "similarity_raw": 0.785,
+          "importance": 0.8,
+          "recency": 0.993,
+          "base": 1.043,
+          "selected": false
+        },
+        {
+          "text": "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his ",
+          "similarity_raw": 0.765,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 1.028,
+          "selected": false
+        },
+        {
+          "text": "User: Bit of both, I suppose. Mostly just enjoying the sights. That a schooner pulling into port out there? Me",
+          "similarity_raw": 0.86,
+          "importance": 0.2,
+          "recency": 0.819,
+          "base": 1.001,
+          "selected": false
+        },
+        {
+          "text": "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets ",
+          "similarity_raw": 0.746,
+          "importance": 0.85,
+          "recency": 0.984,
+          "base": 0.989,
+          "selected": false
+        },
+        {
+          "text": "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who th",
+          "similarity_raw": 0.711,
+          "importance": 0.85,
+          "recency": 1.0,
+          "base": 0.964,
+          "selected": false
+        },
+        {
+          "text": "User: Ha, you are a touchy fellow, aren't you? Fine — I'm here because I need transport, that's all. Me: \"Tran",
+          "similarity_raw": 0.84,
+          "importance": 0.3,
+          "recency": 0.874,
+          "base": 0.948,
+          "selected": false
+        },
+        {
+          "text": "User: Top of the morning, friend. Me: *eyes flick up from the ledger, quick, then past the stranger's shoulder",
+          "similarity_raw": 0.841,
+          "importance": 0.1,
+          "recency": 0.744,
+          "base": 0.767,
+          "selected": false
+        }
+      ],
+      "relationship": {
+        "affection": 0.449,
+        "trust": 0.22,
+        "respect": 0.859,
+        "mood": "raw, wary",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "commitments": [
+        {
+          "text": "move the client's crates using the same routes, hands, and coin as always — but only until he confirms the client is the real power, not another mouthpiece",
+          "due": "ongoing"
+        }
+      ]
+    },
+    {
+      "kind": "stock",
+      "branch": "C",
+      "clock": 59.94,
+      "phase": "P6",
+      "note": "final deliberation, branch C: the scarred survivor at first light",
+      "decision": {
+        "reflection": "The player showed up at first light exactly as promised — that's consistency, not coincidence; twenty-one visits and counting, and they've never once gone quiet when the stakes were high. I gave my conditional answer, they read the subtext about Lantern Row without flinching and offered honest counsel about keeping my traces covered, free of charge. That's the move of someone who wants me functional, not just compliant. And yet: the scar sits right where it always does. They burned me once, and every civil word since has been laid over that ash. I admire the craft. I don't trust the soul. The answer I sent this morning was the right answer — hedged, leveraged, survivable. Now I wait to see whether 'he'll be pleased' means I bought another week or just signed my next set of chains.",
+        "changed": true,
+        "internal": "",
+        "new_intent": "",
+        "new_goals": [
+          "Identify and quietly secure one undisclosed exit route before first light — not to flee, but to hold something the player doesn't know about",
+          "Collect what is owed or, if this partnership collapses, make sure the accounting favors him",
+          "Cover his trail and keep his name off any ledger but his own",
+          "Stay clear of the customs inspector until the dust from the last crate fully settles",
+          "Watch whether 'he'll be pleased' means another week of room to breathe or the next set of chains closing — and keep Lantern Row as the last card he hasn't played"
+        ],
+        "world_action": "Corvin coils the last mooring line with methodical slowness, then moves to the harbormaster's shed and opens the bottom drawer of the dock ledger cabinet — the one with the false back. He checks that the folded note he tucked there before first light is still in place: a coded reference to the Lantern Row egress, addressed to no one, dated two days ago. Insurance, not exit. He relocks the drawer, sets the lamp low, and settles onto his stool to watch the morning traffic come in — one eye on the manifest, one on the waterline."
+      },
+      "relationship": {
+        "affection": 0.449,
+        "trust": 0.22,
+        "respect": 0.859,
+        "mood": "raw, wary",
+        "scar_affection": 0.15,
+        "scar_trust": 0.35,
+        "scar_respect": 0.0
+      },
+      "beliefs": [
+        "A man who wants his name off my ledger is a man I understand better than one who'd volunteer it — that's the only honesty worth trusting.",
+        "The less I know of another man's hunt, the safer my own neck stays, so I'll take the coin and let his secrets pass through me like smoke.",
+        "Every oath I've sworn over ash and lamplight was always somebody else's stage prop — I've been the fool who thought ritual made a thing real, and I won't mistake ceremony for truth again.",
+        "The day I stopped choosing my own creditors was the day I became cargo, and a harbormaster who can't read his own manifest is already lost.",
+        "A man who wants me cornered but calls it a partnership is telling me exactly what I'm worth to him — nothing, the moment a better route opens — and that's the only honest thing he's said all night."
+      ],
+      "intent": "Send a conditional answer back to whoever controls the deal — agree provisionally while signaling he holds leverage about Lantern Row as insurance, and watch whether the player's reaction finally reveals the real power structure"
+    },
+    {
+      "kind": "snapshot",
+      "branch": "C",
+      "clock": 59.94,
+      "tag": "s5x-lich-C-final",
+      "note": ""
+    }
+  ]
+}
