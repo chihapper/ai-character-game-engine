@@ -437,7 +437,16 @@ $("rag-money").innerHTML = `<h3>The moment that gives it away</h3>
   five sincere-sounding sentences have him saying <i>"you weren't logged in any book of mine"</i>: words alone
   walked the betrayal off, because nothing structural remembers it. The engine, fed the identical five probes,
   answered: <i>"You can't buy back a page you burned out of my hand in daylight. There's no rate for that.
-  It's spent."</i></div>`;
+  It's spent."</i><br><br><b>Is this broken RAG — or just RAG?</b> Just RAG, working as designed, and that is
+  the point. Retrieval did its job every time: the betrayal was in the summary, the confrontation was in the
+  fetched text — and at this very probe, cosine similarity also surfaced an early <i>warm</i> bonding exchange,
+  because a relationship-shaped question matches relationship-shaped talk, warm and wounded alike. Topic-match,
+  not stance-match. Nothing here malfunctions: RAG remembers <i>text</i>, flawlessly — it simply has nowhere to
+  keep <i>having been changed</i>, so the psyche is re-improvised from the visible text every turn. That is why
+  our two recorded runs failed in opposite directions (re-discovering the wound as news; being talked out of it)
+  — not a bug either time, but uncontrolled variance where a game needs a governed disposition. And it is why
+  better retrieval — bigger k, hybrid search, even a full transcript in a million-token context — improves fact
+  recall without touching the problem: more text in view still is not a state that persists, caps, or heals.</div>`;
 const trkTraj = D.branches.C.cards.map(c=>c.sys.tracker&&c.sys.tracker.aff!==undefined?`${c.title.split(" —")[0]}: ${c.sys.tracker.aff>0?"+":""}${c.sys.tracker.aff}`:null).filter(Boolean).slice(0,6).join("  →  ");
 $("trk-money").innerHTML = `<h3>The moment that gives it away</h3>
   <div class="pl" style="font-size:12.5px;color:var(--player);font-style:italic;margin-bottom:8px">
