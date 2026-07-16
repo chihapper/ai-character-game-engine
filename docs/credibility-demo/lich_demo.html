@@ -34,6 +34,15 @@ section.fading{opacity:0;transform:translateY(-24px);transition:opacity .55s eas
 #intro-collapsed{display:none;max-width:1200px;margin:0 auto;padding:12px 26px;font-family:var(--mono);
   font-size:11px;color:var(--dim);cursor:pointer;letter-spacing:.5px}
 #intro-collapsed:hover{color:var(--trust)}
+/* subsection highlights */
+.subhead{border-left:3px solid rgba(255,209,102,.55);background:linear-gradient(90deg,rgba(255,209,102,.07),transparent);
+  padding:9px 14px;border-radius:6px;margin:28px 0 12px}
+h2.subhead,h3.subhead{margin:28px 0 12px}
+/* collapsed future columns */
+.colshow{width:100%;text-align:left;font-family:var(--mono);font-size:11px;color:var(--trust);
+  background:var(--panel);border:1px dashed var(--edge2);border-radius:10px;padding:11px 13px;cursor:pointer}
+.colshow:hover{border-color:var(--trust)}
+.colbody.collapsed{display:none}
 /* section header bands */
 .sechead{background:linear-gradient(90deg,rgba(255,209,102,.13),rgba(255,209,102,.02) 55%,transparent);
   border-left:4px solid var(--gold);border-radius:8px;padding:14px 18px;margin:0 0 18px}
@@ -145,7 +154,7 @@ td.eng{color:#d9ffe9}
   <i>only</i> thing that differs between the three systems is how each stores, recalls, and is changed by
   what happens.</p>
 
-  <h3 class="sr" style="margin-top:26px">The character and the story every version shares</h3>
+  <h3 class="sr subhead">The character and the story every version shares</h3>
   <p class="body sr"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
   trusts no one. A stranger — calling themselves <b>Merrick Vale</b> — buys quiet passage north to kill a monster: a lich
   hiding as a wealthy jeweler. (A naming note for careful readers: the two baseline systems improvise their
@@ -168,7 +177,7 @@ td.eng{color:#d9ffe9}
       no remorse.</p></div>
   </div>
 
-  <h3 class="sr" style="margin-top:26px">The three memory systems</h3>
+  <h3 class="sr subhead">The three memory systems</h3>
   <div class="sysgrid sr">
     <div class="syscard"><h3>1 · Plain RAG</h3><p>What most shipping "AI NPCs with memory" actually are:
       store every exchange, retrieve whatever is <i>textually similar</i> to what was just said, keep a
@@ -320,7 +329,7 @@ td.eng{color:#d9ffe9}
       <span><span class="sw" style="background:var(--scar)"></span>scar ceiling on trust — only extraordinary acts / his own considered forgiveness lift it, partially</span>
       <span><span class="sw" style="background:var(--aff)"></span>tracker affinity (normalized 0–1)</span>
     </div></div>
-  <h2 style="margin-top:36px">Same probe · three architectures</h2>
+  <h2 class="subhead">Same probe · three architectures</h2>
   <p class="sub">Identical questions at the betrayed character, days after the wound — dialogue only.</p>
   <div id="supercut"></div>
   <table>
@@ -338,7 +347,7 @@ td.eng{color:#d9ffe9}
     <tr><td>Recovery</td><td id="rec-rag">drifts back to persona default</td><td id="rec-trk">—</td>
         <td class="eng" id="rec-eng">—</td></tr>
   </table>
-  <h2>Don't take the transcript's word for it</h2>
+  <h2 class="subhead">Don't take the transcript's word for it</h2>
   <p class="sub">These are persisted minds, not chat logs. Run the local server and interrogate the exact
   state each future left behind — ask anything; nothing is scripted.</p>
   <div class="talk" id="sum-talk"></div>
@@ -386,6 +395,11 @@ function reopenIntro(){
   $("intro").classList.add("show");
   $("intro").scrollIntoView({behavior:"smooth"});
 }
+function toggleCol(btn){
+  const body = btn.nextElementSibling;
+  const nowOpen = !body.classList.toggle("collapsed");
+  btn.textContent = nowOpen ? "▴ collapse this future" : btn.dataset.label;
+}
 function toggleXp(el){
   const f = el.nextElementSibling;
   const open = f.classList.toggle("open");
@@ -424,8 +438,13 @@ function renderSystem(sys, proEl, colsEl){
   if (proEl && $(proEl)) $(proEl).innerHTML = D.prologue.slice(0,3).map(c=>cardHTML(c,sys)).join("");
   $(colsEl).innerHTML = ["A","B","C"].map(br => {
     const B = D.branches[br];
-    return `<div><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>` +
-      B.cards.map(c=>cardHTML(c,sys)).join("") + `</div>`;
+    const cards = B.cards.map(c=>cardHTML(c,sys)).join("");
+    const n = B.cards.filter(c=>c.sys && c.sys[sys]).length;
+    const head = `<div><div class="colh">${esc(B.title)}</div><div class="colsub">${esc(B.sub)}</div>`;
+    if (br === "A") return head + cards + `</div>`;
+    const lbl = `▾ open this future (${n} moments)`;
+    return head + `<button class="colshow" data-label="${lbl}" onclick="toggleCol(this)">${lbl}</button>
+      <div class="colbody collapsed">${cards}</div></div>`;
   }).join("");
 }
 renderSystem("rag",null,"rag-cols");
