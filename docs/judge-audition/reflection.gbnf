@@ -1,0 +1,13 @@
+# GBNF grammar for the engine's reflection judgment JSON (judge audition, Stage 1 constrained
+# re-run). Mirrors the schema the rubric states: {importance, commitment, relationship, intent}.
+# Key order fixed to the rubric's example order. Note: a grammar forces "{" as the first token,
+# which also suppresses thought-tags/fences structurally — wrapper failures must go to zero.
+root ::= "{" ws "\"importance\":" ws num "," ws "\"commitment\":" ws commitment "," ws "\"relationship\":" ws relationship "," ws "\"intent\":" ws string ws "}"
+commitment ::= "null" | "{" ws "\"text\":" ws string "," ws "\"significance\":" ws num "," ws "\"due\":" ws string ws "}"
+relationship ::= "{" ws "\"affection_delta\":" ws num "," ws "\"trust_delta\":" ws num "," ws "\"respect_delta\":" ws num "," ws "\"mood\":" ws string scar? scarheal? ws "}"
+scar ::= "," ws "\"scar\":" ws axes
+scarheal ::= "," ws "\"scar_heal\":" ws axes
+axes ::= "{" ws "\"affection\":" ws num "," ws "\"trust\":" ws num "," ws "\"respect\":" ws num ws "}"
+num ::= "-"? [0-9]+ ("." [0-9]+)?
+string ::= "\"" ( [^"\\\x00-\x1f] | "\\" ["\\bfnrt] )* "\""
+ws ::= [ \t\n]?
