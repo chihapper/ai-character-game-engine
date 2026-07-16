@@ -104,7 +104,7 @@ def main() -> None:
         r.raise_for_status()
         j = r.json()
         rel = j.get("relationship") or {}
-        line = (j.get("reply") or j.get("decision") or "")[:70].replace("\n", " ")
+        line = str(j.get("reply") or j.get("decision") or "")[:70].replace("\n", " ")
         print(f"  {i:3} [{b.get('branch')}] {k:9} {b.get('label') or b.get('tag') or b.get('name') or ''!s:14}"
               f" {dt:5.1f}s  t={rel.get('trust', 0):.2f} a={rel.get('affection', 0):.2f}"
               f" r={rel.get('respect', 0):.2f}  {line}", flush=True)
