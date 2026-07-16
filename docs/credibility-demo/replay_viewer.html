@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Replay viewer — raw arc runs</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#141b24; --edge:#243043; --edge2:#31405a;
+  --ink:#e9eef4; --muted:#8b97a5; --dim:#5c6773;
+  --gold:#ffd166; --sel:#7cffb2; --trust:#7cc7ff; --player:#7cc7ff; --bad:#ff8fa3;
+  --mono:ui-monospace,'Cascadia Code',Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:26px}
+h1{font-size:20px;margin:0 0 4px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase}
+.metabar{font-family:var(--mono);font-size:12px;color:var(--muted);margin:8px 0 18px}
+.metabar b{color:var(--ink)}
+select{background:var(--panel);color:var(--ink);border:1px solid var(--edge2);border-radius:8px;
+  padding:8px 12px;font:13px var(--mono);margin:4px 12px 4px 0}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:14px 16px;margin:10px 0}
+.card .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.pq{color:var(--player);font-style:italic;font-size:13.5px;margin:2px 0 8px}
+.q{white-space:pre-wrap;font-size:14px}
+i.act{color:var(--dim);font-style:italic}
+.chip{font-family:var(--mono);font-size:11.5px;color:var(--trust);border-top:1px dashed var(--edge2);
+  margin-top:10px;padding-top:8px}
+.chip .sc{color:var(--bad);font-weight:700}
+.ev{border-left:3px solid var(--gold)}
+.stock{border-left:3px solid var(--sel);border-style:solid solid solid solid}
+.stock .q{color:var(--muted);font-size:13px}
+.thin{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center;margin:14px 0;letter-spacing:1px}
+.sect{margin:30px 0 8px;padding:10px 16px;border-left:4px solid var(--gold);border-radius:8px;
+  background:linear-gradient(90deg,rgba(255,209,102,.12),transparent);font-family:var(--mono);font-size:13px}
+.restart{border-left:4px solid var(--bad);background:linear-gradient(90deg,rgba(255,143,163,.10),transparent)}
+.note{color:var(--muted);font-size:12.5px}
+</style></head><body>
+<div class="wrap">
+  <div class="kicker">raw run browser · every recorded beat, unedited</div>
+  <h1>Replay viewer</h1>
+  <div>
+    <select id="pick" onchange="loadRun(this.value)">
+      <option value="replay_lich_s5">Sonnet 5 rerun — talk + judge = sonnet-5 (the no-scar run)</option>
+      <option value="replay_lich_s5_mixC">Isolation run — talk = sonnet-5, judge = sonnet-4.6 (branch C only)</option>
+      <option value="replay_lich">Canonical arc (current file: B2 / A6 / C / C-felt / C-rescue)</option>
+      <option value="replay_lich_take1">Canonical arc take 1 (shared past + branch A)</option>
+    </select>
+    <select id="bfilter" onchange="render()"><option value="">all branches</option></select>
+  </div>
+  <div class="metabar" id="meta"></div>
+  <div id="feed"></div>
+</div>
+<script>
+const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmt = s => esc(s).replace(/\*([^*\n]+)\*/g, '<i class="act">$1</i>')
+  .replace(/\*([^*\n]+)(?=\n|$)/g, '<i class="act">$1</i>');
+const $ = id => document.getElementById(id);
+let DATA = null;
+
+function chip(r){
+  if (!r) return "";
+  const scars = (r.scar_trust||0)+(r.scar_affection||0)+(r.scar_respect||0) > 0
+    ? ` · <span class="sc">SCARS ${(r.scar_trust||0).toFixed(2)}/${(r.scar_affection||0).toFixed(2)}/${(r.scar_respect||0).toFixed(2)}</span>` : "";
+  return `<div class="chip">trust <b>${r.trust.toFixed(2)}</b> · affection ${r.affection.toFixed(2)} · respect ${r.respect.toFixed(2)}${scars} · <i>${esc(r.mood||"")}</i></div>`;
+}
+
+function render(){
+  if (!DATA) return;
+  const want = $("bfilter").value;
+  const beats = DATA.beats.filter(b => !want || b.branch === want);
+  $("feed").innerHTML = beats.map(b => {
+    const k = b.kind;
+    if (k === "say")
+      return `<div class="card"><div class="lbl">${esc(b.branch)} · ${esc(b.phase||"")} · ${esc(b.label||"say")} · ${esc(b.location||"")}</div>
+        <div class="pq">YOU · ${fmt(b.player)}</div><div class="q">${fmt(b.reply)}</div>${chip(b.relationship)}</div>`;
+    if (k === "event")
+      return `<div class="card ev"><div class="lbl">${esc(b.branch)} · world event (${esc(b.role||"none")}) · salience ${b.salience??"—"}</div>
+        <div class="q">${fmt(b.fact)}</div>${chip(b.relationship)}</div>`;
+    if (k === "stock"){
+      const d = b.decision || {};
+      const txt = typeof d === "string" ? d : (d.reflection || (d.changed === false ? "(deliberated — changed nothing)" : JSON.stringify(d)));
+      return `<div class="card stock"><div class="lbl">${esc(b.branch)} · between scenes — his own deliberation</div>
+        <div class="q">${fmt(txt)}</div>${chip(b.relationship)}</div>`;
+    }
+    if (k === "advance")
+      return `<div class="thin">⏳ +${b.days} day(s) pass ${b.relationship?`· t=${b.relationship.trust.toFixed(2)}`:""}</div>`;
+    if (k === "branch")
+      return `<div class="sect">⑂ BRANCH → ${esc(b.name||"")} ${b.tag?`(restored from snapshot ${esc(b.tag)})`:"(continues in place)"} <span class="note">${esc(b.note||"")}</span></div>`;
+    if (k === "restart")
+      return `<div class="sect restart">⟳ RESTART — process memory dropped, mind reloaded from disk ${chip(b.relationship)} <div class="note">${esc(b.note||"")}</div></div>`;
+    if (k === "snapshot") return `<div class="thin">▣ snapshot saved: ${esc(b.tag)}</div>`;
+    if (k === "restore")  return `<div class="thin">▣ mind restored from: ${esc(b.tag)}</div>`;
+    if (k === "resolve")  return `<div class="thin">✔ commitment resolved (${esc(b.status||"")}): ${esc((b.commitment||"").slice(0,90))}</div>`;
+    if (k === "start")    return `<div class="sect">● START — fresh mind ${esc(b.note||"")}</div>`;
+    return "";
+  }).join("");
+}
+
+function loadRun(name){
+  DATA = null; $("feed").innerHTML = ""; $("meta").textContent = "loading…";
+  const old = $("runjs"); if (old) old.remove();
+  const s = document.createElement("script");
+  s.id = "runjs"; s.src = name + ".js?ts=" + Date.now();
+  s.onload = () => {
+    DATA = window.CRED_REPLAY_LICH;
+    const m = DATA.meta || {};
+    $("meta").innerHTML = `talk model: <b>${esc(m.model||"?")}</b> · engine-process (judge): <b>${esc(m.engine_model||"?")}</b> · slug: ${esc(m.slug||"?")} · ${DATA.beats.length} beats`;
+    const brs = [...new Set(DATA.beats.map(b => b.branch).filter(Boolean))];
+    $("bfilter").innerHTML = `<option value="">all branches</option>` + brs.map(b=>`<option>${esc(b)}</option>`).join("");
+    render();
+  };
+  s.onerror = () => { $("meta").textContent = "could not load " + name + ".js"; };
+  document.body.appendChild(s);
+}
+loadRun("replay_lich_s5");
+</script>
+</body></html>
