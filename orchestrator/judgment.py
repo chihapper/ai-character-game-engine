@@ -39,16 +39,44 @@ def model_for(role: str, override: str | None = None) -> str:
     return getattr(get_settings(), _ROLE_MODELS[role])
 
 
+#: Reasoning allowance added to every judgment call's visible-output budget. Models that think
+#: by default (sonnet-5+) spend thinking tokens INSIDE max_tokens; the callers' budgets are
+#: sized for the JSON alone, so without headroom a hard moment's thinking can consume the whole
+#: cap and the judgment arrives EMPTY — silently, at exactly the beats that matter most (found
+#: 2026-07-16: the sonnet-5 lich rerun scored a witnessed total betrayal as a no-op this way).
+#: Harmless for non-thinking models: max_tokens is a ceiling, not a target.
+_THINKING_HEADROOM = 2048
+#: One retry with this much extra room when a judgment still comes back empty.
+_EMPTY_RETRY_BOOST = 4096
+
+
 async def complete(system: str | list, prompt: str, *, role: str = "salience",
                    model: str | None = None, max_tokens: int = 240) -> str:
     """One-shot streamed completion with the role-resolved model and the shared client. `system`
     may be a list to opt its stable prefix into prompt caching (see AnthropicLLM._system_param).
-    Raises on transport errors — the caller owns the fallback semantics."""
-    llm = AnthropicLLM(model=model_for(role, model), max_tokens=max_tokens)
-    parts: list[str] = []
-    async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
-        parts.append(delta)
-    return "".join(parts)
+    Raises on transport errors — the caller owns the fallback semantics. `max_tokens` is the
+    VISIBLE-output budget; a thinking allowance is added on top (see _THINKING_HEADROOM).
+    An empty completion is never returned silently: it is retried once with more room, then
+    logged as a warning — a mute judge must be a visible event, not a neutral no-op."""
+    resolved = model_for(role, model)
+
+    async def _once(budget: int) -> str:
+        llm = AnthropicLLM(model=resolved, max_tokens=budget)
+        parts: list[str] = []
+        async for delta in llm.stream_reply([{"role": "user", "content": prompt}], system):
+            parts.append(delta)
+        return "".join(parts)
+
+    text = await _once(max_tokens + _THINKING_HEADROOM)
+    if not text.strip():
+        logger.warning("%s judgment returned NO text (model=%s, budget=%d) — likely thinking "
+                       "consumed the cap; retrying with +%d",
+                       role, resolved, max_tokens + _THINKING_HEADROOM, _EMPTY_RETRY_BOOST)
+        text = await _once(max_tokens + _THINKING_HEADROOM + _EMPTY_RETRY_BOOST)
+        if not text.strip():
+            logger.warning("%s judgment EMPTY after retry (model=%s) — caller falls back neutral",
+                           role, resolved)
+    return text
 
 
 def salvage_json(text: str) -> dict | None:
