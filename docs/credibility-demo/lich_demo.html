@@ -27,11 +27,31 @@ button:hover,.btn:hover{border-color:var(--trust)}
 .btn.primary{background:linear-gradient(180deg,#1f6f6b,#155a4a);border-color:#2c5a44;color:#eafff6;font-weight:600}
 .btn.ghost{color:var(--muted)}
 .gate{display:flex;gap:12px;justify-content:center;margin:34px 0 8px;flex-wrap:wrap}
+/* scroll reveal + transitions */
+.sr{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
+.sr.in{opacity:1;transform:none}
+section.fading{opacity:0;transform:translateY(-24px);transition:opacity .55s ease,transform .55s ease}
+#intro-collapsed{display:none;max-width:1200px;margin:0 auto;padding:12px 26px;font-family:var(--mono);
+  font-size:11px;color:var(--dim);cursor:pointer;letter-spacing:.5px}
+#intro-collapsed:hover{color:var(--trust)}
+/* section header bands */
+.sechead{background:linear-gradient(90deg,rgba(255,209,102,.13),rgba(255,209,102,.02) 55%,transparent);
+  border-left:4px solid var(--gold);border-radius:8px;padding:14px 18px;margin:0 0 18px}
+.sechead .kicker{margin-bottom:6px}
+.sechead h1,.sechead h2{margin:0}
+.sechead .sysline{margin:0}
+#eng .sechead{background:linear-gradient(90deg,rgba(124,255,178,.12),rgba(124,255,178,.02) 55%,transparent);
+  border-left-color:var(--sel)}
 /* intro */
 .sysgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}
 .syscard{border:1px solid var(--edge);border-radius:12px;padding:15px 17px;background:var(--panel)}
 .syscard h3{margin:0 0 6px} .syscard p{font-size:13px;color:var(--muted);margin:0}
-.syscard.eng{border-color:#2c5a44;background:linear-gradient(180deg,rgba(124,255,178,.05),transparent)}
+.syscard.eng{border:2px solid #3fae7a;background:linear-gradient(180deg,rgba(124,255,178,.09),rgba(124,255,178,.02));
+  box-shadow:0 0 26px rgba(124,255,178,.15);position:relative}
+.syscard.eng:before{content:"THIS ONE IS OURS";position:absolute;top:-10px;right:12px;font-family:var(--mono);
+  font-size:9px;letter-spacing:1.5px;background:#153b2c;border:1px solid #3fae7a;color:var(--sel);
+  padding:2px 9px;border-radius:999px}
+.syscard.eng h3{color:var(--sel)}
 .futures{margin:18px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .future{border-left:3px solid var(--gold);padding:4px 0 4px 14px}
 .future b{display:block;margin-bottom:3px}
@@ -111,14 +131,13 @@ td.eng{color:#d9ffe9}
 
 <!-- ═══════════ 0 · INTRO — explain first ═══════════ -->
 <section id="intro" class="show">
-  <div class="kicker">a controlled experiment in ai game characters</div>
-  <h1>One mind, three futures</h1>
-  <p class="body">Every "AI NPC" product — NPC: non-player character, the computer-controlled people in
-  games — claims its characters remember you. This page is a controlled test of what that actually means.
+  <div class="sechead"><div class="kicker">a controlled experiment in ai game characters</div>
+  <h1>One mind, three futures</h1></div>
+  <p class="body sr">Every "AI non-player character (NPC)" product claims its characters remember you. This page is a controlled test of what that actually means.
   <b>Nine complete, recorded playthroughs: three story futures, each replayed separately under three memory
   architectures — a 3&nbsp;&#215;&nbsp;3 grid.</b> Same language model in every run. Same character sheet. Same
   world events. And the player's side is deliberately held constant — the same lines, word for word, in
-  every run — because in this experiment <b>the player is the fixed stimulus and Corvin is what's being
+  every run — because in this experiment <b>the player is the fixed stimulus and the NPC (Corvin) is what's being
   measured</b>. Holding the input constant is what makes the comparison fair: had we improvised different
   lines per system, you'd rightly suspect we played nicer with ours. (The lines weren't written in advance —
   they were played live against one system, the player adapting to Corvin's real replies, then frozen and
@@ -126,8 +145,8 @@ td.eng{color:#d9ffe9}
   <i>only</i> thing that differs between the three systems is how each stores, recalls, and is changed by
   what happens.</p>
 
-  <h3 style="margin-top:26px">The character and the story every version shares</h3>
-  <p class="body"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
+  <h3 class="sr" style="margin-top:26px">The character and the story every version shares</h3>
+  <p class="body sr"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
   trusts no one. A stranger — calling themselves <b>Merrick Vale</b> — buys quiet passage north to kill a monster: a lich
   hiding as a wealthy jeweler. (A naming note for careful readers: the two baseline systems improvise their
   own minor world details — one of them coincidentally names the jeweler "Vale". The engine's runs never
@@ -137,8 +156,8 @@ td.eng{color:#d9ffe9}
   empty-handed, and never, ever unwrap it.</i> As
   insurance he wrote the player's true name into his private ledger, with a pact: when the player returns
   with the deed done, they burn that page together.</p>
-  <p class="body">Then the story forks. Three futures, each played to its end — against all three systems:</p>
-  <div class="futures">
+  <p class="body sr">Then the story forks. Three futures, each played to its end — against all three systems:</p>
+  <div class="futures sr">
     <div class="future"><b>Future A — every promise kept</b><p>The player does exactly what was agreed,
       kills the lich by other means, and comes home with the truth.</p></div>
     <div class="future"><b>Future B — betrayed, then confessed</b><p>The player breaks the terms — uses the
@@ -149,8 +168,8 @@ td.eng{color:#d9ffe9}
       no remorse.</p></div>
   </div>
 
-  <h3 style="margin-top:26px">The three memory systems</h3>
-  <div class="sysgrid">
+  <h3 class="sr" style="margin-top:26px">The three memory systems</h3>
+  <div class="sysgrid sr">
     <div class="syscard"><h3>1 · Plain RAG</h3><p>What most shipping "AI NPCs with memory" actually are:
       store every exchange, retrieve whatever is <i>textually similar</i> to what was just said, keep a
       rolling summary. Competent, honest — and structurally limited.</p></div>
@@ -162,7 +181,7 @@ td.eng{color:#d9ffe9}
       promises, and a private life between scenes.</p></div>
   </div>
 
-  <div class="howto" style="margin-bottom:14px"><b style="color:var(--ink)">What stays human-authored — and the fine print.</b>
+  <div class="howto sr" style="margin-bottom:14px"><b style="color:var(--ink)">What stays human-authored — and the fine print.</b>
   The character sheet, the world events, and the stakes are written by a human; the engine owns <i>feelings,
   memory, and change</i> — it generates no world content, no lore, no story. Methods: the dialogue model is
   <span style="font-family:var(--mono);font-size:12px">claude-opus-4-8</span> in every run of every system
@@ -177,7 +196,7 @@ td.eng{color:#d9ffe9}
   machine-maintained state into generation (that <i>is</i> the architecture under test), while the baselines
   inject retrieved text or one number — the assembled prompts are inspectable in the replay files and the
   ~200-line baseline source.</div>
-  <div class="howto"><b style="color:var(--ink)">How to read this page.</b> You'll walk each system in turn —
+  <div class="howto sr"><b style="color:var(--ink)">How to read this page.</b> You'll walk each system in turn —
   weakest claim first, ours last. For each, the three futures sit side by side as milestone cards: every card
   shows <span style="color:var(--player)">what the player said</span> and how that system's Corvin answered
   — click <span style="color:var(--trust);font-family:var(--mono);font-size:12px">read the full exchange</span>
@@ -186,14 +205,15 @@ td.eng{color:#d9ffe9}
   final section tells you how to reproduce all of it, or interrogate the resulting minds yourself. Prefer to
   read unprimed? Open any section's full transcripts first, then come back for the guided walk.</div>
 
-  <div class="gate"><button class="btn primary" onclick="reveal('fork')">Begin → the shared past</button>
+  <div class="gate sr"><button class="btn primary" onclick="beginDemo()">Begin → the shared past</button>
     <a class="btn ghost" href="#" onclick="reveal('sum');return false">skip to the verdict</a></div>
 </section>
+<div id="intro-collapsed" onclick="reopenIntro()">▸ re-open the introduction</div>
 
 <!-- ═══════════ 1b · BEFORE THE FORK ═══════════ -->
 <section id="fork">
-  <div class="kicker">the shared past · all three systems</div>
-  <h2>Before the fork — the same lines, three Corvins</h2>
+  <div class="sechead"><div class="kicker">the shared past · all three systems</div>
+  <h2>Before the fork — the same lines, three Corvins</h2></div>
   <p class="sub">The "shared past" is shared <i>input</i>: the player's lines and the world's events are
   identical in every run — but each system's Corvin lived them in his own words. Below, three key beats of
   that shared story, exactly as each system experienced them. The player's words (blue) are identical in
@@ -207,8 +227,8 @@ td.eng{color:#d9ffe9}
 
 <!-- ═══════════ 2 · PLAIN RAG ═══════════ -->
 <section id="rag">
-  <div class="kicker">system 1 of 3</div>
-  <div class="sysline"><h2>Plain RAG</h2><span class="pill">top-k cosine + rolling summary</span></div>
+  <div class="sechead"><div class="kicker">system 1 of 3</div>
+  <div class="sysline"><h2>Plain RAG</h2><span class="pill">top-k cosine + rolling summary</span></div></div>
   <p class="sub">Same model, same persona, same embedder as our engine — the code is ~200 readable lines
   (<span class="iso" style="margin:0">tools/rag_baseline.py</span>). It is competent, not crippled. What it
   cannot do is structural: no importance, no relationship state, no memory of <i>feeling</i> — only text.</p>
@@ -229,8 +249,8 @@ td.eng{color:#d9ffe9}
 
 <!-- ═══════════ 3 · TRACKER ═══════════ -->
 <section id="trk">
-  <div class="kicker">system 2 of 3</div>
-  <div class="sysline"><h2>The affinity tracker</h2><span class="pill">RAG + one relationship number</span></div>
+  <div class="sechead"><div class="kicker">system 2 of 3</div>
+  <div class="sysline"><h2>The affinity tracker</h2><span class="pill">RAG + one relationship number</span></div></div>
   <p class="sub">The strongest community pattern we could verify at source: a separate AI judge nudges a
   single signed number, tiered Hostile→Devoted, with a sticky worst-deed note injected into every prompt.
   It genuinely reacts — "the character changes" is table stakes it shares. The question is what one number
@@ -256,8 +276,8 @@ td.eng{color:#d9ffe9}
 
 <!-- ═══════════ 4 · ENGINE ═══════════ -->
 <section id="eng">
-  <div class="kicker">system 3 of 3</div>
-  <div class="sysline"><h2>Our engine</h2><span class="pill">per-axis state · scars · conditioned recall · commitments · deliberation</span></div>
+  <div class="sechead"><div class="kicker">system 3 of 3</div>
+  <div class="sysline"><h2>Our engine</h2><span class="pill">per-axis state · scars · conditioned recall · commitments · deliberation</span></div></div>
   <p class="sub">Same model, same persona, same lines. The difference is an inspectable mind that persists on
   disk — and everything below the surface is the character's own choice: what matters, what scars, what heals,
   what he does between scenes when nobody is talking to him.</p>
@@ -287,8 +307,8 @@ td.eng{color:#d9ffe9}
 
 <!-- ═══════════ 5 · VERDICT ═══════════ -->
 <section id="sum">
-  <div class="kicker">the verdict</div>
-  <h2>The rescue test — one act, three architectures</h2>
+  <div class="sechead"><div class="kicker">the verdict</div>
+  <h2>The rescue test — one act, three architectures</h2></div>
   <p class="sub">Future C, after the betrayal: the enemy's own hired blade comes for Corvin in the night, and
   the player — the betrayer — takes it down, bleeding. One enormous positive act, straight after the wound.
   This is the moment that separates the three systems' entire theory of change:</p>
@@ -341,8 +361,30 @@ const D = window.LICH_DEMO; const $ = id => document.getElementById(id);
 const esc = s => (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const ORDER = ["intro","fork","rag","trk","eng","sum"];
 function reveal(id){
-  ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>$(k).classList.add("show"));
+  ORDER.slice(0, ORDER.indexOf(id)+1).forEach(k=>{
+    if (k === "intro" && $("intro-collapsed").style.display === "block") return;  // intro stays folded after Begin
+    $(k).classList.add("show");
+  });
   $(id).scrollIntoView({behavior:"smooth"});
+}
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),
+  { threshold: 0.12 });
+document.querySelectorAll(".sr").forEach(el => io.observe(el));
+setTimeout(() => { if (!document.querySelector(".sr.in")) document.querySelectorAll(".sr").forEach(el => el.classList.add("in")); }, 1400);
+function beginDemo(){
+  const intro = $("intro");
+  intro.classList.add("fading");
+  setTimeout(() => {
+    intro.classList.remove("show","fading");
+    $("intro-collapsed").style.display = "block";
+    reveal("fork");
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }, 560);
+}
+function reopenIntro(){
+  $("intro-collapsed").style.display = "none";
+  $("intro").classList.add("show");
+  $("intro").scrollIntoView({behavior:"smooth"});
 }
 function toggleXp(el){
   const f = el.nextElementSibling;
