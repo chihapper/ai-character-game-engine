@@ -117,8 +117,14 @@ td.eng{color:#d9ffe9}
   games — claims its characters remember you. This page is a controlled test of what that actually means.
   <b>Nine complete, recorded playthroughs: three story futures, each replayed separately under three memory
   architectures — a 3&nbsp;&#215;&nbsp;3 grid.</b> Same language model in every run. Same character sheet. Same
-  player lines, word for word. Same world events. The <i>only</i> thing that differs between the three
-  systems is how each stores, recalls, and is changed by what happens.</p>
+  world events. And the player's side is deliberately held constant — the same lines, word for word, in
+  every run — because in this experiment <b>the player is the fixed stimulus and Corvin is what's being
+  measured</b>. Holding the input constant is what makes the comparison fair: had we improvised different
+  lines per system, you'd rightly suspect we played nicer with ours. (The lines weren't written in advance —
+  they were played live against one system, the player adapting to Corvin's real replies, then frozen and
+  replayed identically to the others; the fine print below covers the one small bias this creates.) The
+  <i>only</i> thing that differs between the three systems is how each stores, recalls, and is changed by
+  what happens.</p>
 
   <h3 style="margin-top:26px">The character and the story every version shares</h3>
   <p class="body"><b>Corvin Ashgrave</b> is a paranoid harbormaster who smuggles relics by lamplight and
@@ -162,7 +168,9 @@ td.eng{color:#d9ffe9}
   <span style="font-family:var(--mono);font-size:12px">claude-opus-4-8</span> in every run of every system
   (engine-internal appraisals: <span style="font-family:var(--mono);font-size:12px">claude-sonnet-4-6</span>);
   default sampling; the shared-past lines were realized live against the engine, then replayed byte-identical
-  to the baselines. Every run and retake is committed to the project's git history — nothing was discarded,
+  to the baselines — which, if anything, hands the baselines lines shaped by a <i>different</i> conversation's
+  flow. That small mismatch cost is accepted and visible in the transcripts; the failures this page shows are
+  structural (a number's arithmetic, retrieval's blindness to feeling), not conversational stumbles. Every run and retake is committed to the project's git history — nothing was discarded,
   and where a future was re-taken, the page says so. One honest confound to know: the engine injects its own
   machine-maintained state into generation (that <i>is</i> the architecture under test), while the baselines
   inject retrieved text or one number — the assembled prompts are inspectable in the replay files and the
