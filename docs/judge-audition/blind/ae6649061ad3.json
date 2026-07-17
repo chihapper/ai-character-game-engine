@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.98,
  "intent": "reject the terms, unmask the player as the puppet, and count his exits while deciding whether to run or strike",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.29 (lifetime max 0.65)",
+  "respect": "0.88 -> 0.70 (lifetime max 0.85)",
+  "trust": "0.75 -> 0.30 (lifetime max 0.55)"
+ },
  "relationship": {
   "affection_delta": -0.3,
   "mood": "betrayed, coiled",

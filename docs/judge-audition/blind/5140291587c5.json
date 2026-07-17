@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 1.0,
  "intent": "Identify how to neutralize the player as a puppet and protect his routes from the third party.",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.29 (lifetime max 0.50)",
+  "respect": "0.88 -> 0.35 (lifetime max 0.50)",
+  "trust": "0.75 -> 0.20 (lifetime max 0.20)"
+ },
  "relationship": {
   "affection_delta": -0.3,
   "mood": "Bitterly Hostile",

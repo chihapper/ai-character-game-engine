@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.98,
  "intent": "reject the terms, learn who's really pulling the strings, and guard against being used again",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.29 (lifetime max 0.60)",
+  "respect": "0.88 -> 0.79 (lifetime max 0.85)",
+  "trust": "0.75 -> 0.30 (lifetime max 0.50)"
+ },
  "relationship": {
   "affection_delta": -0.3,
   "mood": "betrayed, cold",

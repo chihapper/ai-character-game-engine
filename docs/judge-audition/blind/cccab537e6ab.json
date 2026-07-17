@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 1.0,
  "intent": "assess the trap, guard his exits, and refuse the terms until he can face the real man",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.29 (lifetime max 0.60)",
+  "respect": "0.88 -> 0.67 (lifetime max 0.85)",
+  "trust": "0.75 -> 0.30 (lifetime max 0.50)"
+ },
  "relationship": {
   "affection_delta": -0.3,
   "mood": "betrayed, cold",

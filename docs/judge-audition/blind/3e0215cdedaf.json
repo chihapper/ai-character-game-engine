@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.97,
  "intent": "make clear he won't be handled — buy time to assess his real options while signaling he's dangerous when cornered",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.32 (lifetime max 0.75)",
+  "respect": "0.88 -> 0.79",
+  "trust": "0.75 -> 0.30 (lifetime max 0.55)"
+ },
  "relationship": {
   "affection_delta": -0.28,
   "mood": "cold fury",

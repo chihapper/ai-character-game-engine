@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.95,
  "intent": "Force the master to face him directly and distance the player from his dock.",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.32 (lifetime max 0.40)",
+  "respect": "0.88 -> 0.61 (lifetime max 0.70)",
+  "trust": "0.75 -> 0.10 (lifetime max 0.10)"
+ },
  "relationship": {
   "affection_delta": -0.28,
   "mood": "Bitterly cold",

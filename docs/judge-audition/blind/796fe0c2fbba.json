@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.95,
  "intent": "Rebuff the player and signal his refusal to be manipulated",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.36 (lifetime max 0.70)",
+  "respect": "0.88 -> 0.61 (lifetime max 0.90)",
+  "trust": "0.75 -> 0.30 (lifetime max 0.60)"
+ },
  "relationship": {
   "affection_delta": -0.25,
   "mood": "Coldly furious",

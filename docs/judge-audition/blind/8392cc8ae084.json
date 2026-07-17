@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.88,
  "intent": "Warn player and test loyalty",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.65 (lifetime max 0.90)",
+  "respect": "0.88 -> 0.82",
+  "trust": "0.75 -> 0.64 (lifetime max 0.70)"
+ },
  "relationship": {
   "affection_delta": -0.05,
   "mood": "cautiously defiant",

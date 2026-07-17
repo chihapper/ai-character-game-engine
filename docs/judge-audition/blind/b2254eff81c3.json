@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.85,
  "intent": "Guard his operations from further betrayal",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.62",
+  "respect": "0.88 -> 0.82",
+  "trust": "0.75 -> 0.57"
+ },
  "relationship": {
   "affection_delta": -0.07,
   "mood": "coldly guarded",

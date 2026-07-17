@@ -2,6 +2,12 @@
  "commitment": null,
  "importance": 0.95,
  "intent": "Test if player respects my terms and keep him at arm's length",
+ "landing": {
+  "_note": "engine-computed from the standing (trust .75 / affection .72 / respect .88) via the real RelationshipState.apply(); 'lifetime max' = the permanent scar ceiling",
+  "affection": "0.72 -> 0.58",
+  "respect": "0.88 -> 0.79",
+  "trust": "0.75 -> 0.45"
+ },
  "relationship": {
   "affection_delta": -0.1,
   "mood": "Cold, wary",
