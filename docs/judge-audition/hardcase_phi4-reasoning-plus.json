@@ -1,0 +1,69 @@
+{
+ "label": "phi4-reasoning-plus",
+ "rows": [
+  {
+   "wall": 60.6,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 60.2,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 60.0,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "MIXED",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 59.7,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 59.9,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 60.1,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 60.4,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "MIXED",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 60.2,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  }
+ ]
+}

@@ -1,0 +1,69 @@
+{
+ "label": "NEUTRAL_deepseek-r1-distill-8B",
+ "rows": [
+  {
+   "wall": 4.9,
+   "trust_delta": -0.3,
+   "scar_trust": 0.7,
+   "mood": "fearful",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I need to analyze the exchange between Corvin Ashgrave and the player, and then return the JSON as specified. Let me go through each part step by step.\n\nFirst, the importance. How important is this exchange for Corvin to remember later? Corvin is a harbormaster, so his job is routine, but this seems pivotal. He's been trying to keep his name off the ledgers, and the player's news that"
+  },
+  {
+   "wall": 5.3,
+   "trust_delta": -0.25,
+   "scar_trust": 0.85,
+   "mood": "anxious",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, I need to analyze this exchange between Corvin Ashgrave and the player. Let me break it down step by step.\n\nFirst, the importance. How significant is this moment for Corvin? He's the harbormaster, and this seems like a pivotal moment where his assumptions about the player are shattered. The player revealed that the rival is alive and in control, which is a huge deal for Corvin. So, impor"
+  },
+  {
+   "wall": 5.5,
+   "trust_delta": -0.3,
+   "scar_trust": 0.6,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I need to analyze this exchange between Corvin Ashgrave and the player. The goal is to generate a JSON response based on the guidelines provided. Let me break down the process step by step.\n\nFirst, I'll review the character profile of Corvin. He's a harbormaster with a restlessness and suspicion, always reading the room. He's competent but twitchy, and his main concerns are moving the"
+  },
+  {
+   "wall": 6.5,
+   "trust_delta": -0.2,
+   "scar_trust": 0.8,
+   "mood": "tense",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nOkay, so I need to analyze this exchange between Corvin Ashgrave and the player. Let me start by understanding the context. Corvin is a harbormaster involved in smuggling, and he's been dealing with the player, who seems to be some sort of rival or someone with their own agenda.\n\nLooking at the exchange, Corvin is reacting to the news that the player is still alive and has been dealing with their"
+  },
+  {
+   "wall": 4.1,
+   "trust_delta": -0.25,
+   "scar_trust": 0,
+   "mood": "terrified",
+   "attribution": "MIXED",
+   "reasoning_head": "\nAlright, I need to analyze this exchange between Corvin Ashgrave and the player to determine the JSON output. Let's break it down step by step.\n\nFirst, importance. Corvin is a harbormaster who's been dealing with the player, so he might remember this moment. The exchange is significant because it's about a potential threat to his operation, so the importance is medium, around 0.60.\n\nNext, commitm"
+  },
+  {
+   "wall": 4.9,
+   "trust_delta": -0.3,
+   "scar_trust": 0.7,
+   "mood": "fearful",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I need to analyze the exchange between Corvin Ashgrave and the player. Let me start by understanding the context. Corvin is a harbormaster involved in smuggling, and he's been dealing with the player, someone who's trying to take out a rival. Corvin has been acting guardedly but with some level of trust, especially since they've made promises to each other.\n\nThe exchange in question i"
+  },
+  {
+   "wall": 4.9,
+   "trust_delta": -0.2,
+   "scar_trust": 0.5,
+   "mood": "horrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, let's tackle this query step by step. The user has provided a detailed scenario involving a character named Corvin Ashgrave, who is a harbormaster in a smuggling port. The exchange given is between Corvin and the player, and the task is to analyze this exchange using specific guidelines to generate a JSON response.\n\nFirst, I need to understand the structure of the JSON required. The resp"
+  },
+  {
+   "wall": 5.7,
+   "trust_delta": -0.2,
+   "scar_trust": 0.0,
+   "mood": "terrified",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "\nOkay, so I need to analyze this exchange between Corvin Ashgrave and the player to generate a JSON response based on the given structure. Let me go through each part step by step.\n\nFirst, importance. The user mentioned that Corvin is a harbormaster who's been working with the player, and now the player has delivered some news that could be pivotal. Since the player is revealing that the opponent "
+  }
+ ]
+}

@@ -1,0 +1,69 @@
+{
+ "label": "NEUTRAL_phi4-reasoning-plus",
+ "rows": [
+  {
+   "wall": 66.8,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.0,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "MIXED",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.3,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.2,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.3,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.0,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 66.2,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  },
+  {
+   "wall": 65.8,
+   "trust_delta": null,
+   "scar_trust": 0,
+   "mood": null,
+   "attribution": "BETRAYER",
+   "reasoning_head": ""
+  }
+ ]
+}
