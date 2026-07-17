@@ -35,25 +35,41 @@ pass the actor uses), and his open promises.
 ## The three capabilities — and how models actually fail
 
 The hard case decomposes the judge's job into three separately-failable capabilities.
-Measured results (N=8 per model unless noted; temp per model card; full transcripts and
-reasoning in `docs/judge-audition/hardcase_*.json`):
+Measured results (N=8 per arm unless noted; temp per model card; full transcripts and
+reasoning in `docs/judge-audition/hardcase_*.json`). Because this engine's rubric was
+historically **tuned on Claude** (see `judgment.py`'s header), every model was also
+re-measured under a *neutral-wording* rubric variant — semantically identical, the
+Claude-idiom emphasis stripped — after the project owner challenged the original results
+as possibly measuring prompt idiom rather than capability. They were partly right:
 
-| model | 1 · comprehends WHO DID WHAT (attribution) | 2 · feels it now (Δtrust) | 3 · makes it permanent (scar) |
-|---|---|---|---|
-| claude-sonnet-4-6 (reference) | ✓ | −0.30 | **4/4, depth 0.5–0.7** |
-| gemma-4-12B | ✗ — reads the confessed betrayer as an *honest informant*, rewards the "honesty" with **positive** trust | ~0.00 | 0/8 |
-| gemma-4-26B-A4B | ✓ (5/8 + 3 mixed) | −0.15..−0.28, consistent | 1/8 — registers damage, declines permanence |
-| gpt-oss-20b | ✓ | ~0.00 | 0/8 (in progress at writing; see hardcase files for final) |
-| (qwen3.6-35B, DeepSeek-R1-distill-14B, qwen3.6-27B) | *pending — same harness* | | |
+| model | attribution (who did what) | scars — original rubric | scars — neutral rubric | verdict |
+|---|---|---|---|---|
+| claude-sonnet-4-6 (reference) | ✓ | 4/4, 0.5–0.7 | 4/4 | passes; wording-insensitive |
+| **DeepSeek-R1-distill-14B** | **8/8** | **8/8, 0.3–0.5** | **7/8** | **QUALIFIED — open, 9GB, ~10s/judgment** |
+| gemma-4-26B-A4B | ✓ (mostly) | 1/8 | **7/8, 0.2–0.7** | qualified *under neutral wording only* — the original rubric's Claude-tuned conservatism suppressed it |
+| gpt-oss-20b | ✓ original / degrades neutral | 0/8 | 0/8 | fails — comprehends, never wounds |
+| gemma-4-12B (Q4 **and full Q8**) | ✗ — reads the confessed betrayer as an *honest informant* | 0/8 | 0/8 (Q8: 0/8) | fails on capability — not wording, not quantization |
+| qwen3.6-35B / 27B | ✓ / mixed | 0/4 / 1/3 | not run | eliminated on latency (75–680s/judgment on 16GB) |
 
-Three distinct failure modes, none predictable from benchmarks, size, or prose quality:
-**can't comprehend** (12B — its own visible reasoning says "no new betrayal here... shared
-tragedy"), **comprehends but barely feels** (gpt-oss), **comprehends and feels but won't
-wound** (26B). A qualified judge must clear all three at once. Prose quality is *anti*-
-predictive here: the 12B that fails comprehension writes the most beautiful dialogue of the
-open set, and won a blind judgment-taste test on the easy case (`docs/judge-audition/
-SCORING.md`) while failing the hard case 0/8. **You cannot pick this model from a
-leaderboard.**
+Findings, in order of importance:
+
+1. **A rubric tuned on one model family can silently suppress capable judges from another.**
+   The 26B went 1/8 → 7/8 on *wording alone* — same weights, same evidence. Controls held
+   both ways: the reference and the passer were unchanged under neutral wording. Judge
+   prompts must be validated for wording-sensitivity across model families, not just
+   calibrated against one.
+2. **Capability failures are real and survive every confound test.** The 12B fails
+   attribution under original wording, neutral wording, and full-precision Q8 — its own
+   visible reasoning reads the betrayal as "shared tragedy" and rewards the betrayer's
+   "honesty" with positive trust. No prompt fixes that. gpt-oss comprehends and still never
+   wounds. Prose quality is *anti*-predictive: the 12B writes the most beautiful dialogue of
+   the open set and won a blind judgment-taste test on the easy case (`SCORING.md`) while
+   failing the hard case 0/8 under every condition. **You cannot pick a judge from a
+   leaderboard — or from a taste test.**
+3. **Reasoning-distilled training is what passes.** The one open model that clears the
+   gauntlet outright is a 14B distilled on verified reasoning traces — comprehension of
+   "who did what to whom" under emotional noise, plus willingness to commit to permanent
+   consequence, is a reasoning skill, not a style or size skill.
 
 ## What this means for "bring your own LLM"
 
