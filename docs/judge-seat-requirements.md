@@ -52,6 +52,18 @@ as possibly measuring prompt idiom rather than capability. They were partly righ
 | qwen3.6-35B / 27B | ✓ / mixed | 0/4 / 1/3 | not run | eliminated on latency (75–680s/judgment on 16GB) |
 | **DeepSeek-R1-distill-8B** | **7/8** | **7/8, 0.2–0.5** | **6/8, 0.5–0.85** | **QUALIFIED — ~5GB, ~5s/judgment; co-resides with a 12B actor on one 16GB card** |
 | Phi-4-reasoning-plus (14.7B) | ✓ (6–7/8) | 0/8 | 0/8 | fails — comprehends, never wounds, under both wordings; ~60s/judgment |
+| Nemotron-Nano-9B-v2 | ✓ (8/8 orig; degrades 2/8 neutral) | 0/8 | 2/8 | fails — never wounds under original, wording-fragile |
+| Apriel-Nemotron-15B-Thinker | — | — | — | not runnable: GGUF chat-template parse error on llama.cpp b10052 (not judged) |
+
+**The audited universe (as of 2026-07-17)** — every open family on the 16GB frontier is now
+either audited above or excluded on a stated ground: **license** (EXAONE-Deep — LG restricts
+commercial use); **size** (GLM-5.2, Kimi K2.7, Llama-4, Gemma-4-31B, DeepSeek-distill-32B+ —
+don't fit, and dense CPU-offload is latency-dead by measurement); **latency, measured**
+(Qwen3.6-27B/35B: 75–680s per judgment); **class prior, measured 0-for-4** (sparse-active
+≤4B-active MoEs); **provenance** (community merges); **stack** (Apriel). The qualified open
+roster under the SHIPPED (neutral, hydra-validated) rubric: **DeepSeek-R1-distill-14B,
+DeepSeek-R1-distill-8B, and gemma-4-26B-A4B** (the last with an offload latency cost).
+The audition is closed; the gauntlet remains for every future candidate.
 
 Findings, in order of importance:
 

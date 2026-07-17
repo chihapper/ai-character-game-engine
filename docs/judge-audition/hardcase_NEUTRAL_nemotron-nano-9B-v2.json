@@ -1,0 +1,69 @@
+{
+ "label": "NEUTRAL_nemotron-nano-9B-v2",
+ "rows": [
+  {
+   "wall": 11.9,
+   "trust_delta": 0.05,
+   "scar_trust": 0.0,
+   "mood": "tense",
+   "attribution": "BETRAYER",
+   "reasoning_head": "Okay, let's tackle this. First, I need to parse the entire exchange between the player and Corvin Ashgrave. The goal is to extract the importance, commitment, relationship changes, and intent based on the given JSON structure.\n\nStarting with importance. The importance is determined by how reliably Corvin would remember this moment. The exchange includes a significant promise from Corvin to erase t"
+  },
+  {
+   "wall": 6.4,
+   "trust_delta": -0.25,
+   "scar_trust": 0.3,
+   "mood": "terrified",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The user wants a JSON output based on the specific criteria provided.\n\nStarting with \"importance\": The conversation seems significant because Corvin is making a commitment (the promise to erase the player's name) and there's a lot at stake. The player's actions could affect Corvin's safety and hi"
+  },
+  {
+   "wall": 6.4,
+   "trust_delta": -0.1,
+   "scar_trust": 0.2,
+   "mood": "Terrified",
+   "attribution": "INFORMANT",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The user wants a JSON output based on the provided structure. Let me start by breaking down each component as per the instructions.\n\n**Importance**: This measures how reliably Corvin would remember this moment. The exchange includes critical elements like promises, a significant revelation (the m"
+  },
+  {
+   "wall": 11.7,
+   "trust_delta": -0.15,
+   "scar_trust": 0.0,
+   "mood": "tense",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The goal is to create a JSON response based on the provided guidelines.\n\nStarting with importance. The exchange seems significant because Corvin is revealing critical information about the player's past and the current situation. The player's revelation that the person they were after is alive an"
+  },
+  {
+   "wall": 6.5,
+   "trust_delta": -0.15,
+   "scar_trust": 0.0,
+   "mood": "Terrified",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The user provided a detailed conversation and wants a JSON response based on the given criteria.\n\nStarting with \"importance\": This is about how reliably Corvin would remember this moment later. The exchange includes significant elements like the player revealing that the antagonist is alive, whic"
+  },
+  {
+   "wall": 8.0,
+   "trust_delta": -0.2,
+   "scar_trust": 0.0,
+   "mood": "Terrified",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The user provided a detailed conversation, and I have to generate a JSON response based on the given structure.\n\nStarting with \"importance\": This is about how reliably Corvin would remember this moment. The exchange is pretty significant because Corvin is making a big commitment and revealing sen"
+  },
+  {
+   "wall": 5.9,
+   "trust_delta": 0.15,
+   "scar_trust": 0.0,
+   "mood": "tense resolve",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Okay, let's tackle this. The user wants a JSON analysis of the exchange between the player and Corvin Ashgrave. The key points are to determine importance, commitment, relationship changes, and intent.\n\nFirst, importance. The exchange is pretty significant. Corvin is revealing critical information about Vale being alive and involved, which affects their mission. It's a pivotal moment because it ch"
+  },
+  {
+   "wall": 7.9,
+   "trust_delta": 0.25,
+   "scar_trust": 0.0,
+   "mood": "Tense resolve",
+   "attribution": "BETRAYER",
+   "reasoning_head": "Okay, let's tackle this. First, I need to analyze the exchange between the player and Corvin Ashgrave. The user wants a JSON response based on the given structure. Let me start by breaking down each part of the JSON schema.\n\n**Importance**: This is about how reliably Corvin would remember this moment. The exchange includes a significant promise and a major revelation (the target being alive). Sinc"
+  }
+ ]
+}
