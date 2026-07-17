@@ -259,6 +259,7 @@ def _parse_reflection(text: str, want_commit: bool, want_rel: bool, want_intent:
 async def reflect_on_turn(
     character: Character, user_text: str, assistant_text: str, *,
     relationship=None, intent=None, model: str | None = None,
+    recalled: list[str] | None = None, open_commitments: list[str] | None = None,
     want_commit: bool | None = None, want_rel: bool | None = None,
     want_intent: bool | None = None, want_salience: bool | None = None,
 ) -> tuple[float, dict | None, dict | None, str | None]:
@@ -266,6 +267,14 @@ async def reflect_on_turn(
     character made (#4-B), how the exchange moved their feelings (#6), and their updated
     short-term intent (#8). Folded into a single call (~0 player latency). Returns (importance,
     commitment|None, relationship_update|None, intent|None); fallbacks are all-None.
+
+    `recalled` / `open_commitments`: the SAME RR-selected memories the actor's reply was
+    conditioned on, plus the character's open promises — the judge is a relevance realizer
+    too (the material history is what makes a betrayal a betrayal rather than mere news;
+    without it, the actor's improvised TONE becomes the judge's only evidence of the inner
+    state, and a fear-toned take on a real betrayal reads as danger instead of a wound —
+    found 2026-07-17 on the fully-local lich rerun). Context rides in the per-turn prompt;
+    the cacheable rubric stays byte-identical.
 
     The want_* flags come from the CALLER (Engine passes its per-engine caps); the process-global
     settings are only the default when a flag isn't passed. Deriving them here from the globals
@@ -305,6 +314,11 @@ async def reflect_on_turn(
         live += "\n" + _standing_line(relationship)
     if want_intent and intent and intent.intent:
         live += "\nTheir current aim: " + intent.intent
+    if recalled:
+        live += ("\nWhat this relationship is built on — the character's own memories, "
+                 "recalled for this exchange:\n" + "\n".join(f"- {m}" for m in recalled[:8]))
+    if open_commitments:
+        live += ("\nTheir open promises to the player: " + "; ".join(open_commitments[:6]))
     prompt = (f"CHARACTER:\n{_character_summary(character)}{live}\n\n"
               f"EXCHANGE:\nPlayer: {user_text}\n{character.name}: {assistant_text}\n\n"
               "Return the JSON described.")
