@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Warn the player off and prepare to handle the 'man' directly.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Bitter, Cold",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.4,
+   "respect": 0.2,
+   "trust": 0.6
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

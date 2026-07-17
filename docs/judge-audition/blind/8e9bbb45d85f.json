@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.9,
+ "intent": "Establish a hard boundary and warn the player of his hostile stance.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Bitter",
+  "respect_delta": -0.15,
+  "scar": {
+   "affection": 0.5,
+   "respect": 0.3,
+   "trust": 0.7
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

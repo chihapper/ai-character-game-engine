@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 1.0,
+ "intent": "Identify how to neutralize the player as a puppet and protect his routes from the third party.",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "Bitterly Hostile",
+  "respect_delta": -0.3,
+  "scar": {
+   "affection": 0.5,
+   "respect": 0.5,
+   "trust": 0.8
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

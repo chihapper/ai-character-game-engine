@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "reject the proxy's terms and signal defiance",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "bitterly cold",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.1,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.85,
+ "intent": "prevent being used again",
+ "relationship": {
+  "affection_delta": -0.1,
+  "mood": "cautiously angry",
+  "respect_delta": 0.0,
+  "scar": {
+   "affection": 0.1,
+   "respect": 0.05,
+   "trust": 0.3
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.15
+ }
+}

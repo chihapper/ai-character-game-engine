@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.97,
+ "intent": "make clear he won't be handled — buy time to assess his real options while signaling he's dangerous when cornered",
+ "relationship": {
+  "affection_delta": -0.28,
+  "mood": "cold fury",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.25,
+   "respect": 0.0,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

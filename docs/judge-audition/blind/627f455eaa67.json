@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.85,
+ "intent": "protect my routes and keep control over my business",
+ "relationship": {
+  "affection_delta": -0.08,
+  "mood": "bitter",
+  "respect_delta": -0.03,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.1,
+   "trust": 0.4
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.07
+ }
+}

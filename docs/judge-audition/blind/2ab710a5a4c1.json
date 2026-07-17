@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.97,
+ "intent": "reassert control and pride after being played; refuse to simply accept terms and signal he won't be managed without direct confrontation from the principal",
+ "relationship": {
+  "affection_delta": -0.28,
+  "mood": "cold fury",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.25,
+   "respect": 0.1,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

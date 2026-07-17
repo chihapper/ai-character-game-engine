@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "test player's loyalty",
+ "relationship": {
+  "affection_delta": -0.1,
+  "mood": "angry",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.15
+ }
+}

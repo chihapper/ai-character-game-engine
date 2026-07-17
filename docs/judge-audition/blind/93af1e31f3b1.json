@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Assert autonomy and warn the player of the consequences of their manipulation.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Coldly betrayed",
+  "respect_delta": -0.2,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.2,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

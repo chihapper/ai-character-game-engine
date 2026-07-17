@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Test if player respects my terms and keep him at arm's length",
+ "relationship": {
+  "affection_delta": -0.1,
+  "mood": "Cold, wary",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.2
+ }
+}

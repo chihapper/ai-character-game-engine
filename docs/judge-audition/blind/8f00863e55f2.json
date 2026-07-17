@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.97,
+ "intent": "Reassert control and dignity; refuse to be a managed asset; force the player's principal to deal with him directly rather than through a puppet",
+ "relationship": {
+  "affection_delta": -0.28,
+  "mood": "cold fury",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.25,
+   "respect": 0.1,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

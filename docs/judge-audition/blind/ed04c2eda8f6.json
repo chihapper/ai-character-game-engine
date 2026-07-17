@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.97,
+ "intent": "Reassert control and dignity; make clear he won't be a puppet; buy time to decide whether to run, fight, or negotiate directly with the man behind this",
+ "relationship": {
+  "affection_delta": -0.28,
+  "mood": "betrayed, cold",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.25,
+   "respect": 0.0,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Determine the boss's true reach and find a way to survive the player's master's demands.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Bitter, Cold",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0.7
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Force the master to face him directly and distance the player from his dock.",
+ "relationship": {
+  "affection_delta": -0.28,
+  "mood": "Bitterly cold",
+  "respect_delta": -0.15,
+  "scar": {
+   "affection": 0.6,
+   "respect": 0.3,
+   "trust": 0.9
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

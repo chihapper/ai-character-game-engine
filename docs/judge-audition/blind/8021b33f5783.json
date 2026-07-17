@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Assess if the player is an immediate threat and distance himself from the manipulation.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Bitterly betrayed",
+  "respect_delta": -0.15,
+  "scar": {
+   "affection": 0.4,
+   "respect": 0.2,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Rebuff the player and signal his refusal to be manipulated",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Coldly furious",
+  "respect_delta": -0.15,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.1,
+   "trust": 0.4
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

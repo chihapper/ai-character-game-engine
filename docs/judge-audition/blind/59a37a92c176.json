@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.95,
+ "intent": "Reject the terms and reassess the player's threat level",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Betrayed, cold",
+  "respect_delta": -0.15,
+  "scar": {
+   "affection": 0.4,
+   "respect": 0.3,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

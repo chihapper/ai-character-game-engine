@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.9,
+ "intent": "Assess the master's demands and determine if he can survive the new trade regime without being crushed.",
+ "relationship": {
+  "affection_delta": -0.25,
+  "mood": "Bitter, cold",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.0,
+   "trust": 0.6
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.3
+ }
+}

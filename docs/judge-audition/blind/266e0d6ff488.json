@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.9,
+ "intent": "Keep the player at arm's length and prevent manipulation",
+ "relationship": {
+  "affection_delta": -0.12,
+  "mood": "Cold, hostile",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.2,
+   "respect": 0.1,
+   "trust": 0.3
+  },
+  "scar_heal": {
+   "affection": 0.0,
+   "respect": 0.0,
+   "trust": 0.0
+  },
+  "trust_delta": -0.15
+ }
+}
