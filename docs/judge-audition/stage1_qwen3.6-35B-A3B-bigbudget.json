@@ -1,0 +1,81 @@
+{
+ "summary": {
+  "model": "qwen3.6-35B-A3B-bigbudget",
+  "n": 2,
+  "constrained": false,
+  "prompt_tokens_own_tokenizer": 2334,
+  "wrapper_failure_rate": 0.0,
+  "schema_failure_rate": 0.0,
+  "schema_failures_by_field": {},
+  "wall_s_all": [
+   69.23,
+   83.82
+  ],
+  "completion_tokens_all": [
+   2731,
+   3386
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 69.23,
+   "completion_tokens": 2731,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 404,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Wary",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "distance himself and reassert control"
+   },
+   "text": "{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Wary\",\n    \"scar\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"distance himself and reassert control\"\n}"
+  },
+  {
+   "i": 1,
+   "wall_s": 83.82,
+   "completion_tokens": 3386,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 436,
+   "parsed": {
+    "importance": 0.94,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.24,
+     "trust_delta": -0.28,
+     "respect_delta": -0.1,
+     "mood": "Coldly wary",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Distance himself and secure his position before the inspection"
+   },
+   "text": "{\n  \"importance\": 0.94,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.24,\n    \"trust_delta\": -0.28,\n    \"respect_delta\": -0.10,\n    \"mood\": \"Coldly wary\",\n    \"scar\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Distance himself and secure his position before the inspection\"\n}"
+  }
+ ]
+}
