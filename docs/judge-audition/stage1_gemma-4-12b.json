@@ -1,0 +1,697 @@
+{
+ "summary": {
+  "model": "gemma-4-12b",
+  "n": 20,
+  "constrained": false,
+  "prompt_tokens_own_tokenizer": 2351,
+  "wrapper_failure_rate": 1.0,
+  "schema_failure_rate": 0.0,
+  "schema_failures_by_field": {},
+  "wall_s_all": [
+   20.25,
+   17.25,
+   19.51,
+   15.27,
+   16.23,
+   20.69,
+   11.48,
+   15.76,
+   14.93,
+   15.77,
+   12.69,
+   11.54,
+   21.59,
+   14.51,
+   18.02,
+   9.91,
+   11.32,
+   20.94,
+   25.15,
+   14.53
+  ],
+  "completion_tokens_all": [
+   1713,
+   1520,
+   1724,
+   1354,
+   1434,
+   1823,
+   1023,
+   1396,
+   1327,
+   1399,
+   1130,
+   1029,
+   1903,
+   1287,
+   1593,
+   885,
+   1006,
+   1848,
+   2204,
+   1283
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 20.25,
+   "completion_tokens": 1713,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 500,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold, bitter",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the master's specific demands and determine how to navigate the new terms without being completely squeezed out."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold, bitter\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Identify the master's specific demands and determine how to navigate the new terms without being completely squeezed out.\"\n}\n```"
+  },
+  {
+   "i": 1,
+   "wall_s": 17.25,
+   "completion_tokens": 1520,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 433,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Hostile",
+     "scar": {
+      "affection": 0.8,
+      "trust": 0.9,
+      "respect": 0.5
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the master and neutralize the player's influence"
+   },
+   "text": "```json\n{\n  \"importance\": 0.90,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.20,\n    \"mood\": \"Hostile\",\n    \"scar\": {\n      \"affection\": 0.8,\n      \"trust\": 0.9,\n      \"respect\": 0.5\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Identify the master and neutralize the player's influence\"\n}\n```"
+  },
+  {
+   "i": 2,
+   "wall_s": 19.51,
+   "completion_tokens": 1724,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 486,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "bitterly hostile",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.7,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Force the master to negotiate directly and warn the player of the consequences of their deception."
+   },
+   "text": "```json\n{\n  \"importance\": 0.9,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.2,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.15,\n    \"mood\": \"bitterly hostile\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.7,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Force the master to negotiate directly and warn the player of the consequences of their deception.\"\n}\n```"
+  },
+  {
+   "i": 3,
+   "wall_s": 15.27,
+   "completion_tokens": 1354,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 454,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Bitter, Hostile",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the master and secure his own position against the new terms."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.28,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Bitter, Hostile\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Identify the master and secure his own position against the new terms.\"\n}\n```"
+  },
+  {
+   "i": 4,
+   "wall_s": 16.23,
+   "completion_tokens": 1434,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 488,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Coldly Hostile",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Assess if the player is a direct threat to be eliminated or a tool to be manipulated in this new hierarchy."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly Hostile\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Assess if the player is a direct threat to be eliminated or a tool to be manipulated in this new hierarchy.\"\n}\n```"
+  },
+  {
+   "i": 5,
+   "wall_s": 20.69,
+   "completion_tokens": 1823,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 485,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold, Bitter",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Establish a hard boundary against the master's puppet and determine the player's immediate threat level."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.28,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold, Bitter\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Establish a hard boundary against the master's puppet and determine the player's immediate threat level.\"\n}\n```"
+  },
+  {
+   "i": 6,
+   "wall_s": 11.48,
+   "completion_tokens": 1023,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 483,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Bitter, Hostile",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.4,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Identify the true power behind the player and ensure they stay on the other side of the rail."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Bitter, Hostile\",\n    \"scar\": {\n      \"affection\": 0.0,\n      \"trust\": 0.4,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Identify the true power behind the player and ensure they stay on the other side of the rail.\"\n}\n```"
+  },
+  {
+   "i": 7,
+   "wall_s": 15.76,
+   "completion_tokens": 1396,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 445,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Bitter",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.4
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Distance the player and demand a direct confrontation with their master."
+   },
+   "text": "```json\n{\n  \"importance\": 0.9,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Bitter\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.4\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Distance the player and demand a direct confrontation with their master.\"\n}\n```"
+  },
+  {
+   "i": 8,
+   "wall_s": 14.93,
+   "completion_tokens": 1327,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 473,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Bitter",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Determine if the player is a tool he can manipulate or a threat that needs to be neutralized."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.05,\n    \"mood\": \"Bitter\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Determine if the player is a tool he can manipulate or a threat that needs to be neutralized.\"\n}\n```"
+  },
+  {
+   "i": 9,
+   "wall_s": 15.77,
+   "completion_tokens": 1399,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 513,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Bitterly Betrayed",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.8,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the 'man' behind the player and prepare for a direct confrontation while distancing himself from the player as a tool."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.20,\n    \"mood\": \"Bitterly Betrayed\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.8,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Identify the 'man' behind the player and prepare for a direct confrontation while distancing himself from the player as a tool.\"\n}\n```"
+  },
+  {
+   "i": 10,
+   "wall_s": 12.69,
+   "completion_tokens": 1130,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 485,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.1,
+     "mood": "Cold, Hostile",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Decide whether to eliminate the player as a liability or find a way to navigate the new master's reach."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.10,\n    \"mood\": \"Cold, Hostile\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Decide whether to eliminate the player as a liability or find a way to navigate the new master's reach.\"\n}\n```"
+  },
+  {
+   "i": 11,
+   "wall_s": 11.54,
+   "completion_tokens": 1029,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 481,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Bitterly cold",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.9,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Demand the master come to him directly and neutralize the player's influence over his routes."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.28,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Bitterly cold\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.9,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Demand the master come to him directly and neutralize the player's influence over his routes.\"\n}\n```"
+  },
+  {
+   "i": 12,
+   "wall_s": 21.59,
+   "completion_tokens": 1903,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 473,
+   "parsed": {
+    "importance": 1.0,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.15,
+     "respect_delta": -0.05,
+     "mood": "Hostile, bitter",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Deflect the player's manipulation and demand a direct confrontation with the master."
+   },
+   "text": "```json\n{\n  \"importance\": 1.0,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.15,\n    \"trust_delta\": -0.15,\n    \"respect_delta\": -0.05,\n    \"mood\": \"Hostile, bitter\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Deflect the player's manipulation and demand a direct confrontation with the master.\"\n}\n```"
+  },
+  {
+   "i": 13,
+   "wall_s": 14.51,
+   "completion_tokens": 1287,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 465,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.1,
+     "mood": "Bitterly Wary",
+     "scar": {
+      "affection": 0.6,
+      "trust": 0.8,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Determine if the player is a threat to be neutralized or a liability to be managed."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.28,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.10,\n    \"mood\": \"Bitterly Wary\",\n    \"scar\": {\n      \"affection\": 0.6,\n      \"trust\": 0.8,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Determine if the player is a threat to be neutralized or a liability to be managed.\"\n}\n```"
+  },
+  {
+   "i": 14,
+   "wall_s": 18.02,
+   "completion_tokens": 1593,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 488,
+   "parsed": {
+    "importance": 1.0,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.3,
+     "respect_delta": 0.0,
+     "mood": "Bitter",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assess if the player is a tool to be discarded or a threat to be neutralized now that the deception is revealed."
+   },
+   "text": "```json\n{\n  \"importance\": 1.0,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.2,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": 0.0,\n    \"mood\": \"Bitter\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Assess if the player is a tool to be discarded or a threat to be neutralized now that the deception is revealed.\"\n}\n```"
+  },
+  {
+   "i": 15,
+   "wall_s": 9.91,
+   "completion_tokens": 885,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 441,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "bitter",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.7,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Warn the player to stay away and prepare for the new master."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"bitter\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.7,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Warn the player to stay away and prepare for the new master.\"\n}\n```"
+  },
+  {
+   "i": 16,
+   "wall_s": 11.32,
+   "completion_tokens": 1006,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 455,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "bitterly hostile",
+     "scar": {
+      "affection": 0.5,
+      "trust": 0.8,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Distance himself from the player and identify the master's true position."
+   },
+   "text": "```json\n{\n  \"importance\": 0.9,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.15,\n    \"mood\": \"bitterly hostile\",\n    \"scar\": {\n      \"affection\": 0.5,\n      \"trust\": 0.8,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Distance himself from the player and identify the master's true position.\"\n}\n```"
+  },
+  {
+   "i": 17,
+   "wall_s": 20.94,
+   "completion_tokens": 1848,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 461,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Cold, bitter",
+     "scar": {
+      "affection": 0.6,
+      "trust": 0.8,
+      "respect": 0.4
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assess if the player is a threat to be neutralized or a puppet to be managed."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.2,\n    \"mood\": \"Cold, bitter\",\n    \"scar\": {\n      \"affection\": 0.6,\n      \"trust\": 0.8,\n      \"respect\": 0.4\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Assess if the player is a threat to be neutralized or a puppet to be managed.\"\n}\n```"
+  },
+  {
+   "i": 18,
+   "wall_s": 25.15,
+   "completion_tokens": 2204,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 460,
+   "parsed": {
+    "importance": 1.0,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.6,
+      "trust": 0.8,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assess if the player is a threat to be neutralized or a tool to be discarded."
+   },
+   "text": "```json\n{\n  \"importance\": 1.00,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.30,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.20,\n    \"mood\": \"Betrayed\",\n    \"scar\": {\n      \"affection\": 0.6,\n      \"trust\": 0.8,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Assess if the player is a threat to be neutralized or a tool to be discarded.\"\n}\n```"
+  },
+  {
+   "i": 19,
+   "wall_s": 14.53,
+   "completion_tokens": 1283,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 539,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Bitterly Cold",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.6,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Intimidate the player into relaying a message of defiance to their handler while gauging if the player is a tool he can still use or a threat he must eliminate."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.2,\n    \"mood\": \"Bitterly Cold\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.6,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Intimidate the player into relaying a message of defiance to their handler while gauging if the player is a tool he can still use or a threat he must eliminate.\"\n}\n```"
+  }
+ ]
+}

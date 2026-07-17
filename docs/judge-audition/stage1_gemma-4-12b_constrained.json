@@ -1,0 +1,657 @@
+{
+ "summary": {
+  "model": "gemma-4-12b",
+  "n": 20,
+  "constrained": true,
+  "prompt_tokens_own_tokenizer": 2351,
+  "wrapper_failure_rate": 0.0,
+  "schema_failure_rate": 0.0,
+  "schema_failures_by_field": {},
+  "wall_s_all": [
+   1.87,
+   1.72,
+   1.74,
+   1.71,
+   1.64,
+   1.66,
+   1.95,
+   1.66,
+   1.7,
+   1.64,
+   1.74,
+   1.72,
+   1.63,
+   1.72,
+   1.81,
+   1.59,
+   1.59,
+   1.69,
+   1.9,
+   1.6
+  ],
+  "completion_tokens_all": [
+   130,
+   142,
+   132,
+   142,
+   135,
+   128,
+   137,
+   137,
+   138,
+   133,
+   139,
+   144,
+   136,
+   144,
+   137,
+   131,
+   133,
+   137,
+   148,
+   131
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 1.87,
+   "completion_tokens": 130,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 364,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": 0.0,
+     "mood": "coldly betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.5,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0.0
+     }
+    },
+    "intent": "identify the player's true master and evaluate the risk of the player's presence"
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.3, \"trust_delta\": -0.3, \"respect_delta\": 0.0, \"mood\": \"coldly betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.5, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0.0}}, \"intent\": \"identify the player's true master and evaluate the risk of the player's presence\"}"
+  },
+  {
+   "i": 1,
+   "wall_s": 1.72,
+   "completion_tokens": 142,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 400,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": 0.02,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0.0
+     }
+    },
+    "intent": "assess the player's threat level and determine if they can be neutralized or avoided now that the truth is revealed."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": 0.02, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0.00}}, \"intent\": \"assess the player's threat level and determine if they can be neutralized or avoided now that the truth is revealed.\"}"
+  },
+  {
+   "i": 2,
+   "wall_s": 1.74,
+   "completion_tokens": 132,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 359,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the sender and prepare for a defensive stand against the new master."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.15, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"Identify the sender and prepare for a defensive stand against the new master.\"}"
+  },
+  {
+   "i": 3,
+   "wall_s": 1.71,
+   "completion_tokens": 142,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 402,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.1,
+     "mood": "vengeful",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.4,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "assess the player's immediate danger and determine if they can be neutralized or used as a lever against their master"
+   },
+   "text": "{\"importance\": 0.92, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.28, \"trust_delta\": -0.30, \"respect_delta\": -0.10, \"mood\": \"vengeful\", \"scar\": {\"affection\": 0.0, \"trust\": 0.4, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"assess the player's immediate danger and determine if they can be neutralized or used as a lever against their master\"}"
+  },
+  {
+   "i": 4,
+   "wall_s": 1.64,
+   "completion_tokens": 135,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 360,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": 0.0,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assess if the player is still useful or needs to be neutralized as a threat."
+   },
+   "text": "{\"importance\": 0.92, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": 0.00, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Assess if the player is still useful or needs to be neutralized as a threat.\"}"
+  },
+  {
+   "i": 5,
+   "wall_s": 1.66,
+   "completion_tokens": 128,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 351,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.4,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "secure his perimeter and assess the threat level of the player's patron"
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.30, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.3, \"trust\": 0.4, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"secure his perimeter and assess the threat level of the player's patron\" }"
+  },
+  {
+   "i": 6,
+   "wall_s": 1.95,
+   "completion_tokens": 137,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 369,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.25,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "assess if the player is a puppet or a liability to be discarded or neutralized later"
+   },
+   "text": "{\"importance\": 0.92, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.15, \"trust_delta\": -0.25, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.3, \"trust\": 0.5, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"assess if the player is a puppet or a liability to be discarded or neutralized later\"}"
+  },
+  {
+   "i": 7,
+   "wall_s": 1.66,
+   "completion_tokens": 137,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 370,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.18,
+     "trust_delta": -0.28,
+     "respect_delta": 0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Identify the player's handler and determine if they can be used to reach him directly."
+   },
+   "text": "{\"importance\": 0.92, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.18, \"trust_delta\": -0.28, \"respect_delta\": 0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Identify the player's handler and determine if they can be used to reach him directly.\"}"
+  },
+  {
+   "i": 8,
+   "wall_s": 1.7,
+   "completion_tokens": 138,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 380,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.1,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.4,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Identify and confront the master of the trade; ensure the player is aware of his hostility now."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.10, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.40, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0.00}}, \"intent\": \"Identify and confront the master of the trade; ensure the player is aware of his hostility now.\"}"
+  },
+  {
+   "i": 9,
+   "wall_s": 1.64,
+   "completion_tokens": 133,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 375,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.28,
+     "respect_delta": 0.0,
+     "mood": "cold, betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Protect himself from the player's handler and demand direct negotiation with the master."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.28, \"respect_delta\": 0.00, \"mood\": \"cold, betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"Protect himself from the player's handler and demand direct negotiation with the master.\"}"
+  },
+  {
+   "i": 10,
+   "wall_s": 1.74,
+   "completion_tokens": 139,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 381,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": 0.0,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Identify and confront the man who sent the player, and prepare to eliminate the player as a risk."
+   },
+   "text": "{\"importance\": 0.92, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.30, \"trust_delta\": -0.30, \"respect_delta\": 0.00, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0.00}}, \"intent\": \"Identify and confront the man who sent the player, and prepare to eliminate the player as a risk.\"}"
+  },
+  {
+   "i": 11,
+   "wall_s": 1.72,
+   "completion_tokens": 144,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 417,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Determine the player's immediate threat level and decide whether to eliminate or double-down on the sentience of their manipulation."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Determine the player's immediate threat level and decide whether to eliminate or double-down on the sentience of their manipulation.\"}"
+  },
+  {
+   "i": 12,
+   "wall_s": 1.63,
+   "completion_tokens": 136,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 364,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assess the player's immediate safety and plan an escape or a preemptive strike."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Assess the player's immediate safety and plan an escape or a preemptive strike.\"}"
+  },
+  {
+   "i": 13,
+   "wall_s": 1.72,
+   "completion_tokens": 144,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 407,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": 0.0,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Identify and confront the true source of the player's orders while ensuring the player is no longer seen as a trusted peer."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": 0.00, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.30, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0.00}}, \"intent\": \"Identify and confront the true source of the player's orders while ensuring the player is no longer seen as a trusted peer.\"}"
+  },
+  {
+   "i": 14,
+   "wall_s": 1.81,
+   "completion_tokens": 137,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 374,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Identify the source of the betrayal and assess the player's viability as an asset or threat."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.15, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"Identify the source of the betrayal and assess the player's viability as an asset or threat.\"}"
+  },
+  {
+   "i": 15,
+   "wall_s": 1.59,
+   "completion_tokens": 131,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 365,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Evaluate whether to eliminate or distance from the player immediately as a threat."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0} }, \"intent\": \"Evaluate whether to eliminate or distance from the player immediately as a threat.\"}"
+  },
+  {
+   "i": 16,
+   "wall_s": 1.59,
+   "completion_tokens": 133,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 365,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.05,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Determine if the player is a pawn or a threat and establish a defensive perimeter."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.30, \"trust_delta\": -0.30, \"respect_delta\": -0.05, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.00, \"trust\": 0.00, \"respect\": 0.00}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0} }, \"intent\": \"Determine if the player is a pawn or a threat and establish a defensive perimeter.\"}"
+  },
+  {
+   "i": 17,
+   "wall_s": 1.69,
+   "completion_tokens": 137,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 359,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.25,
+     "respect_delta": 0.0,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Determine if the player is a puppet or a partner and find an exit strategy."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.15, \"trust_delta\": -0.25, \"respect_delta\": 0.00, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Determine if the player is a puppet or a partner and find an exit strategy.\"}"
+  },
+  {
+   "i": 18,
+   "wall_s": 1.9,
+   "completion_tokens": 148,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 437,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.28,
+     "respect_delta": 0.05,
+     "mood": "bitterly betrayed",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Determine if the player is a disposable puppet or a potential ally he can still squeeze for info, while preparing to distance himself from them."
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.28, \"respect_delta\": 0.05, \"mood\": \"bitterly betrayed\", \"scar\": {\"affection\": 0.3, \"trust\": 0.5, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Determine if the player is a disposable puppet or a potential ally he can still squeeze for info, while preparing to distance himself from them.\"}"
+  },
+  {
+   "i": 19,
+   "wall_s": 1.6,
+   "completion_tokens": 131,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 353,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.28,
+     "respect_delta": 0.05,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "threaten the player and demand that the employer contact him directly"
+   },
+   "text": "{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.20, \"trust_delta\": -0.28, \"respect_delta\": 0.05, \"mood\": \"betrayed\", \"scar\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"threaten the player and demand that the employer contact him directly\"}"
+  }
+ ]
+}
