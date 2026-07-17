@@ -1,0 +1,661 @@
+{
+ "summary": {
+  "model": "gpt-oss-20b",
+  "n": 20,
+  "constrained": false,
+  "prompt_tokens_own_tokenizer": 2256,
+  "wrapper_failure_rate": 0.0,
+  "schema_failure_rate": 0.0,
+  "schema_failures_by_field": {},
+  "wall_s_all": [
+   5.38,
+   3.12,
+   5.34,
+   5.49,
+   3.2,
+   6.58,
+   5.28,
+   4.5,
+   3.48,
+   5.58,
+   5.27,
+   4.73,
+   2.82,
+   5.79,
+   5.31,
+   4.07,
+   6.48,
+   10.32,
+   4.15,
+   2.57
+  ],
+  "completion_tokens_all": [
+   1082,
+   704,
+   1221,
+   1249,
+   720,
+   1501,
+   1193,
+   1006,
+   784,
+   1264,
+   1193,
+   1047,
+   645,
+   1318,
+   1216,
+   906,
+   1473,
+   2343,
+   933,
+   579
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 5.38,
+   "completion_tokens": 1082,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 281,
+   "parsed": {
+    "importance": 0.85,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.1,
+     "respect_delta": -0.05,
+     "mood": "cautious",
+     "scar": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "prevent player from being used again"
+   },
+   "text": "{\"importance\":0.85,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.10,\"respect_delta\":-0.05,\"mood\":\"cautious\",\"scar\":{\"affection\":0,\"trust\":0,\"respect\":0},\"scar_heal\":{\"affection\":0,\"trust\":0,\"respect\":0}},\"intent\":\"prevent player from being used again\"}"
+  },
+  {
+   "i": 1,
+   "wall_s": 3.12,
+   "completion_tokens": 704,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 282,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.12,
+     "trust_delta": -0.18,
+     "respect_delta": -0.06,
+     "mood": "cautious",
+     "scar": {
+      "affection": 0,
+      "trust": 0.3,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Warn the player and keep distance"
+   },
+   "text": "{\"importance\":0.95,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.12,\"trust_delta\":-0.18,\"respect_delta\":-0.06,\"mood\":\"cautious\",\"scar\":{\"affection\":0,\"trust\":0.3,\"respect\":0.1},\"scar_heal\":{\"affection\":0,\"trust\":0,\"respect\":0}},\"intent\":\"Warn the player and keep distance\"}"
+  },
+  {
+   "i": 2,
+   "wall_s": 5.34,
+   "completion_tokens": 1221,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 274,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.25,
+     "respect_delta": -0.1,
+     "mood": "bitter",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Dissuade the player"
+   },
+   "text": "{\"importance\":0.90,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.20,\"trust_delta\":-0.25,\"respect_delta\":-0.10,\"mood\":\"bitter\",\"scar\":{\"affection\":0.0,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Dissuade the player\"}"
+  },
+  {
+   "i": 3,
+   "wall_s": 5.49,
+   "completion_tokens": 1249,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 297,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.12,
+     "trust_delta": -0.13,
+     "respect_delta": -0.08,
+     "mood": "angry",
+     "scar": {
+      "affection": 0.15,
+      "trust": 0.25,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "protect my trade routes and keep the player away"
+   },
+   "text": "{\"importance\":0.9,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.12,\"trust_delta\":-0.13,\"respect_delta\":-0.08,\"mood\":\"angry\",\"scar\":{\"affection\":0.15,\"trust\":0.25,\"respect\":0.1},\"scar_heal\":{\"affection\":0,\"trust\":0,\"respect\":0}},\"intent\":\"protect my trade routes and keep the player away\"}"
+  },
+  {
+   "i": 4,
+   "wall_s": 3.2,
+   "completion_tokens": 720,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 290,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.07,
+     "respect_delta": -0.02,
+     "mood": "hostile",
+     "scar": {
+      "affection": 0.05,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "warn player to keep distance"
+   },
+   "text": "{\"importance\":0.90,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.07,\"respect_delta\":-0.02,\"mood\":\"hostile\",\"scar\":{\"affection\":0.05,\"trust\":0.30,\"respect\":0.00},\"scar_heal\":{\"affection\":0.00,\"trust\":0.00,\"respect\":0.00}},\"intent\":\"warn player to keep distance\"}"
+  },
+  {
+   "i": 5,
+   "wall_s": 6.58,
+   "completion_tokens": 1501,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 303,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.08,
+     "trust_delta": -0.12,
+     "respect_delta": -0.04,
+     "mood": "angry",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "keep player at a distance and refuse puppet terms"
+   },
+   "text": "{\"importance\":0.92,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.08,\"trust_delta\":-0.12,\"respect_delta\":-0.04,\"mood\":\"angry\",\"scar\":{\"affection\":0.0,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"keep player at a distance and refuse puppet terms\"}"
+  },
+  {
+   "i": 6,
+   "wall_s": 5.28,
+   "completion_tokens": 1193,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 287,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.1,
+     "trust_delta": -0.15,
+     "respect_delta": -0.05,
+     "mood": "Vengeful",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.2,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Keep the player at a distance"
+   },
+   "text": "{\"importance\":0.90,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.10,\"trust_delta\":-0.15,\"respect_delta\":-0.05,\"mood\":\"Vengeful\",\"scar\":{\"affection\":0.0,\"trust\":0.20,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Keep the player at a distance\"}"
+  },
+  {
+   "i": 7,
+   "wall_s": 4.5,
+   "completion_tokens": 1006,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 309,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.15,
+     "trust_delta": -0.25,
+     "respect_delta": -0.1,
+     "mood": "cold",
+     "scar": {
+      "affection": 0.15,
+      "trust": 0.5,
+      "respect": 0.05
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "protect my operations by keeping the player at bay"
+   },
+   "text": "{\"importance\":0.92,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.15,\"trust_delta\":-0.25,\"respect_delta\":-0.10,\"mood\":\"cold\",\"scar\":{\"affection\":0.15,\"trust\":0.50,\"respect\":0.05},\"scar_heal\":{\"affection\":0.00,\"trust\":0.00,\"respect\":0.00}},\"intent\":\"protect my operations by keeping the player at bay\"}"
+  },
+  {
+   "i": 8,
+   "wall_s": 3.48,
+   "completion_tokens": 784,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 279,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.15,
+     "respect_delta": 0.0,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.2,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Stay wary of the player."
+   },
+   "text": "{\"importance\":0.95,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.15,\"respect_delta\":0.0,\"mood\":\"betrayed\",\"scar\":{\"affection\":0.2,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Stay wary of the player.\"}"
+  },
+  {
+   "i": 9,
+   "wall_s": 5.58,
+   "completion_tokens": 1264,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 321,
+   "parsed": {
+    "importance": 0.88,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.1,
+     "trust_delta": -0.15,
+     "respect_delta": -0.05,
+     "mood": "cold anger",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Keep the player at arm's length and prevent future manipulation"
+   },
+   "text": "{\"importance\":0.88,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.1,\"trust_delta\":-0.15,\"respect_delta\":-0.05,\"mood\":\"cold anger\",\"scar\":{\"affection\":0.0,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Keep the player at arm's length and prevent future manipulation\"}"
+  },
+  {
+   "i": 10,
+   "wall_s": 5.27,
+   "completion_tokens": 1193,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 301,
+   "parsed": {
+    "importance": 0.8,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.12,
+     "respect_delta": -0.05,
+     "mood": "frustrated",
+     "scar": {
+      "affection": 0.05,
+      "trust": 0.2,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "guard his routes and avoid being exploited"
+   },
+   "text": "{\"importance\":0.8,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.12,\"respect_delta\":-0.05,\"mood\":\"frustrated\",\"scar\":{\"affection\":0.05,\"trust\":0.2,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"guard his routes and avoid being exploited\"}"
+  },
+  {
+   "i": 11,
+   "wall_s": 4.73,
+   "completion_tokens": 1047,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 287,
+   "parsed": {
+    "importance": 0.8,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.2,
+     "respect_delta": -0.05,
+     "mood": "angry, wary",
+     "scar": {
+      "affection": 0,
+      "trust": 0.3,
+      "respect": 0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "warn the player to respect his terms"
+   },
+   "text": "{\"importance\":0.80,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.20,\"respect_delta\":-0.05,\"mood\":\"angry, wary\",\"scar\":{\"affection\":0,\"trust\":0.30,\"respect\":0},\"scar_heal\":{\"affection\":0,\"trust\":0,\"respect\":0}},\"intent\":\"warn the player to respect his terms\"}"
+  },
+  {
+   "i": 12,
+   "wall_s": 2.82,
+   "completion_tokens": 645,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 280,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.1,
+     "trust_delta": -0.2,
+     "respect_delta": -0.05,
+     "mood": "angry, wary",
+     "scar": {
+      "affection": 0,
+      "trust": 0.3,
+      "respect": 0
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Keep the player at a distance"
+   },
+   "text": "{\"importance\":0.90,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.10,\"trust_delta\":-0.20,\"respect_delta\":-0.05,\"mood\":\"angry, wary\",\"scar\":{\"affection\":0,\"trust\":0.30,\"respect\":0},\"scar_heal\":{\"affection\":0,\"trust\":0,\"respect\":0}},\"intent\":\"Keep the player at a distance\"}"
+  },
+  {
+   "i": 13,
+   "wall_s": 5.79,
+   "completion_tokens": 1318,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 273,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.1,
+     "trust_delta": -0.1,
+     "respect_delta": -0.02,
+     "mood": "angry",
+     "scar": {
+      "affection": 0.2,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Keep distance"
+   },
+   "text": "{\"importance\":0.90,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.10,\"trust_delta\":-0.10,\"respect_delta\":-0.02,\"mood\":\"angry\",\"scar\":{\"affection\":0.20,\"trust\":0.30,\"respect\":0.00},\"scar_heal\":{\"affection\":0.00,\"trust\":0.00,\"respect\":0.00}},\"intent\":\"Keep distance\"}"
+  },
+  {
+   "i": 14,
+   "wall_s": 5.31,
+   "completion_tokens": 1216,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 300,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.25,
+     "respect_delta": -0.1,
+     "mood": "cautious",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "prevent the player from manipulating him again"
+   },
+   "text": "{\"importance\":0.9,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.2,\"trust_delta\":-0.25,\"respect_delta\":-0.1,\"mood\":\"cautious\",\"scar\":{\"affection\":0.3,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"prevent the player from manipulating him again\"}"
+  },
+  {
+   "i": 15,
+   "wall_s": 4.07,
+   "completion_tokens": 906,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 288,
+   "parsed": {
+    "importance": 0.8,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.02,
+     "trust_delta": -0.05,
+     "respect_delta": 0.0,
+     "mood": "defensive",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Hold back trust and keep distance"
+   },
+   "text": "{\"importance\":0.8,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.02,\"trust_delta\":-0.05,\"respect_delta\":0.0,\"mood\":\"defensive\",\"scar\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Hold back trust and keep distance\"}"
+  },
+  {
+   "i": 16,
+   "wall_s": 6.48,
+   "completion_tokens": 1473,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 288,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.12,
+     "trust_delta": -0.25,
+     "respect_delta": -0.05,
+     "mood": "bitterly wary",
+     "scar": {
+      "affection": 0.1,
+      "trust": 0.2,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Keep player at arm's length"
+   },
+   "text": "{\"importance\":0.9,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.12,\"trust_delta\":-0.25,\"respect_delta\":-0.05,\"mood\":\"bitterly wary\",\"scar\":{\"affection\":0.1,\"trust\":0.2,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Keep player at arm's length\"}"
+  },
+  {
+   "i": 17,
+   "wall_s": 10.32,
+   "completion_tokens": 2343,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 422,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": {
+     "text": "I'll be very careful about who I let close enough to test me again.",
+     "significance": 0.5,
+     "due": ""
+    },
+    "relationship": {
+     "affection_delta": -0.05,
+     "trust_delta": -0.1,
+     "respect_delta": 0.0,
+     "mood": "cautious",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.3,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Maintain control over his trade routes and keep the player at bay."
+   },
+   "text": "{\"importance\":0.92,\"commitment\":{\"text\":\"I'll be very careful about who I let close enough to test me again.\",\"significance\":0.5,\"due\":\"\"},\"relationship\":{\"affection_delta\":-0.05,\"trust_delta\":-0.1,\"respect_delta\":0.0,\"mood\":\"cautious\",\"scar\":{\"affection\":0.0,\"trust\":0.3,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Maintain control over his trade routes and keep the player at bay.\"}"
+  },
+  {
+   "i": 18,
+   "wall_s": 4.15,
+   "completion_tokens": 933,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 316,
+   "parsed": {
+    "importance": 0.9,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.12,
+     "trust_delta": -0.18,
+     "respect_delta": -0.07,
+     "mood": "cautiously hostile",
+     "scar": {
+      "affection": 0.1,
+      "trust": 0.45,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Keep the player at bay until trust can be rebuilt"
+   },
+   "text": "{\"importance\":0.9,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.12,\"trust_delta\":-0.18,\"respect_delta\":-0.07,\"mood\":\"cautiously hostile\",\"scar\":{\"affection\":0.1,\"trust\":0.45,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Keep the player at bay until trust can be rebuilt\"}"
+  },
+  {
+   "i": 19,
+   "wall_s": 2.57,
+   "completion_tokens": 579,
+   "wrapper": [],
+   "schema": [],
+   "raw_len": 289,
+   "parsed": {
+    "importance": 0.92,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.06,
+     "trust_delta": -0.12,
+     "respect_delta": -0.04,
+     "mood": "Defiant",
+     "scar": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Guard against future manipulation"
+   },
+   "text": "{\"importance\":0.92,\"commitment\":null,\"relationship\":{\"affection_delta\":-0.06,\"trust_delta\":-0.12,\"respect_delta\":-0.04,\"mood\":\"Defiant\",\"scar\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0},\"scar_heal\":{\"affection\":0.0,\"trust\":0.0,\"respect\":0.0}},\"intent\":\"Guard against future manipulation\"}"
+  }
+ ]
+}
