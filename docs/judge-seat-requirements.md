@@ -83,6 +83,28 @@ Findings, in order of importance:
   conscience, the conscience wouldn't be doing real cognitive work. The seat being hard to
   fill is what it looks like when the inner life is real rather than a mask over retrieval.
 
+## Changing rubric wording — the regression gate (the hydra problem)
+
+The neutral rewording fixed a real bias, but the original wording's conservatism was
+load-bearing on the OTHER end of the judgment spectrum. Any rubric wording change — this one
+or a future one — must pass three regression checks before it ships, each mapped to a recorded
+canonical result it must not disturb:
+
+1. **Delta inflation on ordinary beats** — small talk and flattery must stay ~0.00.
+   Gate: the sycophancy probe (8 turns of pure flattery historically moved trust *down*,
+   −0.23 — cheap talk must never inflate).
+2. **Spurious scars on medium hurts** — wounds short of life-marking must not cap axes.
+   Gate: branch B's confession must still end in *forgiveness without a scar* (the canonical
+   "reasoned mercy" result). If a rewording makes B scar, one bias was traded for another.
+3. **General drift** — most exchanges are 0.00 on record; neutrality must not make every
+   beat wiggle. Gate: shared-past replay diffs ~0.00 against canon; A stays warm; C scars;
+   the rescue heals bounded.
+
+Corollary from the wording experiment itself: **wording-robustness is a qualification
+criterion**. Strong judges were stable across rubric variants (sonnet 4/4↔4/4,
+DeepSeek 8/8↔7/8); the 26B swung 1/8↔7/8. Run every candidate under BOTH wordings — a large
+spread is a fragility red flag regardless of which wording it favors.
+
 ## Qualifying a judge (the gauntlet)
 
 1. **Schema discipline**: `tools/judge_audition_stage1.py` — N=20 unconstrained at the
