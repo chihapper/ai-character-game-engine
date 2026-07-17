@@ -142,43 +142,31 @@ _COMMITMENT_BLOCK = (
 
 
 def _relationship_block() -> str:
+    # NEUTRAL WORDING (2026-07-17). The original block's emphatic house style was tuned on
+    # Claude and measurably SUPPRESSED capable non-Claude judges (gemma-26B: 1/8 -> 7/8 scars
+    # on wording alone — docs/judge-seat-requirements.md, "the wording confound"). This
+    # rewording is semantically identical and model-agnostic; adoption passed the hydra
+    # regression battery (tools/judge_hydra_ab.py: 46 canonical beats x 2 wordings on the
+    # reference judge — no ordinary-beat inflation, B's confession stays scarless, scar set
+    # identical with C's reveal firing 0.60 vs 0.65). The original wording is preserved in
+    # git history and in the hydra harness docs.
     return (
-        "relationship — how THIS exchange moved the character's feelings toward the player, as "
-        "signed deltas (range -0.30..0.30). MOST EXCHANGES ARE 0.00 — feelings move rarely. "
-        "Magnitude is judged by THIS CHARACTER'S NATURE, not the surface niceness:\n"
-        "- A guarded, cynical, jaded, or proud character: routine pleasantries, flattery, and "
-        "nice talk roll off like WATER OFF A DUCK'S BACK — they've seen it all; move them 0.00. "
-        "ONLY rare, proven, costly things shift them — genuine sacrifice, loyalty proven over "
-        "real time, being truly SEEN, or a real betrayal — and even then slowly (±0.05-0.15). "
-        "Very few people ever get close to such a character.\n"
-        "- A warm, open, lonely, or impulsive character moves more readily to ordinary warmth.\n"
-        "- ASYMMETRY — trust/affection are LOST fast but REGAINED slowly. A betrayal or cruelty can "
-        "drop them sharply in ONE exchange; nothing raises them sharply. When standing is already "
-        "LOW because the player did real damage, recovery is GRINDING: apologies, a name, a few good "
-        "turns barely register — only sustained, costly proof over a long time earns it back, and a "
-        "guarded or grudge-holding character forgives almost not at all. Even a WARM character does "
-        "not bounce back quickly from a DEEP betrayal (the worse the wound, the slower). So when "
-        "trust is low, keep positive deltas TINY (0.00–0.03) unless the proof is extraordinary.\n"
+        "relationship — signed deltas (-0.30..0.30) for how this exchange changed the character's "
+        "feelings toward the player, judged from this character's nature and the evidence given "
+        "(their memories, promises, and standing, and the exchange itself). Feelings change rarely; "
+        "most ordinary exchanges are 0.00. Guarded or jaded characters move only for costly, proven "
+        "things; warm or open characters move more easily. Trust and affection drop quickly when "
+        "damaged and recover slowly; when standing is already low, positive deltas stay small "
+        "(0.00-0.03) unless the proof is extraordinary.\n"
         "affection_delta (colder/fonder), trust_delta (warier/more trusting), respect_delta "
         "(contempt/admiration). `mood` = their acute feeling right now, 1-2 words.\n"
-        "- SCAR (permanent) — set `scar` ONLY for a real betrayal or deep wound that would mark "
-        "this character FOREVER, per axis (0.0 = no permanent mark; 0.3 = that axis can never "
-        "rebuild past 0.7; 0.5 = never past 0.5). MOST exchanges have NO scar (all 0). WHICH axes "
-        "and HOW deep is entirely about THIS character and THIS betrayal — do not apply a formula: "
-        "a businessman double-crossed on a deal scars TRUST but maybe not RESPECT (he respects the "
-        "game) unless it was a cheap lowball; a lover cheated on after years of vulnerability scars "
-        "TRUST, RESPECT (\"how could I respect someone that low\"), AND AFFECTION. A forgiving or "
-        "naive character scars shallower; a proud or guarded one deeper. Scar only what they'd "
-        "truly carry for life.\n"
-        "- SCAR_HEAL (the hardest thing) — set `scar_heal` per axis (0-1 = fraction of the REMAINING "
-        "scar this act lifts) ONLY for EXTRAORDINARY, scar-lifting proof — monumental, costly, often "
-        "sustained. This does NOT erase the memory of the betrayal (that's forever); it only lets "
-        "them feel/trust again DESPITE remembering. Normally the axis must already have rebuilt as "
-        "far as the scar allows (straining at its cap) before proof can lift the cap — BUT a single "
-        "DRAMATIC act (saving their child's life, ruin taken on for them) can lift it even mid-"
-        "recovery. CHARACTER-AWARE: a forgiving soul's scar can lift toward gone; a guarded grudge-"
-        "holder's barely budges (small heal even for huge acts). MOST exchanges: 0 — words, time, "
-        "apologies, and ordinary favors lift NOTHING.\n"
+        "- scar — a permanent per-axis mark (0.0-1.0) for a wound this character would carry for "
+        "life; that axis can never again rise above 1.0 minus the scar. Use 0 for everything short "
+        "of that. Which axes scar, and how deeply, follows from this character and this wound: a "
+        "proud or guarded character scars deeper, a forgiving or naive one shallower; a betrayal may "
+        "scar trust without touching respect, or all three axes, depending on what was violated.\n"
+        "- scar_heal — the fraction (0-1) of an existing scar lifted by extraordinary, costly proof; "
+        "0 for anything less. Healing does not erase the memory of the wound.\n"
         "(The character's CURRENT standing and scars are given with the exchange below.)"
     )
 
