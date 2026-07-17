@@ -59,5 +59,12 @@ def make_engine(slug: str, *, model: str | None = None, max_tokens: int | None =
     from orchestrator.config import EngineCaps, get_settings
     from orchestrator.engine import Engine
     caps = EngineCaps.from_settings(get_settings(), **{**_FLAGS, **cap_overrides})
-    llm = AnthropicLLM(model=model, max_tokens=max_tokens) if (model or max_tokens) else AnthropicLLM()
+    if model and model.startswith("local/"):
+        # same routing rule as judgment.py: "local/<name>" = the actor seat on a self-hosted
+        # OpenAI-compatible endpoint (Ollama / llama-server; base via LOCAL_JUDGE_BASE_URL)
+        from orchestrator.adapters.llm_openai_compat import OpenAICompatLLM
+        llm: object = OpenAICompatLLM(model=model[len("local/"):], max_tokens=max_tokens or 1024,
+                                      reasoning_effort=os.environ.get("LOCAL_ACTOR_REASONING", "none"))
+    else:
+        llm = AnthropicLLM(model=model, max_tokens=max_tokens) if (model or max_tokens) else AnthropicLLM()
     return Engine(load_character(slug), llm, readonly=readonly, caps=caps)

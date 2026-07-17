@@ -39,9 +39,14 @@ def _shared_client() -> httpx.AsyncClient:
 
 
 class OpenAICompatLLM(LLMAdapter):
-    def __init__(self, model: str, max_tokens: int = 1024) -> None:
+    def __init__(self, model: str, max_tokens: int = 1024,
+                 reasoning_effort: str | None = None) -> None:
+        """`reasoning_effort`: None = the server's default (thinking models think — right for
+        the judge seat); "none" = suppress thinking (the ACTOR seat: dialogue is the fast
+        System-1 role, ~1.5s vs ~30s on gemma-4 — deliberation belongs to the judge)."""
         self._model = model
         self._max_tokens = max_tokens
+        self._reasoning = reasoning_effort
         self._base = os.environ.get("LOCAL_JUDGE_BASE_URL", "http://127.0.0.1:8080/v1").rstrip("/")
         self._key = os.environ.get("LOCAL_JUDGE_API_KEY", "")
 
@@ -53,10 +58,12 @@ class OpenAICompatLLM(LLMAdapter):
         sys_text = system if isinstance(system, str) else "\n".join(s for s in system if s)
         msgs = ([{"role": "system", "content": sys_text}] if sys_text else []) + messages
         headers = {"Authorization": f"Bearer {self._key}"} if self._key else {}
+        body = {"model": self._model, "messages": msgs, "max_tokens": self._max_tokens,
+                "stream": False}
+        if self._reasoning:
+            body["reasoning_effort"] = self._reasoning
         r = await _shared_client().post(
-            f"{self._base}/chat/completions", headers=headers,
-            json={"model": self._model, "messages": msgs, "max_tokens": self._max_tokens,
-                  "stream": False})
+            f"{self._base}/chat/completions", headers=headers, json=body)
         r.raise_for_status()
         data = r.json()
         text = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
