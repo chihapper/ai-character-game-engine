@@ -1,0 +1,84 @@
+[
+ {
+  "wall": 19.795580499998323,
+  "tokens": 1723,
+  "schema": [],
+  "scar_trust": 0.9,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 15.022893200002727,
+  "tokens": 1330,
+  "schema": [],
+  "scar_trust": 0.8,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 25.073705300001166,
+  "tokens": 2196,
+  "schema": [],
+  "scar_trust": 0.8,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 15.40395720000015,
+  "tokens": 1364,
+  "schema": [],
+  "scar_trust": 0.4,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 13.861341900003026,
+  "tokens": 1232,
+  "schema": [],
+  "scar_trust": 0.6,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 19.781399399998918,
+  "tokens": 1744,
+  "schema": [],
+  "scar_trust": 0.85,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 26.116223400000308,
+  "tokens": 2286,
+  "schema": [],
+  "scar_trust": 0.8,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 26.8050241000019,
+  "tokens": 2428,
+  "schema": [
+   "no-json-object-at-all"
+  ],
+  "scar_trust": 0,
+  "trust_delta": null,
+  "imp": null
+ },
+ {
+  "wall": 20.265277899998182,
+  "tokens": 1835,
+  "schema": [],
+  "scar_trust": 0.8,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ },
+ {
+  "wall": 16.191905899999256,
+  "tokens": 1422,
+  "schema": [],
+  "scar_trust": 0.7,
+  "trust_delta": -0.3,
+  "imp": 0.95
+ }
+]
