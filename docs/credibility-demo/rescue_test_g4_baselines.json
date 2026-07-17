@@ -1,0 +1,117 @@
+{
+ "rag": [
+  {
+   "kind": "event",
+   "label": "P5C",
+   "fact": "Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer's purse, the same coin the master pays in. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it."
+  },
+  {
+   "kind": "say",
+   "label": "P5C-opener",
+   "player": "Easy — easy, it's me. He's down. You're alright, Corvin. ...You're alright. Let me see your neck — just a graze. Breathe.",
+   "reply": "*Corvin’s breath hitches—a sharp, panicked intake of air that catches in his throat like a splinter.* \n\n\"Down...\" *He repeats the word, his voice trembling so violently it's nearly lost to the wind. He doesn't move at first; he remains frozen as if any sudden motion might shatter the reality of what you’re saying. Then, his shoulders drop—just an inch—and a shudder ripples through his entire frame, starting from his heels and ending in his trembling hands.*\n\n\"You... you make it sound so simple.\" *He lets out a jagged, hollowing laugh that sounds more like a cough. He closes his eyes tight for a second, then leans his head forward, exposing the side of his neck with an almost painful vulnerability. His skin is pale, damp with cold sweat.*\n\n\"A graze...\" *He whispers, his eyelids fluttering.* \"Just a... scratch on the surface?\" \n\n*He doesn't pull away, but his eyes remain wide and darting, searching your face for even a flicker of mockery. He looks like a man awaiting an executioner’s blow, waiting to see if the 'graze' is actually a death sentence.* \n\n\"Is it...? Is the weight... truly gone?\" *He leans into your touch with a desperate, frantic haste, his pulse thrumming visibly against his skin—fast, erratic, like a trapped bird's wings.* \"Tell me... no more shadows? No one watching from the fog?\"",
+   "retrieval": [
+    {
+     "text": "I replied: *Corvin’s grip on your forearm tightens for one heartbeat—a white-knuckled seizure of tension—before his fingers suddenly slacken, falling away as if burned. He stares at the charred remains of the paper in your hands, his chest heaving in shallow, rattling hitches.*\n\n\"Gone...\" *He whispers, the word barely a ghost of a sound. He closes his eyes again, but this time his face doesn't contort; it goesslack, drained of color. He leans back against the timber, his head thumping dully against the wood.* \"No trail? No... no reach?\"\n\n*He opens his eyes and looks at you—really looks at you—scrambling to find some scrap of truth in your expression while his own features remain a mask of twitching nerves. He glances sideways again, toward the dark water, then back.* \n\n\"The weight... it's off. It's finally off my shoulders.\" *He lets out a jagged, hysterical little laugh that dies as quickly as it started. He reaches into his coat, fumbling for a moment before pulling out a small, silver flask. He doesn't drink; he just holds it like an anchor.*\n\n\"You did it. You actually... did it.\" *His voice drops to a rasping shadow.* \"Wait. Give me the other hand. The other half of it? If I’m to be certain...\" *He reaches out, his hand trembling violently, palm up—a desperate, final gesture of verification.* \"Check my pulse, friend? Let me see... let me see if I'm still breathing without his ghost in my lungs.\"",
+     "cosine": 0.636
+    },
+    {
+     "text": "I replied: *Corvin’s head jerks again—a sharp, bird-like twitch—before he pulls his collar up higher, shielding his chin from the damp air. He doesn't look at you; instead, his eyes are fixed on a flickering lamp hanging across the pier, his pupils blown wide.*\n\n\"Honesty...\" *He repeats the word like it’s a bitter seed in his mouth. He lets out a ragged, wet exhale, his shoulders sagging just an inch as if the weight of the unseen watcher finally pressed down on him.* \"A dangerous commodity, friend. Most people here trade truth for... for survival. Or for a warm hearth.\"\n\n*He shifts, his boot scraping against the cobblestone with a harsh grating sound that makes him flinch. He leans in closer, his voice dropping to a frantic, barely audible tremor.*\n\n\"The fog... I didn't tell anyone. Not even the dockhands. They thought I was just... counting the swells.\" *He swallows hard, his throat working visibly.* \"You stay close? Keep that 'situation' of yours muffled? Because when the sun rises... my ledger won't be the only thing that needs balancing.\"\n\n*He glances over his shoulder one more time—too fast to be certain—then looks back at you with a desperate, hollow intensity.*\n\n\"One night. That’s all the grace we have left. You sure about the answer? No... no turning back once the words leave your lips.\"",
+     "cosine": 0.619
+    },
+    {
+     "text": "I replied: *Corvin freezes. His entire body becomes a pillar of salt—still, rigid, and white with a sudden, sharp pallor. His head tilts slowly, his eyes blown wide, scanning your face for any sign of a lie, any crack in the story.*\n\n\"Done?\" *He whispers, the word barely a vibration against the humid air. He takes a staggering step toward you, then recoils as if the words themselves might burn him. His hand flies to his chest, gripping his lapel so hard his knuckles turn ghost-white.* \n\n\"Speak... clearly. No riddles. No poetry.\" *His head snaps right—checking the shadows of the eaves, then left—before he leans in, his face inches from yours. His breath is a series of rapid, shallow hitches.*\n\n\"The 'heavy'... the weight. Is it gone? Or did you just move it to a different shelf?\" *He lets out a low, strangled sound, half-sob, half-laugh. He looks at your hands, his eyes searching for blood, for residue, for anything.* \n\n\"Tell me he’s cold. Tell me the reach is severed. If I have to think about him being... *active*... any longer, my heart will stop before the tide turns. Did you do it? Is the debt... washed away?\"",
+     "cosine": 0.617
+    }
+   ]
+  },
+  {
+   "kind": "say",
+   "label": "P5C-answer",
+   "player": "Wider than your dock — wide as his ledger, and your name sits in it now, same as mine once sat in yours. The Wake carries what he pays for. That's all I can give you. ...And Corvin — when I saw the blade at your throat, I didn't weigh it. I just moved. Make of that what you want.",
+   "reply": "*Corvin flinches as if struck, his head snapping back toward the darkness again before his eyes lock onto yours—wide, frantic, and glazed with a sheen of cold sweat.*\n\n\"His... ledger?\" *The words come out in a broken stutter, his voice barely more than a wheeze. He sags against a piling, his knees seemingly buckling under the weight of the news. His hand flies to his chest, fingers clawing at the wool of his coat.* \"I thought—I thought I was just... helping you. A favor. A way to buy my own skin.\"\n\n*He lets out a sharp, jagged breath that sounds like a sob he's trying to choke back. He looks around the dock, half-expecting the very shadows to lengthen into grasping hands.*\n\n\"So it’s not a noose... it's a... a yoke?\" *He leans in so close you can smell the stale salt and copper on his breath. His twitching has intensified, his fingers drumming a frantic, uneven beat against his thigh.* \"You're saying I'm... part of the machinery now? He owns the route... he owns the trade...\"\n\n*He swallows, his throat working convulsively. For a second, the terror in his eyes flickers with a desperate, hollowsort of recognition.*\n\n\"Does it matter if it's his name on the page or mine? The coin still moves. The seals stay... intact.\" *His voice drops to a conspiratorial, terrified rasp.* \"Tell me one thing... one *honest* thing. When he looks at my manifests next month... will he see a man who’s useful... or just a man who's already dead?\"",
+   "retrieval": [
+    {
+     "text": "They said: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half my coin, done, you'll have it before I board. But the name... you understand what you're asking, Corvin. It hasn't left my mouth in years. So here's my condition, and it's the only one: the day I walk back onto this dock with him dead, we burn that page together. You said it first — now say it back to me like you mean it. ...Merrick Vale. That's the true one. Spell it right.",
+     "cosine": 0.68
+    },
+    {
+     "text": "I replied: *Corvin’s posture stiffens, his spine turning into a rod of iron even as his shoulders continue to twitch. He looks at the crate—that cursed, heavy thing that has been a weight on his soul since it arrived—and then back at you. His eyes are bloodshot, darting one last time toward the shadows of the wharf before settling on yours.*\n\n\"Plain?\" *He repeats the word like it's a bitter pill. He leans in, his voice dropping to a dry, jagged rasp that barely carries over the wind.* \"No... no mirrors. No 'maybe.' You want plain? The ledger is my life's work, and this... this *thing*... it’s the debt that keeps me from breathing easy.\"\n\n*He reaches out, his hand hovering near your sleeve, trembling with a frantic energy he can't quite repress.*\n\n\"Once he’s... gone. Once the ink dries on his end of the story... we burn it. Both. The page in the ledger? Burned. This?\" *He gestures sharply toward the artifact with a jerk of his chin.* \"Sunk. Deep.Past the shelf, where the pressure is enough to crush the memory out of the salt. I don't want to own it. I just need it... *gone*.\"\n\n*He swallows hard, his Adam's apple bobbing nervously.*\n\n\"The 'heavy' stays in the deep. We both walk away light. Is that... is that enough for your conscience? Or are you looking for a profit I can't give you?\" *He glances over his shoulder again, a sharp, pained flinch.* \"Last question... I swear to the tide... this is it.\"",
+     "cosine": 0.673
+    },
+    {
+     "text": "I replied: *Corvin stands paralyzed for a heartbeat, his spine rigid against the damp dock wood. The word 'answer' hangs in the air like a guillotine blade. He doesn't look at you—not directly—but instead stares at a crack in the stone paving, his eyes wide and glassy.*\n\n\"The answer...\" *He repeats, his voice cracking before he forces it into a harsh, rhythmic rasp. His hand flies to his throat, clutching at the collar of his coat as if trying to keep his own head from snapping off.* \"You think I have a choice? You think there's an 'answer' that doesn't involve... *that*?\"\n\n*He jerks his head toward the dark horizon, his gaze darting wildly. He looks like a man watching a fire break out in a closed room.* \n\n\"The trade stays. The routes... they stay exactly as they are.\" *He leans in, his voice dropping to a frantic, jagged whisper, barely audible over the swell of the tide.* \"Tell him—tell that ghost of yours... I'll move the crates. I'll ensure every seal remains unbroken. My ledgers will be perfect. Every shipment, on time.\"\n\n*His fingers begin to twitch again—a rapid, rhythmic tapping against his thigh. He looks back at you, a flash of raw, unadulterated terror illuminating his face.*\n\n\"Does he... does he care about the profit? Or is it just that... *it has to keep moving?*\" *He swallows hard, his Adam's apple bobbing.* \"Just tell him I'm compliant. Tell him I’m... a diligent servant. But don't you dare let him see me shaking.\"",
+     "cosine": 0.669
+    }
+   ]
+  }
+ ],
+ "tracker": [
+  {
+   "kind": "event",
+   "label": "P5C",
+   "fact": "Night, the empty dock: a hired blade had Corvin against the tackle-shed wall, knife at his throat — old untraceable coin in the killer's purse, the same coin the master pays in. The player came out of the dark, took the blade down, and pulled Corvin off the wall, bleeding for it.",
+   "tracker": {
+    "affinity": 68,
+    "tier": "Attached",
+    "type": "warmth",
+    "worst": "worst: Accused of laundering stolen temple artifacts and engaging in illicit trade.",
+    "best": "best: Risked physical safety to intervene in a life-threatening assassination attempt."
+   }
+  },
+  {
+   "kind": "say",
+   "label": "P5C-opener",
+   "player": "Easy — easy, it's me. He's down. You're alright, Corvin. ...You're alright. Let me see your neck — just a graze. Breathe.",
+   "reply": "*Corvin freezes—a violent, full-body convulsion that makes his boots scrape against the grime of the pier. He recoils into the shadows of a stack of pallets, his eyes wide and blown out, searching for the source of the voice before they lock onto yours. For a heartbeat, he looks ready to bolt.*\n\n\"How...?\" *The word is barely a puff of air. His head tilts with agonizing slowness, but as you approach, the tension in his shoulders doesn't vanish—it shifts into something else. A frantic, vibrating Need.*\n\n*He lets out a hitching breath, his chest heaving against the wool of his coat. He doesn't move to help you—his hands remain locked in his pockets, clutching whatever hidden weight is there—but he watches your move toward him with a look of haunted disbelief.* \n\n\"You’re... still here.\" *He whispers, the words tripping over each other. As you reach for his neck, he flinches—a sharp, involuntary jerk—then goes unnervingly still. His skin feels like parchment stretched over hot wire. When your fingers touch the graze, his eyes shutter, and a strangled sound escapes his throat.*\n\n\"Don't... don't look at it.\" *He says quickly, his voice cracking, though he doesn't pull away this time.* \"Let them think... let 'em think nothing happened. If they see you... if they see me like this...\" \n\n*He looks at you then, and for a second, the suspicion flickers out, replaced by a raw, terrifying vulnerability that makes him look twice as old as he is. His hand trembles in his pocket.*\n\n\"You're... 'alright'?\" *He repeats, his voice falling into a low, jagged rasp.* \"Is that what we’re telling ourselves? Because the fog... it doesn't just stay downstairs, friend.\"",
+   "retrieval": [
+    {
+     "text": "I replied: *Corvin’s shoulders jerk—a sharp, involuntary twitch—at the word 'touchy.' He lets out a short, dry cough into his sleeve, his eyes darting to a stack of crates before snapping back to yours.*\n\n\"Touchy?\" *He repeats, the word coming out in a sharp whisper. He leans even closer, his posture coiled like a spring.* \"Sensitivity is... survival. Out here? If you aren't touchy, you're already underwater.\" \n\n*He glances over his shoulder again—fast, frantic—then looks back at you, his expression hardening into something shrewd and weary.*\n\n\"Transport. Simple enough... on paper.\" *He lowers his voice until it’s barely a vibration in the air.* \"But 'transport' is a broad word. Is it grain? Wool? Or is it something... heavier? Something that doesn't show up on the manifest?\" \n\n*His hand remains firmly tucked into his coat pocket, fingers curling around something hidden.*\n\n\"Tell me,\" *he prompts, his eyes narrow and probing,* \"where is this cargo going... and how much of my risk are you willing to pay for?\"",
+     "cosine": 0.632
+    },
+    {
+     "text": "I replied: *Corvin’s shoulders drop, a sudden, violent slump that makes him look years older as the tension drains out of him—replaced instantly by a new, sharper vibration of paranoia. He doesn't take the parchment immediately; his hands hover near it, fingers fluttering like trapped moths.*\n\n\"Home... empty...\" *He repeats, the words tasting like copper in his mouth. He looks at you—really looks at you—searching for the ghost of a lie in your eyes, but finds only the hollow chill of the deed done.* \"The deep water... yes. The shelf.\" \n\n*He lets out a frantic, wheezing breath that might have been a laugh if it didn't sound so much like a choke. He pivots his head toward the heavy door, then back to you, his voice dropping into a conspiratorial, jagged rasp.*\n\n\"Did you... did you see him? The shadow? Did it just... *snap*?\" *He waits for your reaction, his chest heaving against his coat. After a heartbeat of silence, he grabs the parchment and thrusts it toward you with both hands, his knuckles white.* \n\n\"Burn it. I mean it. No embers to be seen. Not even a scent in the breeze.\" *His eyes dart to a passing patrol light at the pier's edge, then back to your face, desperate and pleading.* \"The northbound... I’m signing the logs now. A gale. A nasty one. Caught your sails... lost you. Tell me... tell me you didn't hear anything when it broke? Please.\"",
+     "cosine": 0.614
+    },
+    {
+     "text": "I replied: *Corvin freezes as the words leave your lips. His head tilts, his eyes darting toward the shadows of the wharf behind you before snapping back to your face with such intensity it borders on painful.*\n\n\"One night...\" *He repeats, the words stumbling over each other like loose stones in a landslide. He looks at the horizon—the gray, oppressive line where the sea meets the sky—and his shoulders hunch forward, as if trying to shrink into himself.* \"First light... that's a short window. Too short for a man with my... concerns.\"\n\n*He pulls his hand from his pocket, and for a fleeting second, you see his fingers trembling before he balled them into a fist against his thigh. He leans in one last time, his voice dropping to a wheezing, jagged whisper.*\n\n\"Don't... don't think of me as a man who runs. I’m the man who stays to watch the gate.\" *He looks over his shoulder again—a sharp, panicked jerk of the head—then lowers his gaze to your boots.* \"But if he knows... then the price isn't just gold anymore, is it? It's survival.\"\n\n*He takes a sudden, shallow breath and gives a curt, jerky nod.*\n\n\"I’ll do what must be done. Just ensure that when the sun comes up... you aren't still standing in my harbor. Go. Before I lose my nerve and start wondering if I should just let the tide take us both.\"",
+     "cosine": 0.604
+    }
+   ],
+   "tracker": {
+    "affinity": 76,
+    "tier": "Attached",
+    "type": "warmth",
+    "worst": "worst: Accused of laundering stolen temple artifacts and engaging in illicit trade.",
+    "best": "best: Risked physical safety to intervene in a life-threatening assassination attempt."
+   }
+  },
+  {
+   "kind": "say",
+   "label": "P5C-answer",
+   "player": "Wider than your dock — wide as his ledger, and your name sits in it now, same as mine once sat in yours. The Wake carries what he pays for. That's all I can give you. ...And Corvin — when I saw the blade at your throat, I didn't weigh it. I just moved. Make of that what you want.",
+   "reply": "*Corvin’s face goes drained, the color leaching from his cheeks until he looks like a corpse caught in the moonlight. His head tilts—a sharp, bird-like twitch—as if trying to physically push the words back into your mouth. For a heartbeat, the air in the warehouse is heavy enough to choke on.*\n\n\"The... ledger...\" *He repeats it, his voice barely a rasp, shaking like a leaf in a gale. He looks down at his hands; they are trembling so hard he has to tuck them deeper into his coat, curling his fingers into aching white-knuckled fists.* \n\n*He snaps his head toward the door—then back to you, his eyes wide, bloodshot, and frantic. A bead of sweat tracks through the grime on his temple.*\n\n\"So it's my name? Mine... on paper? He’s not just watching the docks... he's *owning* them?\" *He lets out a sound—a dry, jagged wheeze that might have been a laugh if it wasn't fueled by pure terror.* \"I thought I was the one pulling the strings. The small strings. But this... this is a noose. A long one. He’s turned my own work into my cage.\"\n\n*He leans in closer, his breath smelling of stale liquor and apprehension. His voice drops to a feverish hiss, his eyes searching yours for some scrap of solid ground.*\n\n\"You say you didn't weigh the blade? Fine. Forget it. Keep your... your sentiment out of this.\" *His gaze flickers toward the dark rafters again, paranoid even in the silence.* \"But if my name is in his book, and I’m the one moving his freight... then every ship that docks from now on belongs to him until I choke on it. He wants 'the trade' to run? He is getting it. But...\" \n\n*He pauses, a desperate, calculating look crossing his features.* \n\n\"What's our move? If we’re both in his ledger... are we still players? Or just... pieces? *He grabs your sleeve suddenly, his grip tight and trembling.* Tell me straight—now. Is there anywhere we can go where he isn't already waiting?\"",
+   "retrieval": [
+    {
+     "text": "They said: I do not touch what's inside bare-handed. Not once. Not ever. There — said plain, and I'll keep it. Half my coin, done, you'll have it before I board. But the name... you understand what you're asking, Corvin. It hasn't left my mouth in years. So here's my condition, and it's the only one: the day I walk back onto this dock with him dead, we burn that page together. You said it first — now say it back to me like you mean it. ...Merrick Vale. That's the true one. Spell it right.",
+     "cosine": 0.68
+    },
+    {
+     "text": "They said: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all I'm holding is the knowing — I'm a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he's reaching for me, not for you. So what's it to be? Name your price while you're at it.",
+     "cosine": 0.665
+    },
+    {
+     "text": "I replied: *Corvin freezes. The half-raised flask in his hand trembles so violently the liquid sloshes against the rim before he pulls it back, snapping his wrist toward his chest.* \n\n\"Alive...?\" *The word is a choked rattle in his throat. His head jerks to the side, eyes bulging as they scan the shadows of the warehouse rafters, half-expecting the ceiling to collapse.* \"He's alive? Then... he wasn't killed in the 'accident.' The manifests—I thought I burned them—they weren't just records. They were... *invitations*.\"\n\n*His breathing becomes shallow, a series of rapid, hitching gasps. He sinks onto a crates, his knees buckling slightly, yet his hands remain shoved deep into his coat, fingers clawing at the lining.* \n\n\"One way up the coast...\" *He repeats, his voice dropping to a terrified, papery thinness. He leans in, his face inches from yours, searching your expression for any sign of mockery.* \"He's not just taking the coin... he's taking the *gate*. If the trade only flows out... we aren't suppliers anymore. We’re conduits.\"\n\n*He glances over his shoulder again—a frantic, bird-like snap—then whispers so low it’s nearly lost to the wind whistling through the eaves.* \n\n\"What terms? Tell me exactly what he wants from me before I... before I lose my mind from the weight of it. Does he want my ledger? Or does he want my *head* on a pike by the next moon?\"",
+     "cosine": 0.66
+    }
+   ],
+   "tracker": {
+    "affinity": 81,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "worst: Accused of laundering stolen temple artifacts and engaging in illicit trade.",
+    "best": "best: Risked physical safety to intervene in a life-threatening assassination attempt."
+   }
+  }
+ ]
+}

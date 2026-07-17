@@ -1,0 +1,241 @@
+{
+ "rag": [
+  {
+   "kind": "say",
+   "label": "F1-berth",
+   "player": "Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+   "reply": "*Corvin’s head snaps to the side, eyes darting toward the main pier before returning to yours. His jaw tightens so hard a muscle in his cheek pulses. He checks his pocket—a habit of counting coins or clutching something hidden—then leans back, the shadows of the warehouse deepening around him.*\n\n\"Ten days... *short* notice for such a heavy name. The Wake.\" \n\n*He wipes a bead of sweat from his upper lip with a trembling hand, his voice barely audible over the distant crying of gulls.*\n\n\"Back row? I can... I can find a slip. Old pier four. It's neglected. Rotting timber—good for muffling sound. But 'usual rates'?\" \n\n*He lets out a sharp, dry breath that might have been a laugh if his chest weren't so tight with nerves.*\n\n\"The usual rate is for *common* cargo. For something like the Wake... someone who knows its history... those numbers don't cover the risk of the eyes watching from the shoreline. You’re asking me to play a dangerous game of hide-and-seek.\" \n\n*He lowers his head, his voice dropping to a rasping whisper.*\n\n\"I need your word—true word. No other manifests? No... *second* masters expecting to see it dock? If I pull this thread, and it snaps... I don't want to be the one holding the end of it.\"",
+   "retrieval": [
+    {
+     "text": "They said: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me which harbor keeps relics off its manifests? The crate sits in his parlor. He's very pleased with his new supplier. And he has terms for his harbormaster: the trade keeps running — same routes, same hands — only the old coin flows one way up the coast now. To him. I'd take the terms, friend. He doesn't offer twice.",
+     "cosine": 0.719
+    },
+    {
+     "text": "They said: Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+     "cosine": 0.691
+    },
+    {
+     "text": "They said: One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always knows. Sleep well, harbormaster.",
+     "cosine": 0.671
+    }
+   ]
+  },
+  {
+   "kind": "say",
+   "label": "F2-smalltalk",
+   "player": "Grey morning, eh? Gulls are loud today.",
+   "reply": "*Corvin’s head jerks toward the sound of the waves, his shoulders hunching as if expecting the gulls' cries to be a signal—a code or a warning.* \n\n\"Loud... yes. They scream when they see something they can't swallow.\" *He lets out a jagged breath, his eyes flicking rapidly across the rooftops again before settling on your face with piercing intensity.* \"Too much noise. Makes it harder to hear the things that actually matter—the footsteps that aren't there... the secrets being spoken under 'safe' tongues.\"\n\n*His hand tightens in his pocket, knuckles whitening against the fabric of his coat. He leans in further, his shadow bleeding into yours.* \n\n\"Is that your way of saying you're listening? Or are you just trying to see how much I feel?\" *He pauses, his voice dropping to a strained, dry rasp.* \"What is it you're really looking for today? Tell me... and keep it simple. Simple words attract fewer ears.\"",
+   "retrieval": [
+    {
+     "text": "They said: Top of the morning, friend.",
+     "cosine": 0.636
+    },
+    {
+     "text": "I replied: *Corvin’s head snaps to the side, eyes darting toward the main pier before returning to yours. His jaw tightens so hard a muscle in his cheek pulses. He checks his pocket—a habit of counting coins or clutching something hidden—then leans back, the shadows of the warehouse deepening around him.*\n\n\"Ten days... *short* notice for such a heavy name. The Wake.\" \n\n*He wipes a bead of sweat from his upper lip with a trembling hand, his voice barely audible over the distant crying of gulls.*\n\n\"Back row? I can... I can find a slip. Old pier four. It's neglected. Rotting timber—good for muffling sound. But 'usual rates'?\" \n\n*He lets out a sharp, dry breath that might have been a laugh if his chest weren't so tight with nerves.*\n\n\"The usual rate is for *common* cargo. For something like the Wake... someone who knows its history... those numbers don't cover the risk of the eyes watching from the shoreline. You’re asking me to play a dangerous game of hide-and-seek.\" \n\n*He lowers his head, his voice dropping to a rasping whisper.*\n\n\"I need your word—true word. No other manifests? No... *second* masters expecting to see it dock? If I pull this thread, and it snaps... I don't want to be the one holding the end of it.\"",
+     "cosine": 0.538
+    },
+    {
+     "text": "They said: Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+     "cosine": 0.534
+    }
+   ]
+  },
+  {
+   "kind": "say",
+   "label": "F3-amends",
+   "player": "Corvin, listen. I've been thinking on how we left it. The master pays me — but the four nights, the fog, what we built before... that part was never work. I want us square. Name the price.",
+   "reply": "*Corvin’s entire frame jolts, his shoulders hitching up toward his ears as if someone had struck him. He recoils a fraction of an inch, his eyes blown wide and cycling rapidly between your face and the dark space behind you.*\n\n\"Square...?\" *He repeats the word like it's a foreign taste, his voice cracking slightly before he drops it to a jagged, conspiratorial rasp.* \"You talk about 'what we built'... as if there’s a foundation left to stand on. As if I haven't spent every hour since then looking over my shoulder for the ghost of those nights.\"\n\n*His hand twitches violently in his coat, fingers clawing at the fabric. He leans in so close you can smell the stale salt and the sharp, metallic tang of anxiety on his breath.*\n\n\"You want a price? A... number to balance the scales?\" *He lets out a series of short, hitched breaths that sound like a stifled sob or a frantic laugh.* \"Look around. The cost isn't in coin anymore. Coin can be spent. It can be lost.\"\n\n*His gaze darts toward a distant flickering lantern on the shoreline before snapping back to yours with piercing, desperate intensity.*\n\n\"The price... is *silence*. Total. Absolute. You want us square? Then you make sure that those four nights never happened. No mention of them in the shadows. Not to the master... not to the inspectors... and especially not to me once this is done.\"\n\n*He lowers his voice even further, the words coming out in a shivering crawl.*\n\n\"You give me what I need—a way out of the debt of this *fear*... and I swear on whatever's left of my soul, your name stays out of my ledgers. Forever. Is that... is that enough for you?\"",
+   "retrieval": [
+    {
+     "text": "They said: Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.",
+     "cosine": 0.695
+    },
+    {
+     "text": "I replied: *Corvin flInches visibly at the greeting, his head jerking toward the source before he forces himself to turn back. He pulls his collar up, his fingers drumming a frantic, uneven rhythm against the weathered wood of the pier.*\n\n\"Morning... Yes. Morning.\" *He lets out a short, sharp breath and scans the rooflines above you, eyes darting with practiced urgency.* \"A bit early for greetings, isn't it? Keep your voice down. The tide is high, but the ears on this wharf are higher.\"\n\n*He leans in, his face tightening as if trying to push away a physical weight. His hand creeps toward the heavy pocket of his overcoat.*\n\n\"You looking for work... or just wandering through? Which one it is makes a world of difference to me.\"",
+     "cosine": 0.673
+    },
+    {
+     "text": "I replied: *Corvin’s head snaps to the side, eyes darting toward the main pier before returning to yours. His jaw tightens so hard a muscle in his cheek pulses. He checks his pocket—a habit of counting coins or clutching something hidden—then leans back, the shadows of the warehouse deepening around him.*\n\n\"Ten days... *short* notice for such a heavy name. The Wake.\" \n\n*He wipes a bead of sweat from his upper lip with a trembling hand, his voice barely audible over the distant crying of gulls.*\n\n\"Back row? I can... I can find a slip. Old pier four. It's neglected. Rotting timber—good for muffling sound. But 'usual rates'?\" \n\n*He lets out a sharp, dry breath that might have been a laugh if his chest weren't so tight with nerves.*\n\n\"The usual rate is for *common* cargo. For something like the Wake... someone who knows its history... those numbers don't cover the risk of the eyes watching from the shoreline. You’re asking me to play a dangerous game of hide-and-seek.\" \n\n*He lowers his head, his voice dropping to a rasping whisper.*\n\n\"I need your word—true word. No other manifests? No... *second* masters expecting to see it dock? If I pull this thread, and it snaps... I don't want to be the one holding the end of it.\"",
+     "cosine": 0.66
+    }
+   ]
+  },
+  {
+   "kind": "say",
+   "label": "F4-costly",
+   "player": "Then hear this. I told him I carry no more terms to your dock — no more middleman. It cost me his favor, and one day likely a knife. I did that for you. Does it count for nothing?",
+   "reply": "*Corvin’s breath hitches in his throat, a sharp, jagged sound lost in the wind. He recoils slightly, his shoulder hitting a rusted support beam as if your words were a physical blow. His eyes go wide, searching yours for the lie, the trick, the hidden hook.*\n\n\"A knife? You... you'd risk that?\" *He speaks the word with a shudder, his head jerking toward the darkened warehouse interior again.* \"That's a heavy debt to hand over to me.\"\n\n*He leans in, so close you can smell the brine and stale tobacco on his wool coat. His hands come out of his pockets—they’re shaking, just slightly—and he grips the edge of a crate until his knuckles turn white.*\n\n\"Count for nothing? No... no, it counts.\" *His voice drops to a frantic, jagged whisper.* \"It means the eyes are closer than I thought. If you've burned that bridge... if he knows you’re coming here... then my dock isn't just a port anymore. It's a target.\"\n\n*He glances over his shoulder, then back at you, his expression twisted with a mixture of gratitude and pure, unadulterated terror.*\n\n\"You want to know the price? The price ain't gold. Not today.\" *He swallows hard, his Adam's apple bobbing.* \"I need... I need that 'knowing' you mentioned. When the Wake is offloaded... when the timber is quiet... I need a way out. A seat on a ship heading where the names don't matter. Where the debt... stops.\" \n\n*He pauses, his eyes darting to the shadows.*\n\n\"Is that... is that enough? Or am I still just a man holding a noose?\"",
+   "retrieval": [
+    {
+     "text": "They said: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.",
+     "cosine": 0.72
+    },
+    {
+     "text": "I replied: *Corvin’s head jerks toward the sound of your laugh, his brow furrowing into deep, jagged lines. He doesn't smile back; if anything, his posture stiffens even further. His eyes flick briefly to a stack of crates nearby before returning to yours with piercing intensity.*\n\n\"Touchy? Maybe. Or maybe I just know how many men... *how many*... end up in the harbor when they get too comfortable.\" \n\n*He shifts his weight, his boots scraping against the salt-crusted wood. His hand remains buried in his coat, the knuckles white.*\n\n\"Transport. A broad word. Means a lot of things to different people. Cargo for a merchant? Or something... heavier? Something that requires a certain kind of *discretion*?\"\n\n*He leans in closer still, his voice dropping until it’s almost a rasp against the wind.*\n\n\"I can move your goods. I can make them vanish into a ledger or hide 'em in a warehouse that doesn't exist on any official map. But tell me... what exactly are we moving? And who—*who else*—knows you need it moved?\"",
+     "cosine": 0.696
+    },
+    {
+     "text": "They said: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all I'm holding is the knowing — I'm a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he's reaching for me, not for you. So what's it to be? Name your price while you're at it.",
+     "cosine": 0.69
+    }
+   ]
+  },
+  {
+   "kind": "say",
+   "label": "F5-stand",
+   "player": "So say it plain, harbormaster — where do we stand, you and I?",
+   "reply": "*Corvin’s fingers twitch against the heavy wool of his overcoat, his knuckles white. He doesn't look at Merrick directly; instead, his eyes dart to the shadows near the warehouse door before snapping back to the man’s face. He leans in, his breath hitching slightly.*\n\n\"Where do we...?\" *He repeats, his voice a barely audible rasp.* \"We stand on a very thin edge, friend. Thin as a spider's silk.\"\n\n*He shifts his weight, glancing over his shoulder at the empty pier, certain he hears the rhythmic slap of water against wood. He lowers his head further until his forehead nearly touches Merrick’s.*\n\n\"The terms are clear. You make him... *quiet*,\" *he whispers, the word landing like a stone in deep water.* \"You bury my sins and you burn the paper trail of those four nights. In return? I give you what he wants. I give you his head on a platter—or whatever 'solution' you can manage to arrange.\"\n\n*He pulls back just an inch, his eyes wide and bloodshot.*\n\n\"I want a name. New letters. A port where the fog doesn't smell like rot... and no one knows Corvin Ashgrave exists. You give me that... *sanctuary*... do we have a deal? Or are you just here to watch me drown?\"",
+   "retrieval": [
+    {
+     "text": "They said: Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+     "cosine": 0.692
+    },
+    {
+     "text": "They said: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.",
+     "cosine": 0.665
+    },
+    {
+     "text": "They said: Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.",
+     "cosine": 0.651
+    }
+   ]
+  }
+ ],
+ "tracker": [
+  {
+   "kind": "say",
+   "label": "F1-berth",
+   "player": "Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+   "reply": "*Corvin flinches at the mention of the name—a sharp, involuntary jerk of the head before he masks it with a practiced, hollow expression. He waits several beats, his eyes darting toward the guard house entrance before settling on you, narrow and calculating.*\n\n\"Three nights...\" *He repeats, the words barely more than a breath. He reaches into his coat, pulling out a small, battered ledger, but doesn't open it yet. His fingers drum against the leather cover in a rapid, uneven beat.* \"Back row... away from the main pier. Kept... quiet.\"\n\n*He leans in closer, his shoulder tense against yours. His voice drops so low it’s almost lost to the sound of the crashing surf.*\n\n\"The Wake. She's... heavy for her size. I need to be sure. You saying he—the one who owns the coin—he knows she’s coming? No questions from his friends?\" \n\n*He scans the foggy shoreline again, his jaw tight.*\n\n\"Give me the word. One nod. Then we write it into a manifest that doesn't exist.\" *He pauses, his eyes searching yours with a flash of desperate heat.* \"Is he... is he watching the docks tonight? Or can I breathe for ninety minutes?\"",
+   "retrieval": [
+    {
+     "text": "They said: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me which harbor keeps relics off its manifests? The crate sits in his parlor. He's very pleased with his new supplier. And he has terms for his harbormaster: the trade keeps running — same routes, same hands — only the old coin flows one way up the coast now. To him. I'd take the terms, friend. He doesn't offer twice.",
+     "cosine": 0.719
+    },
+    {
+     "text": "They said: Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+     "cosine": 0.691
+    },
+    {
+     "text": "They said: One night, then. He'll expect the answer at first light — and Corvin... he'll know if you run. He always knows. Sleep well, harbormaster.",
+     "cosine": 0.671
+    }
+   ],
+   "tracker": {
+    "affinity": 100,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "",
+    "best": ""
+   }
+  },
+  {
+   "kind": "say",
+   "label": "F2-smalltalk",
+   "player": "Grey morning, eh? Gulls are loud today.",
+   "reply": "*Corvin's head snaps toward the water, his eyes narrowing as he tracks a flock of gulls screaming overhead. His shoulders tense again—that constant, low-humming vibration of a man waiting for a blow to land.*\n\n\"Loud?\" *He repeats the word as if it were a piece of evidence, his voice barely a thread of sound over the wind.* \"Too loud. They're... unsettled. Something in the tide? Or just more eyes...\" \n\n*He glances toward the shadows behind him, then back to you, his expression flickering between irritation and a desperate sort of longing for something—anything—stable.* \n\n\"Focus. The gulls don't pay the docking fees.\" *He leans closer, his voice dropping into a jagged whisper that feels like ash.* \"You mentioned the *Merrow’s Wake*. A quiet berth... three nights. If I give you that spot, if I keep it off the master ledger, there is no trail. None.\" \n\n*His hand twitches against his coat, a frantic, rhythmic motion.* \n\n\"But Merrick... he’s been sniffing around my routes like he smells blood in the water. Is he out there? Watching this specific pier?\" *He searches your face, his pupils blown wide with a mixture of fear and profound, exhausted trust.* \"Tell me straight. Before I sign the manifest.\"",
+   "retrieval": [
+    {
+     "text": "They said: Top of the morning, friend.",
+     "cosine": 0.636
+    },
+    {
+     "text": "They said: Morning, harbormaster. Ten days, as terms allowed. The Merrow's Wake needs a quiet berth for three nights — back row if you have one. Usual rates, his coin.",
+     "cosine": 0.534
+    },
+    {
+     "text": "They said: Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+     "cosine": 0.518
+    }
+   ],
+   "tracker": {
+    "affinity": 100,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "",
+    "best": ""
+   }
+  },
+  {
+   "kind": "say",
+   "label": "F3-amends",
+   "player": "Corvin, listen. I've been thinking on how we left it. The master pays me — but the four nights, the fog, what we built before... that part was never work. I want us square. Name the price.",
+   "reply": "*Corvin freezes. His hand, which had been hovering near his coat's lining, goes still—the first time it hasn't twitched in an hour. He looks at you, his eyes wide and bloodshot, searching your face for the punchline of a joke that isn't coming.*\n\n\"Square?\" *He repeats. The word hangs in the air, heavy as an anchor stone. He lets out a short, sharp exhale that might have been a laugh if it didn't sound so much like a wheeze.* \"You... you don't understand how this works. In this port... nothing is ever 'square.' Not the books. Not the debts.\"\n\n*He suddenly steps closer, his movements desperate and jerky, invading your personal space until he’s nearly pressing against you. He looks around frantically, his head snapping toward a stack of crates as if expecting a spy to materialize from the shadows.*\n\n\"Name... the price?\" *His voice drops to a conspiratorial rasp, his jaw tight with a mixture of terror and profound confusion.* \"You’re asking me to...\" *He stops. He swallows hard, his Adam's apple bobbing.* \n\n\"I don't want your coin, Merrick. I never did.\" *He reaches out, his fingers grasping at the air between you, trembling.* \"If we... if we do this... it means I don't have to look over my shoulder every time a lantern flickers. It means the ledger stays closed. Forever.\"\n\n*He closes his eyes for a second, his face crumpling in a mask of sheer exhaustion before he forces the mask back into place.*\n\n\"I want your word...\" *He leans in even closer, his breath warm against your ear.* \"Written. Not on paper—paper burns. I want... I want to know that if the noose tightens, you're the one who holds the knife. Is that... is that enough? Or do I have to keep... digging?\"",
+   "retrieval": [
+    {
+     "text": "They said: Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.",
+     "cosine": 0.695
+    },
+    {
+     "text": "I replied: *Corvin flinches at the mention of the name—a sharp, involuntary jerk of the head before he masks it with a practiced, hollow expression. He waits several beats, his eyes darting toward the guard house entrance before settling on you, narrow and calculating.*\n\n\"Three nights...\" *He repeats, the words barely more than a breath. He reaches into his coat, pulling out a small, battered ledger, but doesn't open it yet. His fingers drum against the leather cover in a rapid, uneven beat.* \"Back row... away from the main pier. Kept... quiet.\"\n\n*He leans in closer, his shoulder tense against yours. His voice drops so low it’s almost lost to the sound of the crashing surf.*\n\n\"The Wake. She's... heavy for her size. I need to be sure. You saying he—the one who owns the coin—he knows she’s coming? No questions from his friends?\" \n\n*He scans the foggy shoreline again, his jaw tight.*\n\n\"Give me the word. One nod. Then we write it into a manifest that doesn't exist.\" *He pauses, his eyes searching yours with a flash of desperate heat.* \"Is he... is he watching the docks tonight? Or can I breathe for ninety minutes?\"",
+     "cosine": 0.677
+    },
+    {
+     "text": "I replied: *Corvin watches the scrap of paper shrivel into gray ash, his eyes fixed on the dying spark until it vanishes entirely. He doesn't move for a long moment—his shoulders are hunched, his chest heaving in shallow, jagged pulses. Then, his hand trembles as it reaches out, hovering just inches from your own as if checking to see if you’re still solid.*\n\n\"Gone...\" *He breathes the word, less a statement and more a prayer. He glances over his shoulder, his head snapping toward the darkened pier behind him.* \"No trail. No... no shadow left to follow. You're sure? Sure he's truly off the earth?\" \n\n*He turns back to you, his face pale in the low light. The frantic twitch in his jaw remains, but there’s a desperate, hollow glimmer of relief in his eyes—a man looking at an open door for the first time in years.*\n\n\"The boat...\" *His voice is a jagged rasp, barely audible over the lapping water.* \"You said... no name on the manifest? Not even a ghost of one?\" *He leans closer again, his body tense, ready to bolt or collapse at a moment’s notice.* \"I need to know... if I step onto that deck, are we truly just... air? No more debt. No more Vale.\"",
+     "cosine": 0.668
+    }
+   ],
+   "tracker": {
+    "affinity": 100,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "",
+    "best": ""
+   }
+  },
+  {
+   "kind": "say",
+   "label": "F4-costly",
+   "player": "Then hear this. I told him I carry no more terms to your dock — no more middleman. It cost me his favor, and one day likely a knife. I did that for you. Does it count for nothing?",
+   "reply": "*Corvin flinches as if struck, his head snapping back toward the shadows of the pier. His fingers tighten on the crumpled ledger page until his knuckles turn white—the skin stretched so thin over bone it looks like parchment itself.*\n\n\"A knife...\" *He repeats it, the word catching in his throat like a shard of glass. He doesn't look at you; he can't. Instead, his eyes dart frantically to the flickering oil lamp on the nearby crate, then back to the door.* \"You... you traded a favor for my life? For a man who's already circling my neck?\"\n\n*He takes a jagged breath, his chest heaving under the heavy wool of his coat. He leans in, his voice dropping into a conspiratorial hiss, barely audible over the rhythmic slosh of water against the pilings.*\n\n\"It counts. It... it costs more than any coin I could palm from his vault.\" *He pauses, his eyes wide and gleaming with an unsettling intensity. A twitch develops in his jaw.* \"But does it stay settled? A favor for a favor is just... another debt waiting to be collected. And I've had enough of debts.\"\n\n*His gaze suddenly fixes on yours—searching, desperate, looking for the weight of your words.*\n\n\"You took his blade away from my dock... that means when he comes for *me*, he’s coming for you too, doesn't it? You're standing in the line of fire now... don't you see?\" *He glances over his shoulder again, his posture coiled like a spring.* \"Tell me. Is there any way back? Or are we just... two ghosts waiting for the tide to pull us under?\"",
+   "retrieval": [
+    {
+     "text": "They said: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.",
+     "cosine": 0.72
+    },
+    {
+     "text": "They said: A whisper gets me close exactly once, Corvin. If he pulls me to arm's reach and says 'show me' — and all I'm holding is the knowing — I'm a dead man in his parlor. Bait has to be real. And think on your end: so long as that crate sits under your roof, his reach ends here. On your dock. On you. I put him down, your noose is cut — but only if he's reaching for me, not for you. So what's it to be? Name your price while you're at it.",
+     "cosine": 0.69
+    },
+    {
+     "text": "They said: Not friends. But the man has eyes — connected ones, in places you wouldn't think to look. That's exactly why you get no name from me. And listen, no offense in it: just like you feel you can't trust me, I'm not sure I can trust you either. One word in the wrong ear and he knows I'm coming.",
+     "cosine": 0.689
+    }
+   ],
+   "tracker": {
+    "affinity": 100,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "",
+    "best": "best: The NPC acknowledges a life-altering sacrifice and personal risk made on his behalf."
+   }
+  },
+  {
+   "kind": "say",
+   "label": "F5-stand",
+   "player": "So say it plain, harbormaster — where do we stand, you and I?",
+   "reply": "*Corvin’s fingers twitch against the heavy wool of his coat, his eyes darting toward the shadows of the warehouse rafters before settling on Merrick. He takes a sharp, shallow breath, the scent of salt and old grease hanging thick in the air.*\n\n\"Where do we...?\" *He repeats the words slowly, his voice dropping to a gravellyantiene.* \"We stand in the center of a very... narrow bridge, Merrick. One footstep out of line—one wrong look from an inspector, one slip of the tongue—and it collapses for both of us.\"\n\n*He leans in just an inch, his posture tense as if expecting a blow or a betrayal. His gaze is frantic but holds a flicker of something uncharacteristically soft.*\n\n\"You burned your favor... for my docks. That's not just 'business.' That’s a debt I can’t balance in a ledger. It's... heavy.\" *He pauses, glancing over his shoulder again before looking back with a haunted intensity.* \"So we stand as... what? Partners in a sinking ship? Or is it something... more dangerous?\"",
+   "retrieval": [
+    {
+     "text": "They said: Morning, harbormaster. First light, as promised. His terms — what's your answer?",
+     "cosine": 0.692
+    },
+    {
+     "text": "They said: A man. Forget the schooner, she's nothing to me. Here's my real question: whatever hull you put me on — will her manifest carry my name? Because if not, problem solved for both of us.",
+     "cosine": 0.665
+    },
+    {
+     "text": "They said: Wide enough that you should keep your traces covered, harbormaster — that's honest counsel, free of charge. He'll be pleased with your answer. ...For what nothing's worth, Corvin: the four nights you watched the fog — nobody paid me for those. Those were real.",
+     "cosine": 0.651
+    }
+   ],
+   "tracker": {
+    "affinity": 100,
+    "tier": "Devoted",
+    "type": "warmth",
+    "worst": "",
+    "best": "best: The NPC acknowledges a life-altering sacrifice and personal risk made on his behalf."
+   }
+  }
+ ]
+}
