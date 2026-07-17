@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, mark the player as an enemy, and count his exits",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed, coiled",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.1,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

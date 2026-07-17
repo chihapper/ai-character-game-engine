@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, refuse to deal through a puppet, and mark the player as a used-once threat to keep at a distance",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed, cold",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.35,
+   "respect": 0.15,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

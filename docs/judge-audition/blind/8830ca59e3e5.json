@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, learn who's really pulling the strings, and guard against being used again",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed, cold",
+  "respect_delta": -0.05,
+  "scar": {
+   "affection": 0.4,
+   "respect": 0.15,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 1.0,
+ "intent": "assess the trap, guard his exits, and refuse the terms until he can face the real man",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed, cold",
+  "respect_delta": -0.12,
+  "scar": {
+   "affection": 0.4,
+   "respect": 0.15,
+   "trust": 0.5
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, warn the player off, and count his exits while deciding whether to run or fight",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed fury",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.35,
+   "respect": 0.1,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

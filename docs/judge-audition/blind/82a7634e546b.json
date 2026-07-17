@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, counter the threat, and never let this puppet close again",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed fury",
+  "respect_delta": -0.1,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.1,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "commitment": null,
+ "importance": 0.98,
+ "intent": "reject the terms, size up the threat, and count his exits — refuse to be handled by a puppet",
+ "relationship": {
+  "affection_delta": -0.3,
+  "mood": "betrayed, cornered",
+  "respect_delta": -0.12,
+  "scar": {
+   "affection": 0.3,
+   "respect": 0.15,
+   "trust": 0.45
+  },
+  "scar_heal": {
+   "affection": 0,
+   "respect": 0,
+   "trust": 0
+  },
+  "trust_delta": -0.3
+ }
+}
