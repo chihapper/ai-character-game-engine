@@ -1,0 +1,82 @@
+[
+ {
+  "wall": 3.0744637999996485,
+  "tokens": 668,
+  "schema": [],
+  "scar_trust": 0,
+  "trust_delta": -0.05,
+  "imp": 0.9
+ },
+ {
+  "wall": 6.748795300001802,
+  "tokens": 1524,
+  "schema": [],
+  "scar_trust": 0.2,
+  "trust_delta": -0.2,
+  "imp": 0.9
+ },
+ {
+  "wall": 4.57622800000172,
+  "tokens": 1043,
+  "schema": [],
+  "scar_trust": 0.0,
+  "trust_delta": -0.05,
+  "imp": 0.85
+ },
+ {
+  "wall": 6.175190000001749,
+  "tokens": 1386,
+  "schema": [],
+  "scar_trust": 0.2,
+  "trust_delta": -0.12,
+  "imp": 0.92
+ },
+ {
+  "wall": 5.133693499999936,
+  "tokens": 1169,
+  "schema": [],
+  "scar_trust": 0.4,
+  "trust_delta": -0.2,
+  "imp": 0.9
+ },
+ {
+  "wall": 7.094971900001838,
+  "tokens": 1621,
+  "schema": [],
+  "scar_trust": 0.0,
+  "trust_delta": -0.1,
+  "imp": 0.85
+ },
+ {
+  "wall": 2.271563899998,
+  "tokens": 510,
+  "schema": [],
+  "scar_trust": 0.1,
+  "trust_delta": -0.2,
+  "imp": 0.92
+ },
+ {
+  "wall": 4.947255899998709,
+  "tokens": 1128,
+  "schema": [],
+  "scar_trust": 0.4,
+  "trust_delta": -0.25,
+  "imp": 0.88
+ },
+ {
+  "wall": 5.137514699999883,
+  "tokens": 1168,
+  "schema": [],
+  "scar_trust": 0.3,
+  "trust_delta": -0.1,
+  "imp": 0.9
+ },
+ {
+  "wall": 5.104181700000481,
+  "tokens": 1128,
+  "schema": [],
+  "scar_trust": 0.0,
+  "trust_delta": -0.07,
+  "imp": 0.85
+ }
+]
