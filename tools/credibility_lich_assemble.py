@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import pathlib
 import sys
 
@@ -34,11 +35,15 @@ def load(p, optional=False):
     return json.load(open(fp, encoding="utf-8"))
 
 
-t1 = load("replay_lich_take1.json")["beats"]
-cur = load("replay_lich.json")["beats"]
-base = load("replay_lich_baselines.json")["results"]
-felt_b = load("felt_test_baselines.json")
-rescue_b = load("rescue_test_baselines.json", optional=True)
+# Input files are env-overridable so the SAME assembler builds either the canonical (Opus) demo
+# or the fully-local (Gemma) demo. The g4 rerun records every branch to ONE file, so TAKE1==CUR
+# there; the two-file default preserves the Opus provenance split. Set LICH_ASM_* to swap.
+_ENV = os.environ.get
+t1 = load(_ENV("LICH_ASM_TAKE1", "replay_lich_take1.json"))["beats"]
+cur = load(_ENV("LICH_ASM_CUR", "replay_lich.json"))["beats"]
+base = load(_ENV("LICH_ASM_BASE", "replay_lich_baselines.json"))["results"]
+felt_b = load(_ENV("LICH_ASM_FELT", "felt_test_baselines.json"))
+rescue_b = load(_ENV("LICH_ASM_RESCUE", "rescue_test_baselines.json"), optional=True)
 
 ENGINE = {
     "shared": [b for b in t1 if b.get("branch") == "shared"],

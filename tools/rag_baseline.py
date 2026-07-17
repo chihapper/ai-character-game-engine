@@ -56,6 +56,23 @@ class RagBaselineCharacter:
         return [{"text": m.text, "cosine": round(cosine(qv, m.embedding), 3)} for m in ranked[: self._k]]
 
     def _complete(self, system: str, user: str, max_tokens: int) -> str:
+        # A model id of the form "local/<name>" routes to a self-hosted OpenAI-compatible
+        # endpoint (Ollama / llama-server, base via LOCAL_JUDGE_BASE_URL) so the baselines run
+        # the SAME local model as the engine — model parity is the whole point of the comparison.
+        # thinking is OFF here: a RAG reply and a tracker's per-turn affinity delta are cheap
+        # System-1 calls in any faithful implementation (the engine's DELIBERATION runs thinking
+        # ON because deliberation is the architectural feature under test, not a compute edge).
+        if self._model.startswith("local/"):
+            import os
+            import httpx
+            base = os.environ.get("LOCAL_JUDGE_BASE_URL", "http://127.0.0.1:8080/v1").rstrip("/")
+            r = httpx.post(f"{base}/chat/completions", timeout=600.0, json={
+                "model": self._model[len("local/"):], "max_tokens": max_tokens,
+                "reasoning_effort": "none",
+                "messages": [{"role": "system", "content": system},
+                             {"role": "user", "content": user}]})
+            r.raise_for_status()
+            return ((r.json().get("choices") or [{}])[0].get("message", {}).get("content") or "").strip()
         msg = self._client.messages.create(model=self._model, max_tokens=max_tokens,
                                             system=system, messages=[{"role": "user", "content": user}])
         return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
