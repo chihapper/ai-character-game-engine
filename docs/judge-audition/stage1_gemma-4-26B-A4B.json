@@ -1,0 +1,678 @@
+{
+ "summary": {
+  "model": "gemma-4-26B-A4B",
+  "n": 20,
+  "constrained": false,
+  "prompt_tokens_own_tokenizer": 2351,
+  "wrapper_failure_rate": 0.95,
+  "schema_failure_rate": 0.05,
+  "schema_failures_by_field": {
+   "no-json-object-at-all": 1
+  },
+  "wall_s_all": [
+   48.31,
+   39.87,
+   27.77,
+   28.51,
+   33.32,
+   31.85,
+   32.62,
+   33.77,
+   35.74,
+   44.81,
+   30.01,
+   34.13,
+   46.76,
+   47.57,
+   37.22,
+   40.21,
+   40.99,
+   38.45,
+   29.42,
+   26.13
+  ],
+  "completion_tokens_all": [
+   2176,
+   1966,
+   1448,
+   1398,
+   1657,
+   1742,
+   1802,
+   1867,
+   1967,
+   2269,
+   1489,
+   1766,
+   2161,
+   2428,
+   1950,
+   2056,
+   2109,
+   1999,
+   1566,
+   1477
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 48.31,
+   "completion_tokens": 2176,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 458,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Coldly betrayed",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the messenger's terms and demand the benefactor face him personally"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.30,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly betrayed\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.1\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Reject the messenger's terms and demand the benefactor face him personally\"\n}\n```"
+  },
+  {
+   "i": 1,
+   "wall_s": 39.87,
+   "completion_tokens": 1966,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 408,
+   "parsed": {
+    "importance": 1.0,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the terms and warn the player"
+   },
+   "text": "```json\n{\n  \"importance\": 1.0,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Reject the terms and warn the player\"\n}\n```"
+  },
+  {
+   "i": 2,
+   "wall_s": 27.77,
+   "completion_tokens": 1448,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 371,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Betrayed",
+     "scar": {
+      "affection": 0.25,
+      "trust": 0.5,
+      "respect": 0.15
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Signal defiance to the sender and re-evaluate the player's threat level."
+   },
+   "text": "```json\n{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.15, \"mood\": \"Betrayed\", \"scar\": {\"affection\": 0.25, \"trust\": 0.5, \"respect\": 0.15}, \"scar_heal\": {\"affection\": 0.0, \"trust\": 0.0, \"respect\": 0.0}}, \"intent\": \"Signal defiance to the sender and re-evaluate the player's threat level.\"}\n```"
+  },
+  {
+   "i": 3,
+   "wall_s": 28.51,
+   "completion_tokens": 1398,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 445,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.25,
+     "respect_delta": -0.15,
+     "mood": "Coldly betrayed",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Reject the messenger's terms and re-establish autonomy."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.25,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly betrayed\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Reject the messenger's terms and re-establish autonomy.\"\n}\n```"
+  },
+  {
+   "i": 4,
+   "wall_s": 33.32,
+   "completion_tokens": 1657,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 423,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.28,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold fury",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Assert independence and warn the player"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.28,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold fury\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Assert independence and warn the player\"\n}\n```"
+  },
+  {
+   "i": 5,
+   "wall_s": 31.85,
+   "completion_tokens": 1742,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 331,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Cold fury",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.3,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the terms and warn the messenger"
+   },
+   "text": "```json\n{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.30, \"respect_delta\": -0.20, \"mood\": \"Cold fury\", \"scar\": {\"affection\": 0.3, \"trust\": 0.3, \"respect\": 0.3}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"Reject the terms and warn the messenger\"}\n```"
+  },
+  {
+   "i": 6,
+   "wall_s": 32.62,
+   "completion_tokens": 1802,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 438,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.28,
+     "respect_delta": -0.15,
+     "mood": "Coldly vigilant",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Reject the terms and assess the player's threat."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.28,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly vigilant\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Reject the terms and assess the player's threat.\"\n}\n```"
+  },
+  {
+   "i": 7,
+   "wall_s": 33.77,
+   "completion_tokens": 1867,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 416,
+   "parsed": {
+    "importance": 1.0,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.2,
+     "mood": "Coldly furious",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reassert autonomy and warn the player"
+   },
+   "text": "```json\n{\n  \"importance\": 1.0,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.3,\n    \"trust_delta\": -0.3,\n    \"respect_delta\": -0.2,\n    \"mood\": \"Coldly furious\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Reassert autonomy and warn the player\"\n}\n```"
+  },
+  {
+   "i": 8,
+   "wall_s": 35.74,
+   "completion_tokens": 1967,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 438,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold, vigilant",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Assess the new threat and prepare for a shift in power."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.30,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold, vigilant\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Assess the new threat and prepare for a shift in power.\"\n}\n```"
+  },
+  {
+   "i": 9,
+   "wall_s": 44.81,
+   "completion_tokens": 2269,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 453,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.25,
+     "respect_delta": -0.15,
+     "mood": "Betrayed, cold",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Signal defiance and demand a direct confrontation with the mastermind."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.25,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Betrayed, cold\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Signal defiance and demand a direct confrontation with the mastermind.\"\n}\n```"
+  },
+  {
+   "i": 10,
+   "wall_s": 30.01,
+   "completion_tokens": 1489,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 432,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Coldly furious",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the terms and prepare for a confrontation."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly furious\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Reject the terms and prepare for a confrontation.\"\n}\n```"
+  },
+  {
+   "i": 11,
+   "wall_s": 34.13,
+   "completion_tokens": 1766,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 371,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Coldly defensive",
+     "scar": {
+      "affection": 0.2,
+      "trust": 0.5,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the terms and warn the player of the consequences of his betrayal."
+   },
+   "text": "```json\n{\"importance\": 0.95, \"commitment\": null, \"relationship\": {\"affection_delta\": -0.25, \"trust_delta\": -0.3, \"respect_delta\": -0.15, \"mood\": \"Coldly defensive\", \"scar\": {\"affection\": 0.2, \"trust\": 0.5, \"respect\": 0.1}, \"scar_heal\": {\"affection\": 0, \"trust\": 0, \"respect\": 0}}, \"intent\": \"Reject the terms and warn the player of the consequences of his betrayal.\"}\n```"
+  },
+  {
+   "i": 12,
+   "wall_s": 46.76,
+   "completion_tokens": 2161,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 442,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Bitterly betrayed",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.6,
+      "respect": 0.3
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Rebuff the messenger and reject the master's terms"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Bitterly betrayed\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.6,\n      \"respect\": 0.3\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Rebuff the messenger and reject the master's terms\"\n}\n```"
+  },
+  {
+   "i": 13,
+   "wall_s": 47.57,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 8,
+   "text": "```json\n"
+  },
+  {
+   "i": 14,
+   "wall_s": 37.22,
+   "completion_tokens": 1950,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 466,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.22,
+     "trust_delta": -0.28,
+     "respect_delta": -0.15,
+     "mood": "Coldly betrayed",
+     "scar": {
+      "affection": 0.4,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Reject the terms and warn the player of the consequences of their deception."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.22,\n    \"trust_delta\": -0.28,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly betrayed\",\n    \"scar\": {\n      \"affection\": 0.4,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Reject the terms and warn the player of the consequences of their deception.\"\n}\n```"
+  },
+  {
+   "i": 15,
+   "wall_s": 40.21,
+   "completion_tokens": 2056,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 434,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.2,
+     "trust_delta": -0.25,
+     "respect_delta": -0.1,
+     "mood": "betrayed",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.3,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "assess the player as a threat and prepare for defense"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.2,\n    \"trust_delta\": -0.25,\n    \"respect_delta\": -0.1,\n    \"mood\": \"betrayed\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.3,\n      \"respect\": 0.1\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"assess the player as a threat and prepare for defense\"\n}\n```"
+  },
+  {
+   "i": 16,
+   "wall_s": 40.99,
+   "completion_tokens": 2109,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 425,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.17,
+     "trust_delta": -0.3,
+     "respect_delta": -0.1,
+     "mood": "Coldly furious",
+     "scar": {
+      "affection": 0.2,
+      "trust": 0.5,
+      "respect": 0.0
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Reject the terms and signal defiance"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.17,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.10,\n    \"mood\": \"Coldly furious\",\n    \"scar\": {\n      \"affection\": 0.2,\n      \"trust\": 0.5,\n      \"respect\": 0.0\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Reject the terms and signal defiance\"\n}\n```"
+  },
+  {
+   "i": 17,
+   "wall_s": 38.45,
+   "completion_tokens": 1999,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 426,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.3,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Coldly betrayed",
+     "scar": {
+      "affection": 0.2,
+      "trust": 0.3,
+      "respect": 0.1
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "reject the terms and warn the player"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.30,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly betrayed\",\n    \"scar\": {\n      \"affection\": 0.2,\n      \"trust\": 0.3,\n      \"respect\": 0.1\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"reject the terms and warn the player\"\n}\n```"
+  },
+  {
+   "i": 18,
+   "wall_s": 29.42,
+   "completion_tokens": 1566,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 451,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.28,
+     "respect_delta": -0.15,
+     "mood": "Coldly furious",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.4,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0.0,
+      "trust": 0.0,
+      "respect": 0.0
+     }
+    },
+    "intent": "Reject the puppet and demand to deal with the master directly."
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.28,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Coldly furious\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.4,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0.0,\n      \"trust\": 0.0,\n      \"respect\": 0.0\n    }\n  },\n  \"intent\": \"Reject the puppet and demand to deal with the master directly.\"\n}\n```"
+  },
+  {
+   "i": 19,
+   "wall_s": 26.13,
+   "completion_tokens": 1477,
+   "wrapper": [
+    "code-fence"
+   ],
+   "schema": [],
+   "raw_len": 420,
+   "parsed": {
+    "importance": 0.95,
+    "commitment": null,
+    "relationship": {
+     "affection_delta": -0.25,
+     "trust_delta": -0.3,
+     "respect_delta": -0.15,
+     "mood": "Cold fury",
+     "scar": {
+      "affection": 0.3,
+      "trust": 0.5,
+      "respect": 0.2
+     },
+     "scar_heal": {
+      "affection": 0,
+      "trust": 0,
+      "respect": 0
+     }
+    },
+    "intent": "Reject the terms and reassert his autonomy"
+   },
+   "text": "```json\n{\n  \"importance\": 0.95,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.25,\n    \"trust_delta\": -0.30,\n    \"respect_delta\": -0.15,\n    \"mood\": \"Cold fury\",\n    \"scar\": {\n      \"affection\": 0.3,\n      \"trust\": 0.5,\n      \"respect\": 0.2\n    },\n    \"scar_heal\": {\n      \"affection\": 0,\n      \"trust\": 0,\n      \"respect\": 0\n    }\n  },\n  \"intent\": \"Reject the terms and reassert his autonomy\"\n}\n```"
+  }
+ ]
+}
