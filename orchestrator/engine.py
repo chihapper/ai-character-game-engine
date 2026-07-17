@@ -450,6 +450,12 @@ class Engine:
             importance, detected, rel, intent = await reflect_on_turn(
                 self.character, user_text, reply,
                 relationship=self.relationship.get(), intent=self.intent.get(),
+                # the judge is a relevance realizer too: it appraises the exchange against the
+                # SAME RR-selected memories the actor spoke from, plus the open promises —
+                # without them, the actor's improvised tone is its only evidence of the wound
+                recalled=memories,
+                open_commitments=[cm.text for cm in self.commitments.open_items()]
+                if c.commitment_detection else None,
                 want_commit=c.commitment_detection, want_rel=c.relationship_state,
                 want_intent=c.intent_state, want_salience=c.salience_scoring)
             if detected and not self.commitments.readonly:
