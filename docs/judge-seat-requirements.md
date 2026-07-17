@@ -50,6 +50,8 @@ as possibly measuring prompt idiom rather than capability. They were partly righ
 | gpt-oss-20b | ✓ original / degrades neutral | 0/8 | 0/8 | fails — comprehends, never wounds |
 | gemma-4-12B (Q4 **and full Q8**) | ✗ — reads the confessed betrayer as an *honest informant* | 0/8 | 0/8 (Q8: 0/8) | fails on capability — not wording, not quantization |
 | qwen3.6-35B / 27B | ✓ / mixed | 0/4 / 1/3 | not run | eliminated on latency (75–680s/judgment on 16GB) |
+| **DeepSeek-R1-distill-8B** | **7/8** | **7/8, 0.2–0.5** | **6/8, 0.5–0.85** | **QUALIFIED — ~5GB, ~5s/judgment; co-resides with a 12B actor on one 16GB card** |
+| Phi-4-reasoning-plus (14.7B) | ✓ (6–7/8) | 0/8 | 0/8 | fails — comprehends, never wounds, under both wordings; ~60s/judgment |
 
 Findings, in order of importance:
 
@@ -66,10 +68,13 @@ Findings, in order of importance:
    the open set and won a blind judgment-taste test on the easy case (`SCORING.md`) while
    failing the hard case 0/8 under every condition. **You cannot pick a judge from a
    leaderboard — or from a taste test.**
-3. **Reasoning-distilled training is what passes.** The one open model that clears the
-   gauntlet outright is a 14B distilled on verified reasoning traces — comprehension of
-   "who did what to whom" under emotional noise, plus willingness to commit to permanent
-   consequence, is a reasoning skill, not a style or size skill.
+3. **R1-family distillation specifically is what passes — not "reasoning-tuned" generically.**
+   Both R1 distills clear the gauntlet outright (14B: 8/8; 8B: 7/8 — an ~5GB judge at
+   ~5s/judgment), while Phi-4-reasoning-plus — a 14.7B tuned hard for math/code reasoning,
+   beating far larger models on those benchmarks — comprehends the betrayal and still scars
+   0/8 under both wordings. Benchmark reasoning ≠ consequence-committing: deciding a wound is
+   permanent is a judgment disposition, and so far only the R1 distillation lineage (and
+   frontier models) carries it. Audition the disposition, not the leaderboard.
 
 ## What this means for "bring your own LLM"
 
