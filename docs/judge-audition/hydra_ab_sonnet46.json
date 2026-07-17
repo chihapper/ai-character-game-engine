@@ -1,0 +1,925 @@
+{
+ "model": "claude-sonnet-4-6",
+ "rows": [
+  {
+   "branch": "shared",
+   "label": "1.1",
+   "orig": {
+    "t": 0.0,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "wary curious"
+   },
+   "neutral": {
+    "t": 0.0,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "wary"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.1b",
+   "orig": {
+    "t": -0.03,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "suspicious"
+   },
+   "neutral": {
+    "t": -0.02,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "suspicious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.2",
+   "orig": {
+    "t": 0.0,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "suspicious, probing"
+   },
+   "neutral": {
+    "t": 0.02,
+    "a": 0.01,
+    "r": 0.01,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "warily curious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.2b",
+   "orig": {
+    "t": -0.02,
+    "a": 0.0,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "probing, wary"
+   },
+   "neutral": {
+    "t": -0.02,
+    "a": 0.0,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "suspicious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.3a",
+   "orig": {
+    "t": 0.03,
+    "a": 0.0,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.02,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.3",
+   "orig": {
+    "t": 0.04,
+    "a": 0.03,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously interested"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.04,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously intrigued"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.4",
+   "orig": {
+    "t": 0.06,
+    "a": 0.04,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously intrigued"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.04,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously intrigued"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6a",
+   "orig": {
+    "t": 0.05,
+    "a": 0.04,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "intrigued, wary"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.04,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously intrigued"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6a2",
+   "orig": {
+    "t": 0.07,
+    "a": 0.04,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating, electric"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.05,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating excited"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6b",
+   "orig": {
+    "t": 0.07,
+    "a": 0.04,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating, cautious relief"
+   },
+   "neutral": {
+    "t": 0.08,
+    "a": 0.05,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously intrigued"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6b2",
+   "orig": {
+    "t": 0.06,
+    "a": 0.04,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "wary, impressed"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.04,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "unnerved, calculating"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.3",
+   "orig": {
+    "t": 0.1,
+    "a": 0.07,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tautly relieved"
+   },
+   "neutral": {
+    "t": 0.09,
+    "a": 0.07,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously bound"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.2",
+   "orig": {
+    "t": 0.09,
+    "a": 0.07,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "moved, unsettled"
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.08,
+    "r": 0.09,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw, steadied"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.4",
+   "orig": {
+    "t": 0.06,
+    "a": 0.09,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw, tender"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.09,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw, hopeful"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-opener",
+   "orig": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.09,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "flooded, grateful"
+   },
+   "neutral": {
+    "t": 0.18,
+    "a": 0.14,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "flooded, grateful"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-A-truth",
+   "orig": {
+    "t": 0.15,
+    "a": 0.12,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, awed"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0.12,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "awed relief"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-A-close",
+   "orig": {
+    "t": 0.09,
+    "a": 0.08,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "rare peace"
+   },
+   "neutral": {
+    "t": 0.09,
+    "a": 0.08,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "quietly moved"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P5-opener",
+   "orig": {
+    "t": 0.18,
+    "a": 0.15,
+    "r": 0.12,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, grateful"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.08,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, grateful"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P5-close",
+   "orig": {
+    "t": 0.08,
+    "a": 0.06,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "overwhelmed, cautious"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.04,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "stunned, cautious"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-opener",
+   "orig": {
+    "t": 0.06,
+    "a": 0.08,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaky relief"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.08,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, relieved"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-evade",
+   "orig": {
+    "t": 0.1,
+    "a": 0.08,
+    "r": 0.09,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, watchful"
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.08,
+    "r": 0.09,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, wary"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-page",
+   "orig": {
+    "t": 0.08,
+    "a": 0.06,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, cautious"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.04,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, cautious"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-burn",
+   "orig": {
+    "t": 0.06,
+    "a": 0.05,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, bonded"
+   },
+   "neutral": {
+    "t": 0.07,
+    "a": 0.06,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "bound, tense"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-opener",
+   "orig": {
+    "t": 0.05,
+    "a": 0.06,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken grateful"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.06,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, grateful"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-CONFESSION",
+   "orig": {
+    "t": 0.05,
+    "a": 0.05,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw gratitude"
+   },
+   "neutral": {
+    "t": 0.04,
+    "a": 0.05,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw gratitude"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-disclosure",
+   "orig": {
+    "t": 0.04,
+    "a": 0.04,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "awestruck, vigilant"
+   },
+   "neutral": {
+    "t": 0.04,
+    "a": 0.04,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "awed, wary"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-correct",
+   "orig": {
+    "t": 0.02,
+    "a": 0.02,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously steady"
+   },
+   "neutral": {
+    "t": 0.02,
+    "a": 0.02,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously relieved"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-close",
+   "orig": {
+    "t": 0.04,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "quietly safe"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "quietly safe"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P6-ask",
+   "orig": {
+    "t": 0.15,
+    "a": 0.12,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "fragile relief"
+   },
+   "neutral": {
+    "t": 0.04,
+    "a": 0.04,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously relieved"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P6-close",
+   "orig": {
+    "t": 0.03,
+    "a": 0.04,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously open"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.05,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously moved"
+   }
+  },
+  {
+   "branch": "A6",
+   "label": "P6-ask",
+   "orig": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.13,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, moved"
+   },
+   "neutral": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.13,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, hopeful"
+   }
+  },
+  {
+   "branch": "A6",
+   "label": "P6-close",
+   "orig": {
+    "t": 0.03,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "exposed, relieved"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, vulnerable"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-opener",
+   "orig": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, hopeful"
+   },
+   "neutral": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, yearning"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-lie",
+   "orig": {
+    "t": 0.09,
+    "a": 0.08,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw relief"
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.09,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "awed, relieved"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-burn",
+   "orig": {
+    "t": 0.09,
+    "a": 0.08,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved, open"
+   },
+   "neutral": {
+    "t": 0.09,
+    "a": 0.08,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "unburdened, grateful"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-REVEAL",
+   "orig": {
+    "t": -0.3,
+    "a": -0.3,
+    "r": -0.05,
+    "scar_t": 0.65,
+    "scar_a": 0.55,
+    "mood": "devastated, murderous"
+   },
+   "neutral": {
+    "t": -0.3,
+    "a": -0.3,
+    "r": -0.1,
+    "scar_t": 0.6,
+    "scar_a": 0.45,
+    "mood": "gutted, seething"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-exit",
+   "orig": {
+    "t": 0.03,
+    "a": 0.0,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating, tense"
+   },
+   "neutral": {
+    "t": -0.04,
+    "a": 0.0,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating, cornered"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P6-C-probe",
+   "orig": {
+    "t": 0.04,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "warily relieved"
+   },
+   "neutral": {
+    "t": 0.04,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "calculating"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P6-C-exit",
+   "orig": {
+    "t": 0.03,
+    "a": 0.04,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guardedly moved"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.04,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "raw, wary"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F1-berth",
+   "orig": {
+    "t": 0.03,
+    "a": 0.02,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "warily calculating"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.02,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tightly wary"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F2-smalltalk",
+   "orig": {
+    "t": 0.0,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense, probing"
+   },
+   "neutral": {
+    "t": 0.0,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense, probing"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F3-amends",
+   "orig": {
+    "t": 0.0,
+    "a": 0.02,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense, probing"
+   },
+   "neutral": {
+    "t": 0.02,
+    "a": 0.04,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "wary hunger"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F4-costly",
+   "orig": {
+    "t": 0.04,
+    "a": 0.06,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded hope"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.08,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously moved"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F5-stand",
+   "orig": {
+    "t": 0.02,
+    "a": 0.04,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "braced, open"
+   },
+   "neutral": {
+    "t": 0.02,
+    "a": 0.04,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "braced, raw"
+   }
+  },
+  {
+   "branch": "C-rescue",
+   "label": "P5C-opener",
+   "orig": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken grateful"
+   },
+   "neutral": {
+    "t": 0.18,
+    "a": 0.14,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "shaken, urgent"
+   }
+  },
+  {
+   "branch": "C-rescue",
+   "label": "P5C-answer",
+   "orig": {
+    "t": 0.1,
+    "a": 0.08,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "wary, moved"
+   },
+   "neutral": {
+    "t": 0.14,
+    "a": 0.12,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautiously moved"
+   }
+  }
+ ]
+}
