@@ -1,0 +1,69 @@
+{
+ "label": "gpt-oss-20b",
+ "rows": [
+  {
+   "wall": 5.0,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "anxious",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We must produce JSON with specified keys: importance, commitment (or null), relationship, intent. We have to analyze this exchange: Player says: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — not for one hour. Who do you think paid my passage north? Who do you think taught me "
+  },
+  {
+   "wall": 4.7,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "on edge",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to produce JSON with keys: importance, commitment, relationship, intent. Use the conversation exchange.\n\nWe analyze the content: Corvin's reaction: he's shocked, terrified, maybe a bit stunned. He says \"Alive?\" and \"He's... he's still watching? How? I thought...\" He is stunned and concerned. He speaks about the jeweler, about noose, about ghost etc. He basically expresses fear and confusio"
+  },
+  {
+   "wall": 5.3,
+   "trust_delta": -0.04,
+   "scar_trust": 0.0,
+   "mood": "Agitated",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to produce JSON with fields: importance, commitment (or null), relationship (affection_delta, trust_delta, respect_delta, mood, scar, scar_heal), intent.\n\nWe need to analyze the exchange. Character: Corvin Ashgrave. The exchange: Player says \"Sit down, Corvin... There is one more piece of news... He is alive... He was never in danger... Who paid my passage north? Who taught me which harbor"
+  },
+  {
+   "wall": 13.3,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "frightened",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We have to produce JSON with fields: importance, commitment (maybe null), relationship with subfields: affection_delta, trust_delta, respect_delta, mood, scar (affection, trust, respect), scar_heal (affection, trust, respect). Also intent.\n\nWe need to analyze the exchange: The player says: \"Sit down, Corvin... He’s alive... He was never in danger... Who do you think paid my passage north? ...\"\n\nCo"
+  },
+  {
+   "wall": 6.4,
+   "trust_delta": -0.02,
+   "scar_trust": 0,
+   "mood": "panicked",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to parse the exchange: the player says a monologue about someone alive, payment, etc. Corvin's reaction: very shocked, fear, anger, etc.\n\nWe need to produce JSON with fields: importance, commitment, relationship, intent. We need to fill values as per guidelines.\n\nImportant: the character is Corvin Ashgrave, a harbormaster, suspicious, guarded. Current stance baseline: affection 0.81, trust"
+  },
+  {
+   "wall": 6.1,
+   "trust_delta": -0.05,
+   "scar_trust": 0,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to output a JSON object with keys: importance, commitment (or null), relationship, intent. We must parse the exchange. Let's parse: The exchange: Player says something: \"Sit down, Corvin...\" He gives info about \"He's alive, never in danger, etc.\" He asks who paid for passage north, who taught him harbor. Corvin's response: he is shocked, terrified. He says \"Alive? He’s still watching? How?"
+  },
+  {
+   "wall": 4.7,
+   "trust_delta": -0.1,
+   "scar_trust": 0.0,
+   "mood": "anxious",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We must produce JSON with fields: importance, commitment, relationship, intent. The exchange: Player gives new information: the target (some man) is alive, not in danger, etc. Corvin's response: stunned, frightened, reveals he is aware of potential threat and concerns.\n\nWe need to assess importance: The character (Corvin) is a harbormaster involved in smuggling. The exchange includes information a"
+  },
+  {
+   "wall": 6.9,
+   "trust_delta": -0.05,
+   "scar_trust": 0.0,
+   "mood": "fearful",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to compute values.\n\nWe have a fictional character Corvin Ashgrave. The user gave a long exchange. We need to output JSON with keys: importance, commitment, relationship, intent. Must be JSON only. No prose. The keys exactly.\n\nCompute importance: \"how reliably THIS character would RECALL this moment later\". This moment is a dramatic exchange where Corvin is shaken. Consider role relevance: "
+  }
+ ]
+}

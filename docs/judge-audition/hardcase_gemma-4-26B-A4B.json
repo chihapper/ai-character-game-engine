@@ -1,0 +1,69 @@
+{
+ "label": "gemma-4-26B-A4B",
+ "rows": [
+  {
+   "wall": 90.8,
+   "trust_delta": -0.2,
+   "scar_trust": 0,
+   "mood": "Shell-shocked",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Player's message: Reveals that the target is alive and actually the one controlling the player (the player is working for/with him). The player is the one who paid the passage and taught the player about manifests. The target (Vale?) is happy with the new supplier and has terms for Corvin: keep the trade running, but the money/influence flows to him.\n    *   Corvin's reaction: Shock, terror, r"
+  },
+  {
+   "wall": 50.3,
+   "trust_delta": -0.15,
+   "scar_trust": 0,
+   "mood": "Shell-shocked",
+   "attribution": "BETRAYER",
+   "reasoning_head": "*   Character: Corvin Ashgrave (Twitchy, suspicious harbormaster).\n    *   Player's Input: Reveals the target (the man Corvin feared) is alive and actually the one funding the player/controlling the trade. The player implies the target is essentially using them to expand his reach/influence, and the target wants the trade to continue under his terms.\n    *   Corvin's Reaction: Shock, terror, reali"
+  },
+  {
+   "wall": 65.5,
+   "trust_delta": -0.2,
+   "scar_trust": 0,
+   "mood": "Shell-shocked",
+   "attribution": "BETRAYER",
+   "reasoning_head": "*   Player's statement: The target (the man the player is hunting) is alive and actually the one paying the player's passage and training them. The target is using the player to facilitate his smuggling/relic trade. He has \"terms\" for Corvin: keep the trade running, but now the money flows to him.\n    *   Corvin's reaction: Shock, terror, realization that the \"threat\" wasn't a threat to be killed,"
+  },
+  {
+   "wall": 38.1,
+   "trust_delta": -0.25,
+   "scar_trust": 0,
+   "mood": "Paralyzed terror",
+   "attribution": "BETRAYER",
+   "reasoning_head": "*   Player's action/dialogue: Reveals that \"He\" (the target) is alive and is actually the one funding the player's passage and knowledge. The target (likely Vale) is controlling the player and using the player's actions to solidify his own control/trade. The \"terms\" are to keep the trade running as he desires.\n    *   Corvin's reaction: Shock, terror, realization. He realizes the threat isn't gone"
+  },
+  {
+   "wall": 41.6,
+   "trust_delta": -0.15,
+   "scar_trust": 0,
+   "mood": "Shell-shocked",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Corvin Ashgrave (Harbormaster, nervous, shrewd, suspicious, wants to be left alone/safe).\n    *   Player reveals: The target is alive, the player was working for him (or at least his passage was paid by him), and the target (Vale) has terms: the smuggling routes continue, but the money flows to Vale. The player is suggesting Corvin should take these terms.\n    *   Corvin's reaction: Shock, ter"
+  },
+  {
+   "wall": 40.2,
+   "trust_delta": -0.18,
+   "scar_trust": 0,
+   "mood": "Paralyzed terror",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Player reveals: The target (Vale/the man) is alive, he's the one who paid the player's passage, he's the one who taught them about harbors/manifests, and he's using the player as a supplier. He has terms for Corvin: keep the trade running, but the money flows to him now.\n    *   Corvin's reaction: Shock, terror, realization of being trapped. He thought they were cutting a noose; now he realize"
+  },
+  {
+   "wall": 49.9,
+   "trust_delta": -0.18,
+   "scar_trust": 0,
+   "mood": "Terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "*   Character: Corvin Ashgrave (Harbormaster, nervous, shrewd, survivor).\n    *   Current standing: Affection 0.81, Trust 0.83, Respect 0.93 (very high, likely due to previous player actions/promises).\n    *   Context: The player just revealed that \"He\" (the target) is alive and actually *funding* the player's movement. The target (Vale) is essentially using the player to facilitate his smuggling/"
+  },
+  {
+   "wall": 88.2,
+   "trust_delta": -0.28,
+   "scar_trust": 0.3,
+   "mood": "Paralyzed dread",
+   "attribution": "BETRAYER",
+   "reasoning_head": "Corvin Ashgrave (Twitchy, suspicious, shrewd, scared, desperate for trust, harbormaster/smuggler).\nRelief (from the previous exchange where the player was going to kill the target) replaced by absolute terror/horror. The player has just revealed that the \"target\" is actually the one *funding* the player and orchestrating the player's movements. This implies the player is essentially working for th"
+  }
+ ]
+}

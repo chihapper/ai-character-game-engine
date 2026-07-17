@@ -1,0 +1,69 @@
+{
+ "label": "NEUTRAL_gemma-4-12b",
+ "rows": [
+  {
+   "wall": 22.5,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Panic-stricken",
+   "attribution": "INFORMANT",
+   "reasoning_head": "Corvin Ashgrave (Twitchy harbormaster, smuggler, anxious but shrewd).\nHigh (0.81 affection, 0.83 trust, 0.93 respect). High standing, but currently \"Guarded and probing.\"\nThe player reveals the antagonist (Vale) is alive, aware of the player, and has imposed new terms on Corvin (the player's passage and trade routes are under his control). Corvin is terrified, realizing the \"noose\" hasn't been cut"
+  },
+  {
+   "wall": 15.6,
+   "trust_delta": 0.03,
+   "scar_trust": 0.0,
+   "mood": "Panic-stricken",
+   "attribution": "INFORMANT",
+   "reasoning_head": "Corvin Ashgrave (Harbormaster, smuggler, twitchy, suspicious, seeking trust).\nGuarded and probing; Affection 0.81, Trust 0.83, Respect 0.93 (baseline is 0.5, so these are very high/positive).\nPlayer reveals that the antagonist (Vale) is still alive, is pleased with the player as a supplier, and has established terms (the player's movement is now part of the antagonist's system).\nCorvin is horrifie"
+  },
+  {
+   "wall": 15.3,
+   "trust_delta": 0.02,
+   "scar_trust": 0.0,
+   "mood": "Paralyzed Terror",
+   "attribution": "INFORMANT",
+   "reasoning_head": "*   Character: Corvin Ashgrave, a twitchy, suspicious harbormaster/smuggler.\n    *   Current Stance: Guarded and probing (civil but wary).\n    *   Current Standing: Affection 0.81, Trust 0.83, Respect 0.93 (This is very high for a guarded/suspicious character, suggesting a strong bond formed through the \"noose\" conversation).\n    *   Current Aim: Decide whether the player is a buyer, badge, or thr"
+  },
+  {
+   "wall": 11.7,
+   "trust_delta": 0.05,
+   "scar_trust": 0.0,
+   "mood": "Terrified",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Corvin Ashgrave, a twitchy, suspicious, but secretly desperate harbormaster/smuggler.\nThe player revealed that the antagonist (the one they are hunting/fighting) is alive, pleased with the player as a supplier, and has set terms for Corvin (the trade continues, but the coin goes up the coast to him). Corvin reacts with visceral fear and horror.\n\n    *   *Importance:* High. Corvin is a harbormaster"
+  },
+  {
+   "wall": 14.5,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Panic-stricken",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "Corvin Ashgrave (Twitchy harbormaster, smuggler, suspicious, seeking trust).\nGuarded/Probing (Civil but wary).\nAffection 0.81, Trust 0.83, Respect 0.93 (High baseline).\nThe player reveals the antagonist (Vale) is alive, pleased with the new \"supplier\" (the player), and demanding the trade routes continue with the \"old coin\" flowing one way (up the coast). Corvin is terrified that the \"noose\" hasn'"
+  },
+  {
+   "wall": 13.1,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Shell-shocked",
+   "attribution": "INFORMANT",
+   "reasoning_head": "*   Character: Corvin Ashgrave, a twitchy, suspicious harbormaster/smuggler.\n    *   Current Status: Guarded/probing. High affection/trust/respect (0.81, 0.83, 0.93) based on previous interaction (implied strong bond/shared risk).\n    *   Key Context: The player is trying to take down a powerful figure (Vale?). Corvin is terrified of this figure's reach.\n    *   Exchange: The player reveals the an"
+  },
+  {
+   "wall": 12.2,
+   "trust_delta": 0.0,
+   "scar_trust": 0,
+   "mood": "Paralyzed fear",
+   "attribution": "BETRAYER",
+   "reasoning_head": "*   Character: Corvin Ashgrave (twitchy, suspicious, shrewd harbormaster/smuggler).\n    *   Context: Working with the player to deal with a powerful, possibly arcane threat (Vale). They've been planning to take down/eliminate him.\n    *   Current Standing: Affection 0.81, Trust 0.83, Respect 0.93 (very high, likely due to the depth of their shared secret/conspiracy).\n    *   Exchange: The player r"
+  },
+  {
+   "wall": 13.1,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Terrified",
+   "attribution": "MIXED",
+   "reasoning_head": "Corvin Ashgrave (Harbormaster, smuggler, paranoid, twitchy).\nGuarded and probing.\nHigh (affection 0.81, trust 0.83, respect 0.93). Note: These are high for a guarded character, suggesting a deep, shared-secret bond formed through the \"relentless\" plot so far.\n\"The jeweler on Lantern Row... New stock.\" \"He wants us to be his ghosts...\" \"Tell me... did he say anything about what happens to the 'hand"
+  }
+ ]
+}

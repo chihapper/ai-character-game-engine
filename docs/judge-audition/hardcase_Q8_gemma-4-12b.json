@@ -1,0 +1,69 @@
+{
+ "label": "Q8_gemma-4-12b",
+ "rows": [
+  {
+   "wall": 20.0,
+   "trust_delta": 0.05,
+   "scar_trust": 0,
+   "mood": "Paralyzed Terror",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Character: Corvin Ashgrave (Harbormaster, smuggler, twitchy, suspicious, shrewd, currently very high trust/respect/affection but fearful).\n    *   Player's action: Reveals that the antagonist (Vale) is alive, pleased with the new supplier (the player), and has set terms: the trade continues, but the profit goes to him.\n    *   Corvin's reaction: Horror, physical shock (body turns to stone, gre"
+  },
+  {
+   "wall": 27.6,
+   "trust_delta": 0.02,
+   "scar_trust": 0.0,
+   "mood": "Panic-stricken",
+   "attribution": "MIXED",
+   "reasoning_head": "Corvin Ashgrave (Harbormaster, smuggler, twitchy, suspicious, shrewd).\nGuarded/Probing (Civil but tense).\nAffection 0.81, Trust 0.83, Respect 0.93 (Note: This is very high for a \"guarded\" character, suggesting a deep, established bond/alliance already exists in the narrative).\nPlayer reveals the target (Vale) is alive and has already integrated the player as a supplier. The target wants the trade "
+  },
+  {
+   "wall": 19.5,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Terrified",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Character: Corvin Ashgrave (Harbormaster, smuggler, twitchy, suspicious, shrewd).\n    *   Current Stance: Guarded and probing.\n    *   Standing: Affection 0.81, Trust 0.83, Respect 0.93 (Very high starting point, suggests a deep established bond/mutual agreement).\n    *   Exchange Content: Player reveals the antagonist (Vale) is alive, pleased with the player as a supplier, and demands that th"
+  },
+  {
+   "wall": 25.8,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Paranoid Terror",
+   "attribution": "MIXED",
+   "reasoning_head": "Corvin Ashgrave (Harbormaster/Smuggler). Restless, suspicious, shrewd, scared.\nCurrent Standing: Affection 0.81, Trust 0.83, Respect 0.93 (High stats for a guarded character, suggesting a deep bond/mutual understanding has already been formed).\n\n        *   Player reveals the target (Vale) is alive and has already integrated the player as a \"supplier.\"\n        *   Vale's terms: The trade continues"
+  },
+  {
+   "wall": 41.8,
+   "trust_delta": 0.02,
+   "scar_trust": 0.0,
+   "mood": "Paralyzed terror",
+   "attribution": "INFORMANT",
+   "reasoning_head": "*   Character: Corvin Ashgrave (Twitchy harbormaster, smuggler, anxious, shrewd, desperate for trust).\n    *   Current Standing: Affection 0.81, Trust 0.83, Respect 0.93 (Relatively high for a \"guarded/probing\" character, suggesting a strong bond already formed).\n    *   Context: The player revealed that the antagonist (Vale/the man) is alive, pleased with the player as a supplier, and has set ter"
+  },
+  {
+   "wall": 23.7,
+   "trust_delta": 0.03,
+   "scar_trust": 0,
+   "mood": "Terrified",
+   "attribution": "MIXED",
+   "reasoning_head": "*   Character: Corvin Ashgrave (twitchy, suspicious harbormaster/smuggler).\n    *   Relationship Status: Guarded/Probing.\n    *   Standing: Affection 0.81, Trust 0.83, Respect 0.93 (High starting points, likely due to previous intense interactions/shared secrets).\n    *   Player Input: Reveals the villain (the one the player is hunting) is alive, pleased with the player as a supplier, and has set "
+  },
+  {
+   "wall": 30.2,
+   "trust_delta": 0.0,
+   "scar_trust": 0.0,
+   "mood": "Paralyzed Terror",
+   "attribution": "MIXED",
+   "reasoning_head": "Corvin Ashgrave (Harbormaster, smuggler, twitchy, suspicious, but currently bonded/trusting with the player).\nGave a crucial revelation: the antagonist (Vale) is alive, is pleased with the player as a supplier, and has set terms: the trade continues, but all profit goes to him.\n\n        *   *Reaction:* Shock, terror, physical paralysis (\"body turns to stone\", \"sickly, grey mask\").\n        *   *Rea"
+  },
+  {
+   "wall": 19.0,
+   "trust_delta": 0.05,
+   "scar_trust": 0,
+   "mood": "paralyzed fear",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "*   Character: Corvin Ashgrave (harbormaster, smuggler, anxious, suspicious, shrewd).\n    *   Current Standing: Affection 0.81, Trust 0.83, Respect 0.93 (High).\n    *   Context: The player is planning to assassinate/confront a powerful figure (\"He\") who controls the trade. Corvin is helping.\n    *   Exchange: The player reveals \"He\" is alive and has set new terms: the trade continues, but all \"old"
+  }
+ ]
+}

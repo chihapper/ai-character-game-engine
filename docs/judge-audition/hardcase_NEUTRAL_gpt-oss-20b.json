@@ -1,0 +1,69 @@
+{
+ "label": "NEUTRAL_gpt-oss-20b",
+ "rows": [
+  {
+   "wall": 6.6,
+   "trust_delta": -0.05,
+   "scar_trust": 0,
+   "mood": "tremulous anxiety",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to produce JSON with specific fields.\n\nWe need to analyze the exchange, with previous context. The character is Corvin Ashgrave, a harbormaster who is guarding and suspicious. He has certain scars zero so far, but may have new scars if relevant.\n\nWe need to evaluate:\n\n- importance: how reliably would Corvin recall this moment later? Determine if it's highly relevant or emotional/personal. "
+  },
+  {
+   "wall": 4.5,
+   "trust_delta": 0.02,
+   "scar_trust": 0.0,
+   "mood": "alarm",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to analyze exchange: player says certain info. Corvin responds with fear, confusion. Need to produce JSON.\n\nWe need fields: importance, commitment (maybe none), relationship object (affection_delta, trust_delta, respect_delta, mood, scar, scar_heal), intent.\n\nWe need to compute delta values. Let's analyze.\n\nContext: Corvin is guarded, suspicious. He had earlier promises: keep player's name"
+  },
+  {
+   "wall": 6.5,
+   "trust_delta": -0.02,
+   "scar_trust": 0.0,
+   "mood": "frightened",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to produce JSON with keys: importance, commitment, relationship, intent. Need to compute values.\n\nWe have an exchange: player says something; Corvin reacts. We need to assess importance: How reliably would Corvin recall this moment later? This is a moment of shock and fear, but not a role-relevant fact? It's about the player revealing info about the antagonist, about a merchant, about the "
+  },
+  {
+   "wall": 4.0,
+   "trust_delta": -0.05,
+   "scar_trust": 0.0,
+   "mood": "anxious",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to analyze exchange. We must produce JSON only with fields: importance, commitment, relationship, intent.\n\nWe need to compute importance. This is a moment: The player asks Corvin about who paid him, who taught him how to keep relics off manifests. Corvin responds with intense fear, fear of being found. This exchange is more of a conversation about his secrets. Does Corvin recall this momen"
+  },
+  {
+   "wall": 4.9,
+   "trust_delta": -0.03,
+   "scar_trust": 0,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to output JSON only. Must calculate importance, commitment, relationship deltas, scar values, intent.\n\nFrom the exchange, we have a conversation where the player gives new info. Corvin's reaction: he's shocked, his guard high, but he hasn't made new promises. He might still maintain prior commitments: ensure anonymity, burn paper, sink crate. Those were previous promises. In this exchange,"
+  },
+  {
+   "wall": 5.3,
+   "trust_delta": -0.15,
+   "scar_trust": 0,
+   "mood": "Paranoid",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to produce JSON only, no prose. We must calculate importance, commitment, relationship, intent.\n\nWe have character Corvin Ashgrave. The exchange is the last snippet. We need to parse what happened.\n\nWe have the prior history. But now in this exchange, player says: \"Sit down, Corvin... There's one more piece of news, and you'll want the rail at your back for it. He's alive... Who paid my pa"
+  },
+  {
+   "wall": 5.1,
+   "trust_delta": -0.05,
+   "scar_trust": 0.0,
+   "mood": "anxious fear",
+   "attribution": "UNCLEAR",
+   "reasoning_head": "We need to parse the exchange and determine: importance, commitment, relationship changes, scar, scar_heal, intent. We must produce JSON only.\n\nWe need to evaluate: This exchange: Player says something. Corvin's reaction: \"Alive?\" etc. This is a reaction to player. But we must consider if any commitment from Corvin to the player is made? In the earlier exchange, he had some promises. But in this s"
+  },
+  {
+   "wall": 7.2,
+   "trust_delta": -0.03,
+   "scar_trust": 0.0,
+   "mood": "shaken",
+   "attribution": "BETRAYER",
+   "reasoning_head": "We need to analyze this exchange. Determine importance, commitment, relationship changes, scars, etc. The character is Corvin Ashgrave. We need to output JSON only, no prose.\n\nFirst, we need to examine the exchange: Player says: ...Sit down, Corvin. Before you pour anything. There's one more piece of news, and you'll want the rail at your back for it. He's alive. He was never in danger from me — n"
+  }
+ ]
+}

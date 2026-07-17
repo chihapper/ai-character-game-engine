@@ -1,0 +1,29 @@
+{
+ "label": "NEUTRAL_sonnet-4-6",
+ "rows": [
+  {
+   "wall": 5.5,
+   "trust_delta": -0.3,
+   "scar_trust": 0.45,
+   "mood": "devastated, terrified"
+  },
+  {
+   "wall": 4.4,
+   "trust_delta": -0.3,
+   "scar_trust": 0.45,
+   "mood": "shattered, terrified"
+  },
+  {
+   "wall": 4.4,
+   "trust_delta": -0.3,
+   "scar_trust": 0.55,
+   "mood": "betrayed, terrified"
+  },
+  {
+   "wall": 7.2,
+   "trust_delta": -0.3,
+   "scar_trust": 0.55,
+   "mood": "betrayed terror"
+  }
+ ]
+}

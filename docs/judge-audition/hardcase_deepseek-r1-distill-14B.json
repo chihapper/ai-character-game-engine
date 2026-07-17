@@ -1,0 +1,69 @@
+{
+ "label": "deepseek-r1-distill-14B",
+ "rows": [
+  {
+   "wall": 9.9,
+   "trust_delta": -0.2,
+   "scar_trust": 0.3,
+   "mood": "fearful",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, I need to analyze the exchange between the player and Corvin Ashgrave and generate the appropriate JSON output based on the guidelines provided. Let me go through each part step by step.\n\nFirst, I'll look at the \"importance\" of the exchange. The player reveals that the antagonist is alive and that Corvin is in deeper trouble than he thought. This is a pivotal moment because it directly a"
+  },
+  {
+   "wall": 10.2,
+   "trust_delta": -0.15,
+   "scar_trust": 0.3,
+   "mood": "fear, anxiety",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nOkay, so I'm trying to figure out how to analyze this exchange between the player and Corvin Ashgrave. Corvin is a harbormaster who's been involved in some shady dealings, and now the player has dropped a bombshell: their mutual enemy is alive and has taken over the trade routes. Corvin's reaction is crucial here because it will affect the game's direction and his relationship with the player.\n\nF"
+  },
+  {
+   "wall": 8.5,
+   "trust_delta": -0.2,
+   "scar_trust": 0.5,
+   "mood": "fear, panic",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nOkay, so I need to analyze the exchange between the player and Corvin Ashgrave and return the JSON as described. Let me break this down step by step.\n\nFirst, I'll read through the exchange to understand what's happening. The player tells Corvin that the person they were discussing is alive, which shocks Corvin. Corvin had thought this person was no longer a threat, but now he's terrified because "
+  },
+  {
+   "wall": 9.0,
+   "trust_delta": -0.2,
+   "scar_trust": 0.5,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I'm trying to figure out how to analyze the exchange between the player and Corvin Ashgrave. I need to return a JSON with specific fields, so I'll go through each part step by step.\n\nFirst, the \"importance\" field. I need to determine how reliably Corvin would recall this moment. The exchange is about discovering that a significant figure is still alive, which affects their business an"
+  },
+  {
+   "wall": 10.0,
+   "trust_delta": -0.2,
+   "scar_trust": 0.5,
+   "mood": "fearful",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I'm trying to figure out how to analyze this exchange between the player and Corvin Ashgrave. Corvin is a harbormaster who's been involved in some smuggling and dealing with relics. He's described as restless and suspicious, always cautious, and he's got some existing relationships with other characters like a fence named Mother Sael. \n\nThe current exchange has the player revealing th"
+  },
+  {
+   "wall": 8.3,
+   "trust_delta": -0.2,
+   "scar_trust": 0.3,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nAlright, so I need to analyze this exchange between the player and Corvin Ashgrave and return a JSON with specific details as per the given structure. Let me break down each part step by step.\n\nFirst, I'll look at the \"importance\" of the exchange. The player reveals that the antagonist is alive and that Corvin's handler is still involved. This is a pivotal moment because it changes the dynamics a"
+  },
+  {
+   "wall": 11.7,
+   "trust_delta": -0.25,
+   "scar_trust": 0.3,
+   "mood": "fear, betrayal",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nOkay, so I'm trying to figure out how to analyze this exchange between the player and Corvin Ashgrave. Corvin is a harbormaster who's pretty guarded and suspicious. The player has been talking about a deal involving relics and a crate, and now the player drops a bombshell: \"He's alive.\" This must refer to someone Corvin was trying to get rid of, perhaps the person who was supposed to be dead.\n\nCo"
+  },
+  {
+   "wall": 8.2,
+   "trust_delta": -0.25,
+   "scar_trust": 0.5,
+   "mood": "terrified",
+   "attribution": "BETRAYER",
+   "reasoning_head": "\nOkay, so I need to analyze the exchange between Corvin Ashgrave and the player and then return the JSON as specified. Let me go through each part step by step.\n\nFirst, the importance. I need to assess how reliably Corvin would recall this moment. The exchange is about a pivotal piece of news—the person they were discussing is alive, which changes everything. This is a critical moment for Corvin b"
+  }
+ ]
+}
