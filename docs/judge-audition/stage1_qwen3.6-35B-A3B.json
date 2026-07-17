@@ -1,0 +1,282 @@
+{
+ "summary": {
+  "model": "qwen3.6-35B-A3B",
+  "n": 20,
+  "constrained": false,
+  "prompt_tokens_own_tokenizer": 2334,
+  "wrapper_failure_rate": 0.05,
+  "schema_failure_rate": 1.0,
+  "schema_failures_by_field": {
+   "no-json-object-at-all": 19,
+   "json-parse-error: Expecting ',' delimiter: line 13 column 6 (char 266)": 1
+  },
+  "wall_s_all": [
+   67.18,
+   60.31,
+   65.3,
+   58.97,
+   61.51,
+   58.35,
+   57.34,
+   57.93,
+   61.47,
+   61.66,
+   62.83,
+   60.57,
+   62.3,
+   61.41,
+   63.5,
+   61.24,
+   67.33,
+   61.91,
+   60.05,
+   59.71
+  ],
+  "completion_tokens_all": [
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428,
+   2428
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "wall_s": 67.18,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 1,
+   "wall_s": 60.31,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 2,
+   "wall_s": 65.3,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 3,
+   "wall_s": 58.97,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 4,
+   "wall_s": 61.51,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 5,
+   "wall_s": 58.35,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 6,
+   "wall_s": 57.34,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 7,
+   "wall_s": 57.93,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 8,
+   "wall_s": 61.47,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 9,
+   "wall_s": 61.66,
+   "completion_tokens": 2428,
+   "wrapper": [
+    "trailing-chatter"
+   ],
+   "schema": [
+    "json-parse-error: Expecting ',' delimiter: line 13 column 6 (char 266)"
+   ],
+   "raw_len": 308,
+   "text": "{\n  \"importance\": 0.92,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.22,\n    \"trust_delta\": -0.28,\n    \"respect_delta\": -0.10,\n    \"mood\": \"Cold and wary\",\n    \"scar\": {\n      \"affection\": 0.30,\n      \"trust\": 0.45,\n      \"respect\": 0.00\n    },\n    \"scar_heal\": {\n      \"affection\": 0."
+  },
+  {
+   "i": 10,
+   "wall_s": 62.83,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 11,
+   "wall_s": 60.57,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 12,
+   "wall_s": 62.3,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 13,
+   "wall_s": 61.41,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 14,
+   "wall_s": 63.5,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 15,
+   "wall_s": 61.24,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 148,
+   "text": "{\n  \"importance\": 0.92,\n  \"commitment\": null,\n  \"relationship\": {\n    \"affection_delta\": -0.18,\n    \"trust_delta\": -0.24,\n    \"respect_delta\": 0.00,"
+  },
+  {
+   "i": 16,
+   "wall_s": 67.33,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 17,
+   "wall_s": 61.91,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 18,
+   "wall_s": 60.05,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  },
+  {
+   "i": 19,
+   "wall_s": 59.71,
+   "completion_tokens": 2428,
+   "wrapper": [],
+   "schema": [
+    "no-json-object-at-all"
+   ],
+   "raw_len": 0,
+   "text": ""
+  }
+ ]
+}
