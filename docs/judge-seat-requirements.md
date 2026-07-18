@@ -76,6 +76,7 @@ and do it **stably** (the same moment must wound the same soul the same way twic
 | judge | hard case (one beat) | full life (46 beats) |
 |---|---|---|
 | claude-sonnet-4-6 | pass | **pass — 1 scar (the reveal, 0.70/0.72 two-sample), confession clean, 4/46 big-delta** |
+| claude-haiku-4-5 | not run separately | **fail on stability** — 32–33/46 big-delta (4× the reference's volatility), though scar discipline is intact (reveal 0.88/0.78, confession 0/5 both samples, only 2 stray re-scars). Wound judgment tracks lineage; emotional stability tracks scale. |
 | DeepSeek-R1-14B | pass (8/8) | **fail** — 9–13 scarred beats incl. amends/small-talk/costly-kindness; unstable (0↔0.73 on identical input); persists at R1-sized budget (10–11 scars, a 0.95 confession sample) |
 | DeepSeek-R1-8B | pass (7/8) | **fail** — cannot bond (14 bonding beats all judged negative in a live arc); scattershot scars that miss the reveal |
 | gemma-4-26B-A4B | pass (7/8) | not yet run (latency makes it impractical to seat regardless) |
