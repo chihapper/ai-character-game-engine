@@ -368,13 +368,17 @@ td.eng{color:#d9ffe9}
   what mood he's in — the way two game masters run the same scene with different weight — but it cannot make a
   scar impermanent, un-cap a recovery, or rewrite the wound after the fact. The engine enforces the mechanism
   regardless of what number the model returns.</div>
-  <p class="sub"><b>So you can bring your own model.</b> Because the contract belongs to the engine and not the
-  model, any capable LLM can sit behind it — a frontier cloud model, or a small one running on your own GPU.
-  Different models judge with different temperament; we auditioned five behind this exact engine, blind-scored
-  the verdicts against a betrayal, and a <b>7-billion-parameter model running locally out-scored the frontier
-  cloud models</b> at reading this character. Like a game engine's recommended specs, there's a floor and a
-  test to meet it — not a lock-in to one vendor. The soul is the architecture's; the model is swappable, and
-  even the free, local floor keeps it.</p>
+  <p class="sub"><b>So can you bring your own model? For the voice, yes — for the conscience, here's the
+  honest answer.</b> The engine runs two model seats: the <i>actor</i> (writes the dialogue) and the
+  <i>judge</i> (decides what each moment means to the character). The actor seat is genuinely
+  bring-your-own — a free 12B running on one consumer GPU writes this character beautifully. The judge seat
+  turned out to be the hardest chair in AI characters: we auditioned <b>ten open models</b> against it, fixed
+  every engine-side bias the audition exposed (four of them — documented in the repo), and found that today's
+  open models can judge a <i>moment</i> correctly but none yet holds a whole <i>life</i> — bonding, staying
+  level through small talk, wounding exactly once at the true betrayal, and doing it the same way twice.
+  Frontier-class models pass that bar; the full test battery is published in the repo, so any future open
+  release can take the seat the day it clears it. We think the seat being hard to fill is the point: if any
+  small model could hold this character's conscience, the conscience wouldn't be doing real work.</p>
   <h2 class="subhead">Don't take the transcript's word for it</h2>
   <p class="sub">These are persisted minds, not chat logs. Run the local server and interrogate the exact
   state each future left behind — ask anything; nothing is scripted.</p>

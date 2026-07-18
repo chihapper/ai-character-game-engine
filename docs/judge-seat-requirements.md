@@ -60,10 +60,34 @@ either audited above or excluded on a stated ground: **license** (EXAONE-Deep �
 commercial use); **size** (GLM-5.2, Kimi K2.7, Llama-4, Gemma-4-31B, DeepSeek-distill-32B+ —
 don't fit, and dense CPU-offload is latency-dead by measurement); **latency, measured**
 (Qwen3.6-27B/35B: 75–680s per judgment); **class prior, measured 0-for-4** (sparse-active
-≤4B-active MoEs); **provenance** (community merges); **stack** (Apriel). The qualified open
-roster under the SHIPPED (neutral, hydra-validated) rubric: **DeepSeek-R1-distill-14B,
-DeepSeek-R1-distill-8B, and gemma-4-26B-A4B** (the last with an offload latency cost).
-The audition is closed; the gauntlet remains for every future candidate.
+≤4B-active MoEs); **provenance** (community merges); **stack** (Apriel).
+
+## The correction: moments vs lives (the final bar)
+
+The "QUALIFIED" verdicts above were earned on the hard CASE — one beat. Seating those judges
+in a full arc exposed a higher bar the single-moment gauntlet could not see, and the earlier
+qualification claims are hereby narrowed: **hard-case-qualified is not judge-qualified.**
+
+The **full-life battery** (`tools/judge_hydra_ab.py`: all 46 canonical beats, two samples
+each) measures what a moment cannot: does the judge **bond** through the shared past, keep
+**ordinary beats at ~0.00**, scar **exactly once** at the true wound, spare the confession —
+and do it **stably** (the same moment must wound the same soul the same way twice)?
+
+| judge | hard case (one beat) | full life (46 beats) |
+|---|---|---|
+| claude-sonnet-4-6 | pass | **pass — 1 scar (the reveal, 0.70/0.72 two-sample), confession clean, 4/46 big-delta** |
+| DeepSeek-R1-14B | pass (8/8) | **fail** — 9–13 scarred beats incl. amends/small-talk/costly-kindness; unstable (0↔0.73 on identical input); persists at R1-sized budget (10–11 scars, a 0.95 confession sample) |
+| DeepSeek-R1-8B | pass (7/8) | **fail** — cannot bond (14 bonding beats all judged negative in a live arc); scattershot scars that miss the reveal |
+| gemma-4-26B-A4B | pass (7/8) | not yet run (latency makes it impractical to seat regardless) |
+
+Every engine-side confound was eliminated before this verdict, in order, with the failing
+open models as the fuzzer that exposed each: rubric idiom (fixed), judge context starvation
+(fixed), thinking-budget starvation (fixed), scar EVENT-vs-STATE semantics (fixed —
+regression-clean on the reference judge). After all four fixes, the result stands: **today's
+open models pass moments; none yet holds a life.** The actor seat remains genuinely
+bring-your-own (a local 12B writes beautifully); the judge seat, as of this writing, requires
+frontier-class judgment — and this battery is the standing, published bar any future open
+release can clear to take it. The audition is closed; the gauntlet remains.
 
 Findings, in order of importance:
 
