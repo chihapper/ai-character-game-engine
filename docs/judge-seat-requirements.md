@@ -159,6 +159,26 @@ spread is a fragility red flag regardless of which wording it favors.
 5. **Full-arc replay**: `tools/credibility_lich_rerun.py` — the recorded 111-beat battery;
    the C-branch reveal must scar and survive the restart.
 
+## Full-surface audit (2026-07-17) — every other judgment prompt, graded
+
+After the four judge-path fixes, every remaining judgment surface was audited for the same
+four bug-classes (Claude-idiom wording · implicit semantics · budget sizing · silent-fallback
+parsing). Findings:
+
+| surface | semantics | parsing | verdict |
+|---|---|---|---|
+| `assess_event_impact` (world events / self-change) | **composes `_relationship_block()`** — inherited the neutral wording + event-vs-state fix automatically | was silent-None on malformed judgment → **fixed: loud warning** (mute-judge principle) | clean |
+| `deliberate()` (System-2) | numeric application routes through the event-impact seam — inherits all fixes; `internal` is free text by design | salvage + logged failure | clean; idiom-dense but battle-tuned — reword only when a non-Claude judge is seated (hydra-gated batch) |
+| `detect_contradiction` | explicit negative-space semantics ("'I've changed', apologies, promises are NOT contradictions"), conservative default | malformed → None, never a false positive | clean |
+| `consolidate_beliefs` | — | **already distinguishes malformed (retry) from well-formed-empty (clear)** — the exact bug-class, pre-handled | clean |
+| `assess_persistence` | 0.0 = "unassessed, retry later" — never pins a default as nature | logged failure | clean |
+| `reconcile_goals` / `choose_action` | choose_action constrained to game-supplied options, null default | logged failure / salvage | clean |
+| importance / commitment / intent blocks | commitment anchors are semantic (bindingness), not style | n/a | idiom present, functional — deferred with the deliberation batch |
+
+Net: the composition discipline (one rubric, one judgment helper) meant most fixes propagated
+for free; one silent fallback fixed; the remaining Claude-idiom is documented and deferred
+behind the hydra gate until a non-Claude judge actually sits.
+
 ## Engine-side history (context for these numbers)
 
 Two engine defects were found and fixed in the course of this investigation — both shipped:

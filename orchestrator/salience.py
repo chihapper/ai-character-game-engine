@@ -364,7 +364,13 @@ async def assess_event_impact(
               "How does it move how they feel about the player? JSON only.")
     d = await judgment([system], prompt, role="salience", model=model, max_tokens=240,
                        what="World-event impact assessment")
-    return _parse_relationship(d.get("relationship")) if isinstance(d, dict) else None
+    if not isinstance(d, dict):
+        # mute-judge principle: an event that moves nothing because the judgment was
+        # unparseable must be VISIBLE, never mistaken for "the event didn't matter"
+        logger.warning("Event-impact judgment unparseable — event applies NO relationship "
+                       "change (event: %.80s)", event)
+        return None
+    return _parse_relationship(d.get("relationship"))
 
 
 async def assess_persistence(character: Character, *, model: str | None = None) -> float:
