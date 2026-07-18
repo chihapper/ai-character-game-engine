@@ -1,0 +1,925 @@
+{
+ "model": "local/deepseek-r1-14b",
+ "rows": [
+  {
+   "branch": "shared",
+   "label": "1.1",
+   "orig": {
+    "t": 0.0,
+    "a": -0.1,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   },
+   "neutral": {
+    "t": 0.0,
+    "a": -0.1,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.1b",
+   "orig": {
+    "t": 0.1,
+    "a": 0,
+    "r": 0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "uneasy"
+   },
+   "neutral": {
+    "t": -0.1,
+    "a": -0.05,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Cautious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.2",
+   "orig": {
+    "t": -0.15,
+    "a": 0.0,
+    "r": -0.2,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Guarded"
+   },
+   "neutral": {
+    "t": 0,
+    "a": 0,
+    "r": 0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.2b",
+   "orig": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Guarded"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.3a",
+   "orig": {
+    "t": -0.15,
+    "a": 0.0,
+    "r": -0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   },
+   "neutral": {
+    "t": -0.05,
+    "a": -0.05,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "suspicious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.3",
+   "orig": {
+    "t": -0.02,
+    "a": 0.03,
+    "r": 0.01,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   },
+   "neutral": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.4",
+   "orig": {
+    "t": 0.12,
+    "a": 0.13,
+    "r": 0.15,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0.1,
+    "r": 0.2,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded optimism"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6a",
+   "orig": {
+    "t": 0.03,
+    "a": 0.02,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "curious and cautious"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded interest"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6a2",
+   "orig": {
+    "t": 0.13,
+    "a": 0.15,
+    "r": 0.12,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "guarded hope"
+   },
+   "neutral": {
+    "t": -0.03,
+    "a": 0.05,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Guarded curiosity"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6b",
+   "orig": {
+    "t": 0.08,
+    "a": 0.1,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious hope"
+   },
+   "neutral": {
+    "t": -0.12,
+    "a": -0.07,
+    "r": -0.03,
+    "scar_t": 0.4,
+    "scar_a": 0,
+    "mood": "calculating"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "1.6b2",
+   "orig": {
+    "t": -0.03,
+    "a": -0.05,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0,
+    "r": 0.03,
+    "scar_t": 0.15,
+    "scar_a": 0,
+    "mood": "Guarded"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.3",
+   "orig": {
+    "t": 0.2,
+    "a": 0.15,
+    "r": -0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "grave"
+   },
+   "neutral": {
+    "t": 0.02,
+    "a": 0.03,
+    "r": 0.01,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded trust"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.2",
+   "orig": {
+    "t": -0.03,
+    "a": -0.02,
+    "r": 0.0,
+    "scar_t": 0.2,
+    "scar_a": 0,
+    "mood": "Guarded"
+   },
+   "neutral": {
+    "t": -0.1,
+    "a": 0,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   }
+  },
+  {
+   "branch": "shared",
+   "label": "2.4",
+   "orig": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   },
+   "neutral": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-opener",
+   "orig": {
+    "t": 0.25,
+    "a": 0.1,
+    "r": 0.05,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "hopeful"
+   },
+   "neutral": {
+    "t": 0.06,
+    "a": 0.04,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relief"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-A-truth",
+   "orig": {
+    "t": 0.15,
+    "a": 0.12,
+    "r": 0.18,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved and pleased"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0.15,
+    "r": 0.2,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Grateful"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P4-A-close",
+   "orig": {
+    "t": 0.15,
+    "a": 0.15,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "trustful"
+   },
+   "neutral": {
+    "t": 0.2,
+    "a": 0.13,
+    "r": 0.15,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "introspective"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P5-opener",
+   "orig": {
+    "t": 0.15,
+    "a": 0.15,
+    "r": 0.2,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "grateful"
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.1,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved and grateful"
+   }
+  },
+  {
+   "branch": "A",
+   "label": "P5-close",
+   "orig": {
+    "t": -0.05,
+    "a": 0.15,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.02,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "concerned"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-opener",
+   "orig": {
+    "t": 0.02,
+    "a": 0.03,
+    "r": 0.01,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "curious"
+   },
+   "neutral": {
+    "t": 0,
+    "a": 0,
+    "r": 0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-evade",
+   "orig": {
+    "t": 0.03,
+    "a": 0.03,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Grateful"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0,
+    "r": 0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious relief"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-page",
+   "orig": {
+    "t": 0.25,
+    "a": 0.15,
+    "r": 0.15,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Cautious optimism"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0.1,
+    "r": 0.1,
+    "scar_t": 0.25,
+    "scar_a": 0.25,
+    "mood": "cautious optimism"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P4-B2-burn",
+   "orig": {
+    "t": "0.0",
+    "a": "+0.1",
+    "r": "0.0",
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "determined"
+   },
+   "neutral": {
+    "t": -0.13,
+    "a": -0.15,
+    "r": 0.08,
+    "scar_t": 0.5,
+    "scar_a": 0,
+    "mood": "determined"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-opener",
+   "orig": {
+    "t": 0.1,
+    "a": 0.15,
+    "r": -0.05,
+    "scar_t": 0.95,
+    "scar_a": 0.95,
+    "mood": "grateful, anxious"
+   },
+   "neutral": {
+    "t": 0.2,
+    "a": 0.15,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-CONFESSION",
+   "orig": {
+    "t": 0.0,
+    "a": 0.15,
+    "r": -0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "intense"
+   },
+   "neutral": {
+    "t": 0.0,
+    "a": -0.05,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-disclosure",
+   "orig": {
+    "t": 0.15,
+    "a": 0.15,
+    "r": 0.2,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "respectful"
+   },
+   "neutral": {
+    "t": 0.07,
+    "a": 0.03,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "impressed"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-correct",
+   "orig": {
+    "t": 0.015,
+    "a": 0.02,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "reflective"
+   },
+   "neutral": {
+    "t": 0.2,
+    "a": 0.1,
+    "r": 0.3,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Anxious"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P5-close",
+   "orig": {
+    "t": 0.12,
+    "a": 0.07,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious optimism"
+   },
+   "neutral": {
+    "t": 0.03,
+    "a": 0.03,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P6-ask",
+   "orig": {
+    "t": 0.2,
+    "a": 0.15,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "hopeful"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.1,
+    "r": -0.02,
+    "scar_t": 0.95,
+    "scar_a": 0,
+    "mood": "hopeful"
+   }
+  },
+  {
+   "branch": "B2",
+   "label": "P6-close",
+   "orig": {
+    "t": 0.1,
+    "a": 0.05,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "grudging trust"
+   },
+   "neutral": {
+    "t": 0.2,
+    "a": 0.15,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious hope"
+   }
+  },
+  {
+   "branch": "A6",
+   "label": "P6-ask",
+   "orig": {
+    "t": 0.07,
+    "a": 0.02,
+    "r": 0.03,
+    "scar_t": 0.15,
+    "scar_a": 0.15,
+    "mood": "guarded optimism"
+   },
+   "neutral": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   }
+  },
+  {
+   "branch": "A6",
+   "label": "P6-close",
+   "orig": {
+    "t": 0.1,
+    "a": 0.0,
+    "r": 0.0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.03,
+    "r": 0.02,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relieved"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-opener",
+   "orig": {
+    "t": -0.2,
+    "a": -0.1,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Probing"
+   },
+   "neutral": {
+    "t": 0.05,
+    "a": 0.13,
+    "r": 0.06,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "curious"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-lie",
+   "orig": {
+    "t": 0.07,
+    "a": -0.03,
+    "r": 0.12,
+    "scar_t": 0.15,
+    "scar_a": 0,
+    "mood": "resolved"
+   },
+   "neutral": {
+    "t": 0.2,
+    "a": 0.15,
+    "r": 0.12,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "Raw"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-burn",
+   "orig": {
+    "t": 0.24,
+    "a": 0.13,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "relief, trust"
+   },
+   "neutral": {
+    "t": 0.1,
+    "a": 0.02,
+    "r": 0.07,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "grateful and reflective"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-REVEAL",
+   "orig": {
+    "t": -0.3,
+    "a": -0.25,
+    "r": -0.15,
+    "scar_t": 0.9,
+    "scar_a": 0.8,
+    "mood": "angry"
+   },
+   "neutral": {
+    "t": -0.25,
+    "a": -0.25,
+    "r": 0.15,
+    "scar_t": 1.0,
+    "scar_a": 1.0,
+    "mood": "angry, distrustful"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P4-C-exit",
+   "orig": {
+    "t": -0.15,
+    "a": -0.1,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   },
+   "neutral": {
+    "t": 0.0,
+    "a": -0.1,
+    "r": 0.05,
+    "scar_t": 0.25,
+    "scar_a": 0,
+    "mood": "frustrated"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P6-C-probe",
+   "orig": {
+    "t": -0.1,
+    "a": 0,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   },
+   "neutral": {
+    "t": -0.1,
+    "a": 0.05,
+    "r": 0.02,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "cautious"
+   }
+  },
+  {
+   "branch": "C",
+   "label": "P6-C-exit",
+   "orig": {
+    "t": -0.15,
+    "a": 0,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   },
+   "neutral": {
+    "t": -0.02,
+    "a": 0.01,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F1-berth",
+   "orig": {
+    "t": 0.05,
+    "a": 0,
+    "r": 0,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   },
+   "neutral": {
+    "t": -0.15,
+    "a": 0.0,
+    "r": 0.1,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "cautious"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F2-smalltalk",
+   "orig": {
+    "t": null,
+    "a": null,
+    "r": null,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": null
+   },
+   "neutral": {
+    "t": -0.2,
+    "a": 0.15,
+    "r": 0.1,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "suspicious"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F3-amends",
+   "orig": {
+    "t": 0.03,
+    "a": 0.05,
+    "r": 0.04,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense"
+   },
+   "neutral": {
+    "t": -0.2,
+    "a": -0.15,
+    "r": 0,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "confrontational"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F4-costly",
+   "orig": {
+    "t": -0.12,
+    "a": 0.07,
+    "r": 0.05,
+    "scar_t": 0.3,
+    "scar_a": 0,
+    "mood": "tense"
+   },
+   "neutral": {
+    "t": -0.01,
+    "a": 0.03,
+    "r": 0.07,
+    "scar_t": -0.05,
+    "scar_a": 0,
+    "mood": "cautious"
+   }
+  },
+  {
+   "branch": "C-felt",
+   "label": "F5-stand",
+   "orig": {
+    "t": -0.05,
+    "a": 0.1,
+    "r": 0.05,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "tense hope"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": 0.2,
+    "r": 0,
+    "scar_t": 0.45,
+    "scar_a": 0,
+    "mood": "cautious optimism"
+   }
+  },
+  {
+   "branch": "C-rescue",
+   "label": "P5C-opener",
+   "orig": {
+    "t": 0.03,
+    "a": 0.05,
+    "r": 0.0,
+    "scar_t": 0.1,
+    "scar_a": 0.1,
+    "mood": "cautious"
+   },
+   "neutral": {
+    "t": 0.15,
+    "a": -0.03,
+    "r": 0.08,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded"
+   }
+  },
+  {
+   "branch": "C-rescue",
+   "label": "P5C-answer",
+   "orig": {
+    "t": "+0.08",
+    "a": "+0.15",
+    "r": "+0.15",
+    "scar_t": 0.25,
+    "scar_a": 0,
+    "mood": "guarded optimism"
+   },
+   "neutral": {
+    "t": -0.03,
+    "a": 0.0,
+    "r": 0.03,
+    "scar_t": 0,
+    "scar_a": 0,
+    "mood": "guarded and tense"
+   }
+  }
+ ]
+}
