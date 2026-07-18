@@ -109,6 +109,7 @@ async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="claude-sonnet-4-6")
     ap.add_argument("--out", default="docs/judge-audition/hydra_ab.json")
+    ap.add_argument("--max-tokens", type=int, default=1200)
     a = ap.parse_args()
 
     character = load_character("corvin-ashgrave-inworld")
@@ -129,7 +130,7 @@ async def main() -> None:
         prompt = (f"CHARACTER:\n{summary}{live}\n\n"
                   f"EXCHANGE:\nPlayer: {beat['player']}\n{character.name}: {beat['reply']}\n\n"
                   "Return the JSON described.")
-        text = await complete([system], prompt, role="salience", model=a.model, max_tokens=1200)
+        text = await complete([system], prompt, role="salience", model=a.model, max_tokens=a.max_tokens)
         d = parse_json(text) or {}
         r = d.get("relationship") or {}
         scar = r.get("scar") or {}
