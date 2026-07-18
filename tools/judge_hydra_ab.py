@@ -74,11 +74,15 @@ async def build_systems(character) -> tuple[str, str]:
                                    want_commit=True, want_rel=True, want_intent=True,
                                    want_salience=True)
     salience.complete = real
-    original = captured["system"]
-    i, j = original.find(ORIG_START), original.find(ORIG_END)
-    assert i >= 0 and j >= 0, "rubric anchors not found"
-    neutral = original[:i] + NEUTRAL_BLOCK + original[j:]
-    return original, neutral
+    live = captured["system"]
+    i, j = live.find(ORIG_START), live.find(ORIG_END)
+    if i < 0:
+        # Post-adoption: the live rubric IS the neutral wording. Single-wording mode — both
+        # columns run the SHIPPED rubric, which is exactly what per-judge qualification needs.
+        print("(shipped-rubric mode: neutral wording is live; A/B columns are identical)")
+        return live, live
+    neutral = live[:i] + NEUTRAL_BLOCK + live[j:]
+    return live, neutral
 
 
 def beats_with_standing() -> list[dict]:
