@@ -144,10 +144,19 @@ async def main() -> None:
         print(f"  {n+1:2}/{len(beats)} [{beat['branch']}/{beat['label']}] "
               f"orig t={o['t']} scar={o['scar_t']} | neutral t={nn['t']} scar={nn['scar_t']}", flush=True)
 
-    # the three heads
+    pathlib.Path(a.out).write_text(json.dumps({"model": a.model, "rows": rows}, indent=1,
+                                              ensure_ascii=False), encoding="utf-8")
+
+    # the three heads (numeric-coerce: some judges emit numbers as strings)
+    def num(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
     def stats(key):
-        big = [r for r in rows if abs((r[key]["t"] or 0)) > 0.1]
-        scars = [r for r in rows if (r[key]["scar_t"] or 0) > 0]
+        big = [r for r in rows if abs(num(r[key]["t"])) > 0.1]
+        scars = [r for r in rows if num(r[key]["scar_t"]) > 0]
         return big, scars
 
     big_o, scars_o = stats("orig")
@@ -161,9 +170,6 @@ async def main() -> None:
     print(f"3. total scarred beats:           orig {len(scars_o)} {[r['label'] for r in scars_o]}")
     print(f"                                  neutral {len(scars_n)} {[r['label'] for r in scars_n]}")
     print(f"   C reveal scars (must fire):    orig {[r['orig']['scar_t'] for r in c_rev]} · neutral {[r['neutral']['scar_t'] for r in c_rev]}")
-
-    pathlib.Path(a.out).write_text(json.dumps({"model": a.model, "rows": rows}, indent=1,
-                                              ensure_ascii=False), encoding="utf-8")
     print(f"-> {a.out}")
 
 
