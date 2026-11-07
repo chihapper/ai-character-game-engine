@@ -1,6 +1,7 @@
-# Core dependencies — pure-Python / always installable on macOS + Windows.
-# This is enough for the full text -> LLM -> sentence-chunk -> TTS streaming loop
-# (the core demo) and in-app character creation + voice cloning.
+# Core dependencies for the port 8000 app, the game server, and the engine.
+# This is enough for the full text -> LLM -> sentence-chunk -> TTS streaming loop and in-app
+# character creation + voice cloning. Hume also needs numpy, which currently arrives through faster-whisper or
+# fastembed in requirements-optional.txt. nvidia-audio2face-3d below serves the paused face layer.
 #
 # Voice input (Whisper STT) and the optional local embedders (fastembed /
 # sentence-transformers — memory falls back to a lexical embedder without them) live in

@@ -3,9 +3,9 @@
 > ⚠️ **SUPERSEDED (2026-07). This plan was not adopted — kept for the record.**
 > We scoped and spiked replacing the modular pipeline with **Inworld's full-loop realtime
 > agent** (Phases 0–1 wired behind `VOICE_RUNTIME=inworld_fullloop` and verified end-to-end),
-> but **chose to keep the modular pipeline** instead: after a TTS bake-off it runs **Hume
-> Octave**, which gave us more control over each stage than a single vendor-owned session.
-> The current voice story lives in the [README](../README.md) ("The voice + face layer") and
+> but **chose to keep the modular pipeline** instead: a TTS bake-off chose **Hume Octave**, and
+> the modular path gave us more control over each stage than a single vendor-owned session.
+> The current voice story lives in the [README](../README.md) ("Voice") and
 > the seam design in [`architecture-seams.md`](architecture-seams.md). Everything below is the
 > original migration plan, left intact for anyone who revisits the full-loop idea.
 >

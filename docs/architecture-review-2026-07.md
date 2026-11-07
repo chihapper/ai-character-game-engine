@@ -1,10 +1,43 @@
 # Architecture review — 2026-07 (full-codebase)
 
+> **Status (2026-11-07):** Frozen record, not a description of today's code. The review was written
+> and last changed on 2026-07-01 (`717ff80`, `1cedaad`), and its body stays as written apart from two corrected dates. For the
+> current picture, read [`project-status.md`](project-status.md),
+> [`architecture-seams.md`](architecture-seams.md), and
+> [`engine-game-contract.md`](engine-game-contract.md).
+>
+> What has changed since:
+>
+> - **Theme E's "keeper" and "retiring" labels are now inverted.** The project kept the modular
+>   pipeline and did not adopt the full loop. The pipeline branch in `orchestrator/main.py`, with
+>   `orchestrator/legacy_voice.py`, is the live voice runtime. `orchestrator/realtime/full_loop.py`
+>   is a dormant spike selected only by `VOICE_RUNTIME=inworld_fullloop`. Read row 7 and "Verified
+>   GOOD" item 8 with that in mind. Code comments still use the old labels, and `main.py` is now
+>   823 lines.
+> - **Row 6's harness migration never happened.** `tools/_harness.py` landed, but none of the 8
+>   `tools/stress_*` scripts moved to it and `tests/` doesn't use it. Only three credibility tools
+>   and three judge tools do.
+> - **Row 5 left one item undone.** `_character_summary` never moved onto `Character`. It is still
+>   a private function in `orchestrator/salience.py`.
+> - **"No automated tests" (Theme F) is out of date.** On 2026-11-07, 72 tests passed on
+>   `credibility-demo`, 65 on `main`, and 60 on `game-rpg`.
+> - **"Hard-wired to Anthropic" (Theme C) is partly out of date.** On `credibility-demo`, a model
+>   named `local/<name>` sends judgment calls to an OpenAI-compatible local server. Game surfaces
+>   still hard-code the Anthropic adapter for character replies.
+> - **"Verified GOOD" item 7 no longer holds.** Both face adapters read `os.environ` directly. On
+>   `credibility-demo`, so does `llm_openai_compat.py`, and `tts_providers.py` writes to it.
+> - **Theme G:** the `_games` dicts are now bounded: `game/web.py` allows 5 active games, and
+>   `game/arena/web.py` replaces the old game when a new one starts. Still open: the cwd-relative
+>   globs in `game/arena/demo_perception.py`, and `experiment_log` editing a tracked doc.
+> - **The closing deferrals:** per-engine model overrides, the `_safe_name` hash suffix, and the
+>   REST routers are still not done. The cross-process store convention is partly done: the Ferry
+>   web game isolates its namespaces per run, but the arena and mind server still share them.
+
 > Four parallel reviews (engine core · memory subsystem · servers/adapters · cross-cutting), synthesized
 > and de-duplicated. Scope per request: the engine + infrastructure (what's on `main`); game-layer (branch)
 > observations are marked FYI. Findings are grouped by THEME because the reviews converged — several issues
 > were independently found by 2-3 reviewers. Each theme ends with a recommended direction, not a patch.
-> Point-in-time document (working tree as of 2026-07-02).
+> Point-in-time document (working tree as of 2026-07-01).
 
 ---
 
@@ -183,7 +216,7 @@ across ~17 stress scripts — which then doubles as the pytest fixture layer.
 
 ---
 
-## Recommended sequencing — ALL SEVEN LANDED (2026-07-02, commits 70ef84d..b680295)
+## Recommended sequencing — ALL SEVEN LANDED (2026-07-01, commits 70ef84d..b680295)
 
 | # | Work | Themes | Status |
 |---|------|--------|--------|

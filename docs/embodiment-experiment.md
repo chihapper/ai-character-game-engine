@@ -1,10 +1,22 @@
 # Embodiment experiment — lab notebook
 
+> **Status (2026-11-07):** Never evaluated. The log below holds 210 rows, and its last row is from
+> 2026-07-05 15:59:49: 66 `CTRL-TEXT`, 13 `TREAT-EMBODIED`, 131 `TREAT-EMBODIED-3D`, and 0
+> `MID-RICHTEXT`. Every `rr_judge` and `emergence` cell is empty, and one row has a `human_note`. No
+> RR judge (the blind LLM evaluator described under Measures) or emergence-metric tool exists: no code
+> computes those columns. Many rows are development noise such as voice smoke tests and debug sessions,
+> and 54 still say `(in progress)`, so read the table as a raw session log, not as results. The logger
+> is still wired in, so any new session adds a row. The owner has not decided whether this experiment
+> is live, parked, or abandoned.
+
 > **Tracks [issue #30](https://github.com/chihapper/ai-character-game-engine/issues/30)** (Embodiment
 > frontier / Bet 1). The **protocol** below is static. The **RUNS** section at the bottom is
-> **auto-appended by the game runtime** when a playthrough starts (one row per run), and the metric
-> columns are filled in **post-hoc** after evaluation. This file is the durable record of the
-> experiment — do not delete rows.
+> **auto-appended** when a session starts (one row per run): `game/runtime.py` logs `CTRL-TEXT`,
+> `game/arena/game.py` logs `TREAT-EMBODIED`, and `game/bridge/mind_api.py` logs `TREAT-EMBODIED-3D`.
+> The metric columns were meant to be filled in **post-hoc** after evaluation. `game/experiment_log.py`
+> rewrites the table between its two `RUNS_TABLE` marker comments, and every game start fails if
+> either marker is missing, so keep them. This file is the durable record of the experiment — do not
+> delete rows.
 
 ---
 
@@ -32,11 +44,25 @@ purely by a **described-text** situation.
 | `CTRL-TEXT` | text (the first game, #26) | described `Situation` | `world_action` narrated | social / narrative |
 | `MID-RICHTEXT` | rich text | **same content** the embodied NPC would perceive, delivered as text | narrated | social / narrative |
 | `TREAT-EMBODIED` | embodied | enacted first-person perception | enacted, consequences re-perceived | situated / bodily |
+| `TREAT-EMBODIED-3D` | embodied in 3D (Unity, Unreal) | percept composed by the client from its own world, sent to the mind server | enacted by the client, reported back through `/acted` | social / narrative in practice |
 
 **Isolated variable:** the enacted closed perception→action→consequence loop + situated stakes —
 **NOT** information volume. The `MID-RICHTEXT` arm exists to separate "richer perception" from "the
 enacted consequence/stakes loop": if it captures most of the gain, the win was information; if
 `TREAT-EMBODIED` pulls clearly ahead of it, that gap is the embodiment signal.
+
+**As built (2026-11-07):** the arms don't yet isolate that variable.
+
+- `condition` is only a log label. No code changes behavior based on it.
+- `CTRL-TEXT` already gets rich text. The Game Master writes a shared per-beat perception
+  (`dm.scene_perception`) from a template meant to match what an embodied build would perceive, so
+  this arm is close to what `MID-RICHTEXT` describes.
+- `MID-RICHTEXT` was never implemented and has 0 rows.
+- `TREAT-EMBODIED` is the grid arena at `/embodied`. Its stakes are the same as the control's in
+  practice: situated stakes were never built, and bodily needs were deferred. Enacted consequences are
+  mostly changes of position and stance.
+- `TREAT-EMBODIED-3D` was added after this protocol, with the Unity client, and logged runs from
+  2026-07-02 to 2026-07-05. Neither the mind server nor the clients have stakes code.
 
 ## Measures (ALL post-hoc on recorded transcripts — near-zero live cost)
 
@@ -47,10 +73,19 @@ enacted consequence/stakes loop": if it captures most of the gain, the win was i
 3. **Blind human preference** — logged by the human ("which felt more alive/agentive"), condition hidden.
 4. **Coherence guard** — added emergence must not cost legibility (the thesis's bar).
 
+**As built (2026-11-07):** measures 1 and 2 are designed, not implemented. The `tools/judge_*` scripts
+are not this experiment's: three belong to the judge-seat audition, and `judge_grounding.py` re-judges stress-test arcs. No blind human preference was logged; the
+one `human_note` is a field note. Post-hoc measures can't reach `TREAT-EMBODIED-3D` as built, because
+the mind server records no transcript, so all 131 rows show `—`. The other two arms write JSONL
+transcripts to `.game_runs/`, which is gitignored, so those files exist only on the owner's PC.
+
 ## Controls & honest caveats
 
 - **Matching rule:** a single source of truth = the scene state, rendered to text (control) or to
-  enaction (treatment) — same information across conditions.
+  enaction (treatment) — same information across conditions. *This is a requirement the build doesn't
+  meet. The control's scene comes from Game Master prose over authored beats, the arena's comes from its
+  world model with no beats or events, and the 3D scene comes from the client. The other asymmetries are
+  listed in [the architecture doc](embodied-demo-architecture.md#10-mapping-to-the-30-experiment).*
 - **Perfect text/embodied parity is impossible** (text omits pre-reflective/peripheral cues); the
   residual is itself part of the signal, not a flaw.
 - **A positive result is evidence, not proof** (see "What this is NOT").
@@ -62,12 +97,12 @@ A running list of concrete places where the *text medium* forces a workaround th
 would resolve natively — each one a small qualitative data point for the frontier.
 
 - **Addressing / reference resolution.** In text, "who is this remark aimed at?" must be *inferred* by
-  the DM from prose (`game/dm.py::pick_responders`). Under embodiment it's given by the body — gaze,
+  the Game Master from prose (`game/dm.py::pick_responders`). Under embodiment it's given by the body — gaze,
   orientation, proximity, who you turned toward. Addressing is a chore in text and free when embodied.
-- **Spatial position / grounding (a big one).** The stateless text DM kept *re-inventing* where the
-  player was (at the bar → "survey the room" → suddenly at the door), because prose has no persistent
+- **Spatial position / grounding (a big one).** The stateless text Game Master kept *re-inventing* where
+  the player was (at the bar → "survey the room" → suddenly at the door), because prose has no persistent
   place. The fix is to have the game hold authoritative state (`Game.player_location`) and feed it to
-  the DM every call, which may only move the player on explicit movement (`game/runtime.py`,
+  the Game Master every call, which may only move the player on explicit movement (`game/runtime.py`,
   `game/dm.py`). Under embodiment this is **free**: a body simply *is* somewhere; position, facing,
   proximity, and "you didn't move" are carried by the world, not tracked in a variable and re-narrated
   each turn. Spatial coherence is the clearest case so far of what the text medium fights and an
@@ -97,12 +132,18 @@ would resolve natively — each one a small qualitative data point for the front
 `scenario` · `condition` (id above) · `character set` · `models` (reply / deliberation / bookkeeping /
 judge) · `engine flags` · `seed/notes` · `transcript path`.
 
+**As logged:** a row records `run_id`, `started`, `condition`, `scenario`, `characters`, `models` (the
+reply model, the Game Master model on the text arm as `dm=`, and the bookkeeping model as `book=`),
+`transcript`, `outcome`, `rr_judge`, `emergence`, and `human_note`. It records no deliberation or
+judge model, engine flags, or seed.
+
 ---
 
 ## RUNS
 
-> Auto-appended by the game runtime on playthrough start (run-start row). Metric columns
-> (`rr_judge`, `emergence`, `human_note`) are filled in post-hoc after evaluation. Newest at the bottom.
+> Auto-appended when a session starts (run-start row), by the three drivers named at the top of this
+> file. Metric columns (`rr_judge`, `emergence`, `human_note`) were meant to be filled in post-hoc after
+> evaluation, which never happened. Newest at the bottom.
 
 <!-- RUNS_TABLE_START -->
 | run_id | started | condition | scenario | characters | models | transcript | outcome | rr_judge | emergence | human_note |

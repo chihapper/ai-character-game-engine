@@ -1,4 +1,4 @@
-# Launch the Real-Time AI Character Engine on Windows (PowerShell).
+# Launch the AI Character Game Engine (the port 8000 app) on Windows (PowerShell).
 # Usage:  ./run.ps1
 $ErrorActionPreference = "Stop"
 Set-Location -Path $PSScriptRoot
@@ -19,7 +19,7 @@ $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
 & $py -m pip install --upgrade pip
 & $py -m pip install -r requirements.txt
 
-# Optional extras (voice input + long-term memory). Best-effort: if they fail to
+# Optional extras (voice input + semantic recall). Best-effort: if they fail to
 # build (e.g. missing C++ build tools), the app still runs text + TTS.
 Write-Host "Installing optional extras (voice input + memory)..." -ForegroundColor Cyan
 & $py -m pip install -r requirements-optional.txt

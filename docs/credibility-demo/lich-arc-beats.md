@@ -1,5 +1,22 @@
 # Lich Arc — Beat Sheet (DRAFT for owner review — no billed runs until approved)
 
+> **Status (2026-11-07):** Approved and executed. The owner approved this sheet on 2026-07-09, and
+> the runs were recorded 2026-07-11 to 07-13. It's kept as written, as the pre-run plan. The recorded
+> runs differ from it in these ways:
+>
+> - **Three futures, not two.** Branch C forks from the same snapshot. It's in the
+>   [spec](lich-arc-spec.md), not here, so "both branches" below now means A and B.
+> - **The player was named.** The player gave the name Merrick Vale at beat 2.3. "Mordane" was never
+>   used.
+> - **More ran after Part 4.** Part 5 ran on A and B, B added a confession, Part 6 ran on A, B, and C,
+>   and C added five felt probes and a rescue test.
+> - **B never scarred.** It ended at trust 0.97, so the "partial scar lift" cues below never applied
+>   to B. The bounded-heal test happened in the C rescue: trust scar 0.65 to 0.36, trust 0.35 to 0.605.
+> - **The restart was not a process kill.** The recorded beat drops caches and rebuilds the mind from
+>   disk inside the same running server.
+>
+> Results are in [`credibility-demo.md`](../credibility-demo.md).
+
 Companion to [lich-arc-spec.md](lich-arc-spec.md). Player voice basis:
 [bookmarks/waterdeep-passage/transcript.md](bookmarks/waterdeep-passage/transcript.md) — the
 owner's own session, which **already reached Part 2 organically** (Corvin offered the crate

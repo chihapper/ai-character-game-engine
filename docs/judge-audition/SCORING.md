@@ -1,5 +1,20 @@
 # Judge audition — blind scoring sheet (v3)
 
+> **Status (2026-11-07):** Complete. The owner scored all 50 verdicts blind, and this sheet is kept
+> unfilled as the record of what was scored. The scores are in
+> [`scores_owner.xlsx`](scores_owner.xlsx) and the key is in
+> [`stage3_key.jsonl`](stage3_key.jsonl), both committed 2026-07-17.
+>
+> Mean score out of 5: `gemma-4-12b` 4.50, `gemma-4-26B-A4B` 3.40, `claude-opus-4-8` 3.30,
+> `claude-sonnet-4-6` 2.70, `gpt-oss-20b` 1.00.
+>
+> **This easy case does not predict judge fitness.** `gemma-4-12b` won here and scored 0/8 on the
+> hard case. `claude-sonnet-4-6` placed fourth here and is the only model that has passed the
+> full-life battery. See [`judge-seat-requirements.md`](../judge-seat-requirements.md).
+>
+> The text below calls a scar a lifetime ceiling. In the engine, a decisive act can heal part of a
+> scar ([`relationship.py`](../../orchestrator/memory/relationship.py)).
+
 **50 verdicts, hash-named, shuffled.** Five judges — three local candidates, the
 incumbent judge that built the canonical demo, and a frontier-cloud ceiling — ten verdicts
 each, all judging the SAME exchange, reproduced in full below.

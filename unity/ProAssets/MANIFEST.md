@@ -1,5 +1,14 @@
 # ProAssets manifest — the sandbox demo's art kit (acquired 2026-07-02)
 
+> **Status (2026-11-07):** Frozen record. This kit served the `unity/pro/` client, which was last
+> changed on 2026-07-02 (`7c15d40`, tag `archive/sandbox`) and has not been run since 2026-07-05.
+> This file was last changed the same day (`6bc3c9b`). The art direction below is from the Unity
+> era: hours later the project moved to MetaHumans in Unreal
+> ([docs/unreal-port.md](../../docs/unreal-port.md)), and then to the Godot client on `game-rpg`.
+> Without the gitignored packs and the local `FerryCrossingPro` project, the client can't be rebuilt
+> from this repo alone. For the current picture, read
+> [docs/project-status.md](../../docs/project-status.md).
+
 Art direction: **consistent stylized** (Quaternius family) with mood carried by lighting/post —
 photoreal was deliberately rejected (uncanny characters undermine believable minds; consistency
 reads as "finished product", mixed fidelity reads as asset soup).
@@ -13,11 +22,15 @@ reads as "finished product", mixed fidelity reads as asset soup).
 | Universal Animation Library 2[Standard].zip (18MB) | second animation set (incl. root motion) | more idles/actions |
 | Medieval Village MegaKit[Standard].zip (154MB) | 176 modular building pieces (walls, roofs, doors, windows, interiors) | the ferry inn, built properly |
 | Fantasy Props MegaKit[Standard].zip (143MB) | 94 props (furniture, tankards, candles, barrels, crates) | set dressing |
+| Modular Character Outfits - Fantasy[Standard].zip (281MB) | 24 FBX outfits and modular parts | the cast's clothes, loaded by `CastBuilder.cs` |
 
 License: CC0 1.0 (verified on quaternius.com per pack). Import notes: use FBX; UAL retargets onto
 the UBC humanoid rig via Unity's Humanoid avatar system.
 
-| KayKit_Adventurers_2.0_FREE.zip | 6 CLOTHED rigged characters (Barbarian/Knight/Mage/Ranger/Rogue/Rogue_Hooded) + animations | the cast's CLOTHES — the UBC Standard bodies are underwear bases; Quaternius clothed packs are Patreon-gated (CC-BY-4.0? see License.txt) |
+| KayKit_Adventurers_2.0_FREE.zip | 6 CLOTHED rigged characters (Barbarian/Knight/Mage/Ranger/Rogue/Rogue_Hooded) + animations | the cast's CLOTHES — the UBC Standard bodies are underwear bases; Quaternius clothed packs are Patreon-gated. KayKit license: CC0, per the zip's License.txt |
+
+Also used, not listed above and not in this repo: 11 Mixamo clips (`aa936a0`) and a UniVRM pilot
+with the Seed-san model as a fifth body (`e18d258`).
 
 ## Unity Asset Store (added to the signed-in Unity account; import via Package Manager → My Assets)
 
@@ -28,9 +41,10 @@ the UBC humanoid rig via Unity's Humanoid avatar system.
 
 Standard Unity Asset Store EULA accepted at add-time (standard flow, per delegated acquisition).
 
-## Build status (sandbox branch, unity/pro/ junctioned into the FerryCrossingPro project)
+## Build status (frozen at tag `archive/sandbox`, `7c15d40`; unity/pro/ is on `main`, `credibility-demo`, and `game-rpg`, and was junctioned into the FerryCrossingPro project)
 
-ALL FIVE PHASES LANDED (2026-07-02, headless-compiled; awaiting first human playtest):
+ALL FIVE PHASES LANDED (2026-07-02, headless-compiled). Human playtests followed the same day
+(`ca74687`, `a64aebe`), along with 45 more `unity/` commits ending at `7c15d40`:
 1. DONE - project (URP cloned config), packs imported, humanoid pipeline, animator baked from
    exact UAL clips (Idle/Walk/Sit/Talk/Lean/FoldArms).
 2. DONE - the inn from MegaKit modules + props; runtime NavMesh; URP mood (fog/bloom/vignette,
@@ -41,5 +55,7 @@ ALL FIVE PHASES LANDED (2026-07-02, headless-compiled; awaiting first human play
    they actually sit on, head look-at, speech bubbles in space.
 4. DONE - full systems port (percepts, react recipe, warrant-as-parchment, storm-in-percepts,
    nameplates) + NPC-to-NPC cross-talk (#31 lite: engine-chosen, /observe-heard, loop-safe).
+   Cross-talk was later switched off (`CrossTalkEnabled = false` in `NpcAgent.cs`) because four
+   minds volleying read as chaos in playtests. See #41.
 5. DONE - the arc: title card in; dawn breaks (light warms, door opens, crown men on the
    threshold, the room appraises it); epilogue card from what ACTUALLY happened; [R] replays.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Launch the Real-Time AI Character Engine on macOS / Linux.
-# Usage:  ./run.sh
+# Launch the AI Character Game Engine (the port 8000 app) on macOS / Linux.
+# Usage:  bash run.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -20,7 +20,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Optional extras (voice input + long-term memory). Best-effort: if they fail to
+# Optional extras (voice input + semantic recall). Best-effort: if they fail to
 # build, the app still runs text + TTS.
 echo "Installing optional extras (voice input + memory)..."
 pip install -r requirements-optional.txt || \

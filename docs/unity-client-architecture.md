@@ -1,6 +1,15 @@
 # Unity gray-box client — architecture (#35 / #38)
 
-> Status: **v0 skeleton landed** (this commit). Companions: [engine-game-contract.md](engine-game-contract.md)
+> **Status (2026-11-07):** Frozen history, not active work. The Unity client was last changed on
+> 2026-07-02 (`7c15d40`, tag `archive/sandbox`), the day the project moved its demo client to Unreal
+> ([unreal-port.md](unreal-port.md)). The Godot client on `game-rpg` came after that. Unity has not
+> been run since 2026-07-05. A static read on 2026-11-07 shows its API calls still match the mind
+> server, but no test covers that. It can't be rebuilt from this repo alone, because the repo holds
+> scripts, not a Unity project. For the current picture, read
+> [project-status.md](project-status.md), which also triages issues #35 to #39. All five are still
+> open on GitHub.
+
+> Original status (2026-07-02): **v0 skeleton landed** (`2451cc7`). Companions: [engine-game-contract.md](engine-game-contract.md)
 > (the seam law), [embodied-demo-architecture.md](embodied-demo-architecture.md) (Phase A / grid),
 > [embodiment-experiment.md](embodiment-experiment.md) (#30 protocol). Issues: #35 (track), #36
 > (cadence), #37 (API hardening), #38 (perception adapter), #39 (protocol update).
@@ -45,6 +54,19 @@ All DTOs are flat/array-shaped so Unity's built-in `JsonUtility` handles them (n
 Known v0 limits (tracked in #36/#37): blocking POSTs (no streaming), no idempotency keys, one
 session per process, cadence is client-side timers rather than a designed real-time model.
 
+**Changed since v0.** [`game/bridge/mind_api.py`](../game/bridge/mind_api.py) is the source of
+truth. Checked against it on 2026-11-07:
+
+- `/session` also returns `title` and `voice`.
+- `situation` also takes `ambient`, and `/respond` also returns `face_marks`.
+- `/choose` also returns `expression` and `face`.
+- `/observe` results also carry `flinch`.
+- `/finish` takes `{outcome}` and returns `{ok, run_id}`.
+- New `POST` routes: `/{sid}/{slug}/acted`, `/{sid}/{slug}/speak`, `/{sid}/{slug}/speak_anim`,
+  `/{sid}/{slug}/speak_multi`, and `/{sid}/stt`. There is also `GET /bakeoff`.
+- **Side effect:** creating a session deletes the cast's `.memory/` files, including
+  `corvin-ashgrave-inworld`, the credibility demo's default mind.
+
 ## Unity side (`unity/Assets/Scripts/` — copy into any empty Unity 6 3D project)
 
 Everything is **runtime-generated** — no scene authoring, no prefabs, no packages. An empty scene
@@ -58,7 +80,12 @@ plus these scripts is the whole game: `Bootstrap` self-spawns via `RuntimeInitia
 | `NpcAgent.cs` | per-NPC life: idle cadence → percept → choose → enact (walk to anchor / watch / stay); reaction beats when `observe` says so |
 | `PlayerController.cs` | WASD + mouse look, E to talk to who you're facing |
 | `DialogueUI.cs` | minimal IMGUI dialogue box (no UI packages) |
-| `WorldClock.cs` | real seconds → game hours (the game owns the clock, engine only differences it) |
+| `WorldClock` (a static class in `Bootstrap.cs`) | real seconds → game hours (the game owns the clock, engine only differences it) |
+
+Added after v0: `CharacterRig.cs` (the procedural figures that replaced plain capsules),
+`Flicker.cs`, `Nameplate.cs`, `StormAudio.cs`, and `StoryDirector.cs`. The fuller client in
+`unity/pro/` (22 scripts, 8 editor tools) has no design doc of its own;
+[unity/README.md](../unity/README.md) says what it is.
 
 ## What this buys the experiment (#30 / #39)
 
@@ -69,6 +96,11 @@ problem), **real time** (hesitation and interruption are measurable). TREAT-EMBO
 same cast + scenario as CTRL-TEXT; run logging stays in the mind server.
 
 ## Milestones
+
+This was the plan on 2026-07-02. v0 landed in `2451cc7`. v1 and v2 were not carried out: the cadence
+design (#36) never landed, and although 131 `TREAT-EMBODIED-3D` runs were logged through 2026-07-05,
+none was blind-judged. The `rr_judge` column is blank on all of them in
+[embodiment-experiment.md](embodiment-experiment.md).
 
 1. **v0 (this commit)**: bridge + skeleton; player walks the inn, talks to Della, NPCs idle via
    `choose`, observed acts trigger the react recipe through real LoS.

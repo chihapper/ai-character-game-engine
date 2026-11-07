@@ -4,8 +4,12 @@ When a character responds, the engine chooses *which past memories to put in fro
 the LLM*. It does **not** simply grab the most similar ones — it balances four competing
 pressures (an "opponent-processing" model inspired by relevance realization; see
 [`architecture-seams.md`](architecture-seams.md) §4). With `MEMORY_DEBUG=true` in `.env`,
-the 🧠 panel shows this happening live each turn. Implementation:
-[`memory/relevance.py`](../orchestrator/memory/relevance.py).
+the 🧠 panel in the port 8000 Conversation app shows this happening live each turn.
+Implementation: [`memory/relevance.py`](../orchestrator/memory/relevance.py).
+
+Recall itself runs on every surface. The sections below on commitments and relationship state
+describe the `Engine`, which the Conversation app doesn't use; see
+[`engine-overview.md`](engine-overview.md).
 
 ## The numbers on each row
 
@@ -13,21 +17,21 @@ For every stored memory, scored against the current turn's query:
 
 | Field | Range | Meaning | RR pole |
 | --- | --- | --- | --- |
-| **sim** | 0–100 | **Semantic similarity** — how close in *meaning* to the query (cosine of embeddings, normalized; ~50 = unrelated, 100 ≈ identical meaning). | focusing / exploit |
+| **sim** | 0–100 | **Semantic similarity** — how close in *meaning* to the query. The cosine of the embeddings is normalized, then re-spread across this turn's candidates (see below), so ~50 means "average for this turn", not "unrelated". The expanded row also shows the raw value. | focusing / exploit |
 | **str** | 0–100 | **Temporal strength** — the recency/"freshness" pole. With a game clock it **decays over in-game time** (half-life stretched by importance + reinforcement — see below); without one, falls back to decay-by-memory-count (half-life ≈ 20). | temporal salience |
-| **imp** | 0–100 | **Importance** — the salience stored *with* the memory. Conversation exchanges = **50**; world events from `remember()` default **70** (or whatever you pass). | goal / arena bearing |
-| **↺N** | — | **Reinforcement** — times this memory has been *rehearsed* (re-encountered, or recalled when recall-reinforcement is on). Each one stretches the decay half-life. Shown only when N>0; the expanded row also lists its game clock `t`. | temporal salience |
-| **base** | ~0–1.85 | The **weighted blend** of sim/str/imp (see formula). The headline score. | — |
+| **imp** | 0–100 | **Importance** — the salience stored *with* the memory. By default **the character appraises it**: an LLM rates how memorable each exchange is to them, and does the same for an `Engine.remember()` event unless you pin a number. **50** is the fallback when scoring fails or is off on `Pipeline`; with scoring off, an unpinned `Engine.remember()` stores **70**. A pinned number is used as given, and the WebSocket `remember` on port 8000 pins **70** unless you send one. Beliefs and self-change store at 85, decisions and contradictions at 80. | goal / arena bearing |
+| **↺N** | — | **Reinforcement** — times this memory has been *rehearsed* (re-encountered, or recalled when recall-reinforcement is on). Each one stretches the decay half-life, with diminishing returns. Shown only when N>0; the expanded row also lists its game clock `t`. | temporal salience |
+| **base** | ~0–2.05 | The **weighted blend** of sim/str/imp (see formula). The headline score. | — |
 
 The blend (weights are tunable in `.env`):
 
 ```
 base = w_sim·sim  +  w_rec·str  +  w_imp·imp        (sim/str/imp as 0–1 here)
-     =  1.0·sim   +  0.35·str   +  0.5·imp           (defaults)  → max ≈ 1.85
+     =  1.0·sim   +  0.35·str   +  0.7·imp           (defaults)  → max = 2.05
 ```
 
 This is why a `remember()`'d world event (imp 90) can sit **above** a more semantically
-similar piece of chat (higher sim, imp 50): importance + recency outweigh raw similarity.
+similar piece of chat (higher sim, lower imp): importance + recency outweigh raw similarity.
 That's the point — relevance isn't just "what matches."
 
 **Similarity spreading (anisotropy correction).** Real embedders bunch cosine scores into
@@ -50,7 +54,8 @@ interprets the unit, only takes a difference), passed as `Situation.clock` (or `
 
 ```
 strength  = 0.5 ^ (Δt / half_life)
-half_life = base_half_life · scale^importance · (1 + reinforce_gain · reinforcement)
+half_life = base_half_life · scale^importance · (1 + cap·boost / (cap + boost))
+boost     = reinforce_gain · reinforcement
 ```
 
 Two things stretch the half-life so a memory resists forgetting:
@@ -59,22 +64,26 @@ Two things stretch the half-life so a memory resists forgetting:
   half-life; a life-saving moment (importance ≈ .95) lasts dozens of times longer — vivid
   even after in-game years. This is *on top of* importance's undecayed contribution to
   `base`, so a significant memory stays relevant two ways.
-- **Reinforcement** (`1 + gain·N`): a fact that's **re-encountered** — or **recalled**, when
-  `REINFORCE_ON_RECALL` is on — bumps its count and resets its "last seen", so rehearsal
-  keeps it alive. A one-off fades; something the player keeps bringing up persists.
+- **Reinforcement** (about `1 + gain·N` for small N, then saturating): a fact that's
+  **re-encountered** — or **recalled**, when `REINFORCE_ON_RECALL` is on — bumps its count and
+  resets its "last seen", so rehearsal keeps it alive. A one-off fades; something the player
+  keeps bringing up persists. At defaults, one reinforcement stretches the half-life 1.92×,
+  twelve stretch it 7×, and the ceiling is 13×, so endless recall can't make a memory permanent.
 
-`tools/decay_demo.py` plots the curves; `tools/recall_reinforce_sim.py` simulates a long
-game to vet recall-as-reinforcement (it's *selective* — keeps revisited memories vivid
+`tools/decay_demo.py` prints the curves as a table; `tools/recall_reinforce_sim.py` simulates
+a long game to vet recall-as-reinforcement (it's *selective* — keeps revisited memories vivid
 without inflating never-revisited ones).
 
 ## Commitments — always-injected obligations — [issue #4](https://github.com/chihapper/ai-character-game-engine/issues/4)
 
 A **commitment** — a promise, deal, or constraint ("meet at dawn", "never tell anyone the
 player's name") — is a *standing concern*, not a scored recollection. While **open** it's
-injected **every turn** (a `# Your open commitments` section), so it never falls out of
+injected **every turn** (a `# Open commitments you've made` section), so it never falls out of
 context or competes in the relevance top-k, and it does **not** decay. The game owns it via
-the `commit` / `resolve_commitment` WS seam (siblings of `remember`); the 🧠 panel shows the
-open set in an amber banner above the scored tabs.
+the `Engine.commit()` / `resolve_commitment()` methods (siblings of `remember`). The 🧠 panel's
+amber banner of open commitments appears only on the unadopted full loop
+(`VOICE_RUNTIME=inworld_fullloop`), which is also the only place `commit` and
+`resolve_commitment` exist as WebSocket messages.
 
 When a commitment **closes** — the game marks it fulfilled/broken, or it **expires** past its
 due clock — it converts into an ordinary (decaying) memory of the outcome, inheriting the
@@ -86,38 +95,50 @@ across timetables.
 
 Commitments are created two ways: the game declares them (`commit`), or — with
 `COMMITMENT_DETECTION` on — the engine **detects** one the character makes in dialogue ("I'll
-meet you at dawn"), folded into the per-turn background salience call so it costs no extra
+meet you at dawn"), folded into the per-turn judgment call so it costs no extra
 round-trip. Detection is conservative (hedges/pleasantries/player-side promises don't count)
-and opt-in, since it's fuzzier than the game API.
+and opt-in, since it's fuzzier than the game API. It's off on this branch's game surfaces unless set in
+`.env`; on `game-rpg`, the Godot RPG forces it on.
 
 ## Relationship state — feelings that evolve and condition recall — [issue #6](https://github.com/chihapper/ai-character-game-engine/issues/6)
 
 A character's stance toward the player starts from their static `disposition` and then SHIFTS
 with the interaction: **affection / trust / respect** as movement from a 0.5 baseline, plus an
-acute **mood**. Updated in the background — **folded into the same salience call** (one
-round-trip; `RELATIONSHIP_STATE` opt-in) — and CHARACTER-AWARE: most exchanges move nothing;
-pleasantries roll off a guarded character (water off a duck's back), while genuine, proven, or
-costly acts move them slowly; a warm character moves more readily.
+acute **mood**. Updated by the **same folded per-turn judgment call** (one round-trip) and
+CHARACTER-AWARE: most exchanges move nothing; pleasantries roll off a guarded character (water
+off a duck's back), while genuine, proven, or costly acts move them slowly; a warm character
+moves more readily. `RELATIONSHIP_STATE` defaults off, but every game surface and the Director's
+Sandbox force it on in code. It has no effect on the port 8000 Conversation app.
 
-It's **RR-core, not a tone sticker**: the current stance folds into the **arena query**, so
-*recall itself* is relationship-conditioned — a wary character surfaces deception/threat
-memories, a fond one surfaces warmth (relevance relative to the agent's caring). The 🧠 panel
-shows the axes (▲/▼ = moved from baseline) and mood, and the behavioral payoff is real — at
-low trust a character deflects and guards; at high trust they engage and help, in character.
+It's **RR-core, not a tone sticker**: on `Engine` paths the current stance folds into the
+**arena query**, so *recall itself* is relationship-conditioned — a wary character surfaces
+deception/threat memories, a fond one surfaces warmth (relevance relative to the agent's
+caring). The behavioral payoff is real — at low trust a character deflects and guards; at high
+trust they engage and help, in character. The 🧠 panel's axes (▲/▼ = moved from baseline) and
+mood appear only on the unadopted full loop. To inspect relationship state, use the Director's
+Sandbox at `/sandbox`.
 
-Coming ([#12](https://github.com/chihapper/ai-character-game-engine/issues/12)): disposition
-should also shift from **world events** the game pushes (even indirect ones — the player's
-faction burns the NPC's warehouse), and a conversation's starting baseline should be seeded
-from the profile + accumulated events rather than neutral.
+Disposition also shifts outside conversation
+([#12](https://github.com/chihapper/ai-character-game-engine/issues/12)).
+`Engine.remember(fact, player_role="caused" | "benefited")` has the AI judge a **world event's**
+impact on the character's feelings, even an indirect one (the player's faction burns the NPC's
+warehouse), and `actor="self"` covers the character's own change of heart. Feelings also **drift
+toward baseline over in-game time**: `RelationshipState.age()` runs lazily on next contact, at an
+AI-assessed per-character rate that deep bonds resist, and a scar holds the line. The state
+persists on disk, so each conversation starts where the last one left off.
 
 ## How rows get the ★ (selection)
 
-1. **Floor:** memories below `RR_RELEVANCE_FLOOR` are dropped — weak matches are *not*
+1. **Floor:** a memory is eligible only if `base` reaches `RR_RELEVANCE_FLOOR` times the
+   maximum possible base, which is 0.15 × 2.05 = 0.3075 at defaults. Weak matches are *not*
    forced in (if nothing clears the floor, the single best is kept so a turn is never empty).
-2. **Budget:** at most `LONG_TERM_TOP_K` memories are injected (default **4**).
+2. **Budget:** at most `LONG_TERM_TOP_K` memories are injected (default **6**, raised from 4
+   after the stress test showed a defining memory getting edged out at long range).
 3. **Diversity (the reason ★ order ≠ base order):** selection is greedy, and each pick
    maximizes `base − (diversity penalty)`, where the penalty grows with how similar the
-   candidate is to memories *already picked* (weight `RR_WEIGHT_DIVERSITY`). So a high-base
+   candidate is to memories *already picked* (weight `RR_WEIGHT_DIVERSITY`). The penalty only
+   drops anything once the budget runs out: with fewer eligible memories than the budget, every
+   one is injected and diversity just reorders them. When the budget does bind, a high-base
    **near-duplicate can be passed over** for something that adds new information.
 
 **Reading it:** rows are listed **sorted by `base`**, but **★N is the order it was
@@ -128,10 +149,19 @@ above `★2`. `★N` = injected into the prompt; `·` = scored but not sent; `�
 
 ## Persistence (important)
 
-- **Long-term memory lives on disk** at `.memory/<character-slug>.jsonl` and **persists
-  across server restarts** — this *is* the cross-session memory feature.
+- **Long-term memory lives on disk** at `.memory/<namespace>.jsonl`, named after the
+  character's `memory_namespace`, and **persists across server restarts** — this *is* the
+  cross-session memory feature. Four sibling files sit beside it: `.commitments.jsonl`,
+  `.relationship.json`, `.intent.json`, and `.agency.json`.
 - The **short-term buffer** (recent verbatim turns) resets each session.
-- **To wipe a character's long-term memory:** delete its `.memory/<slug>.jsonl` file.
+- **Write-time dedup:** a new memory that's an exact match, or at or above
+  `MEMORY_DEDUP_THRESHOLD` in raw cosine, isn't stored. It reinforces the existing memory instead.
+- **To wipe a character's mind:** delete `.memory/<namespace>.*`, not just the `.jsonl`, which
+  would leave its relationship, intent, goals, and commitments behind. A running server holds this
+  state in memory and would write it back, so restart the server afterwards. From code,
+  `tools._harness.wipe(slug)` deletes the files and calls `LongTermMemory.invalidate(namespace)`
+  to drop the long-term cache; build a fresh `Engine` after it, because a live one keeps its other
+  stores. The Director's Sandbox reset does all of this for one character.
 
 ## Tuning
 
@@ -141,7 +171,7 @@ Set in `.env` and restart:
 | --- | --- | --- |
 | `RR_WEIGHT_SIMILARITY` | 1.0 | weight of meaning-match |
 | `RR_WEIGHT_RECENCY` | 0.35 | weight of freshness |
-| `RR_WEIGHT_IMPORTANCE` | 0.5 | weight of stored salience |
+| `RR_WEIGHT_IMPORTANCE` | 0.7 | weight of stored salience |
 | `RR_WEIGHT_DIVERSITY` | 0.4 | strength of the near-duplicate penalty |
 | `RR_RECENCY_HALF_LIFE` | 20 | memories-newer before recency halves |
 | `RR_RELEVANCE_FLOOR` | 0.15 | min normalized base to be eligible |
@@ -149,60 +179,96 @@ Set in `.env` and restart:
 | `RR_SPREAD_GAIN` | 1.5 | zscore steepness — higher = wider spread |
 | `RR_DECAY_HALF_LIFE` | 30 | base half-life (importance 0) in the **game's** time units |
 | `RR_DECAY_IMPORTANCE_SCALE` | 50 | half-life ×= `scale^importance` (super-linear; significant memories near-permanent) |
-| `RR_DECAY_REINFORCE_GAIN` | 1.0 | each reinforcement ×= `(1+gain·N)` the half-life |
+| `RR_DECAY_REINFORCE_GAIN` | 1.0 | initial slope of reinforcement: small N stretches the half-life by about `1 + gain·N` |
+| `RR_DECAY_REINFORCE_CAP` | 12 | reinforcement saturates at `1 + cap` times the half-life |
 | `REINFORCE_ON_RECALL` | off | recalling a memory rehearses it (slows decay); writes the store on each retrieve |
-| `LONG_TERM_TOP_K` | 4 | budget: max memories injected per turn |
+| `LONG_TERM_TOP_K` | 6 | budget: max memories injected per turn |
+| `MEMORY_DEDUP_THRESHOLD` | 0.97 | raw cosine at which a new memory reinforces an existing one instead of being stored |
 
 E.g. raise `RR_WEIGHT_IMPORTANCE` so world events dominate; raise `RR_WEIGHT_DIVERSITY`
 to suppress near-duplicates; lower `RR_RELEVANCE_FLOOR` to admit weaker matches.
 
-## Worked examples
+In [`memory/relevance.py`](../orchestrator/memory/relevance.py), `RelevanceWeights` still shows
+importance 0.5 and `realize_relevance` still shows a budget of 4. `LongTermMemory` always passes
+the values above, so those bare defaults apply only to tools that call the scorer directly, such
+as `tools/decay_demo.py`.
 
-All use the default weights (`sim 1.0, str 0.35, imp 0.5`), so `base = sim + 0.35·str +
-0.5·imp` (sim/str/imp as 0–1). The **str** column here shows index-recency (no game clock);
-with a clock it would be the game-time decay above. Imagine the player asks **"do you
-remember my brother?"** and these candidates are scored:
+## Worked example
 
-| memory | sim | str | imp | base | outcome |
-| --- | --- | --- | --- | --- | --- |
-| "…my brother disappeared in the mines" (old) | .81 | .35 | .50 | **1.18** | ❌ not injected |
-| "Hey" (generic, very recent) | .77 | .97 | .50 | **1.36** | ✅ injected |
-| `remember()`: "player saved Bri from the fire" | .74 | .90 | **.95** | **1.53** | ✅ injected |
-| duplicate of the above | .74 | .88 | .95 | 1.51 | ⚠️ dropped by diversity |
-| "what's a good drink?" (unrelated, old) | .58 | .20 | .50 | 0.90 | ❌ below interest |
+This uses the default weights (`sim 1.0, str 0.35, imp 0.7`), so `base = sim + 0.35·str +
+0.7·imp` (sim/str/imp as 0–1). Bri, a warm character, hears **"do you remember my brother?"**
+and these candidates are scored, sorted by `base` as the panel sorts them.
+
+**raw** is the normalized cosine and **sim** is the value after spreading, which is what feeds
+`base`. Three simplifications keep the numbers readable. The **str** column shows index-recency
+(no game clock); with a clock it would be the game-time decay above. The spreading runs over just
+these five rows; a real store spreads across every memory. And the budget is set to
+`LONG_TERM_TOP_K=3` so it actually binds.
+
+| memory | raw | sim | str | imp | base | outcome |
+| --- | --- | --- | --- | --- | --- | --- |
+| "…my brother disappeared in the mines" (old exchange) | .81 | .83 | .35 | **.85** | **1.55** | ★0 |
+| `remember()`: "the player saved Bri from the harbor fire" | .74 | .56 | .90 | **.95** | **1.54** | ★2 |
+| an older exchange retelling the fire | .74 | .56 | .58 | .55 | 1.15 | · passed over by diversity |
+| "Hey" (filler, very recent) | .77 | .69 | .97 | .10 | 1.10 | ★3 |
+| "what's a good drink?" (unrelated, old) | .58 | .06 | .20 | .10 | 0.20 | · below the floor |
 
 What each row teaches:
-- **Row 1 vs 2 — the recency trap.** A content-free "Hey" *outscores* the brother memory
-  purely on recency (`.97` vs `.35`), because `sim` barely separates them (`.77` vs `.81`).
-  This is exactly [issue #3](https://github.com/chihapper/ai-character-game-engine/issues/3):
-  when similarity doesn't discriminate, recency wins and buries old-but-important memories.
-- **Row 3 — importance rescues relevance.** The fire event isn't the most *similar*, but
-  its high `imp` (.95, from `remember()`) lifts `base` above everything — a flagged event
-  stays salient. (Imagine, instead, *character-aware* importance doing this automatically
-  for the brother memory — the unbuilt salience fix.)
-- **Row 4 — diversity.** Identical to row 3; after row 3 is picked, the duplicate's score
-  is docked ~`0.4 × (its similarity to row 3)`, so it's passed over — no double-injection.
-- **Row 5 — relevance floor.** Low on every axis; falls below the eligibility floor and is
-  dropped rather than padding the budget.
+- **Row 1 — character-aware importance protects what matters.** Bri appraised this exchange at
+  .85 when it happened, so it leads even though it's old (`str` .35). With scoring off or failed,
+  every exchange sits at .50, and the filler "Hey" would score 1.38 against the brother memory's
+  1.30. That's the recency trap of [issue
+  #3](https://github.com/chihapper/ai-character-game-engine/issues/3): when nothing separates two
+  memories, recency wins and buries the old-but-important one.
+- **Row 2 — importance rescues relevance.** The fire event is only middling on `sim`, but its
+  high `imp` lifts it to the top two. This .95 was pinned by the caller; leave `importance` out of
+  `Engine.remember()` and the character appraises the event itself.
+- **Row 3 — diversity.** This memory's cosine to the fire event is .92. That's under the 0.97
+  dedup threshold, so it was stored as its own memory. Once rows 1 and 2 are picked, its penalty
+  is `0.4 × .96` (the penalty uses the 0–1 normalized similarity), or .384. "Hey" is less similar
+  to anything picked, say .65, for a penalty of .26. That leaves row 3 at roughly .77 against
+  .84 for "Hey", so the higher-base memory loses the last slot.
+- **Row 4 — the budget's last slot.** "Hey" isn't valuable. It wins because it repeats nothing
+  already in the prompt. At the default budget of 6, rows 1–4 are all injected and diversity only
+  sets their order.
+- **Row 5 — relevance floor.** Off-topic and unmemorable, it scores 0.20, under the floor of
+  0.3075, and is dropped rather than padding the budget.
 
 Net intuition: **`sim` finds what's on-topic, `rec` favors what's fresh, `imp` protects
 what matters — and they fight.** Tune the weights to change who wins that fight.
 
-## Built since, and queued work
+## Current status
 
-- **Done:** [#3](https://github.com/chihapper/ai-character-game-engine/issues/3) high-spread
+All of this is built, on every branch. Items marked *Engine only* don't reach the port 8000
+Conversation app.
+
+- **Recall:** [#3](https://github.com/chihapper/ai-character-game-engine/issues/3) high-spread
   similarity + **character-aware salience** (an LLM rates how memorable an exchange is *to
-  this character* at write time); **write-time dedup** (re-encounters now *reinforce* instead
-  of double-injecting); **arena query** (recall is searched against the trigger + recent turns
-  + live `Situation` + goals, not just the last line); and **[#5](https://github.com/chihapper/ai-character-game-engine/issues/5)
-  temporal decay + reinforcement** (above).
-- **Done:** [#4](https://github.com/chihapper/ai-character-game-engine/issues/4) commitment
-  tracking (above) — durable obligations, always injected, converting to significance-weighted
-  memories on close. Two ways to create them: the game API (`commit` / `resolve_commitment`)
-  and opt-in **detection from dialogue** (`COMMITMENT_DETECTION`) — one background LLM call,
-  folded into the salience scorer, extracts a concrete promise the character makes (no extra
-  round-trip, ~0 player latency). Detection scored 8/8 on a discrimination set (real promises
-  in, hedges/pleasantries/player-side/hypotheticals out).
+  this character* at write time); **write-time dedup** (re-encounters *reinforce* instead of
+  double-injecting); and the **arena query** (recall is searched against the trigger + recent
+  turns + live `Situation` + goals, not just the last line).
+- **Decay:** [#5](https://github.com/chihapper/ai-character-game-engine/issues/5) temporal decay
+  + saturating reinforcement (above).
+- **Commitments** (*Engine only*):
+  [#4](https://github.com/chihapper/ai-character-game-engine/issues/4) durable obligations, always
+  injected, converting to significance-weighted memories on close. Two ways to create them: the
+  game API (`commit()` / `resolve_commitment()`) and opt-in **detection from dialogue**
+  (`COMMITMENT_DETECTION`), folded into the per-turn judgment call (no extra round-trip). When it
+  was built in June 2026, detection scored 8/8 on a discrimination set (real promises in,
+  hedges/pleasantries/player-side/hypotheticals out).
+- **Stance-conditioned recall** (*Engine only*):
+  [#6](https://github.com/chihapper/ai-character-game-engine/issues/6) feelings, the current aim,
+  and evolved goals all fold into the arena query. Port 8000 searches on the sheet's goals alone.
+- **Beliefs** (*Engine only*): beliefs render under their own prompt header. The top 2 are always
+  surfaced, plus any the query recalls. A near-duplicate belief (0.85) supersedes the old one, and
+  the set is capped at 6, oldest evicted.
+- **Working memory** (*Engine only*): the few fresh, high-salience things that just happened are
+  surfaced whether or not recall picked them, on top of the budget. See
+  [`engine-overview.md`](engine-overview.md#working-memory-30).
+- **Deliberation grounding** (*Engine only*): `rank_window` runs this same scorer over what has
+  happened since the character last took stock, skipping exchanges and player events (those render
+  separately). Anything with importance of at least 0.9 is always kept, and the rest is
+  acknowledged as background, never silently dropped.
 
 > This is a deliberate *approximation* of relevance realization (Vervaeke et al.) for an
 > authored-goal NPC — the LLM remains the real relevance realizer over its context; this

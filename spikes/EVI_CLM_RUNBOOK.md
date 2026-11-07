@@ -1,5 +1,33 @@
 # EVI + Custom Language Model (CLM) spike — runbook
 
+> **Status (2026-11-07):** Frozen record, and the decision is closed: **EVI was ruled out on
+> 2026-07-05/06.** The spike ran on those dates and this runbook hasn't changed since. This note is
+> the repo's record of the verdict; GitHub issue #43 has the same detail. For the current voice
+> setup, read the [README](../README.md#voice).
+>
+> Why EVI lost:
+>
+> - **It strips authored delivery.** A custom LLM can only return plain text, so the per-utterance
+>   Octave acting `description` has no way through. The live test came back "100% real but flat",
+>   and the laugh was never audible. That fails Q1.
+> - **It forbids a prompt with a custom LLM.** Hume's API returns
+>   `403 "Prompt use is not supported with CUSTOM_LANGUAGE_MODEL"`, so the EVI config can't carry
+>   delivery direction either.
+> - **EVI's own LLM abandons the engine.** Using it would restore delivery but lose relevance
+>   realization, memory, relationship, and deliberation.
+>
+> Q2 (latency) has no end-to-end figure on record. The only number is the ~3.6s engine time from the
+> self-test.
+>
+> The project kept Hume Octave as its chosen voice. Detecting the player's laughs and tone is now a
+> separate problem: issue #43 plans a non-Hume `ProsodyAdapter`, deferred until a Godot voice-in path
+> exists. Hume's standalone Expression Measurement API isn't an option, because it returned 403
+> "discontinued" (`53fb3b7`).
+>
+> If you run this anyway: `spikes/evi_clm_server.py` has no authentication and binds all network
+> interfaces (`0.0.0.0:8010`). It exists on `main` and `credibility-demo`; `game-rpg` deleted it in
+> `e3cbf61`.
+
 **Purpose (decision gate).** Decide whether to use Hume **EVI** for the voice loop
 *without* changing the current demo. EVI would own the "room" (mic → ASR →
 turn-taking/barge-in → prosody & vocal-burst measurement → Octave TTS) while our
@@ -30,7 +58,8 @@ mic → ASR + prosody/vocal-burst measure → turn-taking/barge-in
 
 ## Run
 
-1. **Start the CLM server** (this repo root, spike branch `evi-clm-spike`):
+1. **Start the CLM server** (this repo root; the spike branch `evi-clm-spike` no longer exists,
+   and its commits are in `main` history):
    ```
    .venv/Scripts/python.exe -m spikes.evi_clm_server        # binds 0.0.0.0:8010
    ```
@@ -82,7 +111,7 @@ a side field? prosody scores? vocal-burst labels?) we read straight off
 `spikes/evi_clm_requests.jsonl` after the first real call, then parse it into a
 `Situation`/`remember()` signal for the engine.
 
-## What needs the user
+## What needed the user (done; the outcome is in the status note)
 
 - **Confirm EVI is enabled on the Hume plan** — Octave TTS access (what the demo
   uses) does NOT imply EVI access; EVI may need enabling/billing.
